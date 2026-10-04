@@ -38,3 +38,8 @@ tools/libredwg/
 .DS_Store
 Thumbs.db
 *.swp
+# 旧目录名（2026-10-05 从 qa-platform 改名 fidelity 前后的残留）
+qa-platform/
+# 本地运行日志
+backend_run.log
+*.log

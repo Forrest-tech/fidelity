@@ -100,11 +100,14 @@ def claim(port=0):
         if _pid_alive(pid) and fresh:
             return False, {"pid": pid, "port": lock.get("port"),
                            "reason": "已有实例在运行"}
-        # 锁在但进程已死（或心跳过期）→ 清掉残留锁，继续抢
-        try:
-            os.remove(LOCK_PATH)
-        except OSError:
-            pass
+        # 锁在但进程已死（或心跳过期）→ 直接覆盖写，不要先删文件。
+        #
+        # 真实事故（2026-10-05）：这里原本先 os.remove(LOCK_PATH) 再写。
+        # 某些宿主环境（如 WorkBuddy）会给 os.remove 挂安全钩子，把删除拦下来
+        # 后抛 SystemExit —— 它继承自 BaseException，下面的 except OSError
+        # 捕不到，于是直接崩在启动阶段，表现为「服务起不来」且日志里只有
+        # 一句无关的批量删除告警。SystemExit 不该由业务代码吞掉，但更根本的
+        # 修法是根本不要删：_write_lock 本来就是覆盖写，删那一步是多余的。
     _write_lock(os.getpid(), port)
     return True, {"pid": os.getpid(), "port": port}
 
@@ -124,12 +127,19 @@ def heartbeat(port=0):
 
 
 def release():
-    """只释放自己持有的锁，避免把别人的锁删了。"""
+    """只释放自己持有的锁，避免把别人的锁删了。
+
+    删除可能失败（文件被占用、宿主环境给 os.remove 挂了拦截钩子并抛
+    SystemExit 等 BaseException），所以这里捕获 BaseException：释放失败
+    不该影响进程退出，残留的锁会被下一次 claim 依据「进程已死」覆盖掉。
+    """
     lock = _read_lock()
     if lock and lock.get("pid") == os.getpid():
         try:
             os.remove(LOCK_PATH)
-        except OSError:
+        except BaseException:
+            # 含 SystemExit / KeyboardInterrupt 之外的宿主钩子异常。
+            # 锁文件残留是无害的：claim() 会覆盖写。
             pass
 
 

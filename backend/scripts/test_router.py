@@ -263,6 +263,75 @@ def test_ocr_page_timeout():
           % ocr.PAGE_OCR_TIMEOUT)
 
 
+# ======================= 9. 单实例锁不得因宿主钩子崩溃（回归：服务起不来）
+def test_instance_lock_survives_hooks():
+    """回归：2026-10-05 服务启动直接崩。
+
+    WorkBuddy 这类宿主会给 os.remove 挂安全钩子，把删除拦下后抛 SystemExit。
+    SystemExit 继承自 BaseException 而非 OSError，原来的
+    `except OSError: pass` 捕不到，于是 claim() 在启动阶段就崩，
+    表现为「服务起不来」，日志里只有一句无关的批量删除告警。
+
+    修法：claim() 不再预删锁（_write_lock 本就是覆盖写，删是多余动作），
+    release() 捕获 BaseException。
+    """
+    print("\n== 9. 单实例锁的宿主钩子健壮性 ==")
+    from app import instance
+    import inspect as _insp
+
+    # claim() 的可执行代码里不应再有 os.remove（注释里提到不算）
+    import ast as _ast
+    def _calls_remove(fn):
+        for node in _ast.walk(_ast.parse(_insp.getsource(fn))):
+            if isinstance(node, _ast.Call):
+                f = node.func
+                name = getattr(f, "attr", None) or getattr(f, "id", None)
+                if name in ("remove", "unlink", "rmdir"):
+                    return True
+        return False
+    check("claim() 不再删除锁文件", not _calls_remove(instance.claim))
+
+    # release() 捕获 BaseException（而非仅 OSError）
+    rsrc = _insp.getsource(instance.release)
+    check("release() 捕获 BaseException", "except BaseException" in rsrc,
+          "只捕 OSError 会被 SystemExit 击穿")
+
+    # 实测：把 os.remove 换成会抛 SystemExit 的桩，release 仍不应崩
+    orig = instance.os.remove
+    def boom(_p):
+        raise SystemExit("simulated safe-delete hook")
+    try:
+        instance.os.remove = boom
+        with open(instance.LOCK_PATH, "w", encoding="utf-8") as f:
+            f.write('{"pid": %d, "heartbeat_at": 1}' % os.getpid())
+        try:
+            instance.release()
+            check("release() 遇 SystemExit 不崩溃", True)
+        except SystemExit:
+            check("release() 遇 SystemExit 不崩溃", False, "SystemExit 透出了")
+        except BaseException as e:
+            check("release() 遇 SystemExit 不崩溃", False, type(e).__name__)
+    finally:
+        instance.os.remove = orig
+        try:
+            os.remove(instance.LOCK_PATH)
+        except OSError:
+            pass
+
+    # claim() 在残留锁（上一步没能删掉）存在时仍应成功抢到
+    with open(instance.LOCK_PATH, "w", encoding="utf-8") as f:
+        f.write('{"pid": 999999, "heartbeat_at": 0}')
+    try:
+        ok, info = instance.claim(port=8000)
+        check("残留锁存在时 claim 仍成功", ok, info)
+        instance.release()
+    finally:
+        try:
+            os.remove(instance.LOCK_PATH)
+        except OSError:
+            pass
+
+
 # ==================================================================== 主流程
 def main():
     print("=" * 62)
@@ -272,7 +341,7 @@ def main():
     for fn in (test_classify, test_unsupported_marks_human,
                test_missing_file_graceful, test_text_roundtrip,
                test_cad_marks_confirm, test_dwg_tmp_cleanup, test_constants,
-               test_ocr_page_timeout):
+               test_ocr_page_timeout, test_instance_lock_survives_hooks):
         fn()
 
     passed = sum(1 for _, ok, _ in _RESULTS if ok)
