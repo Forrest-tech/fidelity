@@ -286,5 +286,7 @@ QA_SERVER_PORT=8080   QA_SERVER_HOST=127.0.0.1
 
 ## 九、许可与数据归属
 
+代码采用 [MIT 许可](LICENSE)。
+
 本仓库仅含**代码**。你的文档、Markdown 产物、评测数据库（`backend/data/`）、
 提取缓存均已在 `.gitignore` 中排除，**不会随仓库分发**。
