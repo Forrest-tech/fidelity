@@ -1,0 +1,40 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# ---- 运行时数据（绝不入库）----
+# trust.db  : 你的评测记录（含你的库文件路径清单），属个人数据
+# cache/    : 抽取/对齐/预览缓存，可完全重建
+backend/data/trust.db
+backend/data/trust.db-wal
+backend/data/trust.db-shm
+backend/data/server.lock
+backend/data/cache/
+backend/data/config.json
+backend/data/*.log
+backend/data/t.sh
+backend/data/si*.log
+
+# 根级运行时数据（job_id 记录等）
+data/
+!data/.gitkeep
+
+# ---- 前端 ----
+node_modules/
+web/dist/
+web/.vite/
+*.tsbuildinfo
+
+# ---- 第三方二进制（51MB，按 docs 安装说明单独获取）----
+tools/libredwg/
+
+# ---- 编辑器 / 系统 ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp

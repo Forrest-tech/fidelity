@@ -1,0 +1,42 @@
+# 转换质检与可信度管理系统 —— 后端依赖
+#
+# 版本按实际验证环境锁定（Python 3.13 / Windows x64）。
+# 精确锁定是为了「评分结果可复现」：换一个大版本可能改变 PDF 抽取结果，
+# 进而让历史评测分数对不上—— 对可信检索系统这是不可接受的。
+
+# --- Web 框架 ---
+fastapi==0.142.2
+uvicorn==0.54.0
+pydantic>=2.0
+
+# --- PDF 抽取（三级策略：pymupdf 主 / pypdf 兜底 / pdfplumber 小文件兜底）---
+# 实测：4.6MB 矢量 PDF —— pymupdf 1.97s vs pypdf 48.4s（快 25 倍）。
+# 主引擎必须是 pymupdf，详见 app/ingest/format_router.py 的注释。
+pymupdf==1.28.2
+pypdf==6.19.0
+pdfplumber==0.11.10
+
+# --- OCR（扫描件 / 图片）---
+# RapidOCR = PP-OCR 的 ONNX CPU 版，无 GPU 依赖。
+# ⚠️ 诚实说明：CPU 下约 60s/页，准确率不足以无人值守入库，
+# 所以扫描件默认进人工决定队列，而不是自动判「合格」。
+rapidocr-onnxruntime==1.2.3
+onnxruntime==1.30.0
+pypdfium2==5.13.0
+numpy>=1.24
+Pillow>=10.0
+# opencv 由 rapidocr-onnxruntime 间接带入（ocr.py 本身不直接 import cv2）。
+# 装 headless 版避免在无 GUI 的服务器上报错；如本地已装普通版也可正常运行。
+opencv-python-headless>=4.8
+
+# --- CAD (DWG/DXF) ---
+# dwg2dxf.exe 属于 tools/libredwg（不入库，需按 docs 单独放置）；
+# 没有它时 DWG 会进人工队列，DWG 路线完全不可用。
+ezdxf==1.4.4
+matplotlib==3.11.2
+
+# --- Office / 邮件 ---
+python-docx==1.2.0
+openpyxl==3.1.5
+python-pptx==1.0.2
+extract-msg==0.56.1
