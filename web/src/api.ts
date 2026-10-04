@@ -110,6 +110,16 @@ export const api = {
   review: (rel: string, verdict: string, reviewer: string, note: string) =>
     post<Badge & { rev_no: number }>(`/review/${rel}`, { verdict, reviewer, note }),
 
+  /** 按正确率阈值批量打「人工审核通过」标签。 */
+  reviewBatch: (rels: string[], threshold: number, reviewer: string, note = "") =>
+    post<{
+      ok: number;
+      skipped: number;
+      already: number;
+      no_score: number;
+      items: { rel: string; auto_score: number | null }[];
+    }>("/review/batch", { rels, threshold, reviewer, note }),
+
   /** 审核人名单 + 每人工作量。 */
   reviewers: () => req<{ items: Reviewer[] }>("/reviewers"),
   saveReviewer: (r: { id?: string; name: string; role?: string; enabled?: boolean }) =>

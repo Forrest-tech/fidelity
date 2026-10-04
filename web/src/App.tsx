@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./api";
 import type {
   AlignResp,
@@ -18,28 +18,48 @@ import SalvagePanel from "./components/SalvagePanel";
 import ReviewerPanel from "./components/ReviewerPanel";
 import SourceManager from "./components/SourceManager";
 import FolderPicker from "./components/FolderPicker";
+import { useI18n } from "./i18n";
 
 type Notice = { kind: "warn" | "err" | "ok"; text: string };
 
-/** 保留上次选择的审核人，避免每次刷新都要重选。 */
 const REVIEWER_KEY = "fidelity.reviewer";
+const SEL_KEY = "fidelity.lastfile";
+const ZOOM_KEY = "fidelity.zoom";
+const THRESH_KEY = "fidelity.threshold";
+
+function loadNum(k: string, d: number, lo: number, hi: number) {
+  const v = parseFloat(localStorage.getItem(k) || "");
+  return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d;
+}
 
 export default function App() {
+  const [t, lang, setLang] = useI18n();
+
   const [sources, setSources] = useState<Source[]>([]);
   const [sid, setSid] = useState("n2");
   const [status, setStatus] = useState<TrustState | "">("");
 
-  const [sel, setSel] = useState("");
+  const [sel, setSel] = useState(() => localStorage.getItem(SEL_KEY) || "");
   const [badge, setBadge] = useState<Badge | null>(null);
   const [align, setAlign] = useState<AlignResp | null>(null);
   const [md, setMd] = useState<MdResp | null>(null);
   const [page, setPage] = useState(1);
   const [pageCount, setPageCount] = useState(1);
   const [curLine, setCurLine] = useState<number | null>(null);
+  /** 由右栏点击触发的左栏高亮文本。 */
+  const [focusMark, setFocusMark] = useState<string | null>(null);
+  /** 由左栏点击触发的右栏定位行。 */
+  const [focusLine, setFocusLine] = useState<number | null>(null);
+
+  const [zoomL, setZoomL] = useState(() => loadNum(ZOOM_KEY + ".l", 1, 0.5, 3));
+  const [zoomR, setZoomR] = useState(() => loadNum(ZOOM_KEY + ".r", 1, 0.5, 3));
 
   const [showMarks, setShowMarks] = useState(true);
   const [onlyDiff, setOnlyDiff] = useState(false);
   const [lineSearch, setLineSearch] = useState("");
+
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [threshold, setThreshold] = useState(() => loadNum(THRESH_KEY, 90, 50, 100));
 
   const [stats, setStats] = useState<Stats | null>(null);
   const [job, setJob] = useState<Job | null>(null);
@@ -58,9 +78,15 @@ export default function App() {
 
   const busy = !!job && (job.status === "queued" || job.status === "running");
 
-  const say = useCallback((kind: Notice["kind"], text: string) => {
-    setNotice({ kind, text });
-  }, []);
+  const say = useCallback((kind: Notice["kind"], text: string) => setNotice({ kind, text }), []);
+
+  useEffect(() => localStorage.setItem(REVIEWER_KEY, reviewer), [reviewer]);
+  useEffect(() => localStorage.setItem(THRESH_KEY, String(threshold)), [threshold]);
+  useEffect(() => localStorage.setItem(ZOOM_KEY + ".l", String(zoomL)), [zoomL]);
+  useEffect(() => localStorage.setItem(ZOOM_KEY + ".r", String(zoomR)), [zoomR]);
+  useEffect(() => {
+    if (sel) localStorage.setItem(SEL_KEY, sel);
+  }, [sel]);
 
   // ---------- 启动 ----------
   useEffect(() => {
@@ -79,15 +105,11 @@ export default function App() {
           return first ? first.name : cur;
         });
       } catch (e: any) {
-        say("err", "后端未就绪：" + e.message);
+        say("err", t("msg.backendDown", { m: e.message }));
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (reviewer) localStorage.setItem(REVIEWER_KEY, reviewer);
-  }, [reviewer]);
 
   const refreshStats = useCallback(() => {
     api.stats(sid).then(setStats).catch(() => {});
@@ -96,6 +118,14 @@ export default function App() {
   useEffect(() => {
     refreshStats();
   }, [sid, refreshStats]);
+
+  const refreshBadge = useCallback(() => {
+    if (!sel || !sid) return;
+    api
+      .files(sid, status)
+      .then((r) => setBadge(r.files.find((f) => f.rel === sel) || null))
+      .catch(() => {});
+  }, [sel, sid, status]);
 
   // ---------- 当前文件的数据 ----------
   useEffect(() => {
@@ -110,24 +140,19 @@ export default function App() {
     setMd(null);
     setPage(1);
     setCurLine(null);
+    setFocusMark(null);
+    setFocusLine(null);
     setLineSearch("");
 
     api
       .align(sel, sid)
       .then((a) => alive && setAlign(a))
-      .catch((e) => alive && say("err", "读取逐行比对失败：" + e.message));
+      .catch((e) => alive && say("err", e.message));
     api
       .md(sel, sid)
       .then((m) => alive && setMd(m))
       .catch(() => alive && setMd(null));
-    api
-      .files(sid, status)
-      .then((r) => {
-        if (!alive) return;
-        const b = r.files.find((f) => f.rel === sel);
-        if (b) setBadge(b);
-      })
-      .catch(() => {});
+    refreshBadge();
 
     return () => {
       alive = false;
@@ -154,32 +179,30 @@ export default function App() {
   // ---------- 任务轮询 ----------
   useEffect(() => {
     if (!job || (job.status !== "queued" && job.status !== "running")) return;
-    const t = setInterval(async () => {
+    const iv = setInterval(async () => {
       try {
         const j = await api.job(job.id);
         setJob(j);
         if (j.status === "done") {
           refreshStats();
+          refreshBadge();
           if (sel && sid) {
-            const [a, m, r] = await Promise.all([
+            const [a, m] = await Promise.all([
               api.align(sel, sid).catch(() => null),
               api.md(sel, sid).catch(() => null),
-              api.files(sid, status).catch(() => null),
             ]);
             setAlign(a);
             setMd(m);
-            const b = r?.files.find((f) => f.rel === sel);
-            if (b) setBadge(b);
           }
-          say("ok", j.message || "任务完成");
+          say("ok", j.message || "OK");
         } else if (j.status === "error") {
-          say("err", j.message || "任务失败");
+          say("err", j.message || "error");
         }
       } catch {
-        /* 轮询失败静默重试 */
+        /* 静默重试 */
       }
     }, 1200);
-    return () => clearInterval(t);
+    return () => clearInterval(iv);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [job?.id, job?.status]);
 
@@ -188,31 +211,31 @@ export default function App() {
     if (!sel) return;
     try {
       const { job_id } = await api.compare(sel, sid);
-      setJob({ id: job_id, kind: "compare", rel: sel, status: "queued", progress: 0, message: "排队中", updated_at: "" });
+      setJob({ id: job_id, kind: "compare", rel: sel, status: "queued", progress: 0, message: "…", updated_at: "" });
+      say("ok", t("msg.recalcQueued"));
     } catch (e: any) {
-      say("err", "提交评测失败：" + e.message);
+      say("err", e.message);
     }
   };
 
   const runBatch = async (force: boolean) => {
     try {
       const { job_id } = await api.batch(sid, force);
-      setJob({
-        id: job_id, kind: "batch", rel: "", status: "queued", progress: 0,
-        message: force ? "排队中（重跑全部）" : "排队中（仅评测未评文件）", updated_at: "",
-      });
+      setJob({ id: job_id, kind: "batch", rel: "", status: "queued", progress: 0, message: "…", updated_at: "" });
+      say("ok", force ? t("msg.batchQueuedAll") : t("msg.batchQueued"));
     } catch (e: any) {
-      say("err", "提交批量评测失败：" + e.message);
+      say("err", e.message);
     }
   };
 
   const runDeferred = async () => {
-    if (!confirm(`将对被延后的大文件逐个重试（放宽时间预算，耗时可能较长）。继续？`)) return;
+    if (!confirm("重试被延后的大文件（放宽时间预算，耗时较长）。继续？")) return;
     try {
       const { job_id } = await api.batchDeferred(sid);
-      setJob({ id: job_id, kind: "batch", rel: "", status: "queued", progress: 0, message: "排队中（补跑延后文件）", updated_at: "" });
+      setJob({ id: job_id, kind: "batch", rel: "", status: "queued", progress: 0, message: "…", updated_at: "" });
+      say("ok", t("msg.deferredQueued"));
     } catch (e: any) {
-      say("err", "提交补跑失败：" + e.message);
+      say("err", e.message);
     }
   };
 
@@ -220,45 +243,80 @@ export default function App() {
     try {
       const d = await api.deferred(sid, 300);
       if (!d.count) {
-        say("ok", "当前没有被延后的文件。");
+        say("ok", t("msg.deferredNone"));
         return;
       }
       const lines = d.items
         .slice(0, 60)
         .map((x) => `${x.mb != null ? String(x.mb).padStart(7) + "MB" : "       ?"}  ${x.reason}  ${x.rel}`)
         .join("\n");
-      alert(`被延后的文件 ${d.count} 个（体积 / 原因 / 路径）：\n\n${lines}`);
+      alert(t("msg.deferredTitle", { n: d.count }) + "\n\n" + lines);
     } catch (e: any) {
-      say("err", "读取延后清单失败：" + e.message);
+      say("err", e.message);
     }
   };
 
   const doVerdict = async (v: string) => {
     if (!sel) return;
     if (!reviewer) {
-      say("err", "请先选择审核人（右上角「审核人」下拉，或在审核人配置中添加）");
+      say("err", t("msg.reviewerNeeded"));
       return;
     }
     try {
       await api.review(sel, v, reviewer, note);
       setNote("");
-      const r = await api.files(sid, status);
-      setBadge(r.files.find((f) => f.rel === sel) || null);
+      refreshBadge();
       refreshStats();
-      say("ok", v === "" ? "已撤销裁决" : `已记录裁决：${v === "ok" ? "一致" : v === "diff_big" ? "差异大" : "不接受"}（${reviewer}）`);
+      const label = v === "ok" ? t("verdict.ok") : v === "diff_big" ? t("verdict.diff_big") : t("verdict.rejected");
+      say("ok", v === "" ? t("msg.verdictRevoked") : t("msg.verdictSaved", { v: label, r: reviewer }));
     } catch (e: any) {
-      say("err", "保存裁决失败：" + e.message);
+      say("err", e.message);
     }
   };
 
-  // 点 md 行 → 跳到源文件对应页
+  /** 批量按阈值打「人工审核通过」标签。 */
+  const batchPass = async () => {
+    if (!picked.size) return;
+    if (!reviewer) {
+      say("err", t("msg.reviewerNeeded"));
+      return;
+    }
+    const rels = Array.from(picked);
+    if (!confirm(`${rels.length} 个文件，正确率 ≥ ${threshold}% 的将标记为「${t("verdict.ok")}」。继续？`)) return;
+    try {
+      const r = await api.reviewBatch(rels, threshold, reviewer, "");
+      setPicked(new Set());
+      refreshStats();
+      refreshBadge();
+      say("ok", t("msg.batchDone", { ok: r.ok, skip: r.skipped + r.already + r.no_score }));
+    } catch (e: any) {
+      say("err", e.message);
+    }
+  };
+
+  /**
+   * 点 md 行 → 左栏跳到对应页并高亮该段（双向联动）。
+   * focusMark 传文本，左栏在源文件上描边；focusLine 让右栏也确保可见。
+   */
   const pickLine = (i: number, pg: number | null) => {
     setCurLine(i);
     if (pg && pg !== page) setPage(pg);
+    const txt = md?.lines?.[i];
+    if (txt) {
+      setFocusMark(txt.trim().slice(0, 60));
+      window.setTimeout(() => setFocusMark(null), 2600);
+    }
   };
 
   const score = badge?.auto_score ?? null;
   const scoreCls = score == null ? "none" : score >= 90 ? "good" : score >= 70 ? "mid" : "bad";
+  const srcPath = useMemo(() => {
+    const s = sources.find((x) => x.id === sid);
+    if (!s || !sel) return sel;
+    return `${s.src_root}\\${sel.replace(/\//g, "\\")}`;
+  }, [sources, sid, sel]);
+
+  const st = stats?.by_state || {};
 
   return (
     <div className="app">
@@ -267,133 +325,165 @@ export default function App() {
         <div className="brand">
           <div className="brand-mark">F</div>
           <div className="brand-text">
-            <b>转换保真度评测</b>
-            <span>Fidelity</span>
+            <b>{t("app.title")}</b>
+            <span>{t("app.subtitle")}</span>
           </div>
         </div>
         <div className="divider" />
-        <select value={sid} onChange={(e) => setSid(e.target.value)} title="数据源">
+        <select value={sid} onChange={(e) => setSid(e.target.value)} title={t("src.label")}>
           {sources.map((s) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
           ))}
         </select>
-        <button onClick={() => setShowMgr(true)}>数据源…</button>
+        <button onClick={() => setShowMgr(true)}>{t("src.manage")}</button>
         <div className="divider" />
-        <button className="primary" disabled={busy} onClick={() => runBatch(false)} title="对尚未评测的文件批量计算自动保真度">
-          批量评测
+        <button className="primary" disabled={busy} onClick={() => runBatch(false)}>
+          {t("act.batch")}
         </button>
         <button disabled={busy} onClick={() => { if (confirm("重跑全部将重新评分所有文件（含已评测），耗时较长。继续？")) runBatch(true); }}>
-          重跑全部
+          {t("act.rebatch")}
         </button>
-        <button disabled={busy} onClick={runDeferred} title="对被延后的大文件逐个重试">
-          补跑延后{stats?.deferred ? ` (${stats.deferred})` : ""}
+        <button disabled={busy} onClick={runDeferred}>
+          {t("act.deferred")}
+          {stats?.deferred ? ` (${stats.deferred})` : ""}
         </button>
-        <button onClick={showDeferredList}>延后清单</button>
+        <button onClick={showDeferredList}>{t("act.deferredList")}</button>
         <div className="divider" />
-        <button className="primary" onClick={() => setShowDecide(true)} title="无法自动比对的文件，入库与否由人工决定">
-          待决定{stats?.decisions.pending ? ` (${stats.decisions.pending})` : ""}
+        <button onClick={() => setShowDecide(true)}>
+          {t("act.decide")}
+          {stats?.decisions.pending ? ` (${stats.decisions.pending})` : ""}
         </button>
-        <button onClick={() => setShowSalvage(true)} title="原产物是二进制打捞的文件：用真实提取结果重写 .md">
-          需重新转换{stats?.salvage ? ` (${stats.salvage})` : ""}
+        <button onClick={() => setShowSalvage(true)}>
+          {t("act.salvage")}
+          {stats?.salvage ? ` (${stats.salvage})` : ""}
         </button>
         <div className="spacer" />
-        <label className="btn" style={{ display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--border-strong)", borderRadius: "var(--r)", padding: "6px 12px", cursor: "pointer", background: "var(--surface)" }}>
-          上传文件
+        <label className="btn upload">
+          {t("act.upload")}
           <input
             type="file"
-            style={{ display: "none" }}
             onChange={async (e) => {
               const f = e.target.files?.[0];
               if (!f) return;
               try {
                 const r = await api.upload(f, sid);
-                say("warn", `已上传 ${r.rel} 到源目录，等待转换生成 .md`);
+                say("warn", t("msg.uploaded", { rel: r.rel }));
               } catch (err: any) {
-                say("err", "上传失败：" + err.message);
+                say("err", err.message);
               }
               e.target.value = "";
             }}
           />
         </label>
         <div className="divider" />
-        <select
-          value={reviewer}
-          onChange={(e) => setReviewer(e.target.value)}
-          title="当前审核人（决定写入审计日志的身份）"
-          style={{ width: 150 }}
-        >
-          <option value="">选择审核人…</option>
+        <select value={reviewer} onChange={(e) => setReviewer(e.target.value)} title={t("act.reviewer")} className="w-reviewer">
+          <option value="">{t("verdict.pick")}</option>
           {reviewers.filter((r) => r.enabled).map((r) => (
             <option key={r.id || r.name} value={r.name}>
-              {r.name}（{r.role}）
+              {r.name}
             </option>
           ))}
         </select>
-        <button onClick={() => setShowReviewers(true)} title="管理审核人名单">配置</button>
+        <button onClick={() => setShowReviewers(true)}>{t("act.config")}</button>
+        <div className="divider" />
+        {/* 语言切换：仅界面文案切换，文件内容始终原样 */}
+        <div className="langsw" role="group" aria-label={t("act.lang")}>
+          <button className={lang === "zh" ? "on" : ""} onClick={() => setLang("zh")}>
+            中文
+          </button>
+          <button className={lang === "en" ? "on" : ""} onClick={() => setLang("en")}>
+            EN
+          </button>
+        </div>
       </header>
 
-      {/* ---------- 统计行（独立成行） ---------- */}
+      {/* ---------- 统计行 ---------- */}
       <div className="statsbar">
-        <div className="stat">
-          <span className="stat-k">已评测 / 全部</span>
+        <div className="stat" title={t("stat.evaluatedTip")}>
+          <span className="stat-k">{t("stat.evaluated")}</span>
           <span className="stat-v num">
-            {stats ? `${stats.evaluated.toLocaleString()}/${stats.total.toLocaleString()}` : "—"}
+            {stats ? `${stats.evaluated.toLocaleString()} / ${stats.total.toLocaleString()}` : "—"}
           </span>
         </div>
         <div className="stat">
-          <span className="stat-k">平均保真度</span>
+          <span className="stat-k">{t("stat.avg")}</span>
           <span className={`stat-v num ${stats?.avg_score == null ? "" : stats.avg_score >= 90 ? "good" : stats.avg_score >= 70 ? "warn" : "bad"}`}>
             {stats?.avg_score != null ? `${stats.avg_score}%` : "—"}
           </span>
         </div>
-        <div className="stat clickable" onClick={() => setStatus("unreviewed")} title="只看未审">
-          <span className="stat-k">未审</span>
-          <span className="stat-v num">{stats?.by_state.unreviewed?.toLocaleString() ?? "—"}</span>
-        </div>
-        <div className="stat clickable" onClick={() => setStatus("trusted")} title="只看可信">
-          <span className="stat-k">可信</span>
-          <span className="stat-v num good">{stats?.by_state.trusted?.toLocaleString() ?? "—"}</span>
-        </div>
-        <div className="stat clickable" onClick={() => setStatus("need_review")} title="只看待复核">
-          <span className="stat-k">待复核</span>
-          <span className="stat-v num warn">{stats?.by_state.need_review?.toLocaleString() ?? "—"}</span>
-        </div>
-        <div className="stat clickable" onClick={() => setStatus("diff_big")} title="只看差异大">
-          <span className="stat-k">差异大</span>
-          <span className="stat-v num bad">{stats?.by_state.diff_big?.toLocaleString() ?? "—"}</span>
-        </div>
-        <div className="stat clickable" onClick={() => setShowDecide(true)} title="打开人工决定队列">
-          <span className="stat-k">待决定</span>
-          <span className="stat-v num warn">{stats?.decisions.pending?.toLocaleString() ?? "—"}</span>
-        </div>
-        <div className="stat">
-          <span className="stat-k">延后</span>
-          <span className="stat-v num">{stats?.deferred ?? "—"}</span>
-        </div>
+        {/* 可点击的状态块：点击即筛选，避免用户找不到筛选入口 */}
+        <button
+          className={`stat clickable ${status === "unreviewed" ? "on" : ""}`}
+          onClick={() => setStatus(status === "unreviewed" ? "" : "unreviewed")}
+          title={t("stat.unreviewedTip")}
+        >
+          <span className="stat-k">{t("stat.unreviewed")}</span>
+          <span className="stat-v num">{st.unreviewed?.toLocaleString() ?? "—"}</span>
+        </button>
+        <button className={`stat clickable ${status === "trusted" ? "on" : ""}`} onClick={() => setStatus(status === "trusted" ? "" : "trusted")}>
+          <span className="stat-k">{t("stat.trusted")}</span>
+          <span className="stat-v num good">{st.trusted?.toLocaleString() ?? "—"}</span>
+        </button>
+        <button className={`stat clickable ${status === "need_review" ? "on" : ""}`} onClick={() => setStatus(status === "need_review" ? "" : "need_review")}>
+          <span className="stat-k">{t("stat.need_review")}</span>
+          <span className="stat-v num warn">{st.need_review?.toLocaleString() ?? "—"}</span>
+        </button>
+        <button className={`stat clickable ${status === "diff_big" ? "on" : ""}`} onClick={() => setStatus(status === "diff_big" ? "" : "diff_big")}>
+          <span className="stat-k">{t("stat.diff_big")}</span>
+          <span className="stat-v num bad">{st.diff_big?.toLocaleString() ?? "—"}</span>
+        </button>
+        {stats?.decisions.pending ? (
+          <button className="stat clickable" onClick={() => setShowDecide(true)}>
+            <span className="stat-k">{t("stat.pending")}</span>
+            <span className="stat-v num warn">{stats.decisions.pending.toLocaleString()}</span>
+          </button>
+        ) : null}
+        {stats?.deferred ? (
+          <div className="stat">
+            <span className="stat-k">{t("stat.deferred")}</span>
+            <span className="stat-v num">{stats.deferred}</span>
+          </div>
+        ) : null}
         {stats?.totals && stats.totals.src_chars > 0 && (
-          <div className="stat" title="全库源文件抽取字数 → 入库 .md 字数">
-            <span className="stat-k">总字数 源 → md</span>
+          <div className="stat" title={t("stat.keepTip")}>
+            <span className="stat-k">{t("stat.chars")}</span>
             <span className="stat-v num">
               {(stats.totals.src_chars / 1e6).toFixed(1)}M → {(stats.totals.md_chars / 1e6).toFixed(1)}M
-              {stats.totals.char_ratio != null && <small>保留 {stats.totals.char_ratio}%</small>}
+              {stats.totals.char_ratio != null && (
+                /* ★ 不能一律写「保留」：ratio > 100% 说明 md 反而更大（膨胀），
+                   标成「保留 143%」会误导用户以为内容超量保留。 */
+                <small className={stats.totals.char_ratio > 100 ? "warn" : undefined}>
+                  {stats.totals.char_ratio > 100
+                    ? t("stat.expand", { n: Math.round(stats.totals.char_ratio - 100) })
+                    : t("stat.keep", { n: stats.totals.char_ratio })}
+                </small>
+              )}
             </span>
           </div>
         )}
-
+        <div className="spacer" />
         {busy && (
           <div className="runbar">
-            <div className="runbar-track"><i style={{ width: `${job!.progress}%` }} /></div>
+            <span className="nowrap">{t("stat.progress")}</span>
+            <div className="runbar-track">
+              <i style={{ width: `${job!.progress}%` }} />
+            </div>
             <span className="num">{job!.progress}%</span>
-            <span className="truncate" style={{ maxWidth: 260 }}>{job!.message}</span>
+            <span className="truncate" style={{ maxWidth: 220 }}>
+              {job!.message}
+            </span>
           </div>
         )}
       </div>
 
-      {/* ---------- 通知条 ---------- */}
       {notice && (
         <div className={`notice ${notice.kind === "err" ? "err" : notice.kind === "ok" ? "ok" : ""}`}>
           <span>{notice.text}</span>
-          <button className="ghost sm" onClick={() => setNotice(null)}>关闭</button>
+          <button className="ghost sm" onClick={() => setNotice(null)}>
+            {t("act.close")}
+          </button>
         </div>
       )}
 
@@ -405,28 +495,34 @@ export default function App() {
           status={status}
           onStatus={setStatus}
           onPick={(rel) => setSel(rel)}
+          picked={picked}
+          onPickedChange={setPicked}
+          threshold={threshold}
+          onThreshold={setThreshold}
+          onBatchPass={batchPass}
+          busy={busy}
         />
 
         <div className="work">
           {!sel ? (
-            <div className="empty" style={{ paddingTop: 80 }}>
-              从左侧目录树中选择一个文件开始核对
-            </div>
+            <div className="empty pad">{t("file.none")}</div>
           ) : (
             <>
               <div className="filehead">
-                <div className="path truncate" title={sel}>{sel}</div>
+                <div className="path truncate" title={sel}>
+                  {sel}
+                </div>
                 <div className="spacer" />
                 <div className="filemeta">
                   <span className={`score-pill ${scoreCls}`}>
-                    {score != null ? `自动 ${score}%` : "无自动分"}
+                    {score != null ? t("file.auto", { n: score }) : t("file.noScore")}
                   </span>
                   {badge && (
                     <>
                       <span className={`badge ${badge.state}`}>{badge.label}</span>
                       {badge.src_chars != null && badge.md_chars != null && (
-                        <span className="kv" title="源文件独立抽取字数 → 入库 .md 字数">
-                          字数 <b>{badge.src_chars.toLocaleString()}</b> → <b>{badge.md_chars.toLocaleString()}</b>
+                        <span className="kv nowrap">
+                          {t("file.chars")} <b>{badge.src_chars.toLocaleString()}</b> → <b>{badge.md_chars.toLocaleString()}</b>
                         </span>
                       )}
                     </>
@@ -436,45 +532,41 @@ export default function App() {
 
               <div className="toolbar">
                 <button className="primary" onClick={runCompare} disabled={busy}>
-                  重新评测
+                  {t("act.recalc")}
                 </button>
-                <div className="divider" style={{ width: 1, height: 20, background: "var(--border)" }} />
+                <div className="vsep" />
                 <button className={showMarks ? "on" : ""} onClick={() => setShowMarks((v) => !v)}>
-                  高亮命中
+                  {t("act.marks")}
                 </button>
                 <div className="seg">
-                  <button className={!onlyDiff ? "on" : ""} onClick={() => setOnlyDiff(false)}>全部内容</button>
-                  <button className={onlyDiff ? "on" : ""} onClick={() => setOnlyDiff(true)}>只看差异</button>
+                  <button className={!onlyDiff ? "on" : ""} onClick={() => setOnlyDiff(false)}>
+                    {t("act.all")}
+                  </button>
+                  <button className={onlyDiff ? "on" : ""} onClick={() => setOnlyDiff(true)}>
+                    {t("act.diff")}
+                  </button>
                 </div>
                 <input
                   type="search"
                   value={lineSearch}
                   onChange={(e) => setLineSearch(e.target.value)}
-                  placeholder="在 md 中查找…"
-                  style={{ width: 180 }}
+                  placeholder={t("act.searchMd")}
+                  className="w-search"
                 />
                 <div className="spacer" />
-                <span className="legend">
-                  <span><i style={{ background: "var(--green-bg)", borderColor: "var(--green-border)" }} />两侧一致</span>
-                  <span><i style={{ background: "var(--red-bg)", borderColor: "var(--red-border)" }} />md 多出 / 源文有</span>
-                </span>
                 {align && !align.not_applicable && (
-                  <span className="hint num">
-                    {align.total_lines.toLocaleString()} 行
-                  </span>
+                  <span className="hint num nowrap">{t("file.lines", { n: align.total_lines.toLocaleString() })}</span>
                 )}
               </div>
 
-              {align?.verdict && (
-                <div className="callout warn" style={{ margin: 0, borderRadius: 0, border: 0, borderBottom: "1px solid var(--amber-border)" }}>
-                  {align.verdict}
-                </div>
-              )}
+              {align?.verdict && <div className="callout warn edge">{align.verdict}</div>}
 
               <div className="split">
                 <div className="pane">
                   {md === null ? (
-                    <div className="empty"><span className="spin" /></div>
+                    <div className="empty">
+                      <span className="spin" />
+                    </div>
                   ) : (
                     <SourcePane
                       sid={sid}
@@ -483,12 +575,16 @@ export default function App() {
                       onPage={setPage}
                       onPageCount={setPageCount}
                       showMarks={showMarks}
+                      zoom={zoomL}
+                      onZoom={setZoomL}
+                      focusMark={focusMark}
+                      srcPath={srcPath}
                     />
                   )}
                 </div>
                 <div className="pane">
                   {md === null ? (
-                    <div className="empty">读取 .md 中…</div>
+                    <div className="empty">…</div>
                   ) : (
                     <MdPane
                       md={md}
@@ -497,43 +593,50 @@ export default function App() {
                       search={lineSearch}
                       curLine={curLine}
                       onPickLine={pickLine}
+                      zoom={zoomR}
+                      page={page}
+                      focusLine={focusLine}
                     />
                   )}
                 </div>
               </div>
 
+              {/* 裁决区：三个状态用色块 + 文案，符合行业规范 */}
               <div className="verdictbar">
-                <span className="lbl">人工裁决</span>
-                <button className={`vbtn ok ${badge?.trust_state === "ok" ? "sel" : ""}`} onClick={() => doVerdict("ok")}>
-                  一致
-                </button>
-                <button className={`vbtn diff ${badge?.trust_state === "diff_big" ? "sel" : ""}`} onClick={() => doVerdict("diff_big")}>
-                  差异大
-                </button>
-                <button className={`vbtn rej ${badge?.trust_state === "rejected" ? "sel" : ""}`} onClick={() => doVerdict("rejected")}>
-                  不接受
-                </button>
+                <span className="lbl nowrap">{t("verdict.label")}</span>
+                <div className="vgroup">
+                  <button className={`vbtn ok ${badge?.trust_state === "ok" ? "sel" : ""}`} onClick={() => doVerdict("ok")}>
+                    {t("verdict.ok")}
+                  </button>
+                  <button className={`vbtn diff ${badge?.trust_state === "diff_big" ? "sel" : ""}`} onClick={() => doVerdict("diff_big")}>
+                    {t("verdict.diff_big")}
+                  </button>
+                  <button className={`vbtn rej ${badge?.trust_state === "rejected" ? "sel" : ""}`} onClick={() => doVerdict("rejected")}>
+                    {t("verdict.rejected")}
+                  </button>
+                </div>
                 {badge?.trust_state && (
-                  <button onClick={() => doVerdict("")} title="撤销裁决，回到未审">撤销</button>
+                  <button className="ghost sm" onClick={() => doVerdict("")}>
+                    {t("act.revoke")}
+                  </button>
                 )}
-                <div className="divider" style={{ width: 1, height: 20, background: "var(--border)" }} />
+                <div className="vsep" />
                 <div className="reviewer-pick">
-                  <span className="lbl">审核人</span>
+                  <span className="lbl nowrap">{t("verdict.reviewer")}</span>
                   <select value={reviewer} onChange={(e) => setReviewer(e.target.value)}>
-                    <option value="">选择…</option>
+                    <option value="">{t("verdict.pick")}</option>
                     {reviewers.filter((r) => r.enabled).map((r) => (
-                      <option key={r.id || r.name} value={r.name}>{r.name}</option>
+                      <option key={r.id || r.name} value={r.name}>
+                        {r.name}
+                      </option>
                     ))}
                   </select>
-                  <button className="ghost sm" onClick={() => setShowReviewers(true)}>管理</button>
+                  <button className="ghost sm" onClick={() => setShowReviewers(true)}>
+                    {t("verdict.manage")}
+                  </button>
                 </div>
-                <input
-                  className="note"
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  placeholder="裁决备注（可选，写入审计日志）"
-                />
-                {badge?.badge && <span className="dim nowrap">{badge.badge}</span>}
+                <input className="note" value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("verdict.note")} />
+                {!badge?.trust_state && <span className="dim nowrap">{t("verdict.none")}</span>}
               </div>
             </>
           )}
@@ -547,13 +650,15 @@ export default function App() {
           onClose={() => setShowDecide(false)}
           onChanged={refreshStats}
           onReeval={(rel) => {
-            api.compare(rel, sid).then(({ job_id }) => {
-              setJob({ id: job_id, kind: "compare", rel, status: "queued", progress: 0, message: "排队中（重跑识别）", updated_at: "" });
-            }).catch(() => {});
+            api
+              .compare(rel, sid)
+              .then(({ job_id }) =>
+                setJob({ id: job_id, kind: "compare", rel, status: "queued", progress: 0, message: "…", updated_at: "" }),
+              )
+              .catch(() => {});
           }}
         />
       )}
-
       {showSalvage && (
         <SalvagePanel
           sid={sid}
@@ -567,11 +672,10 @@ export default function App() {
           }}
         />
       )}
-
       {showReviewers && (
         <ReviewerPanel
           current={reviewer}
-          onPick={(n) => setReviewer(n)}
+          onPick={setReviewer}
           onClose={async () => {
             setShowReviewers(false);
             const rv = await api.reviewers().catch(() => null);
@@ -579,7 +683,6 @@ export default function App() {
           }}
         />
       )}
-
       {showMgr && (
         <SourceManager
           sources={sources}
@@ -593,10 +696,9 @@ export default function App() {
           onPick={(which) => setPicker(which)}
         />
       )}
-
       {picker && (
         <FolderPicker
-          title={picker === "src_root" ? "选择源文件目录" : "选择 .md 输出镜像目录"}
+          title={picker === "src_root" ? t("src.pickSrc") : t("src.pickMd")}
           onClose={() => setPicker(null)}
           onPick={(p) => {
             setDraft((d) => ({ ...d, [picker]: p }));

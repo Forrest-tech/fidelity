@@ -211,15 +211,54 @@ def _pptx(path):
 
 
 def _msg(path):
+    """抽取 .msg 邮件正文与**全部原始表头**。
+
+    ⚠️ 历史缺陷（2026-10-05 修复）：原先只取 `subject + body`，
+    发件人/收件人/抄送/时间等表头被整段丢弃 —— 这些是邮件的真实内容，
+    丢了就是静默丢数据。现在按固定顺序原样输出，**不做任何翻译或改写**。
+
+    标签用英文（Subject/From/To/…），与上游转换器写出的 md 表格一致，
+    这样左右两栏的同一行才能真正对齐、并被判定为 match。
+    """
     try:
         import extract_msg
     except ImportError:
         return ""
     try:
         m = extract_msg.Message(path)
-        return "\n".join([m.subject or "", m.body or ""])
     except Exception:
         return ""
+    try:
+        parts = []
+
+        def _add(label, value):
+            v = "" if value is None else str(value).strip()
+            # "None"/"null" 是 extract_msg 对缺失字段的字符串化结果，不是真实内容
+            if not v or v.lower() in ("none", "null"):
+                return
+            parts.append("%s: %s" % (label, v))
+
+        _add("Subject", getattr(m, "subject", None))
+        _add("From", getattr(m, "sender", None))
+        _add("To", getattr(m, "to", None))
+        _add("Cc", getattr(m, "cc", None))
+        _add("Bcc", getattr(m, "bcc", None))
+        _add("Date", getattr(m, "date", None))
+        mid = getattr(m, "message_id", None)
+        _add("Message-ID", mid)
+
+        body = m.body or ""
+        if parts:
+            parts.append("")            # 表头与正文之间留一个空行
+        parts.append(body)
+        return "\n".join(parts).strip("\n")
+    except Exception:
+        return ""
+    finally:
+        try:
+            m.close()
+        except Exception:
+            pass
 
 
 # ---------- 大文件保护：子进程抽取 + 超时强杀 ----------

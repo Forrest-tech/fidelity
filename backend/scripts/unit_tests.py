@@ -607,6 +607,51 @@ def test_reviewer_registry():
     check("slug 非空", bool(Cfg._slug("!!!")), Cfg._slug("!!!"))
 
 
+def test_msg_headers_preserved():
+    """★ .msg 表头必须原样保留（用户 2026-10-05 第 10 项）。
+
+    历史缺陷：`_msg` 只取 `subject + body`，把 发件人/收件人/抄送/时间
+    整段丢掉 —— 这些是邮件的真实内容，丢了就是静默丢数据。
+    同时预览层曾**凭空捏造**中文表头（主题/发件人/…），而 .msg 里根本没有
+    中文字段（真实表头是英文 Subject/From/To/Date），于是左栏出现源文件里
+    不存在的字，右侧 md 自然匹配不上，被误判成「md 漏内容」。
+
+    这里用真实的 .msg 样本做回归防线：
+      * 每个非空表头都要出现在抽取结果里；
+      * 标签用英文，与上游转换器写进 md 的表格一致，两侧才能对齐；
+      * 不许出现中文标签（那正是「捏造」的证据）；
+      * 值为 extract_msg 的字符串 "None" 时必须视为缺失，不能输出 `Cc: None`。
+    """
+    import os
+    from app.ingest import parsers
+    sample = (r"C:\Users\Forrest Lin\WorkBuddy\Library\n2_Technical"
+              r"\QLD submission requirements\Email\Hydraulic Plan requirements.msg")
+    if not os.path.exists(sample):
+        print("  (跳过：未找到 .msg 样本)")
+        return
+
+    out = parsers._msg(sample)
+    lines = [l for l in (out or "").splitlines() if l.strip()]
+    labels = [l.split(":", 1)[0] for l in lines if ":" in l]
+
+    check("Subject 被保留", "Subject" in labels, str(labels)[:120])
+    check("From 被保留", "From" in labels, str(labels)[:120])
+    check("To 被保留", "To" in labels, str(labels)[:120])
+    check("Date 被保留", "Date" in labels, str(labels)[:120])
+    check("正文仍被保留", "Good morning" in out, out[:80])
+    # 空字段不能输出成 `Cc: None`
+    check("空字段不输出 None", "Cc: None" not in out and "Bcc: None" not in out, out[:120])
+    # ★ 关键：不得出现捏造的中文表头
+    for cn in ("主题", "发件人", "收件人", "时间"):
+        check("未捏造中文表头「%s」" % cn, cn not in out, out[:120])
+
+    # 表头值必须真的取到内容，而不是空壳标签
+    for l in lines:
+        if l.startswith(("Subject:", "From:", "To:", "Date:")):
+            val = l.split(":", 1)[1].strip()
+            check("表头有实际内容：%s" % l.split(":", 1)[0], len(val) > 0, l)
+
+
 # ==================================================================== 主流程
 def main():
     print("=" * 62)
@@ -616,7 +661,7 @@ def main():
     for fn in (test_normalize, test_strip_md, test_salvage, test_align,
                test_numbers, test_coverage_score, test_count, test_dup,
                test_page, test_perf, test_concurrent, test_locate,
-               test_reviewer_registry):
+               test_reviewer_registry, test_msg_headers_preserved):
         fn()
 
     passed = sum(1 for _, ok, _ in _RESULTS if ok)

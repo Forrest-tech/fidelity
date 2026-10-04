@@ -81,6 +81,13 @@ button {
   line-height: 1.4;
   transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
   white-space: nowrap;
+  /* 关键：按钮默认可以收缩内容并省略，绝不让文字溢出按钮边框（用户报的「超行错乱」）。
+     min-width:0 是 flex 子项能真正收缩的前提，缺了它 ellipsis 不生效。 */
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 button:hover:not(:disabled) { background: var(--surface-hover); border-color: #b9c0cf; }
 button:active:not(:disabled) { background: #eceff5; }
@@ -477,3 +484,144 @@ textarea { resize: vertical; }
 ::-webkit-scrollbar-thumb { background: #ccd2dd; border-radius: 99px; border: 3px solid transparent; background-clip: content-box; }
 ::-webkit-scrollbar-thumb:hover { background: #b3bbc9; background-clip: content-box; }
 ::-webkit-scrollbar-track { background: transparent; }
+
+/* ==========================================================================
+   2026-10-05 新增：i18n / 拖拽调宽 / 多选 / 缩放 / 虚拟滚动 / 双向联动
+   ========================================================================== */
+
+/* ---- 顶栏：语言切换 ---- */
+.langsw { display: inline-flex; border: 1px solid var(--border-strong); border-radius: var(--r); overflow: hidden; flex-shrink: 0; }
+.langsw button {
+  border: none; border-radius: 0; background: var(--surface);
+  padding: 5px 10px; font-size: 12px; color: var(--text-2);
+  /* 关键：语言按钮是短标签，绝不能被压缩后省略成「中…」/「E…」。
+     父容器 .langsw 已 flex-shrink:0，这里按钮自身也不可缩。 */
+  flex-shrink: 0; min-width: auto; max-width: none; overflow: visible;
+}
+.langsw button + button { border-left: 1px solid var(--border); }
+.langsw button.on { background: var(--brand); color: #fff; font-weight: 600; }
+
+/* 顶栏在窄屏时横向滚动，而不是把按钮文字挤到重叠 */
+.header { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.header::-webkit-scrollbar { height: 0; }
+.brand, .header .divider { flex-shrink: 0; }
+.header select.w-reviewer { width: 130px; flex-shrink: 0; }
+
+/* ---- 树：可拖拽调宽 ---- */
+.tree { position: relative; }
+.tree-resizer {
+  position: absolute; top: 0; right: -3px; bottom: 0; width: 7px;
+  cursor: col-resize; z-index: 5; background: transparent;
+}
+.tree-resizer:hover { background: var(--brand-border); }
+
+/* ---- 树：工具条 / 勾选 / 状态色条 ---- */
+.tree-tools {
+  display: flex; align-items: center; gap: 6px; margin-top: 8px;
+  padding-top: 8px; border-top: 1px solid var(--border);
+}
+.tcheck {
+  width: 13px; height: 13px; flex-shrink: 0;
+  border: 1px solid var(--border-strong); border-radius: 3px;
+  background: var(--surface); display: grid; place-items: center;
+  font-size: 9px; line-height: 1; color: #fff; cursor: pointer;
+}
+.tcheck.on { background: var(--brand); border-color: var(--brand); }
+.tcheck.half { background: var(--brand-border); border-color: var(--brand-border); color: #fff; }
+.tcheck:hover { border-color: var(--brand); }
+
+.tstatebar { display: inline-flex; gap: 2px; flex-shrink: 0; }
+.tstatebar i { width: 5px; height: 5px; border-radius: 99px; display: block; }
+
+/* 选中（打开）的文件用品牌色左边条；否则用状态色 —— 一眼区分「已打开」与「审核状态」 */
+.tree-file { border-left: 2px solid transparent; padding-left: 4px; }
+.tree-file.picked { background: var(--brand-soft); }
+.tree-file.picked .tname { font-weight: 600; }
+
+/* ---- 树：底部批量审核 ---- */
+.tree-foot {
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  padding: 8px 10px; border-top: 1px solid var(--border); background: var(--surface);
+}
+.tree-foot .thresh { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-2); flex: 1; min-width: 0; }
+.tree-foot input[type="range"] { flex: 1; min-width: 50px; accent-color: var(--brand); }
+.tree-foot b { font-size: 12px; color: var(--text); min-width: 34px; text-align: right; }
+
+/* ---- 分栏：完整路径条 ---- */
+.pane-path {
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+  padding: 4px 12px; font-size: 11px;
+  background: var(--surface-3); border-bottom: 1px solid var(--border);
+  color: var(--text-2);
+}
+.pane-path .mono { color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; text-align: left; }
+
+/* ---- 分栏：翻页 + 缩放控件 ---- */
+.pager { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.zoomctl { display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0; margin-left: 6px; }
+.zoomctl .sm { min-width: 24px; text-align: center; padding: 3px 6px; }
+.zoomctl .zoomval { min-width: 48px; font-variant-numeric: tabular-nums; }
+
+/* ---- 虚拟滚动容器 ---- */
+.pane-body.virtual { overflow: auto; position: relative; contain: strict; }
+.pane-body.virtual .mdline { left: 0; right: 0; display: flex; align-items: center; }
+
+/* 行高由 JS 决定（虚拟滚动），这里不能写死 height，否则定位会错位 */
+.mdline { box-sizing: border-box; }
+
+/* 右栏被左栏点选时的强调 */
+.mdline.cur { box-shadow: inset 2px 0 0 var(--brand); }
+
+/* 左栏：被右栏点选的高亮块 */
+.pv-hl.focus {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+  background: var(--brand-soft) !important;
+  z-index: 3;
+}
+
+/* ---- 裁决区：三态按钮组 ---- */
+.verdictbar { display: flex; align-items: center; gap: 10px; flex-shrink: 0; padding: 8px 16px;
+  background: var(--surface); border-top: 1px solid var(--border); overflow-x: auto; }
+.vgroup { display: inline-flex; gap: 6px; flex-shrink: 0; }
+.vbtn { font-weight: 600; min-width: 84px; }
+.vbtn.ok { color: var(--green-strong); border-color: var(--green-border); background: var(--green-bg); }
+.vbtn.ok.sel { background: var(--green); color: #fff; border-color: var(--green); }
+.vbtn.diff { color: var(--red); border-color: var(--red-border); background: var(--red-bg); }
+.vbtn.diff.sel { background: var(--red); color: #fff; border-color: var(--red); }
+.vbtn.rej { color: var(--text-2); border-color: var(--border-strong); background: var(--surface-3); }
+.vbtn.rej.sel { background: var(--text-2); color: #fff; border-color: var(--text-2); }
+.reviewer-pick { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.reviewer-pick select { width: 118px; }
+.verdictbar .note { flex: 1; min-width: 140px; }
+
+/* ---- 工具栏竖分隔 ---- */
+.vsep { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
+.toolbar input.w-search { width: 190px; flex-shrink: 0; }
+
+/* ---- 统计条：可点击块 ---- */
+.statsbar { overflow-x: auto; scrollbar-width: none; }
+.statsbar::-webkit-scrollbar { height: 0; }
+button.stat {
+  border: none; background: transparent; border-radius: var(--r);
+  padding: 4px 12px; text-align: left; cursor: pointer; flex-shrink: 0;
+  border-right: 1px solid var(--border); max-width: none; overflow: visible;
+}
+button.stat:hover { background: rgba(26, 115, 232, 0.06); }
+button.stat.on { background: #fff; box-shadow: inset 0 0 0 1px var(--brand-border); }
+
+/* ---- 上传按钮（包一层 label，input 隐藏） ---- */
+.btn.upload { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+  border: 1px solid var(--border-strong); border-radius: var(--r);
+  background: var(--surface); cursor: pointer; font-size: inherit; white-space: nowrap; flex-shrink: 0; }
+.btn.upload input { display: none; }
+
+/* ---- 空态 ---- */
+.empty.pad { padding-top: 80px; }
+
+/* ---- 提示条贴边 ---- */
+.callout.edge { margin: 0; border-radius: 0; border: 0; border-bottom: 1px solid var(--amber-border); }
+
+/* ---- 英文模式：字更窄，行高略降 ---- */
+html[lang="en"] .trow { font-size: 12px; }
+html[lang="en"] .brand-text b { font-size: 13px; }

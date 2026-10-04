@@ -309,16 +309,31 @@ def _as_text(v):
 
 
 def _msg_html(path):
+    """渲染 .msg 预览。
+
+    ⚠️ 历史缺陷（2026-10-05 修复）：这里原本**凭空捏造**了中文表头
+    「主题/发件人/收件人/时间」，而 .msg 里根本没有中文字段（真实表头是英文
+    Subject/From/To/Date）。于是左栏出现源文件里不存在的字，右侧 md 里当然
+    找不到，被误判成「md 漏内容」。现在改为渲染真实表头值，标签与
+    parsers._msg 保持一致，且**原样输出、不翻译**。
+    """
     import extract_msg
     m = extract_msg.Message(path)
     try:
-        head = ("<div class='mail-head'>"
-                "<div><b>主题：</b>%s</div>"
-                "<div><b>发件人：</b>%s</div>"
-                "<div><b>收件人：</b>%s</div>"
-                "<div><b>时间：</b>%s</div></div>"
-                % (_esc(m.subject or ""), _esc(m.sender or ""),
-                   _esc(m.to or ""), _esc(m.date or "")))
+        rows = []
+
+        def _row(label, value):
+            v = "" if value is None else str(value).strip()
+            if not v or v.lower() in ("none", "null"):
+                return
+            rows.append("<div><b>%s:</b> %s</div>" % (_esc(label), _esc(v)))
+
+        _row("Subject", getattr(m, "subject", None))
+        _row("From", getattr(m, "sender", None))
+        _row("To", getattr(m, "to", None))
+        _row("Cc", getattr(m, "cc", None))
+        _row("Date", getattr(m, "date", None))
+        head = ("<div class='mail-head'>%s</div>" % "".join(rows)) if rows else ""
         html = _safe_html(_as_text(m.htmlBody) or "")
         body = html if html.strip() else \
             "<pre class='plain'>%s</pre>" % _esc(_as_text(m.body) or "")

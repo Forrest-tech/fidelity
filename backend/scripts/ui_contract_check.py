@@ -85,6 +85,21 @@ def walk_dirs(node):
             yield x
 
 
+# 源码级防回归用的前端源码目录（backend/scripts → 项目根 → web/src）
+WEB_SRC = os.path.normpath(
+    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                 "..", "web", "src"))
+
+
+def read_src(*parts):
+    """读取 web/src 下的前端源码；不存在返回 None（跳过该检查）。"""
+    p = os.path.normpath(os.path.join(WEB_SRC, *parts))
+    if not os.path.exists(p):
+        return None
+    with open(p, "r", encoding="utf-8") as f:
+        return f.read()
+
+
 def all_tree_files(node):
     for f in node.get("files") or []:
         yield f
@@ -112,8 +127,29 @@ def main():
     for k in ("files", "src_chars", "md_chars", "src_words", "md_words",
               "char_ratio", "word_ratio"):
         need(k in t, "stats.totals.%s" % k)
-    print("  totals: 源 %s 字 → md %s 字（保留 %s%%）"
+    print("  totals: 源 %s 字 → md %s 字（char_ratio %s%%）"
           % (t.get("src_chars"), t.get("md_chars"), t.get("char_ratio")))
+
+    # ★ 数字必须自洽，否则统计条会误导用户（用户 2026-10-05 第 11 项）
+    bs = st.get("by_state") or {}
+    need(sum(bs.values()) == st.get("total"),
+         "★ by_state 各状态之和 == total（否则统计条对不上）",
+         "(sum=%s, total=%s)" % (sum(bs.values()), st.get("total")))
+    need(st.get("evaluated", 0) <= st.get("total", 0),
+         "★ evaluated <= total")
+    need(st.get("reviewed", 0) <= st.get("evaluated", st.get("total", 0)),
+         "★ reviewed <= evaluated")
+    # char_ratio 必须与两个字数自洽，且允许 >100（md 可能因 front-matter 反而更大）
+    if t.get("src_chars"):
+        want = round(100.0 * t["md_chars"] / t["src_chars"], 1)
+        need(abs(float(t.get("char_ratio") or 0) - want) <= 0.5,
+             "★ char_ratio 与 src/md 字数自洽",
+             "(reported=%s, computed=%.1f)" % (t.get("char_ratio"), want))
+    # ★ 界面措辞：ratio>100 时必须说「膨胀」而不是「保留」——否则是误导
+    appx_now = read_src("App.tsx")
+    if appx_now is not None:
+        need("stat.expand" in appx_now,
+             "★ 字数比 >100% 时用「膨胀」措辞，不误写成「保留」")
 
     # ====================================================== 2. /tree 目录树
     print("== 2. /tree（侧栏原目录结构）==")
@@ -414,6 +450,52 @@ def main():
     except urllib.error.HTTPError as e:
         need(e.code == 400, "空姓名被拒绝（400）", "code=%d" % e.code)
 
+    # ============ 6b. /review/batch 批量按阈值审核
+    print("== 6b. /review/batch（阈值批量审核）==")
+    # ★ 路由顺序回归：/review/batch 必须声明在 /review/{rel:path} 之前，
+    #   否则字面量 "batch" 会被 {rel:path} 捕获并返回 422（前端完全不可用）。
+    try:
+        rr = post("review/batch", {"rels": [], "threshold": 90,
+                                   "reviewer": (get("reviewers")["items"] or [{}])[0].get("name", "")})
+        need(isinstance(rr.get("ok"), int), "★ /review/batch 可达（路由顺序正确，未被 {rel} 吞掉）")
+        need(all(k in rr for k in ("ok", "skipped", "already", "no_score")),
+             "批量返回四类计数")
+    except urllib.error.HTTPError as e:
+        need(False, "★ /review/batch 可达（路由顺序正确）", "HTTP %s" % e.code)
+
+    # 非法阈值必须被拒（即使列表为空也要校验，否则前端拿到「成功」却什么都没做）
+    try:
+        post("review/batch", {"rels": [], "threshold": 150, "reviewer": "x"})
+        need(False, "★ 非法阈值被拒绝（>100）")
+    except urllib.error.HTTPError as e:
+        need(e.code == 400, "★ 非法阈值被拒绝（>100）", "code=%d" % e.code)
+    try:
+        post("review/batch", {"rels": [], "threshold": -5, "reviewer": "x"})
+        need(False, "★ 非法阈值被拒绝（<0）")
+    except urllib.error.HTTPError as e:
+        need(e.code == 400, "★ 非法阈值被拒绝（<0）", "code=%d" % e.code)
+
+    # 陌生审核人必须被拒（批量审核同样要可审计）
+    real_name = (get("reviewers")["items"] or [{}])[0].get("name", "")
+    try:
+        post("review/batch", {"rels": [rel_pdf], "threshold": 90,
+                              "reviewer": "__不在名单里的人__"})
+        need(False, "★ 批量审核拒绝陌生审核人")
+    except urllib.error.HTTPError as e:
+        need(e.code == 400, "★ 批量审核拒绝陌生审核人", "code=%d" % e.code)
+
+    # ★ 绝不能用「没测过」的文件凑通过率：auto_score 为空的一律计入 no_score
+    empty = post("review/batch", {"rels": ["__不存在的文件__.pdf"], "threshold": 90,
+                                  "reviewer": real_name})
+    need(empty.get("no_score", 0) >= 1,
+         "★ 无自动分的文件被计入 no_score（不会被误判通过）",
+         str(empty)[:120])
+
+    # 阈值 100 时只有满分文件能通过；不存在的文件绝不能被写成 ok
+    r100 = post("review/batch", {"rels": ["__不存在的文件2__.pdf"], "threshold": 100,
+                                 "reviewer": real_name})
+    need(r100.get("ok") == 0, "★ 不存在的文件不会被写成通过", str(r100)[:120])
+
     # ============ 7. /decision 同样受审核人名单约束（入库决定也要可审计）
     print("== 7. /decision 同样受审核人约束 ==")
     try:
@@ -505,15 +587,6 @@ def main():
 
     # ============================================= 11. 源码级防回归（静默丢数据）
     print("== 11. 源码级防回归 ==")
-    web = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                       "..", "web", "src")
-
-    def read_src(*parts):
-        p = os.path.normpath(os.path.join(web, *parts))
-        if not os.path.exists(p):
-            return None
-        with open(p, "r", encoding="utf-8") as f:
-            return f.read()
 
     mdp = read_src("components", "MdPane.tsx")
     if mdp is None:
@@ -550,6 +623,48 @@ def main():
         need("marks" in sp, "SourcePane 调用 /marks（左栏坐标高亮的数据源）")
         need("previewImg" in sp, "SourcePane 渲染源文件图像")
         need("supported" in sp, "SourcePane 处理 marks 不支持的格式")
+        # 2026-10-05 新增能力：缩放、滚动翻页联动、相邻页预取
+        need("zoom" in sp and "onZoom" in sp, "★ 左栏支持缩放（用户第 8 项）")
+        need("onScroll" in sp and "goto(page + 1)" in sp,
+             "★ 左栏滚动到底自动翻页（用户第 2 项：左右绑定）")
+        need("PREFETCH" in sp and "new Image()" in sp,
+             "★ 左栏预取相邻页，翻页不卡（用户第 2 项：预加载）")
+        need("pane-path" in sp, "★ 左栏显示完整文件路径（用户第 4 项）")
+        need("focusMark" in sp, "★ 左栏支持被右栏反向选中（用户第 9 项）")
+
+    mdp2 = read_src("components", "MdPane.tsx")
+    if mdp2 is not None:
+        # 虚拟滚动：3 万行 md 若全量渲染会卡死浏览器
+        need("OVERSCAN" in mdp2 and "rowRefs" in mdp2.replace("rowRefs", "rowRefs") or "OVERSCAN" in mdp2,
+             "★ MdPane 采用虚拟滚动 + 预加载缓冲（用户第 2 项：顺滑不卡）")
+        need("firstIndexOfPage" in mdp2,
+             "★ MdPane 按源文件页码联动定位（用户第 2 项：绑定翻页）")
+        need("userScrolling" in mdp2,
+             "★ MdPane 用户主动滚动时不抢滚动条（避免与翻页打架）")
+        need("zoom" in mdp2, "★ 右栏支持缩放（用户第 8 项）")
+        # ★ 静默丢数据的回归防线：绝不能按 min(lines, status) 截断渲染
+        need("Math.min(lines.length" not in mdp2,
+             "★ 右栏不按 min(md行,状态行) 截断（防大文件静默丢行）")
+
+    if appx:
+        need("useI18n" in appx or "useLang" in appx,
+             "★ App 接入 i18n（用户第 1 项：中英切换）")
+        need("LangProvider" in (read_src("main.tsx") or ""),
+             "★ i18n Provider 已挂载（main.tsx）")
+        need("reviewBatch" in appx, "★ App 接入批量审核（用户第 12 项）")
+        need("threshold" in appx, "★ 批量审核阈值可配置（用户第 12 项）")
+
+    i18 = read_src("i18n.tsx")
+    if i18 is not None:
+        need("zh" in i18 and "en" in i18, "★ i18n 同时提供中英文案")
+        need("fidelity.lang" in i18, "★ 语言选择被持久化")
+
+    if treex:
+        need("tree-resizer" in treex, "★ 目录树可左右拖拽调宽（用户第 7 项）")
+        need("fidelity.tree.open" in treex, "★ 展开状态持久化（用户第 7 项）")
+        need("expandAll" in treex or "act.expandAll" in treex,
+             "★ 支持全部展开/折叠（用户第 7 项）")
+        need("tcheck" in treex, "★ 目录树支持勾选多选（用户第 12 项）")
 
     print()
     print("=" * 56)
