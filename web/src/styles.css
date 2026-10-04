@@ -260,7 +260,7 @@ textarea { resize: vertical; }
   border: 1px solid transparent;
 }
 .score-pill.good { background: var(--green-bg); color: var(--green-strong); border-color: var(--green-border); }
-.score-pill.mid { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
+.score-pill.mid { background: var(--amber-bg); color: #8a4b00; border-color: var(--amber-border); }
 .score-pill.bad { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
 .score-pill.none { background: var(--surface-3); color: var(--text-2); border-color: var(--border); }
 
@@ -269,7 +269,7 @@ textarea { resize: vertical; }
   border: 1px solid transparent; white-space: nowrap; font-weight: 500;
 }
 .badge.trusted { background: var(--green-bg); color: var(--green-strong); border-color: var(--green-border); }
-.badge.need_review { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
+.badge.need_review { background: var(--amber-bg); color: #8a4b00; border-color: var(--amber-border); }
 .badge.diff_big { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
 .badge.rejected { background: #eceef2; color: var(--text-2); border-color: var(--border-strong); }
 .badge.unreviewed { background: var(--surface-3); color: var(--text-2); border-color: var(--border); }
@@ -307,12 +307,21 @@ textarea { resize: vertical; }
 
 /* ---- 源文件预览（左栏主体） ---- */
 .pv { display: flex; flex-direction: column; height: 100%; min-height: 0; outline: none; }
+/* ★ 缩放修复：这里原来用 `justify-content:center` + `.pv-canvas{width:zoom%}`。
+   flex 容器在子项超出宽度时，**起始边缘的溢出部分无法滚动到**
+   （scrollLeft 恒为 0，左半边永远看不到），于是放大后页面「像是坏了」。
+   改用 margin:auto 居中：溢出时 auto 外边距归零，子项从 0 开始排布，
+   左右两侧都能滚动到，缩放后可以自由平移查看。 */
 .pv-stage {
   flex: 1; overflow: auto; min-height: 0; padding: 12px;
-  display: flex; justify-content: center; align-items: flex-start;
+  display: flex; align-items: flex-start;
   background: #eceff4;
+  /* 滚动到底/顶时给翻页留出缓冲，避免最后一页反复触发 */
+  overscroll-behavior: contain;
+  /* 加载角标要相对本容器定位 */
+  position: relative;
 }
-.pv-canvas { position: relative; display: inline-block; line-height: 0; box-shadow: var(--shadow-2); }
+.pv-canvas { position: relative; display: inline-block; line-height: 0; box-shadow: var(--shadow-2); margin: auto; flex: 0 0 auto; }
 .pv-canvas img { display: block; max-width: 100%; background: #fff; }
 .pv-hl {
   position: absolute; border-radius: 2px; pointer-events: none;
@@ -538,6 +547,27 @@ textarea { resize: vertical; }
 .tree-file.picked { background: var(--brand-soft); }
 .tree-file.picked .tname { font-weight: 600; }
 
+/* ★ 修复「白色字体看不到」：一个文件可以同时是「当前打开」(sel) 和「已勾选」(picked)。
+   .trow.sel 定义在前面（background: var(--brand) 深蓝 + color:#fff），
+   而 .tree-file.picked 定义在后面、特异性相同(0,2,0) → 后者胜出，
+   背景变成浅蓝 --brand-soft，但白字 color:#fff 仍留着 → 白字白底，完全看不见。
+   这里显式声明「选中+勾选」两态并存时的配色，保证文字始终可读。 */
+.tree-file.sel,
+.tree-file.sel.picked {
+  background: var(--brand);
+  color: #fff;
+}
+.tree-file.sel .tname,
+.tree-file.sel .tcount,
+.tree-file.sel .tpath { color: #fff; }
+.tree-file.sel.picked { background: var(--brand-hover); }
+/* 勾选框在深色底上要反色，否则蓝底蓝框同样看不见 */
+.tree-file.sel .tcheck { border-color: rgba(255, 255, 255, 0.75); background: rgba(255, 255, 255, 0.16); }
+.tree-file.sel .tcheck.on { background: #fff; border-color: #fff; color: var(--brand); }
+.tree-file.sel .ticon, .tree-file.sel .twist { color: #fff; opacity: 1; }
+/* 状态圆点在深蓝底上用白边勾出轮廓，保持「不同状态不同颜色」可辨识 */
+.tree-file.sel .tdot { box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.9); }
+
 /* ---- 树：底部批量审核 ---- */
 .tree-foot {
   display: flex; align-items: center; gap: 8px; flex-shrink: 0;
@@ -561,6 +591,20 @@ textarea { resize: vertical; }
 .zoomctl { display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0; margin-left: 6px; }
 .zoomctl .sm { min-width: 24px; text-align: center; padding: 3px 6px; }
 .zoomctl .zoomval { min-width: 48px; font-variant-numeric: tabular-nums; }
+
+/* ---- 翻页加载角标：叠在旧页之上，不清空内容，避免整块闪白 ---- */
+.pv-loading {
+  position: absolute; top: 8px; right: 12px; z-index: 6;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 9px; border-radius: 99px;
+  background: rgba(255, 255, 255, 0.94); border: 1px solid var(--brand-border);
+  color: var(--brand); font-size: 11.5px; font-weight: 500;
+  box-shadow: var(--shadow-1); pointer-events: none;
+}
+
+/* ---- 右栏：整篇/本页 切换 ---- */
+.scopeseg { flex-shrink: 0; }
+.scopeseg button { padding: 4px 10px; font-size: 12px; }
 
 /* ---- 虚拟滚动容器 ---- */
 .pane-body.virtual { overflow: auto; position: relative; contain: strict; }
@@ -586,7 +630,7 @@ textarea { resize: vertical; }
 .vgroup { display: inline-flex; gap: 6px; flex-shrink: 0; }
 .vbtn { font-weight: 600; min-width: 84px; }
 .vbtn.ok { color: var(--green-strong); border-color: var(--green-border); background: var(--green-bg); }
-.vbtn.ok.sel { background: var(--green); color: #fff; border-color: var(--green); }
+.vbtn.ok.sel { background: var(--green-strong); color: #fff; border-color: var(--green-strong); }
 .vbtn.diff { color: var(--red); border-color: var(--red-border); background: var(--red-bg); }
 .vbtn.diff.sel { background: var(--red); color: #fff; border-color: var(--red); }
 .vbtn.rej { color: var(--text-2); border-color: var(--border-strong); background: var(--surface-3); }

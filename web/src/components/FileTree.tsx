@@ -125,6 +125,7 @@ function FileRow({
   onPick: (rel: string, e: React.MouseEvent) => void;
   onTogglePick: (rel: string) => void;
 }) {
+  const [t] = useI18n();
   const active = sel === f.rel;
   const score = f.auto_score;
   const cls = score == null ? "none" : score >= 90 ? "good" : score >= 70 ? "mid" : "bad";
@@ -135,7 +136,7 @@ function FileRow({
       onClick={(e) => onPick(f.rel, e)}
       title={`${f.rel}\n${f.label}${score != null ? ` · ${score}%` : ""}`}
     >
-      <Check checked={picked} onChange={() => onTogglePick(f.rel)} title="选择" />
+      <Check checked={picked} onChange={() => onTogglePick(f.rel)} title={t("tree.selectFile")} />
       <span className="ticon">
         <FileIcon />
       </span>

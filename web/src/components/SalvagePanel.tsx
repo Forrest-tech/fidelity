@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../api";
 import type { SalvageItem } from "../types";
+import { useI18n } from "../i18n";
 
 /**
  * 「原转换无效」清单：这些文件的 .md 是二进制字符串打捞产物
@@ -14,6 +15,7 @@ export default function SalvagePanel(props: {
   onClose: () => void;
   onChanged: () => void;
 }) {
+  const [t] = useI18n();
   const [items, setItems] = useState<SalvageItem[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -51,15 +53,7 @@ export default function SalvagePanel(props: {
 
   const runAll = () => {
     if (!items.length) return;
-    if (
-      !confirm(
-        `将对 ${items.length} 个文件重新转换：\n` +
-          `· 用真实提取结果（CAD 文字 / OCR）重写 .md\n` +
-          `· 原文件自动备份为 .md.salvage.bak，可回滚\n` +
-          `· 转换后立刻重评打分\n\n继续？`
-      )
-    )
-      return;
+    if (!confirm(t("salvage.confirmAll", { n: items.length }))) return;
     run(items.map((i) => i.rel));
   };
 
@@ -67,35 +61,33 @@ export default function SalvagePanel(props: {
     <div className="mask" onClick={props.onClose}>
       <div className="modal wide" onClick={(e) => e.stopPropagation()}>
         <header>
-          <h3>重新转换</h3>
-          <span className="sub">原转换产物是二进制打捞的文件，用真实提取结果重写</span>
+          <h3>{t("salvage.title")}</h3>
+          <span className="sub">{t("salvage.sub")}</span>
           <div className="spacer" />
-          <button onClick={props.onClose}>关闭</button>
+          <button onClick={props.onClose}>{t("salvage.close")}</button>
         </header>
         <div className="body">
           {err && <div className="notice err" style={{ margin: "0 0 11px" }}>{err}</div>}
 
           <div className="callout warn">
-            这些 .md 是原转换管线的「二进制字符串打捞」产物（内容形如
-            <code> AC1032 / RdAkRdAkRdA</code>），不是文档内容，所以自动分很低。
-            <b>问题在转换侧，不在源文件侧。</b> 重写会保留原 front-matter，正文换成真实提取结果，
-            并把原文件备份为 <code>.md.salvage.bak</code>。
+            {t("salvage.desc")} <code>AC1032 / RdAkRdAkRdA</code>.{" "}
+            <b>{t("salveKey.title")}</b> {t("salvage.descTail")}
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 11 }}>
-            <span className="dim num">共 {items.length} 个</span>
+            <span className="dim num">{t("salvage.total", { n: items.length })}</span>
             <div className="spacer" />
             <button className="primary" disabled={busy || !items.length} onClick={runAll}>
-              全部重新转换
+              {t("salvage.runAll")}
             </button>
             <button onClick={load} disabled={busy}>
-              刷新
+              {t("salvage.refresh")}
             </button>
           </div>
 
           {busy && (
             <div className="callout">
-              <span className="spin" /> 正在重新转换并重评，较大的文件需要一些时间…
+              <span className="spin" /> {t("salvage.running")}
             </div>
           )}
           {log.length > 0 && (
@@ -111,23 +103,23 @@ export default function SalvagePanel(props: {
           )}
 
           <div className="list">
-            {items.length === 0 && <div className="empty">没有需要重新转换的文件</div>}
+            {items.length === 0 && <div className="empty">{t("salvage.empty")}</div>}
             {items.map((it) => (
               <div className="lrow" key={it.rel}>
                 <div className="info">
                   <div className="nm">
                     <span className="truncate">{it.rel.split("/").pop()}</span>
-                    {it.auto_score != null && <span className="dim num">当前 {it.auto_score}%</span>}
+                    {it.auto_score != null && <span className="dim num">{t("salvage.current", { n: it.auto_score })}</span>}
                   </div>
                   <div className="pp">{it.rel}</div>
                   <div className="st" style={{ color: "var(--amber)" }}>
-                    {it.engine_b ? `引擎 ${it.engine_b} · ` : ""}
+                    {it.engine_b ? t("salvage.engine", { e: it.engine_b }) : ""}
                     {(it.fail_reasons || "").slice(0, 140)}
                   </div>
                 </div>
                 <div className="a">
                   <button className="vbtn ok" disabled={busy} onClick={() => run([it.rel])}>
-                    重新转换
+                    {t("salvage.runOne")}
                   </button>
                 </div>
               </div>

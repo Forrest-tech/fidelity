@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../api";
 import type { Reviewer } from "../types";
+import { useI18n } from "../i18n";
 
 /**
  * 审核人配置（用户 2026-10-05：不能自由输入，要能管理）。
@@ -18,9 +19,10 @@ export default function ReviewerPanel({
   onPick: (name: string) => void;
   onClose: () => void;
 }) {
+  const [t] = useI18n();
   const [items, setItems] = useState<Reviewer[]>([]);
   const [name, setName] = useState("");
-  const [role, setRole] = useState("审核人");
+  const [role, setRole] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -42,9 +44,9 @@ export default function ReviewerPanel({
     if (!name.trim()) return;
     setBusy(true);
     try {
-      await api.saveReviewer({ name: name.trim(), role: role.trim() || "审核人" });
+      await api.saveReviewer({ name: name.trim(), role: role.trim() || t("reviewer.roleDefault") });
       setName("");
-      setRole("审核人");
+      setRole("");
       await load();
       setErr("");
     } catch (e: any) {
@@ -82,7 +84,7 @@ export default function ReviewerPanel({
   };
 
   const remove = async (r: Reviewer) => {
-    if (!confirm(`删除审核人「${r.name}」？\n\n已产生的裁决记录与审计日志会保留（历史可追溯），\n但此人将不再出现在选择列表中。`)) return;
+    if (!confirm(t("reviewer.confirmRemove", { name: r.name }))) return;
     setBusy(true);
     try {
       await api.deleteReviewer(r.id);
@@ -98,21 +100,21 @@ export default function ReviewerPanel({
     <div className="mask" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <header>
-          <h3>审核人配置</h3>
-          <span className="sub">裁决与入库决定都只能由名单内的人做出，保证审计身份唯一</span>
+          <h3>{t("reviewer.title")}</h3>
+          <span className="sub">{t("reviewer.sub")}</span>
           <div className="spacer" />
-          <button onClick={onClose}>关闭</button>
+          <button onClick={onClose}>{t("src.close")}</button>
         </header>
 
         <div className="body">
           {err && <div className="notice err" style={{ margin: "0 0 11px" }}>{err}</div>}
 
           <div className="callout">
-            当前使用：<b>{current || "未选择"}</b>。在下方点「设为当前」切换，或在底部裁决栏直接下拉选择。
+            {t("reviewer.currentUsing", { name: current || "—" })}
           </div>
 
           <div className="list">
-            {items.length === 0 && <div className="empty">名单为空，请先添加审核人</div>}
+            {items.length === 0 && <div className="empty">{t("reviewer.emptyList")}</div>}
             {items.map((r) => (
               <div className="lrow" key={r.id || r.name}>
                 <div className="info">
@@ -124,40 +126,42 @@ export default function ReviewerPanel({
                         if (e.key === "Enter") (e.target as HTMLInputElement).blur();
                       }}
                       style={{ width: 150, fontWeight: 600, padding: "3px 7px" }}
-                      title="点击改名"
+                      title={t("reviewer.renameTip")}
                       readOnly={!!r.orphan}
                     />
                     <span className="badge unreviewed">{r.role}</span>
-                    {current === r.name && <span className="badge trusted">当前</span>}
-                    {!r.enabled && <span className="badge rejected">已停用</span>}
+                    {current === r.name && <span className="badge trusted">{t("reviewer.current")}</span>}
+                    {!r.enabled && <span className="badge rejected">{t("reviewer.disabled")}</span>}
                     {r.orphan && (
-                      <span className="badge need_review" title="历史数据中的审核人，未登记进名单">
-                        未登记
+                      <span className="badge need_review" title={t("reviewer.unregisteredTip")}>
+                        {t("reviewer.unregistered")}
                       </span>
                     )}
                   </div>
                   <div className="counts" style={{ marginTop: 3 }}>
-                    <span>裁决 <b>{r.verdicts}</b></span>
-                    <span style={{ color: "var(--green)" }}>一致 {r.ok}</span>
-                    <span style={{ color: "var(--red)" }}>差异大 {r.diff_big}</span>
-                    <span>不接受 {r.rejected}</span>
-                    <span>入库决定 {r.decisions}</span>
+                    {t("reviewer.counts", {
+                      v: r.verdicts,
+                      ok: r.ok,
+                      diff: r.diff_big,
+                      rej: r.rejected,
+                      dec: r.decisions,
+                    })}
                   </div>
                 </div>
                 <div className="a">
                   {current !== r.name && r.enabled && (
                     <button className="sm" onClick={() => onPick(r.name)}>
-                      设为当前
+                      {t("reviewer.setCurrent")}
                     </button>
                   )}
                   {!r.orphan && (
                     <button className="sm" disabled={busy} onClick={() => toggle(r)}>
-                      {r.enabled ? "停用" : "启用"}
+                      {r.enabled ? t("reviewer.disable") : t("reviewer.enable")}
                     </button>
                   )}
                   {!r.orphan && (
                     <button className="sm danger" disabled={busy} onClick={() => remove(r)}>
-                      删除
+                      {t("reviewer.remove")}
                     </button>
                   )}
                 </div>
@@ -168,25 +172,25 @@ export default function ReviewerPanel({
           <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
             <div className="row3">
               <div className="field" style={{ margin: 0 }}>
-                <label>姓名</label>
+                <label>{t("reviewer.name")}</label>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && add()}
-                  placeholder="真实姓名或工号"
+                  placeholder={t("reviewer.namePh")}
                 />
               </div>
               <div className="field" style={{ margin: 0 }}>
-                <label>角色</label>
-                <input value={role} onChange={(e) => setRole(e.target.value)} placeholder="审核人" />
+                <label>{t("reviewer.role")}</label>
+                <input value={role} onChange={(e) => setRole(e.target.value)} placeholder={t("reviewer.rolePh")} />
               </div>
               <div />
               <button className="primary" disabled={busy || !name.trim()} onClick={add}>
-                添加
+                {t("reviewer.add")}
               </button>
             </div>
             <div className="help dim" style={{ fontSize: 11.5, marginTop: 6 }}>
-              姓名可点击就地修改；至少保留一位启用中的审核人。
+              {t("reviewer.footNote")}
             </div>
           </div>
         </div>

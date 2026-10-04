@@ -57,6 +57,8 @@ export default function App() {
   const [showMarks, setShowMarks] = useState(true);
   const [onlyDiff, setOnlyDiff] = useState(false);
   const [lineSearch, setLineSearch] = useState("");
+  /** 右栏是否只显示当前源文件页对应的 md 行（与左栏一页对一页）。 */
+  const [pageScoped, setPageScoped] = useState(true);
 
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [threshold, setThreshold] = useState(() => loadNum(THRESH_KEY, 90, 50, 100));
@@ -229,7 +231,7 @@ export default function App() {
   };
 
   const runDeferred = async () => {
-    if (!confirm("重试被延后的大文件（放宽时间预算，耗时较长）。继续？")) return;
+    if (!confirm(t("msg.confirmDeferred"))) return;
     try {
       const { job_id } = await api.batchDeferred(sid);
       setJob({ id: job_id, kind: "batch", rel: "", status: "queued", progress: 0, message: "…", updated_at: "" });
@@ -282,7 +284,7 @@ export default function App() {
       return;
     }
     const rels = Array.from(picked);
-    if (!confirm(`${rels.length} 个文件，正确率 ≥ ${threshold}% 的将标记为「${t("verdict.ok")}」。继续？`)) return;
+    if (!confirm(t("msg.confirmBatchPass", { n: rels.length, th: threshold, label: t("verdict.ok") }))) return;
     try {
       const r = await api.reviewBatch(rels, threshold, reviewer, "");
       setPicked(new Set());
@@ -342,7 +344,7 @@ export default function App() {
         <button className="primary" disabled={busy} onClick={() => runBatch(false)}>
           {t("act.batch")}
         </button>
-        <button disabled={busy} onClick={() => { if (confirm("重跑全部将重新评分所有文件（含已评测），耗时较长。继续？")) runBatch(true); }}>
+        <button disabled={busy} onClick={() => { if (confirm(t("msg.confirmRebatch"))) runBatch(true); }}>
           {t("act.rebatch")}
         </button>
         <button disabled={busy} onClick={runDeferred}>
@@ -596,6 +598,8 @@ export default function App() {
                       zoom={zoomR}
                       page={page}
                       focusLine={focusLine}
+                      pageScoped={pageScoped}
+                      onPageScoped={setPageScoped}
                     />
                   )}
                 </div>

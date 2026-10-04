@@ -16,6 +16,7 @@ MdPane.tsx / ReviewerPanel.tsx 里读到的每一个字段都在真实 API 响�
 """
 import json
 import os
+import re
 import sys
 import urllib.error
 import urllib.parse
@@ -98,6 +99,109 @@ def read_src(*parts):
         return None
     with open(p, "r", encoding="utf-8") as f:
         return f.read()
+
+
+# --------------------------------------------------------------------------
+# i18n 静态分析：真正解析词表，而不是只 grep「zh/en 是否存在」
+# --------------------------------------------------------------------------
+def _dict_block(src, lang):
+    """截出 DICT 里某个语言的小节文本。"""
+    m = re.search(r"\n\s*%s:\s*\{" % re.escape(lang), src)
+    if not m:
+        return ""
+    i = m.end() - 1
+    depth = 0
+    for j in range(i, len(src)):
+        if src[j] == "{":
+            depth += 1
+        elif src[j] == "}":
+            depth -= 1
+            if depth == 0:
+                return src[i:j + 1]
+    return src[i:]
+
+
+def _dict_keys(src, lang):
+    """取出某语言小节里所有的 "key": "…" 键。"""
+    blk = _dict_block(src, lang)
+    return set(re.findall(r'"([a-zA-Z][\w.]*)"\s*:', blk))
+
+
+def _placeholders(src, lang, key):
+    """取某个 key 的文案里出现的 {xxx} 占位符集合。"""
+    blk = _dict_block(src, lang)
+    m = re.search(r'"%s"\s*:\s*"((?:[^"\\]|\\.)*)"' % re.escape(key), blk)
+    if not m:
+        return set()
+    return set(re.findall(r"\{(\w+)\}", m.group(1)))
+
+
+def _effect_deps(src, call):
+    """找出包含 `call(` 的那个 useEffect 所依赖的变量集合。
+
+    用于守住「翻页不要重跑与页码无关的请求」这类性能不变量：
+    依赖数组里出现 page，就意味着每翻一页都会重新请求一次。
+    """
+    i = src.find(call)
+    while i != -1:
+        # 从调用处往前找最近的 useEffect(，往后找它的依赖数组
+        start = src.rfind("useEffect(", 0, i)
+        if start == -1:
+            return set()
+        tail = src[i:]
+        m = re.search(r"\},\s*\[([^\]]*)\]\s*\)", tail)
+        if m:
+            return set(re.findall(r"[A-Za-z_$][\w$]*", m.group(1)))
+        i = src.find(call, i + 1)
+    return set()
+
+
+# ★ 允许保留中文的源码位置：注释与「必须原样呈现」的源文内容
+_CJK_OK = re.compile(
+    r"(AC1032|RdAkRdAkRdA)"  # 打捞产物样本串，是技术证据不是界面文案
+)
+
+
+def _hardcoded_cjk():
+    """扫出仍写死在 JSX/逻辑里的中文界面文案。
+
+    判定方式：逐行找含 CJK 的**字符串字面量**或 JSX 文本节点，并排除
+      * 注释行（// 、* 、/* ）
+      * import 语句
+      * 含 t( / t(" 的行（已国际化）
+      * 明确的源文内容常量
+    这样才能真正挡住「设置页/弹窗里漏翻译」—— 只查 key 存在是查不出来的。
+    """
+    hits = []
+    # i18n.tsx 本身就是词表 —— 它的中文正是「已国际化」的文案，不是硬编码残留
+    files = ["App.tsx"] + [
+        "components/%s" % f for f in os.listdir(os.path.join(WEB_SRC, "components"))
+        if f.endswith(".tsx")
+    ]
+    cjk = re.compile(r"[\u4e00-\u9fff]")
+    for rel in files:
+        src = read_src(rel)
+        if not src:
+            continue
+        for ln_no, raw in enumerate(src.splitlines(), 1):
+            line = raw.strip()
+            if not cjk.search(line):
+                continue
+            if line.startswith(("//", "*", "/*", "<!--")) or "*/" in line:
+                continue
+            if line.startswith("import "):
+                continue
+            if _CJK_OK.search(line):
+                continue
+            # 已国际化的行：t("...") / t('...')
+            if re.search(r"\bt\(", line) or re.search(r"\bt\(\"", line):
+                continue
+            # 只保留「字符串字面量里含中文」或「>中文<」的 JSX 文本
+            if re.search(r'"[^"]*[\u4e00-\u9fff][^"]*"', line) or \
+               re.search(r"'[^']*[\u4e00-\u9fff][^']*'", line) or \
+               re.search(r">[^<>{}]*[\u4e00-\u9fff][^<>{}]*<", line):
+                hits.append("%s:%d %s" % (rel, ln_no, line[:70]))
+    return hits
 
 
 def all_tree_files(node):
@@ -659,12 +763,99 @@ def main():
         need("zh" in i18 and "en" in i18, "★ i18n 同时提供中英文案")
         need("fidelity.lang" in i18, "★ 语言选择被持久化")
 
+        # ★ 中英文案**逐 key 对齐**（用户 2026-10-05：所有涉及语言的地方都要有中英）
+        # 之前只检查了「zh/en 都存在」，漏译的 key 照样能通过测试 ——
+        # 结果设置页/弹窗里全是中文。这里真正解析出两边的 key 集合做差集。
+        zh_keys = _dict_keys(i18, "zh")
+        en_keys = _dict_keys(i18, "en")
+        need(bool(zh_keys) and bool(en_keys), "★ i18n 词表可解析（zh/en）")
+        only_zh = sorted(zh_keys - en_keys)
+        only_en = sorted(en_keys - zh_keys)
+        need(not only_zh, "★ 每个中文 key 都有英文翻译", "缺英文：%s" % ", ".join(only_zh[:12]))
+        need(not only_en, "★ 每个英文 key 都有中文翻译", "缺中文：%s" % ", ".join(only_en[:12]))
+        # 占位符必须一致：{n} 与 {total} 混用会让英文界面出现 "{n}" 这种裸露占位符
+        bad_ph = [k for k in sorted(zh_keys & en_keys)
+                  if set(_placeholders(i18, "zh", k)) != set(_placeholders(i18, "en", k))]
+        need(not bad_ph, "★ 中英文占位符一致（不出现裸露 {n}）", "不一致：%s" % ", ".join(bad_ph[:12]))
+
+    # ★ 界面文案不允许残留硬编码中文（用户 2026-10-05 第 5 项）
+    # 白名单：注释、文件名/扩展名常量、以及「必须原样呈现」的源文内容。
+    untranslated = _hardcoded_cjk()
+    need(not untranslated, "★ 前端无硬编码中文界面文案（全部走 i18n）",
+         "残留：%s" % " | ".join(untranslated[:8]))
+
+    # ---- 本轮 5 项反馈的针对性回归 ----
+    sp3 = read_src("components", "SourcePane.tsx")
+    if sp3:
+        need("WHEEL_PAGE_THRESHOLD" in sp3 and "wheelAcc" in sp3,
+             "★ 滚轮可翻页（不依赖滚动条，图片比视口矮也能翻）")
+        # ★ React 18 把 wheel 注册为 passive 监听器，onWheel 里的 preventDefault()
+        #   会被浏览器忽略 —— 必须用原生 addEventListener 显式 passive:false。
+        need("addEventListener(\"wheel\"" in sp3 and "passive: false" in sp3,
+             "★ 滚轮用原生非 passive 监听器（React onWheel 的 preventDefault 会失效）")
+        need("onWheel=" not in sp3,
+             "★ 未使用 React onWheel 接管滚轮（会静默失效）")
+        need("PREFETCH_MARKS" in sp3 and "warmedMarks" in sp3,
+             "★ 翻页预取 marks（最慢的接口，提前热好）")
+        need("pv-loading" in sp3 and 't("pane.loadingPage")' in sp3,
+             "★ 翻页时保留旧页并显示加载角标（不再整块闪白）")
+        need("canvasW" in sp3 and "ResizeObserver" in sp3,
+             "★ 缩放按实际像素生效（修复放大缩小无效）")
+        need("ArrowRight" in sp3 and "PageDown" in sp3,
+             "★ 支持键盘翻页（←/→/PageUp/PageDown/Home/End）")
+        # meta 必须与 page 解绑，否则每次翻页都重跑 /preview/meta
+        # 取 previewMeta 所在的整个 useEffect 体，看它的依赖数组里有没有 page。
+        need(_effect_deps(sp3, "previewMeta") == {"rel", "sid"},
+             "★ 页数 meta 只随文件变化，不随翻页重复请求",
+             "实际依赖：%s" % sorted(_effect_deps(sp3, "previewMeta")))
+
+    mdp3 = read_src("components", "MdPane.tsx")
+    if mdp3:
+        need("pageScoped" in mdp3 and "scoped" in mdp3,
+             "★ 右栏支持按页显示（与左栏一页对一页）")
+        need("md.scopeAll" in mdp3 and "md.scopePage" in mdp3,
+             "★ 右栏可在「整篇 / 本页」间切换，且默认按页")
+        need("md.pageCount" in mdp3,
+             "★ 按页时显示「本页 N / 全篇 M」，不会静默隐藏数据")
+        need("md.pageEmpty" in mdp3,
+             "★ 本页无对应行时给出明确说明（不显示空白误导用户）")
+        need("beyondCompareCap" in mdp3 and "md.pageBeyondCap" in mdp3,
+             "★ 区分「本页超出比对上限」与「转换漏内容」（两者结论相反，不能混说）")
+        need("canScope" in mdp3,
+             "★ 无页码映射的格式自动退回整篇（不会变成空白页）")
+
+    css3 = read_src("styles.css")
+    if css3:
+        need(".tree-file.sel.picked" in css3,
+             "★ 修复选中+勾选并存时白字白底（文字不可见）")
+        need("justify-content: center" not in css3.split(".pv-stage")[1][:400]
+             if ".pv-stage" in css3 else True,
+             "★ 缩放容器不再用 justify-content:center（溢出起始边无法滚动）")
+        need("margin: auto" in css3, "★ 缩放容器用 margin:auto 居中，两侧都可平移")
+        need(".pv-loading" in css3, "★ 翻页加载角标有对应样式")
+
     if treex:
         need("tree-resizer" in treex, "★ 目录树可左右拖拽调宽（用户第 7 项）")
         need("fidelity.tree.open" in treex, "★ 展开状态持久化（用户第 7 项）")
         need("expandAll" in treex or "act.expandAll" in treex,
              "★ 支持全部展开/折叠（用户第 7 项）")
         need("tcheck" in treex, "★ 目录树支持勾选多选（用户第 12 项）")
+        need("useI18n" in treex, "★ FileTree 接入 i18n（含 FileRow 的勾选提示）")
+
+    # ★ 所有弹窗/面板都必须接入 i18n（设置页、决定队列、重新转换、审核人、数据源、目录选择）
+    for comp, label in (
+        ("DecisionsPanel.tsx", "待决定队列"),
+        ("SalvagePanel.tsx", "重新转换"),
+        ("ReviewerPanel.tsx", "审核人配置"),
+        ("SourceManager.tsx", "数据源管理"),
+        ("FolderPicker.tsx", "目录选择"),
+    ):
+        src = read_src("components", comp)
+        if src is not None:
+            need("useI18n" in src, "★ %s 接入 i18n" % label)
+            need("confirm(" not in src or "t(\"msg." in src or "confirm(t(" in src
+                 or "confirm(\n" in src and "t(" in src,
+                 "★ %s 的 confirm 文案已国际化" % label)
 
     print()
     print("=" * 56)

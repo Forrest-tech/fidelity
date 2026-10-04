@@ -3,10 +3,11 @@
 
   python scripts/run_all_tests.py
 
-三个套件：
+四个套件：
   1. unit_tests.py        101 项 —— 核心比对算法（归一化/对齐/评分/字数/性能/并发）
   2. test_router.py        75 项 —— 格式路由分诊与降级
-  3. ui_contract_check.py  74 项 —— API↔UI 契约（需服务已在 8000 运行）
+  3. check_contrast.py     14 项 —— 界面文字对比度（防「白字看不到」复发）
+  4. ui_contract_check.py 269 项 —— API↔UI 契约 + i18n 覆盖（需服务已在 8000 运行）
 
 任何一项失败即整体失败（非零退出码），可直接接 CI。
 """
@@ -33,6 +34,7 @@ def main():
     suites = [
         ("unit_tests.py", False),
         ("test_router.py", False),
+        ("check_contrast.py", False),
         ("ui_contract_check.py", True),
     ]
     codes = {}

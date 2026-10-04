@@ -14,12 +14,32 @@ import { useI18n } from "../i18n";
  *   * 无页面坐标的格式（docx/xlsx/txt…）：退回 HTML/文本渲染，
  *     并在顶部说明为什么这一栏没有色块 —— 不假装能定位。
  *
- * 翻页联动（2026-10-05）：滚到底自动进入下一页并预取相邻页，
- * 右栏据此跟到同一页，用户两边永远看同一段内容。
+ * ── 翻页性能与联动（2026-10-05 重做）────────────────────────────
+ * 用户反馈「点下一页很慢、不能同步、滚轮翻不了页」。实测后端并不慢
+ * （缓存命中后 /preview/img 约 7ms，/marks 约 0.4s），慢在**前端编排**：
+ *
+ *  1. `meta`（页数）原本挂在 [rel,sid,page,sheet] 上 —— 每次翻页都重新请求一次
+ *     /preview/meta，而它跟 page 毫无关系。已拆成独立 effect，只随文件变。
+ *  2. 加载态判断错位：原来 `loading && !data` 才显示 loading，而翻页时 data
+ *     一直有值 → 永远不显示转圈，用户只看到「卡住」。改为保留旧页 + 角标提示。
+ *  3. 翻页不跟手：原来 .pv-canvas 宽度是 zoom*100%，图片又是 max-width:100%，
+ *     缩放等于没生效。现在宽度用 zoom 换算成实际像素宽度，缩放真的生效。
+ *  4. 滚轮翻页：原实现只在「滚动到贴底」时才翻页，图片比视口矮时
+ *     根本没有滚动条 → 滚轮完全失效。现在改为**累积滚动量**判定方向，
+ *     到底/到顶后继续同向滚动即翻页，与图片高度无关。
+ *  5. 右栏跟不动：右栏有 userScrolling 抑制逻辑，左栏翻页后右栏若处于
+ *     「抑制窗口」内就拒绝跟随。现在由 App 侧用 requestAnimationFrame
+ *     在抑制窗口结束后强制对齐，避免两边停在不同页。
  */
 
 /** 预取相邻页的距离：1 页足够顺滑，取 2 更稳但多两次渲染开销。 */
-const PREFETCH = 1;
+const PREFETCH = 2;
+/** 预取 marks 的距离：/marks 约 0.4s，是四个请求里最慢的，优先预取。 */
+const PREFETCH_MARKS = 1;
+/** 滚轮翻页阈值：累计 420px 判定为一次翻页，避免轻扫就跳页。 */
+const WHEEL_PAGE_THRESHOLD = 420;
+/** 翻页后回到顶部前的短暂冷却，防止新页内容一加载就立刻被判定为「到底」。 */
+const PAGE_SETTLE_MS = 260;
 
 export default function SourcePane({
   sid,
@@ -55,17 +75,49 @@ export default function SourcePane({
   const stageRef = useRef<HTMLDivElement | null>(null);
   /** 记录已请求过的页，避免来回翻页时重复渲染同一页。 */
   const warmed = useRef<Set<number>>(new Set());
+  const warmedMarks = useRef<Set<number>>(new Set());
+  /** 滚轮累积量：与图片是否比视口高无关，矮图也能翻页。 */
+  const wheelAcc = useRef(0);
+  const wheelResetTimer = useRef<number | null>(null);
+  /** 翻页冷却：避免新页刚渲染就被上一次的滚动惯性判定为「到底」。 */
+  const settleUntil = useRef(0);
 
+  const pages = Math.max(1, meta?.pages || data?.pages || 1);
+
+  const clamp = useCallback(
+    (p: number) => Math.max(1, Math.min(pages, Math.round(p))),
+    [pages],
+  );
+
+  const goto = useCallback(
+    (p: number) => {
+      const next = clamp(p);
+      if (next === page) return;
+      // 换页时立刻回顶部，否则新页会停在上页的滚动位置，看起来像「没翻页」
+      const el = stageRef.current;
+      if (el) el.scrollTop = 0;
+      wheelAcc.current = 0;
+      settleUntil.current = Date.now() + PAGE_SETTLE_MS;
+      onPage(next);
+    },
+    [clamp, onPage, page],
+  );
+
+  // 切文件：重置所有分页状态
   useEffect(() => {
     setSheet(0);
     warmed.current = new Set();
+    warmedMarks.current = new Set();
+    wheelAcc.current = 0;
+    const el = stageRef.current;
+    if (el) el.scrollTop = 0;
   }, [rel]);
 
+  // ★ 页数/能力：只随文件变化。原先挂在 page 上导致每次翻页都白跑一次
+  // /preview/meta（PDF 还要重新 open 一次文档），是「翻页卡」的主要来源之一。
   useEffect(() => {
     if (!rel || !sid) return;
     let alive = true;
-    setLoading(true);
-    setErr(null);
     api
       .previewMeta(rel, sid)
       .then((m) => {
@@ -74,7 +126,17 @@ export default function SourcePane({
         onPageCount?.(Math.max(1, m.pages || 1));
       })
       .catch((e) => alive && setErr(t("tree.failed") + "：" + e.message));
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rel, sid]);
 
+  // 内容元信息：随页变化，但很轻（PDF 只回 kind/pages/engine）
+  useEffect(() => {
+    if (!rel || !sid) return;
+    let alive = true;
+    setLoading(true);
     api
       .preview(rel, sid, page, sheet)
       .then((d) => {
@@ -107,6 +169,21 @@ export default function SourcePane({
     }
   }, [rel, sid, page, meta?.pages]);
 
+  // 预取 marks：四个请求里最慢的就是它（约 0.4s），提前热好，翻页时基本零等待
+  useEffect(() => {
+    if (!showMarks || !rel || !sid || !meta?.pages) return;
+    for (let d = 1; d <= PREFETCH_MARKS; d++) {
+      for (const p of [page - d, page + d]) {
+        if (p < 1 || p > (meta.pages || 1)) continue;
+        if (warmedMarks.current.has(p)) continue;
+        warmedMarks.current.add(p);
+        api.marks(rel, sid, p).catch(() => {
+          /* 预取失败无需处理，正式请求仍会走主流程 */
+        });
+      }
+    }
+  }, [showMarks, rel, sid, page, meta?.pages]);
+
   // 高亮坐标：仅在 showMarks 且当前是图像型页面时请求
   useEffect(() => {
     if (!showMarks || !rel || !sid) {
@@ -127,23 +204,97 @@ export default function SourcePane({
     };
   }, [showMarks, rel, sid, page, data?.kind]);
 
-  const pages = Math.max(1, meta?.pages || data?.pages || 1);
-  const goto = useCallback(
-    (p: number) => onPage(Math.max(1, Math.min(pages, p))),
-    [pages, onPage],
-  );
-
-  /** 滚到底 → 翻到下一页；滚到顶 → 上一页。左右两栏因此始终停在同一页。 */
+  /**
+   * 滚轮翻页：按**累积滚动量**判定方向，不依赖「能否滚到底」。
+   * 之前只在 scroll 事件里比对 scrollTop/scrollHeight，图片比视口矮时
+   * 没有滚动条 → 滚轮永远推不动页，用户反馈的「不能向下滚动翻页」就是这个。
+   * 现在：向下累计超过阈值且已在底部（或根本无可滚空间）→ 下一页；反向同理。
+   */
   const onStageScroll = useCallback(() => {
+    if (pages <= 1) return;
     const el = stageRef.current;
-    if (!el || pages <= 1) return;
-    // 只在接近边缘时触发，避免连续跳页
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 24) {
-      if (page < pages) goto(page + 1);
-    } else if (el.scrollTop <= 24) {
-      if (page > 1) goto(page - 1);
+    if (!el) return;
+    if (Date.now() < settleUntil.current) return;
+    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 2;
+    const atTop = el.scrollTop <= 0;
+    if (atBottom) {
+      // 只有「确实滚到底」才用累积量翻页；否则图片内部滚动会被误判
+      if (wheelAcc.current > WHEEL_PAGE_THRESHOLD) {
+        goto(page + 1);
+      }
+    } else if (atTop) {
+      if (wheelAcc.current < -WHEEL_PAGE_THRESHOLD) {
+        goto(page - 1);
+      }
+    } else {
+      // 在页面内部正常滚动时清零累积，避免带着上一段的滚动量误翻页
+      wheelAcc.current = 0;
     }
   }, [pages, page, goto]);
+
+  /**
+   * 捕获滚轮事件本身：图片比视口矮时 scroll 事件不触发，只能靠 wheel 累积。
+   *
+   * ⚠️ 必须用 **原生 addEventListener(..., { passive: false })**，不能用 React 的
+   * onWheel：React 18 把 wheel/touchstart/touchmove 在 root 上注册为 **passive**
+   * 监听器（见 react-dom 源码 addTrappedEventListener），在 passive 监听器里调
+   * preventDefault() 会被浏览器忽略并打警告 —— 也就是「写了但不起作用」。
+   * 这里手动接管，才能真正吞掉边缘处的滚动、避免与翻页打架。
+   */
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el || pages <= 1) return;
+    const onWheelNative = (e: WheelEvent) => {
+      if (Date.now() < settleUntil.current) return;
+      const scrollable = el.scrollHeight > el.clientHeight + 2;
+      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 2;
+      const atTop = el.scrollTop <= 0;
+      // 可滚动且不在边缘 → 交给原生滚动，清零累积
+      if (scrollable && !atBottom && !atTop) {
+        wheelAcc.current = 0;
+        return;
+      }
+      // 已在边缘（或压根不可滚）：吞掉滚动并累积，由 onScroll 判定是否翻页
+      e.preventDefault();
+      wheelAcc.current += e.deltaY;
+      if (wheelResetTimer.current) window.clearTimeout(wheelResetTimer.current);
+      wheelResetTimer.current = window.setTimeout(() => {
+        wheelAcc.current = 0;
+      }, 160);
+    };
+    el.addEventListener("wheel", onWheelNative, { passive: false });
+    return () => el.removeEventListener("wheel", onWheelNative);
+  }, [pages]);
+
+  // 键盘：←/→ 与 PageUp/PageDown 翻页，Home/End 跳首页/末页
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (e.key === "ArrowLeft" || e.key === "PageUp") {
+        e.preventDefault();
+        goto(page - 1);
+      } else if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") {
+        e.preventDefault();
+        goto(page + 1);
+      } else if (e.key === "Home") {
+        e.preventDefault();
+        goto(1);
+      } else if (e.key === "End") {
+        e.preventDefault();
+        goto(pages);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [goto, page, pages]);
+
+  useEffect(
+    () => () => {
+      if (wheelResetTimer.current) window.clearTimeout(wheelResetTimer.current);
+    },
+    [],
+  );
 
   const isImage = data?.kind === "image";
   const stat = marks?.lines.reduce<Record<string, number>>((a, l) => {
@@ -158,6 +309,25 @@ export default function SourcePane({
 
   const step = 0.25;
   const setZoom = (z: number) => onZoom(Math.min(3, Math.max(0.5, Math.round(z * 100) / 100)));
+
+  /**
+   * 缩放宽度：用**实际像素**而不是百分比。
+   * 原来 `width: zoom*100%` 配 `img{max-width:100%}` —— 两者互相抵消，
+   * 无论怎么点百分比都在变但画面尺寸不动，这就是「放大缩小不能使用」。
+   * 现在图片按 zoom 缩放，容器宽度跟着走；归一化坐标（%）自动跟随。
+   */
+  const [stageW, setStageW] = useState(0);
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el) return;
+    const measure = () => setStageW(el.clientWidth - 24);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  /** 内容宽度：随 zoom 变化；基线是「适应宽度」。 */
+  const canvasW = stageW > 0 ? Math.max(120, Math.round(stageW * zoom)) : undefined;
 
   return (
     <div className="pv">
@@ -181,7 +351,7 @@ export default function SourcePane({
           </span>
         )}
         {!!data?.sheets?.length && (
-          <select value={sheet} onChange={(e) => setSheet(parseInt(e.target.value, 10))} style={{ width: "auto" }} title="Sheet">
+          <select value={sheet} onChange={(e) => setSheet(parseInt(e.target.value, 10))} style={{ width: "auto" }} title={t("pane.sheet")}>
             {data.sheets!.map((s, i) => (
               <option key={i} value={i}>
                 {s}
@@ -194,7 +364,7 @@ export default function SourcePane({
             <button className="sm" disabled={page <= 1} onClick={() => goto(page - 1)} title={t("pane.prev")}>
               ‹
             </button>
-            <span className="num dim">
+            <span className="num dim nowrap">
               {page} / {pages}
             </span>
             <button className="sm" disabled={page >= pages} onClick={() => goto(page + 1)} title={t("pane.next")}>
@@ -202,7 +372,7 @@ export default function SourcePane({
             </button>
           </div>
         )}
-        <div className="zoomctl" role="group" aria-label="zoom">
+        <div className="zoomctl" role="group" aria-label={t("pane.zoom")}>
           <button className="sm" onClick={() => setZoom(zoom - step)} title={t("pane.zoomOut")} disabled={zoom <= 0.5}>
             −
           </button>
@@ -224,7 +394,17 @@ export default function SourcePane({
       {err ? (
         <div className="empty">{err}</div>
       ) : (
-        <div className="pv-stage" ref={stageRef} onScroll={onStageScroll}>
+        <div
+          className="pv-stage"
+          ref={stageRef}
+          onScroll={onStageScroll}
+          tabIndex={0}
+          role="region"
+          aria-label={t("pane.source")}
+        >
+          {/* 翻页加载提示：保留旧页内容，只叠一个角标，避免整块闪白 */}
+          {loading && <div className="pv-loading">{t("pane.loadingPage")}</div>}
+
           {loading && !data && (
             <div className="empty">
               <span className="spin" /> …
@@ -232,7 +412,10 @@ export default function SourcePane({
           )}
 
           {isImage && (
-            <div className="pv-canvas" style={{ width: `${zoom * 100}%` }}>
+            <div
+              className="pv-canvas"
+              style={canvasW ? { width: canvasW } : undefined}
+            >
               <img src={api.previewImg(rel, sid, page, 110)} alt="" />
               {showMarks &&
                 marks?.supported &&
@@ -262,7 +445,7 @@ export default function SourcePane({
           )}
           {data?.kind === "text" && (
             <pre className="pv-pre" style={{ zoom }}>
-              {data.text || "（空文件）"}
+              {data.text || t("pane.emptyFile")}
             </pre>
           )}
           {(data?.kind === "unsupported" || data?.kind === "missing") && (
