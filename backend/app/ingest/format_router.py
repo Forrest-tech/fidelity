@@ -103,7 +103,7 @@ SCAN_TEXT_FLOOR = 80
 
 def _pdf_mupdf(path, max_pages):
     """PyMuPDF 抽文本。这是**当前实测最快的引擎**：
-    4.6MB 矢量/�� CAD 图纸 PDF —— pymupdf 1.97s vs pypdf 48.4s（快 25 倍）。
+    4.6MB 矢量图 CAD 图纸 PDF —— pymupdf 1.97s vs pypdf 48.4s（快 25 倍）。
     历史教训：曾把 pypdf 设为主引擎（因为它比 pdfplumber 快），但在矢量图上
     pypdf 依然病态（单文件近 1 分钟），用户点开就以为系统卡死。
     """

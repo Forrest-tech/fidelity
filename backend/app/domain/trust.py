@@ -40,11 +40,13 @@ def compute_state(human_verdict, auto_score):
 def set_verdict(rel, verdict, reviewer="local", note=""):
     """写人工裁决 + 审计日志。verdict ∈ {ok, diff_big, rejected, ""/None(撤销裁决)}。
 
-    ⚠️ 撤销时必须**一并清空 reviewer 与 note**。
+    ⚠️ 撤销时必须**一并清空 reviewer 与 note，并删除该行**。
     早期版本只把 trust_state 置空、审核人姓名照旧留着，于是产生
     「某审核人审过、但没有结论」的幽灵记录 —— 界面上显示为"未审"，
-    却在 reviewer_stats 里给该审核人记了工作量，审计账目对不上。
+    却在 reviewer_stats 里给该审核人记了工作量，审计账目对不上；
+    badges/统计也会把它算成一条真实记录。
     「谁签的字」和「签了什么结论」必须同时存在或同时消失。
+    审计日志（file_trust_log）保留 ——「曾经审过、后来撤销」这件事要留痕。
     """
     now = db.now()
     # 撤销：清空结论 ⇒ 身份与备注一并清空
@@ -59,8 +61,7 @@ def set_verdict(rel, verdict, reviewer="local", note=""):
             rev = (row["rev_no"] or 0) + 1 if row else 1
             # 撤销：直接删行。只置空会留下一条「无主空行」——
             # badges/统计仍会把它算成一条记录，界面上出现没有结论、
-            # 没有审核人的幽灵条目。审计日志保留（file_trust_log），
-            # 「曾经审过、后来撤销」这件事本身要留痕。
+            # 没有审核人的幽灵条目。
             if not verdict:
                 con.execute("DELETE FROM file_trust WHERE rel=?", (rel,))
             else:
@@ -394,4 +395,3 @@ def reviewer_stats():
     finally:
         con.close()
     return out
-

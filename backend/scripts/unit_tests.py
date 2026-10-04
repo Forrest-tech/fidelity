@@ -534,14 +534,35 @@ def test_reviewer_registry():
     first = rvs[0]
     eq("按 id 能查到", (Cfg.resolve_reviewer_id(first["id"]) or {}).get("name"),
        first["name"])
-    eq("按姓名能查到（大小写不敏感）",
+    eq("按姓名能查到（完全一致）",
        (Cfg.resolve_reviewer_id(first["name"]) or {}).get("id"), first["id"])
-    eq("按姓名小写变体能查到（防身份分裂）",
-       (Cfg.resolve_reviewer_id(first["name"].lower()) or {}).get("id"),
+    # ⚠️ 下面几条必须真的走「忽略大小写/空白」这条分支。
+    # 若实现只做精确匹配，它们会**假通过** —— 因为默认 id 恰好等于
+    # 姓名的小写形式（forrest），一 lowercase 就撞上了。
+    # 所以这里用**真正不同于原名**的探针：swapcase + 首尾空白。
+    # （曾用 .capitalize() 做过探针，但它对 "Forrest" 返回原值，等于没测。）
+    eq("姓名大小写变体 → 同一人（防身份分裂）",
+       (Cfg.resolve_reviewer_id(first["name"].swapcase()) or {}).get("id"),
        first["id"])
+    eq("姓名带首尾空白 → 同一人",
+       (Cfg.resolve_reviewer_id("  %s  " % first["name"]) or {}).get("id"),
+       first["id"])
+    eq("姓名混合大小写+空白 → 同一人",
+       (Cfg.resolve_reviewer_id(" %s " % first["name"].swapcase()) or {}).get("id"),
+       first["id"])
+    # 反向守卫：若 id 恰好等于小写姓名，这条断言就没有区分力，
+    # 用一个**必然不同于姓名/id** 的探针补上。
+    eq("按 id 精确匹配",
+       (Cfg.resolve_reviewer_id(first["id"]) or {}).get("name"), first["name"])
     eq("未登记的审核人 → None", Cfg.resolve_reviewer_id("__nobody__"), None)
     eq("空审核人 → None", Cfg.resolve_reviewer_id(""), None)
     eq("None 审核人 → None", Cfg.resolve_reviewer_id(None), None)
+    # 关键：不同人不得被误判为同一人
+    others = [r for r in rvs if r["id"] != first["id"]]
+    if others:
+        check("不同审核人不会被合并",
+              (Cfg.resolve_reviewer_id(others[0]["name"]) or {}).get("id")
+              == others[0]["id"])
 
     act = Cfg.active_reviewers()
     check("active_reviewers 只含 enabled",

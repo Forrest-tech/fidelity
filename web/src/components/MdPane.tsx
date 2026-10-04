@@ -9,7 +9,8 @@ import type { AlignResp, MdResp } from "../types";
  *   点本栏行尾的页码 → 左栏跳到源文件对应页并高亮
  *
  * ⚠️ 索引安全：status[i] 与 lines[i] 由后端保证同一下标语义（都用 splitlines()），
- * 这里只做防御性兜底（长度不一致时按最短的渲染并提示），避免错位上色。
+ * 所以「两侧同色」才成立。status 允许比 md 短（超大文件只比对前 N 行），
+ * 但**必须仍渲染全部 md 行** —— 见下方 n 的说明。
  */
 export default function MdPane({
   md,

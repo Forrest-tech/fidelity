@@ -81,7 +81,7 @@ def delete_source(sid):
 # ---------- 审核人配置 ----------
 # 为什么要「配置」而不是让用户在裁决栏自由输入（用户 2026-10-05 明确要求）：
 #   自由输入会产生拼写变体（Forrest / forrest / Forrest Lin / F. Lin），
-#   同一���在审计日志里被拆成好几个人，统计与追溯全部失真 —— 这在
+#   同一人在审计日志里被拆成好几个人，统计与追溯全部失真 —— 这在
 #   受监管行业（审核人 + 时间戳要可审计）是不能接受的。
 #   改为：名单在配置里集中维护，裁决时只能从名单里选，身份唯一且可统计。
 DEFAULT_REVIEWERS = [
@@ -105,12 +105,23 @@ def active_reviewers():
 
 
 def resolve_reviewer_id(rid):
-    """按 id 或姓名找审核人；找不到返回 None（调用方决定是否拒绝）。"""
+    """按 id 或姓名找审核人；找不到返回 None（调用方决定是否拒绝）。
+
+    ⚠️ 姓名匹配必须**忽略大小写与首尾空白**。
+    这正是本模块存在的理由：若 "Forrest" / "forrest" / " Forrest " 匹配到
+    不同人，同一个人就在审计日志里裂成多个身份，统计与追溯全部失真。
+    """
     if not rid:
         return None
     rid = str(rid).strip()
     for r in get_reviewers():
         if r.get("id") == rid or r.get("name") == rid:
+            return r
+    low = rid.lower()
+    for r in get_reviewers():
+        if (r.get("name") or "").strip().lower() == low:
+            return r
+        if (r.get("id") or "").strip().lower() == low:
             return r
     return None
 
