@@ -5,7 +5,7 @@
 """
 import os, json
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # qa-platform/
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # fidelity/
 DATA_DIR = os.path.join(BASE_DIR, "data")
 CONFIG_PATH = os.path.join(DATA_DIR, "config.json")
 TRUST_DB = os.path.join(DATA_DIR, "trust.db")

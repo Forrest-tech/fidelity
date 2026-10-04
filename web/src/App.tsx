@@ -247,7 +247,7 @@ export default function App() {
   return (
     <div className="app">
       <div className="topbar">
-        <h1>转换质检与可信度管理台</h1>
+        <h1>转换保真度评测台</h1>
         <select value={sid} onChange={(e) => setSid(e.target.value)} title="数据源">
           {sources.map((s) => (
             <option key={s.id} value={s.id}>

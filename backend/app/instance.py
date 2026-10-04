@@ -25,6 +25,11 @@ import urllib.request
 
 from . import config
 
+# /api/health 里标识「这是本服务」的值。第一个是当前名称，其余为历史名称。
+# 改名升级期间旧实例仍在跑，preflight 必须仍然认得它 —— 否则重启时会去抢
+# 自己已经占着的端口，任务面板又显示 Failed（这正是本模块要消灭的现象）。
+SERVICE_IDS = ("fidelity", "qa-platform")
+
 LOCK_PATH = os.path.join(config.DATA_DIR, "server.lock")
 # 锁文件里附带心跳时间；超过这个秒数没心跳，视为进程已死（防 PID 复用误判）
 HEARTBEAT_STALE_SEC = 90
@@ -151,7 +156,7 @@ def preflight_port(port, host="127.0.0.1", timeout=2.0):
     try:
         with urllib.request.urlopen(url, timeout=timeout) as r:
             data = json.loads(r.read().decode("utf-8"))
-        if data.get("service") == "qa-platform" and data.get("ok"):
+        if data.get("service") in SERVICE_IDS and data.get("ok"):
             return True, "已有健康实例在 %s:%s（workers=%s）" % (
                 host, port, data.get("workers"))
         return False, "端口被占用但不是本服务：%s" % data

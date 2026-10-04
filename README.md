@@ -1,11 +1,15 @@
-# 转换质检与可信度管理系统 (QA-Platform)
+# Fidelity · 转换保真度评测系统
 
-> 用于对「原始文档 → Markdown 转换产物」做**自动比对评分 + 人工复核 + 可信度标记**，
-> 让知识库检索只采信可信内容。
+> **Fidelity**（保真度）衡量的是"转换有没有失真"。本系统对「原始文档 → Markdown 转换产物」
+> 做**自动比对评分 + 人工复核 + 可信度标记**，让知识库检索只采信可信内容。
 
 针对的是这样一个现实问题：文档被转换成 Markdown 后，**你无法再确认转换是否忠实**。
 OCR 会把 `25mm` 认成 `2Smm`，表格会被重复展开，某些专有格式干脆什么都没提取出来。
 本系统把这些"看不见的失真"变成**可量化、可复核、可追溯**的结论。
+
+> **命名说明**：早期版本叫 "QA-Platform / 转换质检"。但「质检」暗示检查一个已完成的产物，
+> 而这套系统真正在做的事是**拿源文件与转换产物逐行对账**——很多文件的正确结论是
+> 「存疑待人工确认」，而非「通过/失败」。故更名为 Fidelity（保真度）。
 
 ---
 
@@ -48,7 +52,7 @@ OCR 会把 `25mm` 认成 `2Smm`，表格会被重复展开，某些专有格式�
 ### 1. 安装后端依赖
 
 ```bash
-cd qa-platform/backend
+cd fidelity/backend
 python -m venv .venv
 
 # Windows
@@ -62,7 +66,7 @@ pip install -r requirements.txt
 ### 2. 启动后端
 
 ```bash
-cd qa-platform/backend
+cd fidelity/backend
 python -m scripts.serve
 ```
 
@@ -101,7 +105,7 @@ python -m scripts.serve
 ### 4. 构建前端（可选）
 
 ```bash
-cd qa-platform/web
+cd fidelity/web
 npm install
 npm run build      # 产物在 web/dist
 ```
@@ -143,7 +147,7 @@ curl "http://127.0.0.1:8000/api/job/<job_id>"
 
 DWG 是专有二进制格式，需要外部转换器。系统按以下顺序自动探测：
 
-1. `qa-platform/tools/libredwg/dwg2dxf.exe` ← **推荐，随项目放置于此**
+1. `fidelity/tools/libredwg/dwg2dxf.exe` ← **推荐，随项目放置于此**
 2. 工作区级 `tools/libredwg/`
 3. 项目级 `tools/libredwg/`
 4. `C:\tools\libredwg`、`C:\Program Files\libredwg`
@@ -162,7 +166,7 @@ DWG 是专有二进制格式，需要外部转换器。系统按以下顺序自�
 ## 四、测试
 
 ```bash
-cd qa-platform/backend
+cd fidelity/backend
 python scripts/run_all_tests.py
 ```
 
@@ -193,7 +197,7 @@ python scripts/run_all_tests.py
 ## 五、架构
 
 ```
-qa-platform/
+fidelity/
 ├── backend/
 │   ├── app/
 │   │   ├── main.py              FastAPI 入口 + 单实例守卫

@@ -3,7 +3,7 @@
 
 用户决策（2026-10-04）：兜底用 WorkBuddy 内置模型，不引入第三方付费 API。
 WorkBuddy 内置 LLM 是「应用级」云服务（wbapp + endpoint，OpenAI 兼容协议），
-qa-platform 独立部署时通过 sites 发布即可获得端点；届时把 endpoint 填进
+fidelity 独立部署时通过 sites 发布即可获得端点；届时把 endpoint 填进
 config.json 的 vlm 段即可启用，本模块零改动。
 
 config.json 示例：

@@ -11,7 +11,7 @@ from .jobs import handlers
 from .jobs.queue import queue
 from .api.routes import router
 
-app = FastAPI(title="转换质检与可信度管理系统", version="0.3.0")
+app = FastAPI(title="转换保真度评测系统 (Fidelity)", version="0.4.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -81,7 +81,7 @@ def health():
     owner = instance.read_owner() or {}
     return {
         "ok": True,
-        "service": "qa-platform",
+        "service": "fidelity",
         "workers": len(queue._threads),
         "pid": os.getpid(),
         "is_owner": bool(_OWNED["ok"]),

@@ -22,13 +22,13 @@ _DWG_CONV_TIMEOUT = 180
 # 转换后 DXF 解析的文本实体上限（防止异常图纸把内存吃光）
 _MAX_TEXT_ITEMS = 50000
 
-_HERE = os.path.dirname(os.path.abspath(__file__))          # .../qa-platform/backend/app/ingest
-_BACKEND = os.path.dirname(os.path.dirname(_HERE))          # .../qa-platform/backend
-_QA_PLATFORM = os.path.dirname(_BACKEND)                    # .../qa-platform
-_PROJECT_ROOT = os.path.dirname(_QA_PLATFORM)               # .../2026-10-03-01-21-49
+_HERE = os.path.dirname(os.path.abspath(__file__))          # .../fidelity/backend/app/ingest
+_BACKEND = os.path.dirname(os.path.dirname(_HERE))          # .../fidelity/backend
+_PROJECT_APP = os.path.dirname(_BACKEND)                    # .../fidelity
+_PROJECT_ROOT = os.path.dirname(_PROJECT_APP)               # .../2026-10-03-01-21-49
 _WORKSPACE_ROOT = os.path.dirname(_PROJECT_ROOT)            # .../WorkBuddy
 
-_TOOLS_DIR = os.path.join(_QA_PLATFORM, "tools")
+_TOOLS_DIR = os.path.join(_PROJECT_APP, "tools")
 
 # LibreDWG 便携包可能放置的位置（按优先级）。也支持 LIBREDWG_DIR 环境变量覆盖。
 _LIBREDWG_DIRS = [
