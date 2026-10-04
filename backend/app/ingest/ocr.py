@@ -103,16 +103,103 @@ def extract_image(path, meta=None):
         return "", None
 
 
+# --- 单页硬超时 -------------------------------------------------------
+# 真实事故（2026-10-05）：一个 29 页纯扫描 PDF 让单个 compare 任务
+# 卡在「引擎B抽取源文」超过 2.5 小时，updated_at 冻结、进度不动，
+# 但 CPU 一直在烧 —— onnxruntime 推理进入了不可中断的死循环。
+#
+# 原来的 time_budget 只在「每页开始前」检查，一旦某页推理卡住，
+# 预算检查永远等不到，于是整个批次被这一个文件永久拖住。
+#
+# 线程无法强杀，所以用子进程做隔离：父进程 join(timeout) 超时即 terminate。
+PAGE_OCR_TIMEOUT = 90.0   # 单页 OCR 硬上限（秒）
+
+
+def _ocr_image_worker(png_bytes, q):
+    """子进程入口：跑一页 OCR，把 (text, conf) 放进队列。"""
+    try:
+        from PIL import Image
+        import io as _io
+        img = Image.open(_io.BytesIO(png_bytes))
+        q.put(ocr_image_obj(img))
+    except Exception:
+        q.put(("", None))
+    finally:
+        try:
+            q.close()
+        except Exception:
+            pass
+
+
+def ocr_image_with_timeout(img, timeout=PAGE_OCR_TIMEOUT):
+    """带硬超时的单页 OCR。超时返回 ("", None)，绝不阻塞调用方。
+
+    用子进程隔离 onnxruntime —— 推理卡死时线程无法中断，进程可以。
+
+    降级说明：Windows 的 spawn 子进程需要 __main__ 可再导入，若当前入口
+    无法 spawn（如 `python -c`），自动退回同进程调用并保证不抛异常。
+    此时失去硬超时保护，但不会造成新的失败。
+    """
+    import io as _io
+    try:
+        buf = _io.BytesIO()
+        img.save(buf, format="PNG")
+        data = buf.getvalue()
+    except Exception:
+        return "", None
+
+    import multiprocessing as mp
+    p = None
+    try:
+        ctx = mp.get_context("spawn")
+        q = ctx.Queue()
+        p = ctx.Process(target=_ocr_image_worker, args=(data, q))
+        p.start()
+    except Exception:
+        # 无法起子进程时退回同步调用（宁可慢，不可崩）
+        return ocr_image_obj(img)
+
+    try:
+        p.join(timeout)
+        if p.is_alive():
+            # 推理死循环：杀掉子进程，放弃这一页
+            p.terminate()
+            try:
+                p.join(5)
+            except Exception:
+                pass
+            if p.is_alive():
+                try:
+                    p.kill()
+                except Exception:
+                    pass
+            return "", None
+        if q.empty():
+            return "", None
+        try:
+            return q.get_nowait()
+        except Exception:
+            return "", None
+    finally:
+        # 双保险：确保子进程一定被回收，不留孤儿进程烧 CPU
+        try:
+            if p.is_alive():
+                p.terminate()
+        except Exception:
+            pass
+
+
 def extract_pdf_scanned(path, max_pages=60, time_budget=120.0, meta=None):
     """扫描版 PDF：逐页渲染(200dpi) → 预处理 → OCR。
 
-    双预算保护（页数 + 时间）：超出即返回已得文本并 meta["partial"]=True，
-    绝不让一个扫描大文件拖垮整批——与延后策略一致。
+    三重保护：页数上限 + 整体时间预算 + **单页硬超时**。
+    超出即返回已得文本并 meta["partial"]=True，绝不让一个扫描大文件拖垮整批。
     """
     import fitz  # PyMuPDF 渲染
     t0 = time.time()
     parts, confs, low_pages = [], [], []
     done = total = 0
+    timed_out_pages = 0
     try:
         doc = fitz.open(path)
         total = doc.page_count
@@ -129,7 +216,11 @@ def extract_pdf_scanned(path, max_pages=60, time_budget=120.0, meta=None):
                 img = Image.open(io.BytesIO(pix.tobytes("png")))
             except Exception:
                 continue
-            txt, conf = ocr_image_obj(img)
+            before = time.time()
+            txt, conf = ocr_image_with_timeout(img)
+            # 该页是否触发了硬超时（耗时接近上限且无结果）
+            if not txt.strip() and (time.time() - before) >= PAGE_OCR_TIMEOUT * 0.9:
+                timed_out_pages += 1
             done += 1
             if txt.strip():
                 parts.append(txt)
@@ -140,6 +231,8 @@ def extract_pdf_scanned(path, max_pages=60, time_budget=120.0, meta=None):
         doc.close()
     except Exception:
         pass
+    if timed_out_pages and meta is not None:
+        meta["ocr_timed_out_pages"] = timed_out_pages
     # VLM 兜底：启用时对低置信页做 AI 二次识别（未启用则优雅跳过，保持人工复核标记）
     try:
         from . import vlm_fallback

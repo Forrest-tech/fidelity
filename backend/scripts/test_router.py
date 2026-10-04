@@ -232,6 +232,37 @@ def test_constants():
           % (R.OCR_PAGE_CAP, R.OCR_TIME_BUDGET, R.SCAN_TEXT_FLOOR))
 
 
+# ============================== 8. OCR 单页硬超时（防推理死循环把批次拖死）
+def test_ocr_page_timeout():
+    """回归：2026-10-05 一个 29 页扫描件让任务卡死 2.5 小时。
+
+    根因是 time_budget 只在每页开始前检查，单页推理卡死则预算永不生效。
+    修复是 ocr_image_with_timeout()：子进程隔离 + join(timeout) + terminate。
+    这里只验证「接口与常量」，不真跑 OCR（要 90s 且依赖模型文件）。
+    """
+    print("\n== 8. OCR 单页硬超时 ==")
+    from app.ingest import ocr
+    check("PAGE_OCR_TIMEOUT 为正数", isinstance(ocr.PAGE_OCR_TIMEOUT, (int, float))
+          and ocr.PAGE_OCR_TIMEOUT > 0, ocr.PAGE_OCR_TIMEOUT)
+    check("ocr_image_with_timeout 存在", hasattr(ocr, "ocr_image_with_timeout"))
+    check("_ocr_image_worker 存在（spawn 需要可导入目标）",
+          hasattr(ocr, "_ocr_image_worker"))
+    # 子进程目标必须是模块级函数：spawn 会重新 import 并按名字定位它，
+    # 闭包/lambda 无法被定位，会在启动时直接报错。
+    import types
+    check("worker 是模块级函数（spawn 可定位）",
+          isinstance(ocr._ocr_image_worker, types.FunctionType), type(ocr._ocr_image_worker))
+    # 超时返回值契约：任何异常路径都必须给出 (str, None) 而不能抛
+    try:
+        r = ocr.ocr_image_with_timeout(None, timeout=2)
+        check("坏输入返回 ('', None) 而不抛异常",
+              isinstance(r, tuple) and len(r) == 2, r)
+    except Exception as e:
+        check("坏输入不抛异常", False, "%s: %s" % (type(e).__name__, str(e)[:40]))
+    print("   PAGE_OCR_TIMEOUT=%.0fs（单页上限，超过即放弃该页并继续）"
+          % ocr.PAGE_OCR_TIMEOUT)
+
+
 # ==================================================================== 主流程
 def main():
     print("=" * 62)
@@ -240,7 +271,8 @@ def main():
 
     for fn in (test_classify, test_unsupported_marks_human,
                test_missing_file_graceful, test_text_roundtrip,
-               test_cad_marks_confirm, test_dwg_tmp_cleanup, test_constants):
+               test_cad_marks_confirm, test_dwg_tmp_cleanup, test_constants,
+               test_ocr_page_timeout):
         fn()
 
     passed = sum(1 for _, ok, _ in _RESULTS if ok)
