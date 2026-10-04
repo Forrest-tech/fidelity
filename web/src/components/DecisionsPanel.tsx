@@ -16,6 +16,9 @@ const EXT_LABEL: Record<string, string> = {
   ".mp4": "视频",
 };
 
+/** 入库后可自动重跑识别的扩展名（扫描件/图片/CAD/压缩包）。 */
+const REEVALUABLE = [".pdf", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".webp", ".dwg", ".dxf", ".zip"];
+
 /** 人工决定队列：无法自动比对的文件，入库 / 不入库由用户拍板。 */
 export default function DecisionsPanel(props: {
   sid: string;
@@ -43,14 +46,13 @@ export default function DecisionsPanel(props: {
     load();
   }, [load]);
 
+  const reviewer = props.reviewer || "";
+
   const decide = async (it: DecisionItem, decision: string) => {
     setBusy(it.rel);
     try {
-      await api.setDecision(it.rel, decision, props.reviewer || "local");
-      // 入库且该格式有自动处理器（扫描件/图片/CAD）→ 自动重跑评测
-      if (decision === "include" && [".pdf", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".webp", ".dwg", ".dxf", ".zip"].includes(it.ext)) {
-        props.onReeval(it.rel);
-      }
+      await api.setDecision(it.rel, decision, reviewer);
+      if (decision === "include" && REEVALUABLE.includes(it.ext)) props.onReeval(it.rel);
       await load();
       props.onChanged();
     } catch (e: any) {
@@ -60,33 +62,22 @@ export default function DecisionsPanel(props: {
     }
   };
 
-  const decideAllExclude = async () => {
+  const decideAll = async (decision: "include" | "exclude") => {
     if (!items.length) return;
-    if (!confirm(`将把当前 ${items.length} 个待决定文件全部标记「不入库」（之后可逐个撤销）。继续？`)) return;
+    const label = decision === "include" ? "入库" : "不入库";
+    if (
+      !confirm(
+        `将把当前 ${items.length} 个待决定文件全部标记「${label}」` +
+          (decision === "include" ? "，并对扫描件/图片/CAD/压缩包重跑识别评测" : "") +
+          "。之后可逐个撤销。继续？"
+      )
+    )
+      return;
     setBusy("__all__");
     try {
       for (const it of items) {
-        await api.setDecision(it.rel, "exclude", props.reviewer || "local", "批量标记不入库");
-      }
-      await load();
-      props.onChanged();
-    } catch (e: any) {
-      setErr(e.message);
-    } finally {
-      setBusy("");
-    }
-  };
-
-  const decideAllInclude = async () => {
-    if (!items.length) return;
-    if (!confirm(`将把当前 ${items.length} 个待决定文件全部标记「入库」，并对可自动处理的格式重跑评测。继续？`)) return;
-    setBusy("__all__");
-    try {
-      for (const it of items) {
-        await api.setDecision(it.rel, "include", props.reviewer || "local", "批量标记入库");
-        if ([".pdf", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".webp", ".dwg", ".dxf", ".zip"].includes(it.ext)) {
-          props.onReeval(it.rel);
-        }
+        await api.setDecision(it.rel, decision, reviewer, `批量标记${label}`);
+        if (decision === "include" && REEVALUABLE.includes(it.ext)) props.onReeval(it.rel);
       }
       await load();
       props.onChanged();
@@ -100,7 +91,7 @@ export default function DecisionsPanel(props: {
   const undo = async (it: DecisionItem) => {
     setBusy(it.rel);
     try {
-      await api.setDecision(it.rel, "", props.reviewer || "local");
+      await api.setDecision(it.rel, "", reviewer);
       await load();
       props.onChanged();
     } catch (e: any) {
@@ -111,48 +102,66 @@ export default function DecisionsPanel(props: {
   };
 
   return (
-    <div className="modal-mask" onClick={props.onClose}>
-      <div className="modal" style={{ width: 860, maxHeight: "82vh" }} onClick={(e) => e.stopPropagation()}>
+    <div className="mask" onClick={props.onClose}>
+      <div className="modal wide" onClick={(e) => e.stopPropagation()}>
         <header>
-          <h3>人工决定队列 — 无法自动比对的文件</h3>
+          <h3>人工决定队列</h3>
+          <span className="sub">无法自动比对的文件，入库与否由人工拍板</span>
           <div className="spacer" />
           <button onClick={props.onClose}>关闭</button>
         </header>
         <div className="body">
-          {err && <div className="notice err" onClick={() => setErr("")}>{err}（点击关闭）</div>}
-          <div className="filter-row" style={{ marginBottom: 10 }}>
-            <button className={`chip ${tab === "pending" ? "active" : ""}`} onClick={() => setTab("pending")}>待决定</button>
-            <button className={`chip ${tab === "include" ? "active" : ""}`} onClick={() => setTab("include")}>已入库</button>
-            <button className={`chip ${tab === "exclude" ? "active" : ""}`} onClick={() => setTab("exclude")}>已排除</button>
+          {err && <div className="notice err" style={{ margin: "0 0 11px" }}>{err}</div>}
+
+          <div className="tabs">
+            <button className={tab === "pending" ? "on" : ""} onClick={() => setTab("pending")}>
+              待决定
+            </button>
+            <button className={tab === "include" ? "on" : ""} onClick={() => setTab("include")}>
+              已入库
+            </button>
+            <button className={tab === "exclude" ? "on" : ""} onClick={() => setTab("exclude")}>
+              已排除
+            </button>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 11 }}>
+            <span className="dim num">共 {items.length} 个</span>
+            <span className="dim">· 审核人 {reviewer || "未选择"}</span>
             <div className="spacer" />
             {tab === "pending" && (
               <>
-                <button disabled={busy !== "" || !items.length} onClick={decideAllInclude}>全部入库</button>
-                <button disabled={busy !== "" || !items.length} onClick={decideAllExclude}>全部不入库</button>
+                <button disabled={busy !== "" || !items.length} onClick={() => decideAll("include")}>
+                  全部入库
+                </button>
+                <button disabled={busy !== "" || !items.length} onClick={() => decideAll("exclude")}>
+                  全部不入库
+                </button>
               </>
             )}
             <button onClick={load}>刷新</button>
           </div>
-          <div className="dec-list">
+
+          <div className="list">
             {items.length === 0 && <div className="empty">没有文件</div>}
             {items.map((it) => (
-              <div className="dec-row" key={it.rel}>
-                <div className="dec-info">
-                  <div className="name">
-                    <span className="badge unreviewed">{EXT_LABEL[it.ext] || it.ext || "未知"}</span>{" "}
-                    {it.rel.split("/").pop()}
-                    {it.mb ? <span className="score"> · {it.mb}MB</span> : null}
+              <div className="lrow" key={it.rel}>
+                <div className="info">
+                  <div className="nm">
+                    <span className="badge unreviewed">{EXT_LABEL[it.ext] || it.ext || "未知"}</span>
+                    <span className="truncate">{it.rel.split("/").pop()}</span>
+                    {it.mb ? <span className="dim num">{it.mb}MB</span> : null}
                   </div>
-                  <div className="path" title={it.rel}>{it.rel}</div>
-                  <div className="reason">{it.reason || "—"}</div>
+                  <div className="pp">{it.rel}</div>
+                  <div className="st" style={{ color: "var(--amber)" }}>{it.reason || "—"}</div>
                 </div>
-                <div className="dec-actions">
+                <div className="a">
                   {tab === "pending" ? (
                     <>
                       <button
                         className="vbtn ok"
                         disabled={busy !== ""}
-                        title="纳入管理：可自动处理的格式（扫描件/图片/CAD/压缩包）会自动重跑识别评测"
+                        title="纳入管理：可自动处理的格式会自动重跑识别评测"
                         onClick={() => decide(it, "include")}
                       >
                         入库
@@ -160,7 +169,7 @@ export default function DecisionsPanel(props: {
                       <button
                         className="vbtn rej"
                         disabled={busy !== ""}
-                        title="标记无效材料，不计入任何失败统计，可随时撤销"
+                        title="标记无效材料，不计入失败统计，可随时撤销"
                         onClick={() => decide(it, "exclude")}
                       >
                         不入库
@@ -171,7 +180,9 @@ export default function DecisionsPanel(props: {
                       <span className={`badge ${tab === "include" ? "trusted" : "rejected"}`}>
                         {tab === "include" ? "已入库" : "已排除"}
                       </span>
-                      <button disabled={busy !== ""} onClick={() => undo(it)}>撤销</button>
+                      <button disabled={busy !== ""} onClick={() => undo(it)}>
+                        撤销
+                      </button>
                     </>
                   )}
                 </div>

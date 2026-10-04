@@ -414,15 +414,188 @@ def test_concurrent():
     check("8 线程并发对齐无异常", not errs, errs[:3])
 
 
+# ================================================ 12. 源文行→页码映射（locate.py）
+def test_locate():
+    """左侧绿色高亮的数据基础。
+
+    这组断言锁的是**正确性**而非性能：一旦 cum_line_counts 与 splitlines()
+    的语义漂移，页码映射会从第二页起整体错位 —— 界面不会报错，
+    只会安静地把高亮标到错误的行上。这类「静默错误」正是本项目要消灭的。
+    """
+    print("\n== 12. 源文行→页码映射（locate.py）==")
+    from app.ingest import locate as L
+
+    # ---- 12.1 不变量：cum[i] == len("\n".join(texts[:i+1]).splitlines())
+    # 用真实的 PDF 抽取里会出现的边界字符（\r / \r\n / \f / 空页 / 残行）穷举组合。
+    pieces = ["", "a", "a\n", "a\r", "a\r\n", "a\n\n", "a\n\r\n",
+              "a\rb", "a\vb", "a\fb", "a b", "a b", "\r", "\r\n",
+              "a\nb", "a\nb\r", "  ", "x\r\ny\rz\n"]
+    texts = []
+    for i in range(len(pieces)):
+        for j in range(len(pieces)):
+            texts.append(pieces[i] + pieces[j])
+    for k in ("\n", ""):
+        texts.append("a" + k + "b")
+    texts.extend(pieces)
+
+    cum = L.cum_line_counts(texts)
+    eq("cum 长度 == 页数", len(cum), len(texts))
+    bad = []
+    for i in range(len(texts)):
+        want = len("\n".join(texts[:i + 1]).splitlines())
+        if cum[i] != want:
+            bad.append((i, cum[i], want))
+    check("不变量 cum[i]==len(join.splitlines()) 全组合成立",
+          not bad, "失败 %d 例，前 3：%s" % (len(bad), bad[:3]))
+
+    # ---- 12.2 逐字符穷举（2 字符 × 全部 break 字符）
+    bl = "\n\r\v\f\x1c\x1d\x1e\x85  "
+    alpha = ["a", "", "\n", "\r"] + list(bl)
+    ex, g = [], []
+    for a in alpha:
+        for b in alpha:
+            g.append(a + b)
+    cum2 = L.cum_line_counts(g)
+    bad2 = [i for i in range(len(g))
+            if cum2[i] != len("\n".join(g[:i + 1]).splitlines())]
+    check("2 字符穷举 %d 例不变量成立" % len(g), not bad2, "失败下标 %s" % bad2[:5])
+
+    # ---- 12.3 典型真实场景：每页正常结尾
+    # ⚠️ 期望值不是「各页行数相加」：抽取侧用 "\n" 连页，**连接符本身就是一个空行**
+    #   （"...here\n" + "\n" + "Page two..." → 中间多出一个空行）。
+    #   这正是 cum_line_counts 不能简单相加的原因。
+    pages = ["Title page\nSome text here\n", "Page two line 1\nline 2\n",
+             "Page three only line\n"]
+    cum3 = L.cum_line_counts(pages)
+    eq("3 页常规文本累计行数（含页间空行）", cum3, [2, 5, 7])
+    eq("累计值 == join 后 splitlines", cum3[-1], len("\n".join(pages).splitlines()))
+    eq("行→页：第 0 行在第 1 页", L.line_to_page(cum3, 0), 1)
+    eq("行→页：第 1 行在第 1 页", L.line_to_page(cum3, 1), 1)
+    eq("行→页：第 2 行在第 2 页", L.line_to_page(cum3, 2), 2)
+    eq("行→页：第 3 行在第 2 页", L.line_to_page(cum3, 3), 2)
+    eq("行→页：第 4 行在第 2 页", L.line_to_page(cum3, 4), 2)
+    eq("行→页：第 5 行在第 3 页", L.line_to_page(cum3, 5), 3)
+    eq("行→页：末行在第 3 页", L.line_to_page(cum3, cum3[-1] - 1), 3)
+
+    # ---- 12.4 越界与非法输入必须返回 None（前端据此隐藏页码）
+    eq("越界行号 → None", L.line_to_page(cum3, 99), None)
+    eq("负行号 → None", L.line_to_page(cum3, -1), None)
+    eq("空累计表 → None", L.line_to_page([], 0), None)
+    eq("None 行号 → None", L.line_to_page(cum3, None), None)
+
+    # ---- 12.5 \r 结尾吸收连接符（真实 PDF 的 \r 结尾极常见）
+    cr = L.cum_line_counts(["a\r", "b"])
+    eq("\\r 结尾的页 + 连接符不重复计行", cr, [1, 2])
+    eq("  等价于 join 后 splitlines", cr[-1], len("a\r\nb".splitlines()))
+
+    # ---- 12.6 非 PDF 一律降级（绝不硬攻）
+    eq("非 PDF 不做页内坐标", L.page_lines("x.docx", 1), None)
+    eq("非 PDF 行数表为空", L.page_line_counts("x.docx"), [])
+    eq("非 PDF 页数为 0", L.total_pages("x.docx"), 0)
+    eq("不存在的 PDF 页数=0", L.total_pages("__nope__.pdf"), 0)
+    eq("不存在的 PDF 无页内坐标", L.page_lines("__nope__.pdf", 1), None)
+
+    # ---- 12.7 空文本
+    eq("空文本页 → 0 行", L.cum_line_counts([""]), [0])
+    eq("空文本列表 → []", L.cum_line_counts([]), [])
+    # 三个空页：连接后是 "\n\n" → 2 行（不是 0）
+    eq("全空页累计（页间连接符各计一行）", L.cum_line_counts(["", "", ""]), [0, 1, 2])
+
+    # ---- 12.8 展开映射长度 == 总行数（前端按行号直查，长度必须吻合）
+    cum4 = L.cum_line_counts(["a\nb\n", "c\nd\ne\n", "f\n"])
+    m = []
+    prev = 0
+    for i, c in enumerate(cum4):
+        m.extend([i + 1] * (c - prev))
+        prev = c
+    eq("展开映射长度 == 累计总行数", len(m), cum4[-1])
+    eq("展开映射首行属第 1 页", m[0], 1)
+    eq("展开映射末行属第 3 页", m[-1], 3)
+    check("展开映射页号单调不减",
+          all(m[i] <= m[i + 1] for i in range(len(m) - 1)))
+
+
+# ====================================================== 13. 审核人名单（config.py）
+def test_reviewer_registry():
+    """审核人必须来自受管名单：这是「一人一身份」的前提。
+
+    若这里失效（resolve 过于宽松），同一人的 Forrest / forrest / Forrest Lin
+    会在审计日志里裂成三个身份，受监管场景直接不合规。
+    """
+    print("\n== 13. 审核人名单（config.py）==")
+    from app import config as Cfg
+
+    rvs = Cfg.get_reviewers()
+    check("名单非空", isinstance(rvs, list) and len(rvs) > 0)
+    for r in rvs:
+        for k in ("id", "name", "role"):
+            check("审核人字段 %s 存在" % k, k in r, "r=%r" % r)
+
+    first = rvs[0]
+    eq("按 id 能查到", (Cfg.resolve_reviewer_id(first["id"]) or {}).get("name"),
+       first["name"])
+    eq("按姓名能查到（大小写不敏感）",
+       (Cfg.resolve_reviewer_id(first["name"]) or {}).get("id"), first["id"])
+    eq("按姓名小写变体能查到（防身份分裂）",
+       (Cfg.resolve_reviewer_id(first["name"].lower()) or {}).get("id"),
+       first["id"])
+    eq("未登记的审核人 → None", Cfg.resolve_reviewer_id("__nobody__"), None)
+    eq("空审核人 → None", Cfg.resolve_reviewer_id(""), None)
+    eq("None 审核人 → None", Cfg.resolve_reviewer_id(None), None)
+
+    act = Cfg.active_reviewers()
+    check("active_reviewers 只含 enabled",
+          all(x.get("enabled", True) for x in act))
+
+    # 删除最后一位必须被拒绝（否则裁决无处可选，功能被锁死）
+    saved = [dict(r) for r in Cfg.get_reviewers()]
+    try:
+        for r in saved:
+            try:
+                Cfg.delete_reviewer(r["id"])
+            except ValueError:
+                pass
+        left = Cfg.get_reviewers()
+        if len(left) == 1:
+            try:
+                Cfg.delete_reviewer(left[0]["id"])
+                check("拒绝删除最后一位审核人", False, "竟然删成功了")
+            except ValueError:
+                check("拒绝删除最后一位审核人", True)
+        else:
+            check("删除至只剩一位时停止", len(left) >= 1, "left=%d" % len(left))
+    finally:
+        for r in saved:
+            try:
+                Cfg.upsert_reviewer(r)
+            except Exception:
+                pass
+    check("名单已恢复", len(Cfg.get_reviewers()) >= len(saved) - 1,
+          "now=%d" % len(Cfg.get_reviewers()))
+
+    # 空姓名必须被拒绝
+    try:
+        Cfg.upsert_reviewer({"name": "   "})
+        check("拒绝空姓名审核人", False)
+    except ValueError:
+        check("拒绝空姓名审核人", True)
+
+    # slug 稳定性
+    eq("slug 小写化", Cfg._slug("Forrest Lin"), "forrest-lin")
+    eq("slug 去空白", Cfg._slug("  A B  "), "a-b")
+    check("slug 非空", bool(Cfg._slug("!!!")), Cfg._slug("!!!"))
+
+
 # ==================================================================== 主流程
 def main():
     print("=" * 62)
-    print("核心算法单元测试 —— compare.py")
+    print("核心算法单元测试 —— compare.py / locate.py / config.py")
     print("=" * 62)
 
     for fn in (test_normalize, test_strip_md, test_salvage, test_align,
                test_numbers, test_coverage_score, test_count, test_dup,
-               test_page, test_perf, test_concurrent):
+               test_page, test_perf, test_concurrent, test_locate,
+               test_reviewer_registry):
         fn()
 
     passed = sum(1 for _, ok, _ in _RESULTS if ok)

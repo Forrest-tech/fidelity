@@ -43,3 +43,7 @@ qa-platform/
 # 本地运行日志
 backend_run.log
 *.log
+
+# 临时验证目录（脚本/接口冒烟用，可随时重建）
+.tmpcheck/
+*.tmp

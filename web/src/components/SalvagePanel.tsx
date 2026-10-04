@@ -15,7 +15,7 @@ export default function SalvagePanel(props: {
   onChanged: () => void;
 }) {
   const [items, setItems] = useState<SalvageItem[]>([]);
-  const [busy, setBusy] = useState("");
+  const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [log, setLog] = useState<string[]>([]);
 
@@ -35,19 +35,17 @@ export default function SalvagePanel(props: {
 
   const run = async (rels: string[]) => {
     if (!rels.length) return;
-    setBusy("__run__");
+    setBusy(true);
     setLog([]);
     try {
       const r = await api.reconvert(rels, props.sid);
-      setLog(
-        r.items.slice(0, 8).map((x) => `${x.rel.split("/").pop()} → ${x.msg}`)
-      );
+      setLog(r.items.slice(0, 10).map((x) => `${x.rel.split("/").pop()} → ${x.msg}`));
       await load();
       props.onChanged();
     } catch (e: any) {
       setErr(e.message);
     } finally {
-      setBusy("");
+      setBusy(false);
     }
   };
 
@@ -66,72 +64,69 @@ export default function SalvagePanel(props: {
   };
 
   return (
-    <div className="modal-mask" onClick={props.onClose}>
-      <div
-        className="modal"
-        style={{ width: 860, maxHeight: "82vh" }}
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="mask" onClick={props.onClose}>
+      <div className="modal wide" onClick={(e) => e.stopPropagation()}>
         <header>
-          <h3>重新转换 — 原转换产物无效的文件</h3>
+          <h3>重新转换</h3>
+          <span className="sub">原转换产物是二进制打捞的文件，用真实提取结果重写</span>
           <div className="spacer" />
           <button onClick={props.onClose}>关闭</button>
         </header>
         <div className="body">
-          {err && (
-            <div className="notice err" onClick={() => setErr("")}>
-              {err}（点击关闭）
-            </div>
-          )}
-          <div className="notice" style={{ marginBottom: 10 }}>
+          {err && <div className="notice err" style={{ margin: "0 0 11px" }}>{err}</div>}
+
+          <div className="callout warn">
             这些 .md 是原转换管线的「二进制字符串打捞」产物（内容形如
-            <code> AC1032 / RdAkRdAkRdA</code>
-            ），不是文档内容，所以自动分很低。<b>问题在转换侧，不在源文件侧。</b>
-            重写会保留原 front-matter（hash、来源信息不变），正文换成真实提取结果，
+            <code> AC1032 / RdAkRdAkRdA</code>），不是文档内容，所以自动分很低。
+            <b>问题在转换侧，不在源文件侧。</b> 重写会保留原 front-matter，正文换成真实提取结果，
             并把原文件备份为 <code>.md.salvage.bak</code>。
           </div>
-          <div className="filter-row" style={{ marginBottom: 10 }}>
-            <span className="score">共 {items.length} 个</span>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 11 }}>
+            <span className="dim num">共 {items.length} 个</span>
             <div className="spacer" />
-            <button disabled={busy !== "" || !items.length} onClick={runAll}>
+            <button className="primary" disabled={busy || !items.length} onClick={runAll}>
               全部重新转换
             </button>
-            <button onClick={load}>刷新</button>
+            <button onClick={load} disabled={busy}>
+              刷新
+            </button>
           </div>
+
+          {busy && (
+            <div className="callout">
+              <span className="spin" /> 正在重新转换并重评，较大的文件需要一些时间…
+            </div>
+          )}
           {log.length > 0 && (
-            <div className="dec-list" style={{ marginBottom: 10 }}>
+            <div className="list" style={{ marginBottom: 11 }}>
               {log.map((l, i) => (
-                <div key={i} className="reason">
-                  {l}
+                <div className="lrow" key={i}>
+                  <div className="info">
+                    <div className="st" style={{ color: "var(--text-2)", fontFamily: "var(--mono)" }}>{l}</div>
+                  </div>
                 </div>
               ))}
             </div>
           )}
-          <div className="dec-list">
+
+          <div className="list">
             {items.length === 0 && <div className="empty">没有需要重新转换的文件</div>}
             {items.map((it) => (
-              <div className="dec-row" key={it.rel}>
-                <div className="dec-info">
-                  <div className="name">
-                    {it.rel.split("/").pop()}
-                    {it.auto_score != null ? (
-                      <span className="score"> · 当前 {it.auto_score}%</span>
-                    ) : null}
+              <div className="lrow" key={it.rel}>
+                <div className="info">
+                  <div className="nm">
+                    <span className="truncate">{it.rel.split("/").pop()}</span>
+                    {it.auto_score != null && <span className="dim num">当前 {it.auto_score}%</span>}
                   </div>
-                  <div className="path" title={it.rel}>
-                    {it.rel}
-                  </div>
-                  <div className="reason">
+                  <div className="pp">{it.rel}</div>
+                  <div className="st" style={{ color: "var(--amber)" }}>
                     {it.engine_b ? `引擎 ${it.engine_b} · ` : ""}
-                    {(it.fail_reasons || "").slice(0, 120)}
+                    {(it.fail_reasons || "").slice(0, 140)}
                   </div>
                 </div>
-                <div className="dec-actions">
-                  <button
-                    className="vbtn ok"
-                    disabled={busy !== ""}
-                    onClick={() => run([it.rel])}
-                  >
+                <div className="a">
+                  <button className="vbtn ok" disabled={busy} onClick={() => run([it.rel])}>
                     重新转换
                   </button>
                 </div>

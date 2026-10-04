@@ -48,63 +48,74 @@ export default function SourceManager({
   };
 
   return (
-    <div className="modal-mask" onClick={onClose}>
+    <div className="mask" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <header>
-          数据源管理
+          <h3>数据源管理</h3>
+          <span className="sub">源目录 → .md 镜像目录的映射</span>
           <div className="spacer" />
           <button onClick={onClose}>关闭</button>
         </header>
         <div className="body">
-          {err && <div className="notice err">{err}</div>}
+          {err && <div className="notice err" style={{ margin: "0 0 11px" }}>{err}</div>}
 
-          <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 8 }}>已配置</div>
+          <div className="callout">已配置 {sources.length} 个数据源</div>
           {sources.map((s) => (
-            <div className="src-card" key={s.id}>
+            <div className="lrow" key={s.id}>
               <div className="info">
-                <b>{s.name}</b>（{s.id}）
-                <div>源：{s.src_root}</div>
-                <div>.md：{s.md_root}</div>
+                <div className="nm">
+                  {s.name}
+                  <span className="badge unreviewed">{s.id}</span>
+                </div>
+                <div className="pp">源：{s.src_root}</div>
+                <div className="pp">.md：{s.md_root}</div>
               </div>
-              <button onClick={() => edit(s)}>编辑</button>
-              <button onClick={() => del(s)}>删除</button>
+              <div className="a">
+                <button onClick={() => edit(s)}>编辑</button>
+                <button className="danger" onClick={() => del(s)}>
+                  删除
+                </button>
+              </div>
             </div>
           ))}
 
-          <div style={{ fontSize: 12, color: "var(--muted)", margin: "14px 0 8px" }}>
+          <div className="callout" style={{ marginTop: 14 }}>
             新增 / 修改
           </div>
-          <div className="form-row">
-            <label>数据源 ID（英文，唯一）</label>
-            <input value={draft.id || ""} onChange={(e) => setDraft({ ...draft, id: e.target.value })} />
-          </div>
-          <div className="form-row">
-            <label>显示名称</label>
-            <input value={draft.name || ""} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
-          </div>
-          <div className="form-row">
-            <label>源文件目录（放原始 PDF/Word 等）</label>
-            <div style={{ display: "flex", gap: 6 }}>
-              <input readOnly value={draft.src_root || ""} placeholder="点击右侧选择" />
-              <button onClick={() => onPick("src_root")}>选择…</button>
+          <div className="row2">
+            <div className="field">
+              <label>数据源 ID（英文，唯一）</label>
+              <input value={draft.id || ""} onChange={(e) => setDraft({ ...draft, id: e.target.value })} />
+            </div>
+            <div className="field">
+              <label>显示名称</label>
+              <input value={draft.name || ""} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
             </div>
           </div>
-          <div className="form-row">
+          <div className="field">
+            <label>源文件目录（放原始 PDF / Word / CAD 等）</label>
+            <div style={{ display: "flex", gap: 6 }}>
+              <input readOnly value={draft.src_root || ""} placeholder="点击右侧选择" />
+              <button onClick={() => onPick("src_root")} style={{ flexShrink: 0 }}>
+                选择…
+              </button>
+            </div>
+          </div>
+          <div className="field">
             <label>.md 输出镜像目录（转换结果按同构路径落盘）</label>
             <div style={{ display: "flex", gap: 6 }}>
               <input readOnly value={draft.md_root || ""} placeholder="点击右侧选择" />
-              <button onClick={() => onPick("md_root")}>选择…</button>
+              <button onClick={() => onPick("md_root")} style={{ flexShrink: 0 }}>
+                选择…
+              </button>
             </div>
           </div>
         </div>
         <footer>
-          <button
-            onClick={() =>
-              setDraft({ id: "", name: "", src_root: "", md_root: "", enabled: true })
-            }
-          >
+          <button onClick={() => setDraft({ id: "", name: "", src_root: "", md_root: "", enabled: true })}>
             清空
           </button>
+          <div className="spacer" />
           <button onClick={onClose}>取消</button>
           <button className="primary" onClick={save}>
             保存数据源

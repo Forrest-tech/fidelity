@@ -1,82 +1,68 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./api";
-import type { Badge, DecisionStats, DiffResp, Job, MdResp, Segment, Source, Totals, TrustState } from "./types";
-import FolderPicker from "./components/FolderPicker";
-import SourceManager from "./components/SourceManager";
+import type {
+  AlignResp,
+  Badge,
+  Job,
+  MdResp,
+  Reviewer,
+  Source,
+  Stats,
+  TrustState,
+} from "./types";
+import FileTree from "./components/FileTree";
+import SourcePane from "./components/SourcePane";
+import MdPane from "./components/MdPane";
 import DecisionsPanel from "./components/DecisionsPanel";
 import SalvagePanel from "./components/SalvagePanel";
-import SourcePreview from "./components/SourcePreview";
+import ReviewerPanel from "./components/ReviewerPanel";
+import SourceManager from "./components/SourceManager";
+import FolderPicker from "./components/FolderPicker";
 
-const STATUS_TABS: { key: TrustState | ""; label: string }[] = [
-  { key: "", label: "全部" },
-  { key: "unreviewed", label: "未审" },
-  { key: "need_review", label: "待复核" },
-  { key: "trusted", label: "可信" },
-  { key: "diff_big", label: "差异大" },
-  { key: "rejected", label: "不接受" },
-];
+type Notice = { kind: "warn" | "err" | "ok"; text: string };
 
-const PER_PAGE = 50;
-
-/** 文件级字数指标：源文 vs md 的字数/词数与比率（比率直观体现「转换完整度」）。 */
-function WordsMeter({ b }: { b?: Badge }) {
-  if (!b || b.src_chars == null || b.md_chars == null) return null;
-  const ratio = b.src_chars ? Math.round((b.md_chars / b.src_chars) * 100) : null;
-  const cls = ratio == null ? "" : ratio >= 90 ? "high" : ratio >= 60 ? "mid" : "low";
-  return (
-    <span className="wm" title="源文件独立抽取的字数 vs 入库 .md 的字数（.md 已剥离 front-matter / HTML 注释 / 标题）">
-      字数 源 <b>{b.src_chars.toLocaleString()}</b> → md <b>{b.md_chars.toLocaleString()}</b>
-      {ratio != null && <> · 保留 <span className={`ratio ${cls}`}>{ratio}%</span></>}
-      {b.src_words != null && b.md_words != null && (
-        <span className="score">（{b.src_words.toLocaleString()} → {b.md_words.toLocaleString()} 词）</span>
-      )}
-    </span>
-  );
-}
-
-/** 右栏：入库 .md 原文（按行号渲染，保留换行结构）。 */
-function MdView({ md }: { md: MdResp }) {
-  const lines = useMemo(() => (md.text || "").split("\n"), [md.text]);
-  if (!lines.length) return <div className="empty">.md 为空</div>;
-  return (
-    <div className="mdview">
-      {lines.map((t, i) => (
-        <div className="mdline" key={i}>
-          <div className="no">{i + 1}</div>
-          <div className="tx">{t || " "}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
+/** 保留上次选择的审核人，避免每次刷新都要重选。 */
+const REVIEWER_KEY = "fidelity.reviewer";
 
 export default function App() {
   const [sources, setSources] = useState<Source[]>([]);
   const [sid, setSid] = useState("n2");
   const [status, setStatus] = useState<TrustState | "">("");
-  const [files, setFiles] = useState<Badge[]>([]);
-  const [sel, setSel] = useState<string>("");
-  const [onlyDiff, setOnlyDiff] = useState(true);
+
+  const [sel, setSel] = useState("");
+  const [badge, setBadge] = useState<Badge | null>(null);
+  const [align, setAlign] = useState<AlignResp | null>(null);
+  const [md, setMd] = useState<MdResp | null>(null);
   const [page, setPage] = useState(1);
-  const [diff, setDiff] = useState<DiffResp | null>(null);
-  const [loadingDiff, setLoadingDiff] = useState(false);
+  const [pageCount, setPageCount] = useState(1);
+  const [curLine, setCurLine] = useState<number | null>(null);
+
+  const [showMarks, setShowMarks] = useState(true);
+  const [onlyDiff, setOnlyDiff] = useState(false);
+  const [lineSearch, setLineSearch] = useState("");
+
+  const [stats, setStats] = useState<Stats | null>(null);
   const [job, setJob] = useState<Job | null>(null);
-  const [reviewer, setReviewer] = useState("Forrest");
+  const [notice, setNotice] = useState<Notice | null>(null);
+
+  const [reviewers, setReviewers] = useState<Reviewer[]>([]);
+  const [reviewer, setReviewer] = useState(() => localStorage.getItem(REVIEWER_KEY) || "");
   const [note, setNote] = useState("");
-  const [msg, setMsg] = useState<{ kind: "warn" | "err"; text: string } | null>(null);
-  const [stats, setStats] = useState<{ total: number; evaluated: number; avg_score: number | null; reviewed: number; deferred: number; decisions?: DecisionStats; salvage?: number; totals?: Totals } | null>(null);
-  const [showMgr, setShowMgr] = useState(false);
-  // 左栏视图：preview = 源文件原生渲染；text = 源文本逐行比对（绿/红标记）
-  const [leftMode, setLeftMode] = useState<"preview" | "text">("preview");
-  const [mdText, setMdText] = useState<MdResp | null>(null);
+
+  const [showReviewers, setShowReviewers] = useState(false);
   const [showDecide, setShowDecide] = useState(false);
   const [showSalvage, setShowSalvage] = useState(false);
+  const [showMgr, setShowMgr] = useState(false);
   const [picker, setPicker] = useState<null | "src_root" | "md_root">(null);
   const [draft, setDraft] = useState<Partial<Source>>({});
-  const fileRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // 初始化：健康检查 + 数据源
+  const busy = !!job && (job.status === "queued" || job.status === "running");
+
+  const say = useCallback((kind: Notice["kind"], text: string) => {
+    setNotice({ kind, text });
+  }, []);
+
+  // ---------- 启动 ----------
   useEffect(() => {
     (async () => {
       try {
@@ -84,75 +70,88 @@ export default function App() {
         const ss = await api.sources();
         setSources(ss);
         if (ss.length && !ss.some((s) => s.id === sid)) setSid(ss[0].id);
+        const rv = await api.reviewers();
+        setReviewers(rv.items);
+        setReviewer((cur) => {
+          const ok = rv.items.find((r) => r.name === cur && r.enabled);
+          if (ok) return cur;
+          const first = rv.items.find((r) => r.enabled);
+          return first ? first.name : cur;
+        });
       } catch (e: any) {
-        setMsg({ kind: "err", text: "后端未就绪：" + e.message });
+        say("err", "后端未就绪：" + e.message);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 文件列表
-  const loadFiles = async (s = sid, st = status) => {
-    if (!s) return;
-    try {
-      const r = await api.files(s, st);
-      setFiles(r.files);
-      if (r.files.length && !r.files.some((f) => f.rel === sel)) setSel(r.files[0].rel);
-      if (!r.files.length) setSel("");
-    } catch (e: any) {
-      setMsg({ kind: "err", text: "读取文件列表失败：" + e.message });
-    }
-  };
   useEffect(() => {
-    loadFiles();
+    if (reviewer) localStorage.setItem(REVIEWER_KEY, reviewer);
+  }, [reviewer]);
+
+  const refreshStats = useCallback(() => {
+    api.stats(sid).then(setStats).catch(() => {});
+  }, [sid]);
+
+  useEffect(() => {
+    refreshStats();
+  }, [sid, refreshStats]);
+
+  // ---------- 当前文件的数据 ----------
+  useEffect(() => {
+    if (!sel || !sid) {
+      setAlign(null);
+      setMd(null);
+      setBadge(null);
+      return;
+    }
+    let alive = true;
+    setAlign(null);
+    setMd(null);
     setPage(1);
+    setCurLine(null);
+    setLineSearch("");
+
     api
-      .stats(sid)
-      .then(setStats)
-      .catch(() => setStats(null));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sid, status]);
-
-  // diff（分页/只看差异切换）
-  useEffect(() => {
-    if (!sel || !sid) {
-      setDiff(null);
-      return;
-    }
-    let alive = true;
-    setLoadingDiff(true);
-    api
-      .diff(sel, sid, page, PER_PAGE, onlyDiff)
-      .then((d) => alive && setDiff(d))
-      .catch((e) => alive && setMsg({ kind: "err", text: "读取对比失败：" + e.message }))
-      .finally(() => alive && setLoadingDiff(false));
-    return () => {
-      alive = false;
-    };
-  }, [sel, sid, page, onlyDiff]);
-
-  // 选中文件滚动到可视区
-  useEffect(() => {
-    fileRefs.current[sel]?.scrollIntoView({ block: "nearest" });
-  }, [sel]);
-
-  // 入库 .md 原文（右栏「源文件」视图用）
-  useEffect(() => {
-    if (!sel || !sid) {
-      setMdText(null);
-      return;
-    }
-    let alive = true;
+      .align(sel, sid)
+      .then((a) => alive && setAlign(a))
+      .catch((e) => alive && say("err", "读取逐行比对失败：" + e.message));
     api
       .md(sel, sid)
-      .then((d) => alive && setMdText(d))
-      .catch(() => alive && setMdText(null));
+      .then((m) => alive && setMd(m))
+      .catch(() => alive && setMd(null));
+    api
+      .files(sid, status)
+      .then((r) => {
+        if (!alive) return;
+        const b = r.files.find((f) => f.rel === sel);
+        if (b) setBadge(b);
+      })
+      .catch(() => {});
+
     return () => {
       alive = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sel, sid]);
 
-  // job 轮询
+  // 状态筛选变化时，若当前文件已被筛掉，自动切到第一个
+  useEffect(() => {
+    if (!sel) return;
+    let alive = true;
+    api
+      .files(sid, status)
+      .then((r) => {
+        if (!alive || !r.files.length) return;
+        if (!r.files.some((f) => f.rel === sel)) setSel(r.files[0].rel);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [sid, status, sel]);
+
+  // ---------- 任务轮询 ----------
   useEffect(() => {
     if (!job || (job.status !== "queued" && job.status !== "running")) return;
     const t = setInterval(async () => {
@@ -160,57 +159,38 @@ export default function App() {
         const j = await api.job(job.id);
         setJob(j);
         if (j.status === "done") {
-          loadFiles();
-          setPage(1);
-          api.stats(sid).then(setStats).catch(() => {});
+          refreshStats();
+          if (sel && sid) {
+            const [a, m, r] = await Promise.all([
+              api.align(sel, sid).catch(() => null),
+              api.md(sel, sid).catch(() => null),
+              api.files(sid, status).catch(() => null),
+            ]);
+            setAlign(a);
+            setMd(m);
+            const b = r?.files.find((f) => f.rel === sel);
+            if (b) setBadge(b);
+          }
+          say("ok", j.message || "任务完成");
+        } else if (j.status === "error") {
+          say("err", j.message || "任务失败");
         }
       } catch {
-        /* ignore */
+        /* 轮询失败静默重试 */
       }
     }, 1200);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [job?.id, job?.status]);
 
-  // 切换文件时回到预览视图（避免新文件落在不合适的对比页）
-  useEffect(() => {
-    setLeftMode("preview");
-    setPage(1);
-  }, [sel, sid]);
-
+  // ---------- 操作 ----------
   const runCompare = async () => {
     if (!sel) return;
     try {
-      setNote("");
       const { job_id } = await api.compare(sel, sid);
       setJob({ id: job_id, kind: "compare", rel: sel, status: "queued", progress: 0, message: "排队中", updated_at: "" });
     } catch (e: any) {
-      setMsg({ kind: "err", text: "提交对比任务失败：" + e.message });
-    }
-  };
-
-  const runDeferred = async () => {
-    if (!stats?.deferred) return;
-    if (!confirm(`将对 ${stats.deferred} 个被延后的大文件逐个重试（放宽时间预算，耗时可能较长）。继续？`)) return;
-    try {
-      const { job_id } = await api.batchDeferred(sid);
-      setJob({ id: job_id, kind: "batch", rel: "", status: "queued", progress: 0,
-               message: "排队中（补跑延后文件）", updated_at: "" });
-    } catch (e: any) {
-      setMsg({ kind: "err", text: "提交补跑失败：" + e.message });
-    }
-  };
-
-  const showDeferred = async () => {
-    try {
-      const d = await api.deferred(sid, 300);
-      if (!d.count) { alert("当前没有被延后的文件。"); return; }
-      const lines = d.items
-        .map((x) => `${x.mb != null ? String(x.mb).padStart(7) + "MB" : "       ?"}  ${x.reason}  ${x.rel}`)
-        .join("\n");
-      alert(`被延后的文件 ${d.count} 个（体积 / 原因 / 路径）：\n\n` + lines);
-    } catch (e: any) {
-      setMsg({ kind: "err", text: "读取延后清单失败：" + e.message });
+      say("err", "提交评测失败：" + e.message);
     }
   };
 
@@ -218,108 +198,107 @@ export default function App() {
     try {
       const { job_id } = await api.batch(sid, force);
       setJob({
-        id: job_id,
-        kind: "batch",
-        rel: "",
-        status: "queued",
-        progress: 0,
-        message: force ? "排队中（重跑全部）" : "排队中（仅评测未评文件）",
-        updated_at: "",
+        id: job_id, kind: "batch", rel: "", status: "queued", progress: 0,
+        message: force ? "排队中（重跑全部）" : "排队中（仅评测未评文件）", updated_at: "",
       });
     } catch (e: any) {
-      setMsg({ kind: "err", text: "提交批量评测失败：" + e.message });
+      say("err", "提交批量评测失败：" + e.message);
+    }
+  };
+
+  const runDeferred = async () => {
+    if (!confirm(`将对被延后的大文件逐个重试（放宽时间预算，耗时可能较长）。继续？`)) return;
+    try {
+      const { job_id } = await api.batchDeferred(sid);
+      setJob({ id: job_id, kind: "batch", rel: "", status: "queued", progress: 0, message: "排队中（补跑延后文件）", updated_at: "" });
+    } catch (e: any) {
+      say("err", "提交补跑失败：" + e.message);
+    }
+  };
+
+  const showDeferredList = async () => {
+    try {
+      const d = await api.deferred(sid, 300);
+      if (!d.count) {
+        say("ok", "当前没有被延后的文件。");
+        return;
+      }
+      const lines = d.items
+        .slice(0, 60)
+        .map((x) => `${x.mb != null ? String(x.mb).padStart(7) + "MB" : "       ?"}  ${x.reason}  ${x.rel}`)
+        .join("\n");
+      alert(`被延后的文件 ${d.count} 个（体积 / 原因 / 路径）：\n\n${lines}`);
+    } catch (e: any) {
+      say("err", "读取延后清单失败：" + e.message);
     }
   };
 
   const doVerdict = async (v: string) => {
     if (!sel) return;
+    if (!reviewer) {
+      say("err", "请先选择审核人（右上角「审核人」下拉，或在审核人配置中添加）");
+      return;
+    }
     try {
-      await api.review(sel, v, reviewer || "local", note);
+      await api.review(sel, v, reviewer, note);
       setNote("");
-      await loadFiles();
+      const r = await api.files(sid, status);
+      setBadge(r.files.find((f) => f.rel === sel) || null);
+      refreshStats();
+      say("ok", v === "" ? "已撤销裁决" : `已记录裁决：${v === "ok" ? "一致" : v === "diff_big" ? "差异大" : "不接受"}（${reviewer}）`);
     } catch (e: any) {
-      setMsg({ kind: "err", text: "保存裁决失败：" + e.message });
+      say("err", "保存裁决失败：" + e.message);
     }
   };
 
-  const badgeOf = (rel: string) => files.find((f) => f.rel === rel);
+  // 点 md 行 → 跳到源文件对应页
+  const pickLine = (i: number, pg: number | null) => {
+    setCurLine(i);
+    if (pg && pg !== page) setPage(pg);
+  };
+
+  const score = badge?.auto_score ?? null;
+  const scoreCls = score == null ? "none" : score >= 90 ? "good" : score >= 70 ? "mid" : "bad";
 
   return (
     <div className="app">
-      <div className="topbar">
-        <h1>转换保真度评测台</h1>
+      {/* ---------- 顶栏 ---------- */}
+      <header className="header">
+        <div className="brand">
+          <div className="brand-mark">F</div>
+          <div className="brand-text">
+            <b>转换保真度评测</b>
+            <span>Fidelity</span>
+          </div>
+        </div>
+        <div className="divider" />
         <select value={sid} onChange={(e) => setSid(e.target.value)} title="数据源">
           {sources.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
+            <option key={s.id} value={s.id}>{s.name}</option>
           ))}
         </select>
         <button onClick={() => setShowMgr(true)}>数据源…</button>
-        <button
-          className="primary"
-          title="对本数据源下尚未评测的文件批量算自动转化率"
-          disabled={!!job && (job.status === "queued" || job.status === "running")}
-          onClick={() => runBatch(false)}
-        >
+        <div className="divider" />
+        <button className="primary" disabled={busy} onClick={() => runBatch(false)} title="对尚未评测的文件批量计算自动保真度">
           批量评测
         </button>
-        <button
-          title="清空重跑：连同已评测的文件一起重新评分"
-          disabled={!!job && (job.status === "queued" || job.status === "running")}
-          onClick={() => {
-            if (confirm("重跑全部将重新评分所有文件（含已评测），耗时较长。继续？")) runBatch(true);
-          }}
-        >
+        <button disabled={busy} onClick={() => { if (confirm("重跑全部将重新评分所有文件（含已评测），耗时较长。继续？")) runBatch(true); }}>
           重跑全部
         </button>
-        <button
-          title="对之前被延后（体积过大或抽取过慢）的文件逐个重试，放宽时间预算"
-          disabled={!!job && (job.status === "queued" || job.status === "running")}
-          onClick={runDeferred}
-        >
-          补跑延后{stats?.deferred ? `(${stats.deferred})` : ""}
+        <button disabled={busy} onClick={runDeferred} title="对被延后的大文件逐个重试">
+          补跑延后{stats?.deferred ? ` (${stats.deferred})` : ""}
         </button>
-        <button
-          title="查看被延后的文件清单（体积 / 原因 / 路径）"
-          onClick={showDeferred}
-        >
-          延后清单
+        <button onClick={showDeferredList}>延后清单</button>
+        <div className="divider" />
+        <button className="primary" onClick={() => setShowDecide(true)} title="无法自动比对的文件，入库与否由人工决定">
+          待决定{stats?.decisions.pending ? ` (${stats.decisions.pending})` : ""}
         </button>
-        <button
-          className="primary"
-          title="无法自动比对的文件（扫描件/图片/CAD/压缩包等）：入不入库由你决定"
-          onClick={() => setShowDecide(true)}
-        >
-          待决定{stats?.decisions?.pending ? `(${stats.decisions.pending})` : ""}
+        <button onClick={() => setShowSalvage(true)} title="原产物是二进制打捞的文件：用真实提取结果重写 .md">
+          需重新转换{stats?.salvage ? ` (${stats.salvage})` : ""}
         </button>
-        <button
-          title="原转换产物是二进制打捞垃圾的文件：用真实提取结果（CAD 文字 / OCR）重写 .md，原文件自动备份"
-          onClick={() => setShowSalvage(true)}
-        >
-          需重新转换{stats?.salvage ? `(${stats.salvage})` : ""}
-        </button>
-        {stats && (
-          <span className="score" title="已评测 / 全部文件 · 平均自动分 · 已人工裁决 · 延后大文件">
-            已评测 {stats.evaluated}/{stats.total}
-            {stats.avg_score != null ? ` · 均分 ${stats.avg_score}%` : ""} · 已裁 {stats.reviewed}
-            {stats.deferred ? ` · 延后 ${stats.deferred}` : ""}
-            {stats.decisions?.pending ? ` · 待决定 ${stats.decisions.pending}` : ""}
-            {stats.salvage ? ` · 需重转 ${stats.salvage}` : ""}
-            {stats.totals && stats.totals.src_chars > 0 && (
-              <span
-                className="score"
-                title="全库源文件抽取字数 → 入库 .md 字数（不含 front-matter / 注释 / 标题）"
-              >
-                {" "}
-                · 总字数 {stats.totals.src_chars.toLocaleString()}→{stats.totals.md_chars.toLocaleString()}
-                {stats.totals.char_ratio != null && `（保留 ${stats.totals.char_ratio}%）`}
-              </span>
-            )}
-          </span>
-        )}
-        <label className="btn" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-          上传新文件
+        <div className="spacer" />
+        <label className="btn" style={{ display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--border-strong)", borderRadius: "var(--r)", padding: "6px 12px", cursor: "pointer", background: "var(--surface)" }}>
+          上传文件
           <input
             type="file"
             style={{ display: "none" }}
@@ -328,286 +307,233 @@ export default function App() {
               if (!f) return;
               try {
                 const r = await api.upload(f, sid);
-                setMsg({ kind: "warn", text: `已上传 ${r.rel} 到源目录，等待转换生成 .md` });
+                say("warn", `已上传 ${r.rel} 到源目录，等待转换生成 .md`);
               } catch (err: any) {
-                setMsg({ kind: "err", text: "上传失败：" + err.message });
+                say("err", "上传失败：" + err.message);
               }
               e.target.value = "";
             }}
           />
         </label>
-        <div className="spacer" />
-        {job && (job.status === "queued" || job.status === "running") && (
-          <div className="progress-wrap">
-            <div className="progress-bar">
-              <i style={{ width: `${job.progress}%` }} />
-            </div>
-            <span>
-              {job.progress}% · {job.message || "处理中"}
+        <div className="divider" />
+        <select
+          value={reviewer}
+          onChange={(e) => setReviewer(e.target.value)}
+          title="当前审核人（决定写入审计日志的身份）"
+          style={{ width: 150 }}
+        >
+          <option value="">选择审核人…</option>
+          {reviewers.filter((r) => r.enabled).map((r) => (
+            <option key={r.id || r.name} value={r.name}>
+              {r.name}（{r.role}）
+            </option>
+          ))}
+        </select>
+        <button onClick={() => setShowReviewers(true)} title="管理审核人名单">配置</button>
+      </header>
+
+      {/* ---------- 统计行（独立成行） ---------- */}
+      <div className="statsbar">
+        <div className="stat">
+          <span className="stat-k">已评测 / 全部</span>
+          <span className="stat-v num">
+            {stats ? `${stats.evaluated.toLocaleString()}/${stats.total.toLocaleString()}` : "—"}
+          </span>
+        </div>
+        <div className="stat">
+          <span className="stat-k">平均保真度</span>
+          <span className={`stat-v num ${stats?.avg_score == null ? "" : stats.avg_score >= 90 ? "good" : stats.avg_score >= 70 ? "warn" : "bad"}`}>
+            {stats?.avg_score != null ? `${stats.avg_score}%` : "—"}
+          </span>
+        </div>
+        <div className="stat clickable" onClick={() => setStatus("unreviewed")} title="只看未审">
+          <span className="stat-k">未审</span>
+          <span className="stat-v num">{stats?.by_state.unreviewed?.toLocaleString() ?? "—"}</span>
+        </div>
+        <div className="stat clickable" onClick={() => setStatus("trusted")} title="只看可信">
+          <span className="stat-k">可信</span>
+          <span className="stat-v num good">{stats?.by_state.trusted?.toLocaleString() ?? "—"}</span>
+        </div>
+        <div className="stat clickable" onClick={() => setStatus("need_review")} title="只看待复核">
+          <span className="stat-k">待复核</span>
+          <span className="stat-v num warn">{stats?.by_state.need_review?.toLocaleString() ?? "—"}</span>
+        </div>
+        <div className="stat clickable" onClick={() => setStatus("diff_big")} title="只看差异大">
+          <span className="stat-k">差异大</span>
+          <span className="stat-v num bad">{stats?.by_state.diff_big?.toLocaleString() ?? "—"}</span>
+        </div>
+        <div className="stat clickable" onClick={() => setShowDecide(true)} title="打开人工决定队列">
+          <span className="stat-k">待决定</span>
+          <span className="stat-v num warn">{stats?.decisions.pending?.toLocaleString() ?? "—"}</span>
+        </div>
+        <div className="stat">
+          <span className="stat-k">延后</span>
+          <span className="stat-v num">{stats?.deferred ?? "—"}</span>
+        </div>
+        {stats?.totals && stats.totals.src_chars > 0 && (
+          <div className="stat" title="全库源文件抽取字数 → 入库 .md 字数">
+            <span className="stat-k">总字数 源 → md</span>
+            <span className="stat-v num">
+              {(stats.totals.src_chars / 1e6).toFixed(1)}M → {(stats.totals.md_chars / 1e6).toFixed(1)}M
+              {stats.totals.char_ratio != null && <small>保留 {stats.totals.char_ratio}%</small>}
             </span>
           </div>
         )}
-        {job && job.status === "done" && <span className="score">上一任务完成 ✓</span>}
-        {job && job.status === "error" && (
-          <span className={`badge ${job.message?.includes("中断") ? "need_review" : "rejected"}`}>
-            {job.message?.includes("中断") ? "任务被重启中断" : "任务失败"}：{job.message}
-          </span>
+
+        {busy && (
+          <div className="runbar">
+            <div className="runbar-track"><i style={{ width: `${job!.progress}%` }} /></div>
+            <span className="num">{job!.progress}%</span>
+            <span className="truncate" style={{ maxWidth: 260 }}>{job!.message}</span>
+          </div>
         )}
       </div>
 
-      {msg && (
-        <div className={`notice ${msg.kind === "err" ? "err" : ""}`} onClick={() => setMsg(null)}>
-          {msg.text}（点击关闭）
+      {/* ---------- 通知条 ---------- */}
+      {notice && (
+        <div className={`notice ${notice.kind === "err" ? "err" : notice.kind === "ok" ? "ok" : ""}`}>
+          <span>{notice.text}</span>
+          <button className="ghost sm" onClick={() => setNotice(null)}>关闭</button>
         </div>
       )}
 
+      {/* ---------- 主体 ---------- */}
       <div className="main">
-        <div className="sidebar">
-          <div className="sidebar-head">
-            <input
-              type="search"
-              placeholder="筛选当前数据源下已转 .md 的文件…"
-              onChange={(e) => {
-                const q = e.target.value.toLowerCase();
-                setFiles((prev) =>
-                  q ? prev.filter((f) => f.rel.toLowerCase().includes(q)) : prev
-                );
-              }}
-            />
-            <div className="filter-row">
-              {STATUS_TABS.map((t) => (
-                <button
-                  key={t.key || "all"}
-                  className={`chip ${status === t.key ? "active" : ""}`}
-                  onClick={() => setStatus(t.key)}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="file-list">
-            {files.length === 0 && <div className="empty">该筛选条件下暂无文件</div>}
-            {files.map((f) => (
-              <div
-                key={f.rel}
-                ref={(el) => (fileRefs.current[f.rel] = el)}
-                className={`file-item ${sel === f.rel ? "sel" : ""}`}
-                onClick={() => {
-                  setSel(f.rel);
-                  setPage(1);
-                }}
-              >
-                <div className="name">{f.rel.split("/").pop()}</div>
-                <div className="path">{f.rel}</div>
-                <div className="meta">
-                  <span className={`badge ${f.state}`}>{f.label}</span>
-                  <span className="score">{f.auto_score != null ? `自动 ${f.auto_score}%` : "无自动分"}</span>
-                  {f.src_chars != null && f.md_chars != null && (
-                    <span
-                      className="score"
-                      title={`源 ${f.src_chars.toLocaleString()} 字 → md ${f.md_chars.toLocaleString()} 字`}
-                    >
-                      字 {f.src_chars.toLocaleString()}→{f.md_chars.toLocaleString()}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <FileTree
+          sid={sid}
+          sel={sel}
+          status={status}
+          onStatus={setStatus}
+          onPick={(rel) => setSel(rel)}
+        />
 
-        <div className="workspace">
+        <div className="work">
           {!sel ? (
-            <div className="empty">从左侧选择一个文件开始核对</div>
+            <div className="empty" style={{ paddingTop: 80 }}>
+              从左侧目录树中选择一个文件开始核对
+            </div>
           ) : (
             <>
-              <div className="file-head">
-                <div className="rel">{sel}</div>
-                <div className="kv">
-                  <span>
-                    状态 <span className={`badge ${badgeOf(sel)?.state || "unreviewed"}`}>{badgeOf(sel)?.label || "未审"}</span>
-                  </span>
-                  <span>
-                    自动分 <b>{badgeOf(sel)?.auto_score != null ? badgeOf(sel)!.auto_score + "%" : "—"}</b>
-                  </span>
-                  <WordsMeter b={badgeOf(sel)} />
-                  <span className="legend">
-                    <span>
-                      <i style={{ background: "var(--green-bg)", border: "1px solid var(--green-bd)" }} />
-                      两侧一致
-                    </span>
-                    <span>
-                      <i style={{ background: "var(--red-bg)", border: "1px solid var(--red-bd)" }} />
-                      源有 / md 无（可能漏转）
-                    </span>
-                    <span>
-                      <i style={{ background: "var(--amber-bg)", border: "1px solid #f2d99a" }} />
-                      md 多出
-                    </span>
-                  </span>
-                </div>
-              </div>
-
-              <div className="toolbar">
-                <button className="primary" onClick={runCompare} disabled={!!job && job.status === "running"}>
-                  运行自动评测
-                </button>
-                <button
-                  className={leftMode === "preview" ? "active" : ""}
-                  onClick={() => setLeftMode("preview")}
-                  title="左栏显示源文件原貌（PDF/图片/表格/幻灯片/邮件/CAD），右栏显示转换后的 .md"
-                >
-                  源文件预览
-                </button>
-                <button
-                  className={leftMode === "text" ? "active" : ""}
-                  onClick={() => setLeftMode("text")}
-                  title="逐行对齐：源文与 .md 一致为绿、缺失为红，可只看差异"
-                >
-                  逐行比对
-                </button>
-                {leftMode === "text" && (
-                  <>
-                    <button className={onlyDiff ? "active" : ""} onClick={() => { setOnlyDiff(!onlyDiff); setPage(1); }}>
-                      只看差异
-                    </button>
-                    <button className={!onlyDiff ? "active" : ""} onClick={() => { setOnlyDiff(false); setPage(1); }}>
-                      全部内容
-                    </button>
-                  </>
-                )}
+              <div className="filehead">
+                <div className="path truncate" title={sel}>{sel}</div>
                 <div className="spacer" />
-                <span className="hint">
-                  {leftMode === "preview"
-                    ? mdText
-                      ? `md ${mdText.chars.toLocaleString()} 字 / ${mdText.words.toLocaleString()} 词`
-                      : loadingDiff
-                        ? "加载中…"
-                        : ""
-                    : loadingDiff
-                      ? "加载中…"
-                      : diff?.not_applicable
-                        ? "不适用"
-                        : `共 ${diff?.total ?? 0} 条 · 第 ${page}/${diff?.pages ?? 1} 页`}
-                </span>
-                {leftMode === "text" && (
-                  <>
-                    <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-                      上一页
-                    </button>
-                    <button disabled={!diff || page >= diff.pages} onClick={() => setPage((p) => p + 1)}>
-                      下一页
-                    </button>
-                  </>
-                )}
-              </div>
-
-              {leftMode === "preview" ? (
-                <div className="split">
-                  <div className="pane">
-                    <SourcePreview sid={sid} rel={sel} onTextMode={() => setLeftMode("text")} />
-                  </div>
-                  <div className="pane">
-                    <div className="pane-head">
-                      <b>入库 .md</b>
-                      {mdText?.salvage && (
-                        <span className="badge rejected" title="原产物是二进制字符串打捞，建议用「需重新转换」重写">
-                          salvage 无效产物
+                <div className="filemeta">
+                  <span className={`score-pill ${scoreCls}`}>
+                    {score != null ? `自动 ${score}%` : "无自动分"}
+                  </span>
+                  {badge && (
+                    <>
+                      <span className={`badge ${badge.state}`}>{badge.label}</span>
+                      {badge.src_chars != null && badge.md_chars != null && (
+                        <span className="kv" title="源文件独立抽取字数 → 入库 .md 字数">
+                          字数 <b>{badge.src_chars.toLocaleString()}</b> → <b>{badge.md_chars.toLocaleString()}</b>
                         </span>
-                      )}
-                      <div className="spacer" />
-                      {mdText && !mdText.missing && (
-                        <span className="score">
-                          {mdText.chars.toLocaleString()} 字 · {mdText.words.toLocaleString()} 词
-                        </span>
-                      )}
-                    </div>
-                    <div className="pane-body">
-                      {mdText === null ? (
-                        <div className="empty">读取 .md 中…</div>
-                      ) : mdText.missing ? (
-                        <div className="empty">
-                          该文件还没有对应的 .md —— 请先运行「批量评测」触发转换，或用「需重新转换」生成。
-                        </div>
-                      ) : (
-                        <MdView md={mdText} />
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-              <div className="diff-wrap">
-                {diff?.not_applicable ? (
-                  <div className="empty">
-                    该文件不适用文本对比：{diff.reason}（图纸 / 视频 / 无文本层）—— 切到「源文件预览」查看原貌
-                  </div>
-                ) : (
-                  <>
-                    {diff?.verdict && <div className="notice">{diff.verdict}</div>}
-                    <div className="diff-head">
-                        <div>#</div>
-                        <div>源文件（引擎 B 独立抽取）</div>
-                        <div>#</div>
-                        <div className="mid">入库 .md（已剥离管线元数据）</div>
-                      </div>
-                      {(diff?.segments || []).map((s: Segment, i: number) => (
-                        <div key={i} className={`diff-row ${s.status}`}>
-                          <div className="no">{s.src_no ?? ""}</div>
-                          <div className="src">{s.src ?? ""}</div>
-                          <div className="no">{s.md_no ?? ""}</div>
-                          <div className={`mid md ${s.md ? "" : "gone"}`}>{s.md ?? "（转换结果中无对应内容）"}</div>
-                        </div>
-                      ))}
-                      {diff && diff.segments.length === 0 && (
-                        <div className="empty">
-                          {onlyDiff ? "没有差异 —— 两侧内容全部对齐" : "无内容"}
-                        </div>
                       )}
                     </>
                   )}
                 </div>
+              </div>
+
+              <div className="toolbar">
+                <button className="primary" onClick={runCompare} disabled={busy}>
+                  重新评测
+                </button>
+                <div className="divider" style={{ width: 1, height: 20, background: "var(--border)" }} />
+                <button className={showMarks ? "on" : ""} onClick={() => setShowMarks((v) => !v)}>
+                  高亮命中
+                </button>
+                <div className="seg">
+                  <button className={!onlyDiff ? "on" : ""} onClick={() => setOnlyDiff(false)}>全部内容</button>
+                  <button className={onlyDiff ? "on" : ""} onClick={() => setOnlyDiff(true)}>只看差异</button>
+                </div>
+                <input
+                  type="search"
+                  value={lineSearch}
+                  onChange={(e) => setLineSearch(e.target.value)}
+                  placeholder="在 md 中查找…"
+                  style={{ width: 180 }}
+                />
+                <div className="spacer" />
+                <span className="legend">
+                  <span><i style={{ background: "var(--green-bg)", borderColor: "var(--green-border)" }} />两侧一致</span>
+                  <span><i style={{ background: "var(--red-bg)", borderColor: "var(--red-border)" }} />md 多出 / 源文有</span>
+                </span>
+                {align && !align.not_applicable && (
+                  <span className="hint num">
+                    {align.total_lines.toLocaleString()} 行
+                  </span>
+                )}
+              </div>
+
+              {align?.verdict && (
+                <div className="callout warn" style={{ margin: 0, borderRadius: 0, border: 0, borderBottom: "1px solid var(--amber-border)" }}>
+                  {align.verdict}
+                </div>
               )}
 
+              <div className="split">
+                <div className="pane">
+                  {md === null ? (
+                    <div className="empty"><span className="spin" /></div>
+                  ) : (
+                    <SourcePane
+                      sid={sid}
+                      rel={sel}
+                      page={page}
+                      onPage={setPage}
+                      onPageCount={setPageCount}
+                      showMarks={showMarks}
+                    />
+                  )}
+                </div>
+                <div className="pane">
+                  {md === null ? (
+                    <div className="empty">读取 .md 中…</div>
+                  ) : (
+                    <MdPane
+                      md={md}
+                      align={align}
+                      onlyDiff={onlyDiff}
+                      search={lineSearch}
+                      curLine={curLine}
+                      onPickLine={pickLine}
+                    />
+                  )}
+                </div>
+              </div>
+
               <div className="verdictbar">
-                <span style={{ fontSize: 12, color: "var(--muted)" }}>人工裁决</span>
-                <button
-                  className={`vbtn ok ${badgeOf(sel)?.trust_state === "ok" ? "sel" : ""}`}
-                  onClick={() => doVerdict("ok")}
-                >
+                <span className="lbl">人工裁决</span>
+                <button className={`vbtn ok ${badge?.trust_state === "ok" ? "sel" : ""}`} onClick={() => doVerdict("ok")}>
                   一致
                 </button>
-                <button
-                  className={`vbtn diff ${badgeOf(sel)?.trust_state === "diff_big" ? "sel" : ""}`}
-                  onClick={() => doVerdict("diff_big")}
-                >
+                <button className={`vbtn diff ${badge?.trust_state === "diff_big" ? "sel" : ""}`} onClick={() => doVerdict("diff_big")}>
                   差异大
                 </button>
-                <button
-                  className={`vbtn rej ${badgeOf(sel)?.trust_state === "rejected" ? "sel" : ""}`}
-                  onClick={() => doVerdict("rejected")}
-                >
+                <button className={`vbtn rej ${badge?.trust_state === "rejected" ? "sel" : ""}`} onClick={() => doVerdict("rejected")}>
                   不接受
                 </button>
-                {badgeOf(sel)?.trust_state && (
-                  <button onClick={() => doVerdict("")} title="撤销裁决，回到未审">
-                    撤销
-                  </button>
+                {badge?.trust_state && (
+                  <button onClick={() => doVerdict("")} title="撤销裁决，回到未审">撤销</button>
                 )}
-                <input
-                  className="reviewer"
-                  value={reviewer}
-                  onChange={(e) => setReviewer(e.target.value)}
-                  placeholder="审核人"
-                  title="审核人（写入审计日志）"
-                />
+                <div className="divider" style={{ width: 1, height: 20, background: "var(--border)" }} />
+                <div className="reviewer-pick">
+                  <span className="lbl">审核人</span>
+                  <select value={reviewer} onChange={(e) => setReviewer(e.target.value)}>
+                    <option value="">选择…</option>
+                    {reviewers.filter((r) => r.enabled).map((r) => (
+                      <option key={r.id || r.name} value={r.name}>{r.name}</option>
+                    ))}
+                  </select>
+                  <button className="ghost sm" onClick={() => setShowReviewers(true)}>管理</button>
+                </div>
                 <input
                   className="note"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   placeholder="裁决备注（可选，写入审计日志）"
                 />
-                <span className="score">{badgeOf(sel)?.badge}</span>
+                {badge?.badge && <span className="dim nowrap">{badge.badge}</span>}
               </div>
             </>
           )}
@@ -619,17 +545,11 @@ export default function App() {
           sid={sid}
           reviewer={reviewer}
           onClose={() => setShowDecide(false)}
-          onChanged={async () => {
-            api.stats(sid).then(setStats).catch(() => {});
-          }}
+          onChanged={refreshStats}
           onReeval={(rel) => {
-            // 入库后对可自动处理的格式立即重跑识别+评测（异步任务，不阻塞面板）
-            api
-              .compare(rel, sid)
-              .then(({ job_id }) => {
-                setJob({ id: job_id, kind: "compare", rel, status: "queued", progress: 0, message: "排队中（重跑识别）", updated_at: "" });
-              })
-              .catch(() => {});
+            api.compare(rel, sid).then(({ job_id }) => {
+              setJob({ id: job_id, kind: "compare", rel, status: "queued", progress: 0, message: "排队中（重跑识别）", updated_at: "" });
+            }).catch(() => {});
           }}
         />
       )}
@@ -639,8 +559,23 @@ export default function App() {
           sid={sid}
           onClose={() => setShowSalvage(false)}
           onChanged={async () => {
-            setStats(await api.stats(sid));
-            setFiles((await api.files(sid, status)).files);
+            refreshStats();
+            if (sel) {
+              setMd(await api.md(sel, sid).catch(() => null));
+              setAlign(await api.align(sel, sid).catch(() => null));
+            }
+          }}
+        />
+      )}
+
+      {showReviewers && (
+        <ReviewerPanel
+          current={reviewer}
+          onPick={(n) => setReviewer(n)}
+          onClose={async () => {
+            setShowReviewers(false);
+            const rv = await api.reviewers().catch(() => null);
+            if (rv) setReviewers(rv.items);
           }}
         />
       )}
@@ -648,14 +583,14 @@ export default function App() {
       {showMgr && (
         <SourceManager
           sources={sources}
+          draft={draft}
+          setDraft={setDraft}
           onClose={() => setShowMgr(false)}
           onSaved={async () => {
             setSources(await api.sources());
             setShowMgr(false);
           }}
           onPick={(which) => setPicker(which)}
-          draft={draft}
-          setDraft={setDraft}
         />
       )}
 

@@ -38,8 +38,18 @@ def compute_state(human_verdict, auto_score):
 
 
 def set_verdict(rel, verdict, reviewer="local", note=""):
-    """写人工裁决 + 审计日志。verdict ∈ {ok, diff_big, rejected, None(重置为未审)}。"""
+    """写人工裁决 + 审计日志。verdict ∈ {ok, diff_big, rejected, ""/None(撤销裁决)}。
+
+    ⚠️ 撤销时必须**一并清空 reviewer 与 note**。
+    早期版本只把 trust_state 置空、审核人姓名照旧留着，于是产生
+    「某审核人审过、但没有结论」的幽灵记录 —— 界面上显示为"未审"，
+    却在 reviewer_stats 里给该审核人记了工作量，审计账目对不上。
+    「谁签的字」和「签了什么结论」必须同时存在或同时消失。
+    """
     now = db.now()
+    # 撤销：清空结论 ⇒ 身份与备注一并清空
+    if not verdict:
+        reviewer, note = "", ""
 
     def _do():
         con = db.trust_rw()
@@ -47,16 +57,23 @@ def set_verdict(rel, verdict, reviewer="local", note=""):
             row = con.execute("SELECT trust_state, rev_no FROM file_trust WHERE rel=?", (rel,)).fetchone()
             old = row["trust_state"] if row else None
             rev = (row["rev_no"] or 0) + 1 if row else 1
-            con.execute(
-                "INSERT INTO file_trust(rel,trust_state,reviewer,reviewed_at,note,rev_no) "
-                "VALUES(?,?,?,?,?,?) ON CONFLICT(rel) DO UPDATE SET "
-                "trust_state=excluded.trust_state, reviewer=excluded.reviewer, "
-                "reviewed_at=excluded.reviewed_at, note=excluded.note, rev_no=excluded.rev_no",
-                (rel, verdict, reviewer, now, note, rev),
-            )
+            # 撤销：直接删行。只置空会留下一条「无主空行」——
+            # badges/统计仍会把它算成一条记录，界面上出现没有结论、
+            # 没有审核人的幽灵条目。审计日志保留（file_trust_log），
+            # 「曾经审过、后来撤销」这件事本身要留痕。
+            if not verdict:
+                con.execute("DELETE FROM file_trust WHERE rel=?", (rel,))
+            else:
+                con.execute(
+                    "INSERT INTO file_trust(rel,trust_state,reviewer,reviewed_at,note,rev_no) "
+                    "VALUES(?,?,?,?,?,?) ON CONFLICT(rel) DO UPDATE SET "
+                    "trust_state=excluded.trust_state, reviewer=excluded.reviewer, "
+                    "reviewed_at=excluded.reviewed_at, note=excluded.note, rev_no=excluded.rev_no",
+                    (rel, verdict, reviewer, now, note, rev),
+                )
             con.execute(
                 "INSERT INTO file_trust_log(rel,from_state,to_state,reviewer,ts,note) VALUES(?,?,?,?,?,?)",
-                (rel, old, verdict, reviewer, now, note),
+                (rel, old, verdict or None, reviewer, now, note),
             )
             con.commit()
             return rev
@@ -347,3 +364,34 @@ def totals():
         "char_ratio": round(100.0 * r["mc"] / sc, 1) if sc else None,
         "word_ratio": round(100.0 * r["mw"] / sw, 1) if sw else None,
     }
+
+
+def reviewer_stats():
+    """每位审核人的裁决数量（按 file_trust 当前状态统计）+ 入库决定数。
+
+    供「审核人」配置页展示工作量，也让「谁审了多少」可核对。
+    """
+    out = {}
+    con = db.trust_rw()
+    try:
+        for r in con.execute(
+                "SELECT reviewer, trust_state, COUNT(*) n FROM file_trust "
+                "WHERE reviewer IS NOT NULL AND reviewer<>'' GROUP BY reviewer, trust_state"):
+            d = out.setdefault(r["reviewer"], {"verdicts": 0, "ok": 0,
+                                               "diff_big": 0, "rejected": 0,
+                                               "decisions": 0})
+            n = r["n"] or 0
+            d["verdicts"] += n
+            if r["trust_state"] in ("ok", "diff_big", "rejected"):
+                d[r["trust_state"]] += n
+        for r in con.execute(
+                "SELECT reviewer, decision, COUNT(*) n FROM ingest_decision "
+                "WHERE reviewer IS NOT NULL AND reviewer<>'' GROUP BY reviewer, decision"):
+            d = out.setdefault(r["reviewer"], {"verdicts": 0, "ok": 0,
+                                               "diff_big": 0, "rejected": 0,
+                                               "decisions": 0})
+            d["decisions"] += r["n"] or 0
+    finally:
+        con.close()
+    return out
+

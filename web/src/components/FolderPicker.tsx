@@ -30,26 +30,26 @@ export default function FolderPicker({
   const parent = b.cwd ? b.cwd.replace(/[\\/]+$/, "").split(/[\\/]/).slice(0, -1).join("\\") || "C:\\" : "";
 
   return (
-    <div className="modal-mask" onClick={onClose}>
+    <div className="mask" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <header>
-          {title}
+          <h3>{title}</h3>
           <div className="spacer" />
           <button onClick={onClose}>关闭</button>
         </header>
         <div className="body">
-          {err && <div className="notice err">{err}</div>}
-          <div className="cwd">当前：{b.cwd || "（选择盘符）"}</div>
-          <div className="dir-grid" style={{ marginBottom: 10 }}>
+          {err && <div className="notice err" style={{ margin: "0 0 11px" }}>{err}</div>}
+          <div className="cwd">当前：{b.cwd || "（先选择盘符）"}</div>
+          <div className="dirgrid" style={{ marginBottom: 10 }}>
             {!!b.cwd && (
-              <div className="dir-item" onClick={() => load(parent)}>
-                .. 上一级
+              <div className="di" onClick={() => load(parent)}>
+                ‹‹ 上一级
               </div>
             )}
             {b.dirs.map((d) => (
               <div
                 key={d}
-                className="dir-item"
+                className="di"
                 onClick={() => load(b.cwd ? `${b.cwd.replace(/[\\/]+$/, "")}\\${d}` : `${d}\\`)}
               >
                 {d}

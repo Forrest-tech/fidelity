@@ -2,16 +2,22 @@
 """前端渲染契约测试：核对 UI 实际依赖的每个 API 字段是否齐备、类型正确。
 
 为什么需要这个：浏览器截图在本机沙箱里连不上本地端口（ERR_CONNECTION_REFUSED），
-无法做像素级验收。改用「契约测试」——把 App.tsx / SourcePreview.tsx 里读到的
-每一个字段都在真实 API 响应里核对一遍。字段缺失会让界面空白或报 undefined，
-这正是 UI bug 的主要来源。
+无法做像素级验收。改用「契约测试」——把 App.tsx / FileTree.tsx / SourcePane.tsx /
+MdPane.tsx / ReviewerPanel.tsx 里读到的每一个字段都在真实 API 响应里核对一遍。
+字段缺失会让界面空白或报 undefined，这正是 UI bug 的主要来源。
+
+本轮重点（用户 2026-10-05 的 4 条反馈对应的接口）：
+  1. /tree       侧栏显示**原目录结构**（不再是扁平列表）
+  2. /align      逐行状态，供右栏 md 上色 —— 且**必须与 /md 的 lines 同下标**
+  3. /marks      源文件页内归一化坐标，供左栏叠加绿色高亮框
+  4. /reviewers  审核人受管名单（取代自由输入）+ 裁决时强制校验
 
 用法：python scripts/ui_contract_check.py
 """
-import io
 import json
 import os
 import sys
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -22,11 +28,29 @@ BASE = "http://127.0.0.1:8000/api"
 FAILS = []
 CHECKS = [0]
 
+LINE_STATUS = {"match", "changed", "md_only", "src_only", "unmatched"}
+
 
 def get(path, **params):
     q = urllib.parse.urlencode(params)
     url = "%s/%s%s" % (BASE, path, ("?" + q) if q else "")
-    with urllib.request.urlopen(url, timeout=180) as r:
+    with urllib.request.urlopen(url, timeout=300) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+
+def post(path, body, **params):
+    q = urllib.parse.urlencode(params)
+    url = "%s/%s%s" % (BASE, path, ("?" + q) if q else "")
+    data = json.dumps(body).encode("utf-8")
+    req = urllib.request.Request(url, data=data, method="POST",
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=300) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+
+def delete(path):
+    req = urllib.request.Request("%s/%s" % (BASE, path), method="DELETE")
+    with urllib.request.urlopen(req, timeout=60) as r:
         return json.loads(r.read().decode("utf-8"))
 
 
@@ -39,24 +63,48 @@ def need(cond, label, extra=""):
         print("  ok    %s" % label)
 
 
-def pick_sample(sid, exts, want_flags=None):
+def pick_sample(sid, exts, skip_encrypted=True):
     """从库里挑一个真实文件（按扩展名）。"""
     src = config.get_source(sid)
     root = src["src_root"]
     for r, d, fs in os.walk(root):
         for f in fs:
             if os.path.splitext(f)[1].lower() in exts:
-                return os.path.relpath(os.path.join(r, f), root).replace("\\", "/")
+                rel = os.path.relpath(os.path.join(r, f), root).replace("\\", "/")
+                if skip_encrypted and "AS2304-2019 Fire tank" in f:
+                    continue          # 已知加密 PDF（第三方加密处理器打不开）
+                return rel
     return None
+
+
+def walk_dirs(node):
+    """深度优先遍历目录树节点。"""
+    for d in node.get("dirs") or []:
+        yield d
+        for x in walk_dirs(d):
+            yield x
+
+
+def all_tree_files(node):
+    for f in node.get("files") or []:
+        yield f
+    for d in walk_dirs(node):
+        for f in d.get("files") or []:
+            yield f
 
 
 def main():
     sid = "n2"
-    print("== 1. /stats（顶栏总览）==")
+
+    # ============================================================ 1. /stats
+    print("== 1. /stats（统计行 · 独立成行的那一条）==")
     st = get("stats", sid=sid)
-    for k in ("total", "evaluated", "avg_score", "reviewed", "deferred"):
+    for k in ("total", "evaluated", "avg_score", "reviewed", "reviewed_pct",
+              "deferred", "salvage"):
         need(k in st, "stats.%s" % k)
     need(isinstance(st.get("by_state"), dict), "stats.by_state 是对象")
+    for k in ("trusted", "need_review", "diff_big", "rejected", "unreviewed"):
+        need(k in (st.get("by_state") or {}), "stats.by_state.%s（可点击筛选）" % k)
     need(isinstance(st.get("decisions"), dict), "stats.decisions 是对象")
     for k in ("pending", "include", "exclude"):
         need(k in (st.get("decisions") or {}), "stats.decisions.%s" % k)
@@ -67,50 +115,317 @@ def main():
     print("  totals: 源 %s 字 → md %s 字（保留 %s%%）"
           % (t.get("src_chars"), t.get("md_chars"), t.get("char_ratio")))
 
-    print("== 2. /files（侧边栏列表 Badge 字段）==")
+    # ====================================================== 2. /tree 目录树
+    print("== 2. /tree（侧栏原目录结构）==")
+    tr = get("tree", sid=sid)
+    for k in ("name", "dirs", "files", "counts"):
+        need(k in tr, "TreeResp.%s" % k)
+    for k in ("all", "trusted", "need_review", "diff_big", "rejected", "unreviewed"):
+        need(k in (tr.get("counts") or {}), "TreeCounts.%s" % k)
+    need(len(tr.get("dirs") or []) > 0, "根目录下有子目录（层级已保留）",
+         "(%d)" % len(tr.get("dirs") or []))
+    n_dirs = len(list(walk_dirs(tr)))
+    need(n_dirs > 3, "存在多层嵌套目录（不是扁平列表）",
+         "(%d 个目录节点)" % n_dirs)
+
+    tf = list(all_tree_files(tr))
+    need(len(tf) > 0, "树里有文件", "(%d)" % len(tf))
+    for k in ("rel", "name", "ext", "state", "label", "auto_score"):
+        need(k in tf[0], "TreeFile.%s" % k)
+    need(any("/" in f["rel"] for f in tf), "TreeFile.rel 保留多级路径")
+
+    # 计数自洽：根 counts.all == 递归文件数 == 各子目录之和
+    nested = sum(1 for _ in all_tree_files(tr))
+    eq_ok = tr["counts"]["all"] == nested
+    need(eq_ok, "根 counts.all == 递归文件数",
+         "(counts=%d, 递归=%d)" % (tr["counts"]["all"], nested))
+    dir_sum = sum(d["counts"]["all"] for d in tr["dirs"])
+    need(tr["counts"]["all"] == dir_sum + len(tr["files"]),
+         "根 counts = 子目录之和 + 根级文件",
+         "(%d vs %d+%d)" % (tr["counts"]["all"], dir_sum, len(tr["files"])))
+    for d in walk_dirs(tr):
+        sub = sum(x["counts"]["all"] for x in d["dirs"]) + len(d["files"])
+        if d["counts"]["all"] != sub:
+            need(False, "目录 %s 计数自洽" % d["name"],
+                 "(%d vs %d)" % (d["counts"]["all"], sub))
+            break
+    else:
+        need(True, "所有目录节点计数自洽（自底向上汇总正确）")
+
+    # 筛选：按状态
+    tr2 = get("tree", sid=sid, status="unreviewed")
+    need(tr2["counts"]["all"] <= tr["counts"]["all"], "状态筛选后文件数不增加",
+         "(%d ≤ %d)" % (tr2["counts"]["all"], tr["counts"]["all"]))
+    need(all(f["state"] == "unreviewed" for f in all_tree_files(tr2)),
+         "状态筛选后仅含该状态文件")
+    # 搜索
+    tr3 = get("tree", sid=sid, q="3500")
+    need(tr3["counts"]["all"] < tr["counts"]["all"], "搜索能缩小结果集",
+         "(%d < %d)" % (tr3["counts"]["all"], tr["counts"]["all"]))
+    need(all("3500" in f["rel"].lower() for f in all_tree_files(tr3)),
+         "搜索结果全部命中关键词")
+    # 搜索无命中时不报错
+    tr4 = get("tree", sid=sid, q="__no_such_keyword__")
+    need(tr4["counts"]["all"] == 0, "搜索无命中返回空树而非报错")
+
+    # ==================================================== 3. /files 徽标
+    print("== 3. /files（工作区标题栏徽标）==")
     fl = get("files", sid=sid, status="")
     files = fl["files"]
+    need("count" in fl and "total" in fl, "files 返回 count/total")
     need(len(files) > 0, "files 非空", "(%d)" % len(files))
     b = files[0]
     for k in ("rel", "state", "label", "badge", "auto_score", "trust_state", "reviewer"):
         need(k in b, "Badge.%s" % k)
-    # 字数字段：对**已评测**的文件必须存在且为整数。
-    # （未评测的文件 auto_score/src_chars 本来就是 null，属正常状态，
-    #   不能拿列表第一行当断言对象 —— 它恰好可能是未评测的。）
-    need(any("src_chars" in x for x in files), "Badge 含 src_chars 字段")
     scored = [x for x in files if x.get("auto_score") is not None]
-    need(len(scored) > 0, "存在已评测文件（auto_score 非空）", "(%d)" % len(scored))
+    need(len(scored) > 0, "存在已评测文件", "(%d)" % len(scored))
     bad = [x["rel"] for x in scored
            if not isinstance(x.get("src_chars"), int)
            or not isinstance(x.get("md_chars"), int)]
     need(not bad, "已评测文件的字数字段均为整数",
          "异常 %d 个，例：%s" % (len(bad), bad[0][-40:] if bad else ""))
 
-
-    print("== 3. /md（右栏 md 原文 MdResp 字段）==")
+    # ============================================ 4. /md + /align 下标一致性
+    print("== 4. /md 与 /align 的下标一致性（错位就会把绿色标到错误的行上）==")
     rel_pdf = pick_sample(sid, {".pdf"})
+    need(rel_pdf is not None, "找到 PDF 样本")
     md = get("md", sid=sid, rel=rel_pdf)
-    for k in ("rel", "text", "missing", "chars", "words"):
+    for k in ("rel", "text", "lines", "missing", "salvage", "chars", "words"):
         need(k in md, "MdResp.%s" % k)
-    need("salvage" in md, "MdResp.salvage")
+    need(isinstance(md["lines"], list), "MdResp.lines 是数组")
     need(md["chars"] >= 0 and md["words"] >= 0, "MdResp 字数非负")
-    print("  样本 %s：%d 字 / %d 词" % (rel_pdf.split("/")[-1][:36], md["chars"], md["words"]))
+    need(all(isinstance(x, str) for x in md["lines"]), "MdResp.lines 全是字符串")
+    longest = max((len(x) for x in md["lines"]), default=0)
+    need(longest <= 20100, "单行已截断保护（防浏览器崩）", "(max=%d)" % longest)
 
-    print("== 4. /diff（逐行比对 DiffResp 字段）==")
-    df = get("diff", sid=sid, rel=rel_pdf, page=1, per_page=5, only_diff="false")
-    for k in ("rel", "not_applicable", "segments", "total", "page", "pages",
-              "src_chars", "md_chars", "src_words", "md_words", "by_status", "verdict"):
-        need(k in df, "DiffResp.%s" % k)
-    seg = (df.get("segments") or [{}])[0]
-    for k in ("status", "src", "md", "src_no", "md_no"):
-        need(k in seg, "Segment.%s" % k)
-    need(seg.get("status") in ("match", "src_only", "md_only", "changed"),
-         "Segment.status 合法", "= %r" % seg.get("status"))
-    # 行长度上限（防浏览器崩）
-    longest = max((len(s.get("src") or "") for s in df.get("segments") or []), default=0)
-    need(longest <= 20100, "单行已截断保护", "(max=%d)" % longest)
+    al = get("align", sid=sid, rel=rel_pdf)
+    for k in ("rel", "not_applicable", "status", "src_page", "truncated",
+              "total_lines", "by_status", "verdict"):
+        need(k in al, "AlignResp.%s" % k)
+    need(al["not_applicable"] is False, "PDF 样本可比对")
+    need(len(al["status"]) == len(al["src_page"]), "status 与 src_page 等长",
+         "(%d / %d)" % (len(al["status"]), len(al["src_page"])))
+    # ★ 核心不变量：status 是 md.lines 的**前缀**，且长度 == min(md行数, 上限)。
+    #   前缀语义保证 status[i] 一定对应 md.lines[i]（同一下标）；
+    #   允许比 md 短（超大文件只比对前 N 行），但前端必须仍能渲染全部 md 行 ——
+    #   若前端跟着截断，3 万行的 md 就只剩前 6000 行可见，属于静默丢数据。
+    from app.api.routes import ALIGN_MAX_LINES
+    want = min(len(md["lines"]), ALIGN_MAX_LINES)
+    need(len(al["status"]) == want,
+         "★ align.status 长度 == min(md行数, 比对上限)",
+         "(align=%d, want=%d, md=%d)" % (len(al["status"]), want, len(md["lines"])))
+    need(len(al["status"]) <= len(md["lines"]),
+         "★ align.status 是 md.lines 的前缀（绝不长于 md）",
+         "(align=%d, md=%d)" % (len(al["status"]), len(md["lines"])))
+    need(al["truncated"] == (len(md["lines"]) > want),
+         "truncated 标记与实际一致",
+         "(truncated=%s, md=%d, status=%d)" % (al["truncated"], len(md["lines"]),
+                                               len(al["status"])))
+    need(al["total_lines"] == len(md["lines"]),
+         "★ align.total_lines == md.lines 长度（前端据此告知未比对行数）",
+         "(total=%d, md=%d)" % (al["total_lines"], len(md["lines"])))
+    need(all(s in LINE_STATUS for s in al["status"]), "status 取值全部合法",
+         str(sorted(set(al["status"]) - LINE_STATUS))[:120])
+    need(all(p is None or (isinstance(p, int) and p >= 1) for p in al["src_page"]),
+         "src_page 是 1-based 页号或 null")
+    # 不返回正文（避免同一份文本传两遍，最大 md 有 2.6MB）
+    need("text" not in al, "align 不返回正文（去重，防 2.6MB 双份传输）")
+    # 页码覆盖率：有页码的行应占绝大多数（PDF 才有页码）
+    paged = sum(1 for p in al["src_page"] if p)
+    if al["status"]:
+        need(paged / len(al["status"]) > 0.9, "PDF 样本页码覆盖率 > 90%",
+             "(%.1f%%)" % (100.0 * paged / len(al["status"])))
+    print("  样本 %s" % rel_pdf.split("/")[-1][:40])
+    print("  by_status: %s" % al.get("by_status"))
+    print("  页码覆盖 %d/%d 行" % (paged, len(al["src_page"])))
 
-    print("== 5. /preview/meta（SourcePreview 能力探测）==")
+    # 逐条抽查：status[i] 与 md.lines[i] 语义相符（match 行两侧都该有内容）
+    hits = 0
+    for i, s in enumerate(al["status"]):
+        if s == "match" and md["lines"][i].strip():
+            hits += 1
+    need(hits > 0, "存在 match 行且 md 对应行非空（语义自洽）", "(%d 行)" % hits)
+
+    # ================================================ 5. /marks 左栏高亮坐标
+    print("== 5. /marks（源文件页内坐标 · 左栏绿色高亮框）==")
+    mk = get("marks", sid=sid, rel=rel_pdf, page=1)
+    for k in ("rel", "page", "supported", "lines"):
+        need(k in mk, "MarksResp.%s" % k)
+    need(mk["supported"] is True, "PDF 支持页内坐标")
+    need("page_w" in mk and "page_h" in mk, "MarksResp 带页面尺寸")
+    need(len(mk["lines"]) > 0, "第 1 页取到行坐标", "(%d 行)" % len(mk["lines"]))
+    l0 = mk["lines"][0]
+    for k in ("text", "x", "y", "w", "h", "status"):
+        need(k in l0, "MarkLine.%s" % k)
+    oob = [x for x in mk["lines"]
+           if not (0 <= x["x"] <= 1 and 0 <= x["y"] <= 1
+                   and 0 < x["w"] <= 1 and 0 < x["h"] <= 1)]
+    need(not oob, "所有坐标归一化到 0..1 且宽高为正", "越界 %d 个" % len(oob))
+    need(all(x["status"] in LINE_STATUS for x in mk["lines"]),
+         "MarkLine.status 全部合法")
+    need(any(x["status"] == "match" for x in mk["lines"]),
+         "★ 第 1 页存在 match（可上绿底）",
+         str(sorted({x["status"] for x in mk["lines"]})))
+    need(all(len(x["text"]) <= 200 for x in mk["lines"]), "行文本已截断到 200 字符")
+    # 页内坐标数应与抽取行数量级相符（不是 0 也不是天文数字）
+    need(3 < len(mk["lines"]) < 400, "第 1 页行数量级合理", "(%d)" % len(mk["lines"]))
+
+    # 越界页码必须优雅降级，不能 500
+    mk2 = get("marks", sid=sid, rel=rel_pdf, page=99999)
+    need(mk2.get("supported") is False, "越界页码降级为 supported=False")
+    need(bool(mk2.get("reason")), "降级时必须给出 reason（前端要如实告知用户）")
+    need(mk2.get("lines") == [], "降级时 lines 为空")
+
+    # 非 PDF 必须降级
+    rel_doc = pick_sample(sid, {".docx", ".xlsx", ".msg"})
+    if rel_doc:
+        mk3 = get("marks", sid=sid, rel=rel_doc, page=1)
+        need(mk3.get("supported") is False,
+             "非 PDF 降级（%s）" % os.path.splitext(rel_doc)[1],
+             "kind=%s" % mk3.get("supported"))
+    else:
+        print("  skip  非 PDF 降级（库里无样本）")
+
+    # ============================== 6. /reviewers 名单 + 裁决强制校验
+    print("== 6. /reviewers（审核人受管名单，取代自由输入）==")
+    rv = get("reviewers")
+    need("items" in rv, "返回 items 数组")
+    items = rv["items"]
+    need(len(items) > 0, "名单非空（不能没有可选审核人）", "(%d)" % len(items))
+    for r in items:
+        for k in ("id", "name", "role", "enabled", "verdicts", "ok",
+                  "diff_big", "rejected", "decisions"):
+            need(k in r, "Reviewer.%s（%s）" % (k, r.get("name", "?")))
+    need(all(isinstance(r["verdicts"], int) for r in items), "工作量计数是整数")
+    names = [r["name"] for r in items]
+    need(len(names) == len(set(names)), "审核人姓名不重复（一人一身份）",
+         str(names))
+
+    # 新增 → 校验 → 删除
+    tmp = {"name": "__契约测试临时人__", "role": "测试", "enabled": True}
+    created = post("reviewers", tmp)
+    need(created.get("name") == tmp["name"], "新增审核人成功")
+    need(bool(created.get("id")), "新增返回稳定 id", "id=%r" % created.get("id"))
+    tmp_id = created["id"]
+
+    after = get("reviewers")["items"]
+    need(any(x["id"] == tmp_id for x in after), "新审核人出现在名单里")
+
+    # 改名（upsert 语义）
+    post("reviewers", {"id": tmp_id, "name": tmp["name"], "role": "测试改", "enabled": False})
+    upd = [x for x in get("reviewers")["items"] if x["id"] == tmp_id]
+    need(len(upd) == 1, "按 id 更新不产生重复身份", "(%d 条)" % len(upd))
+    need(upd and upd[0]["role"] == "测试改", "角色已更新")
+    need(upd and upd[0]["enabled"] is False, "停用状态已生效")
+
+    # ★ 核心：不在名单里的审核人，裁决必须被拒（HTTP 400）
+    # 否则「配置」只是装饰品，用户绕过下拉框直接传个陌生名字就写进审计日志了。
+    try:
+        post("review/%s" % urllib.parse.quote(rel_pdf),
+             {"verdict": "ok", "reviewer": "__不在名单里的人__", "note": ""},
+             sid=sid)
+        need(False, "★ 陌生审核人被拒绝（HTTP 400）", "竟然写进去了")
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", "ignore")
+        need(e.code == 400, "★ 陌生审核人被拒绝（HTTP 400）", "code=%d" % e.code)
+        need("审核人" in body, "错误提示指向「审核人配置」", body[:120])
+
+    # 名单内审核人可以通过（用临时人）。
+    # ⚠️ 裁决会**真的写进审计日志**，所以先记住原状态，测完必须原样还原 ——
+    # 否则每跑一次契约测试，就给真实文件留下一条假裁决 + 一个临时审核人身份。
+    before = get("review/%s" % urllib.parse.quote(rel_pdf)) or {}
+    prev_state = {k: before.get(k) for k in
+                   ("trust_state", "reviewer", "note", "rev_no")}
+    ok_resp = post("review/%s" % urllib.parse.quote(rel_pdf),
+                   {"verdict": "ok", "reviewer": tmp["name"], "note": "契约测试"},
+                   sid=sid)
+    need("rev_no" in ok_resp, "名单内审核人裁决成功（含 rev_no 审计号）")
+    need(ok_resp.get("reviewer") == tmp["name"], "裁决记录了审核人姓名")
+
+    # 还原裁决（撤销 → 回到未审；若原本有裁决则写回原值）
+    post("review/%s" % urllib.parse.quote(rel_pdf),
+         {"verdict": "", "reviewer": tmp["name"], "note": ""}, sid=sid)
+    after_state = get("review/%s" % urllib.parse.quote(rel_pdf)) or {}
+    need(after_state.get("trust_state") == prev_state.get("trust_state"),
+         "★ 撤销后回到测试前的状态（不污染真实审计日志）",
+         "(before=%r after=%r)" % (prev_state.get("trust_state"),
+                                   after_state.get("trust_state")))
+
+    # ★ 撤销裁决必须**同时清空审核人身份**。
+    #   只清结论、留姓名 → 产生「审过但无结论」的幽灵记录，
+    #   界面上显示未审，却给该审核人记了工作量，审计账目对不上。
+    need(not (after_state.get("reviewer") or "").strip(),
+         "★ 撤销后审核人身份被清空（不留幽灵记录）",
+         "reviewer=%r" % after_state.get("reviewer"))
+    need(not any(x["name"] == tmp["name"] and x["verdicts"] > 0
+                 for x in get("reviewers")["items"]),
+         "★ 撤销不计入该审核人工作量")
+    need(not (get("review/%s" % urllib.parse.quote(rel_pdf)) or {}).get("reviewer"),
+         "★ 撤销后不留无主空行（file_trust 行已删除）")
+
+    # 若测试前本来就有裁决，写回原值（撤销会清空身份，故用真实审核人还原）
+    if prev_state.get("trust_state"):
+        restore = get("reviewers")["items"]
+        who = prev_state.get("reviewer")
+        pick = next((x["name"] for x in restore
+                     if x["name"] == who and x["enabled"]), None)
+        if pick:
+            post("review/%s" % urllib.parse.quote(rel_pdf),
+                 {"verdict": prev_state["trust_state"], "reviewer": pick,
+                  "note": prev_state.get("note") or ""}, sid=sid)
+    final_state = get("review/%s" % urllib.parse.quote(rel_pdf)) or {}
+    need(final_state.get("trust_state") == prev_state.get("trust_state"),
+         "★ 收尾：裁决状态与测试前完全一致",
+         "(before=%r final=%r)" % (prev_state.get("trust_state"),
+                                   final_state.get("trust_state")))
+    need((final_state.get("reviewer") or "") == (prev_state.get("reviewer") or ""),
+         "★ 收尾：审核人与测试前完全一致",
+         "(before=%r final=%r)" % (prev_state.get("reviewer"),
+                                   final_state.get("reviewer")))
+
+    # 删除临时人
+    d = delete("reviewers/%s" % urllib.parse.quote(tmp_id))
+    need(d.get("ok") is True, "删除审核人成功")
+    need(not any(x["id"] == tmp_id for x in get("reviewers")["items"]),
+         "删除后从名单消失")
+
+    # 删除不存在的 → 404
+    try:
+        delete("reviewers/__nope__")
+        need(False, "删除不存在的审核人返回 404")
+    except urllib.error.HTTPError as e:
+        need(e.code == 404, "删除不存在的审核人返回 404", "code=%d" % e.code)
+
+    # 删除最后一位必须被拒（否则裁决功能被锁死）
+    cur = get("reviewers")["items"]
+    if len(cur) == 1:
+        try:
+            delete("reviewers/%s" % urllib.parse.quote(cur[0]["id"]))
+            need(False, "★ 拒绝删除最后一位审核人", "竟然删成功了")
+        except urllib.error.HTTPError as e:
+            need(e.code == 400, "★ 拒绝删除最后一位审核人", "code=%d" % e.code)
+    else:
+        need(len(cur) >= 1, "名单仍有人可用")
+
+    # 空姓名 → 400
+    try:
+        post("reviewers", {"name": "   "})
+        need(False, "空姓名被拒绝")
+    except urllib.error.HTTPError as e:
+        need(e.code == 400, "空姓名被拒绝（400）", "code=%d" % e.code)
+
+    # ============ 7. /decision 同样受审核人名单约束（入库决定也要可审计）
+    print("== 7. /decision 同样受审核人约束 ==")
+    try:
+        post("decision/%s" % urllib.parse.quote(rel_pdf),
+             {"decision": "include", "reviewer": "__不在名单里的人__", "note": ""},
+             sid=sid)
+        need(False, "★ 陌生审核人的入库决定被拒绝")
+    except urllib.error.HTTPError as e:
+        need(e.code == 400, "★ 陌生审核人的入库决定被拒绝（400）", "code=%d" % e.code)
+
+    # ================================================ 8. /preview/meta 能力探测
+    print("== 8. /preview/meta（左栏始终显示源文件）==")
     for exts, label in (({".pdf"}, "PDF"), ({".png", ".jpg"}, "图片"),
                         ({".dwg", ".dxf"}, "CAD"), ({".xlsx"}, "表格"),
                         ({".msg"}, "邮件")):
@@ -121,8 +436,10 @@ def main():
         info = get("preview/meta", sid=sid, rel=rel)
         need("kind" in info and "pages" in info, "PreviewResp(meta) %s" % label,
              "kind=%s" % info.get("kind"))
+        need(info.get("kind") != "missing", "meta %s 未误报 missing" % label)
 
-    print("== 6. /preview（内容 kind 合法性）==")
+    # ================================================= 9. /preview 内容合法性
+    print("== 9. /preview（左栏渲染内容）==")
     VALID = {"image", "html", "text", "unsupported", "missing", "list"}
     for exts, label in (({".pdf"}, "PDF"), ({".png", ".jpg"}, "图片"),
                         ({".dwg", ".dxf"}, "CAD"), ({".xlsx"}, "表格"),
@@ -141,13 +458,98 @@ def main():
             need(isinstance(c.get("text"), str), "preview.text 是字符串 · %s" % label)
         if c.get("kind") == "unsupported":
             need(bool(c.get("note")), "unsupported 必须给 note · %s" % label)
+        # 左栏图片渲染地址可用
+        if c.get("kind") == "image":
+            try:
+                with urllib.request.urlopen(
+                        "%s/preview/img?%s" % (BASE, urllib.parse.urlencode(
+                            {"sid": sid, "rel": rel, "page": 1, "dpi": 110})),
+                        timeout=180) as r:
+                    need(r.status == 200 and len(r.read()) > 500,
+                         "preview/img 出图 · %s" % label)
+            except Exception as e:
+                need(False, "preview/img 出图 · %s" % label, repr(e)[:100])
 
-    print("== 7. 边界：文件不存在 / 非法 sid ==")
+    # ======================================================= 10. 边界与降级
+    print("== 10. 边界：文件不存在 / 非法 sid ==")
     c = get("preview", sid=sid, rel="__not_exist__/x.pdf")
     need(c.get("kind") in ("missing", "unsupported"), "不存在文件不报错",
          "kind=%s" % c.get("kind"))
     m = get("md", sid=sid, rel="__not_exist__/x.pdf")
     need(m.get("missing") is True, "不存在文件 md.missing=True")
+    need(m.get("lines") == [], "不存在文件 md.lines 为空")
+    a = get("align", sid=sid, rel="__not_exist__/x.pdf")
+    need(a.get("not_applicable") is True, "不存在文件 align 标记不可比对")
+    # 不可比对时也必须返回同构的键（status/src_page 为空数组），
+    # 否则前端读 align.status 得到 undefined，界面会空白而不是提示「无需比对」。
+    need("status" in a and "src_page" in a,
+         "不可比对时仍返回 status/src_page 键（契约同构）",
+         "keys=%s" % sorted(a.keys()))
+    need(a.get("status") == [] and a.get("src_page") == [],
+         "不可比对时不返回脏下标")
+    need(bool(a.get("reason")), "不可比对时给出人话原因（前端要如实告知）")
+    need("lines" not in a, "不可比对时不再用旧的 lines 键（旧设计残留）")
+    k = get("marks", sid=sid, rel="__not_exist__/x.pdf", page=1)
+    need(k.get("supported") is False, "不存在文件 marks 降级")
+
+    # 非法 sid → 404（不是 500）
+    for path, params in (("tree", {"sid": "__nope__"}),
+                         ("align", {"sid": "__nope__", "rel": "x.pdf"}),
+                         ("marks", {"sid": "__nope__", "rel": "x.pdf"})):
+        try:
+            get(path, **params)
+            need(False, "非法 sid 时 /%s 返回 404" % path)
+        except urllib.error.HTTPError as e:
+            need(e.code == 404, "非法 sid 时 /%s 返回 404（不是 500）" % path,
+                 "code=%d" % e.code)
+
+    # ============================================= 11. 源码级防回归（静默丢数据）
+    print("== 11. 源码级防回归 ==")
+    web = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                       "..", "web", "src")
+
+    def read_src(*parts):
+        p = os.path.normpath(os.path.join(web, *parts))
+        if not os.path.exists(p):
+            return None
+        with open(p, "r", encoding="utf-8") as f:
+            return f.read()
+
+    mdp = read_src("components", "MdPane.tsx")
+    if mdp is None:
+        print("  skip  源码检查（未找到 web/src/components/MdPane.tsx）")
+    else:
+        # ★ 曾经的真实缺陷：n = Math.min(lines.length, status.length || lines.length)
+        #   让 3 万行的 md 只渲染前 6000 行，其余静默消失。
+        #   必须遍历 md 的全部行，超出比对上限的行标 nocmp（中性灰）。
+        need("Math.min(lines.length" not in mdp,
+             "★ MdPane 不再按 min(md行, 状态行) 截断（防静默丢数据）")
+        need('"nocmp"' in mdp, "★ MdPane 有独立的 nocmp（未比对）中性态")
+        need("i < compared" in mdp, "★ MdPane 按下标判断是否已比对（前缀语义）")
+        need("align?.truncated" in mdp and "not_applicable" in mdp,
+             "MdPane 对截断/不可比对都有明确提示")
+
+    appx = read_src("App.tsx")
+    if appx is not None:
+        need("SourcePane" in appx and "MdPane" in appx,
+             "App 同时挂载左栏源文件与右栏 md")
+        need("showMarks" in appx, "左栏高亮开关已接入（左栏打绿底）")
+        need("statsbar" in appx, "统计信息独立成行（.statsbar）")
+        need("FileTree" in appx, "侧栏使用目录树组件")
+        need("ReviewerPanel" in appx, "审核人配置面板已接入")
+        # 自由输入框不应再直接决定审核人身份
+        need("<input" in appx, "App 仍有输入框（搜索/备注等）")
+
+    treex = read_src("components", "FileTree.tsx")
+    if treex is not None:
+        need("tchildren" in treex or "trow" in treex,
+             "FileTree 渲染目录层级（保留原结构）")
+
+    sp = read_src("components", "SourcePane.tsx")
+    if sp is not None:
+        need("marks" in sp, "SourcePane 调用 /marks（左栏坐标高亮的数据源）")
+        need("previewImg" in sp, "SourcePane 渲染源文件图像")
+        need("supported" in sp, "SourcePane 处理 marks 不支持的格式")
 
     print()
     print("=" * 56)
