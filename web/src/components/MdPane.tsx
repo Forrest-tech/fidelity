@@ -17,6 +17,24 @@ import { useI18n } from "../i18n";
  * 2. 虚拟滚动：md 最大 2.6MB / 3 万行，全量 DOM 会让浏览器直接卡死。
  *    只渲染视口内 + 上下缓冲区的行，用绝对定位的 spacer 撑出总高度。
  *
+ * 2b. 动态行高（2026-10-05 修复「文字显示不完整」）：
+ *    用户反馈右栏大量文字被截断。根因是**固定行高与折行冲突**：
+ *    `.mdline .tx` 是 `white-space: pre-wrap`，长行会折成 2~3 行，
+ *    但 JS 把每行 `height` 写死 22px —— 折出来的第二行溢出容器，
+ *    视觉上就是「上半行被切掉 + 文字压在下一行上」。
+ *    实测那份 61,083 行的 NCC 文件，窄栏下 **14.9%（9,124 行）会折行**。
+ *
+ *    修法：行高改为**实测**，用「高度表 + 前缀和偏移」代替 `i * rowH`。
+ *      * 高度表按行内容指纹缓存；宽度/缩放/行内容任一变化即失效；
+ *      * 未测量到的行先用估算高度占位，测到后回填并触发重排；
+ *      * 偏移表做前缀和 + 二分查找定位视口首行 —— O(log n)。
+ *    这样文字多长都完整显示，且仍然只渲染视口内的行。
+ *
+ * 2c. 为什么不能只改 CSS（避免以后被「优化」回去）：
+ *    `height: auto` + 去掉绝对定位 → 61083 行全量 DOM，浏览器直接卡死；
+ *    `overflow:hidden` 单行省略 → 又回到「看不到全文」的老问题。
+ *    两者都不可接受，必须保留「虚拟滚动 + 动态行高」。
+ *
  * 3. 页面联动：当前源文件页码变化时，自动滚到该页第一行（smooth），
  *    并且**只有用户不在主动滚动时才跟随**，否则会和用户操作打架。
  *
@@ -32,10 +50,16 @@ import { useI18n } from "../i18n";
  *   * 搜索会自动切到整篇（否则搜到的结果看不到，等于搜索坏了）。
  */
 
-/** 单行高度（px）。必须与 CSS 里的 .mdline 高度一致，改一处要改两处。 */
+/**
+ * 单行**最小**高度（px）—— 也是未测量时的估算值。
+ * ⚠️ 这不是固定行高：文字折行时行会变高，真实高度由 DOM 实测覆盖（见 2b）。
+ * 单行文字的视觉高度仍需与 CSS 的 .mdline font-size/line-height 匹配。
+ */
 const ROW_H = 22;
 /** 视口上下各多渲染的行数 —— 预加载缓冲，避免快速滚动时露白。 */
 const OVERSCAN = 20;
+/** 高度表最大缓存条目数：超出后按「越新越常用」整体收缩，防止无限增长。 */
+const HEIGHT_CACHE_MAX = 4000;
 
 export default function MdPane({
   md,
@@ -141,11 +165,18 @@ export default function MdPane({
   // ---------- 虚拟滚动窗口 ----------
   const [scrollTop, setScrollTop] = useState(0);
   const [viewH, setViewH] = useState(600);
+  /** 容器宽度：折行数由它决定，宽度一变高度缓存就作废。 */
+  const [viewW, setViewW] = useState(0);
+  /** 高度回填后自增，驱动 offsets 重算（否则前缀和不会更新）。 */
+  const [rev, setRev] = useState(0);
 
   useLayoutEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
-    const measure = () => setViewH(el.clientHeight || 600);
+    const measure = () => {
+      setViewH(el.clientHeight || 600);
+      setViewW(el.clientWidth || 0);
+    };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
@@ -153,9 +184,71 @@ export default function MdPane({
   }, []);
 
   const rowH = ROW_H * zoom;
-  const total = rows.length * rowH;
-  const startIdx = Math.max(0, Math.floor(scrollTop / rowH) - OVERSCAN);
-  const endIdx = Math.min(rows.length, Math.ceil((scrollTop + viewH) / rowH) + OVERSCAN);
+
+  /**
+   * ── 动态行高（修「文字显示不完整」）────────────────────────────────
+   * 折行文字的真实高度必须实测，否则固定行高会把第 2 行压掉。
+   *
+   * heights: 指纹 → 实测高度。用**内容长度 + 缩放**做指纹：
+   * 同一段文字在同宽度下高度稳定，宽度变化由下面的 width 依赖整体失效。
+   * 只用内容长度做指纹是有意的近似 —— 精确指纹要算文本宽度，成本远高于收益；
+   * 即便偶发碰撞，也只影响缓存命中率，不会算错高度（回退到 DOM 实测）。
+   */
+  const heights = useRef(new Map<number, number>());
+  /** 宽度/缩放变化 → 折行数变化 → 整表作废（key 变了，旧值自然取不到） */
+  const hKey = `${Math.round(viewW)}|${zoom}`;
+  const hKeyRef = useRef(hKey);
+  if (hKeyRef.current !== hKey) {
+    hKeyRef.current = hKey;
+    heights.current.clear();
+  }
+
+  /**
+   * 前缀和偏移表：offsets[k] = 第 k 行之前累计高度。
+   * 未测量的行用估算高度（可能偏小），实测回填后触发重排修正。
+   */
+  const offsets = useMemo(() => {
+    const arr = new Float64Array(rows.length + 1);
+    for (let k = 0; k < rows.length; k++) {
+      const t = rows[k].text;
+      // 指纹：长度分档 + 缩放。分档而非精确长度，缓存更省。
+      const fp = (t.length >> 3) * 1000 + Math.min(999, t.length & 7);
+      const h = heights.current.get(fp);
+      arr[k + 1] = arr[k] + (h && h > 0 ? h : rowH);
+    }
+    return arr;
+  }, [rows, rowH, hKey, rev]);
+
+  const total = rows.length ? offsets[rows.length] : 0;
+
+  /**
+   * 二分查找：**第一个满足 offsets[j] > y 的下标 j**（offsets 严格递增）。
+   *
+   * ⚠️ 语义要精确，否则会「每次滚动都跳过视口顶那一行」：
+   *   第 k 行覆盖区间是 [offsets[k], offsets[k+1])，
+   *   所以覆盖 y 的那一行是 j-1，而不是 j。
+   *   （曾在这里写错过：返回 j 会让每屏顶部少一行，是真实的显示缺陷。）
+   * y 超出末尾时返回 rows.length，调用方 clamp。
+   */
+  const firstAfter = useCallback((y: number) => {
+    let lo = 0;
+    let hi = rows.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (offsets[mid] > y) hi = mid;
+      else lo = mid + 1;
+    }
+    return lo;
+  }, [offsets, rows.length]);
+
+  /** 覆盖 y 的那一行下标（clamp 到有效范围）。 */
+  const rowAt = useCallback(
+    (y: number) => Math.max(0, Math.min(rows.length - 1, firstAfter(y) - 1)),
+    [firstAfter, rows.length],
+  );
+
+  const startIdx = Math.max(0, rowAt(scrollTop) - OVERSCAN);
+  const endIdx = Math.min(rows.length, firstAfter(scrollTop + viewH) + 1 + OVERSCAN);
   const slice = rows.slice(startIdx, endIdx);
 
   const onScroll = useCallback(() => {
@@ -182,11 +275,53 @@ export default function MdPane({
     (k: number, smooth = true) => {
       const el = scrollerRef.current;
       if (!el || k < 0) return;
-      const target = k * rowH - el.clientHeight / 2 + rowH / 2;
+      // 用实测偏移表定位（折行行不再是 rowH 的整数倍）
+      const top = offsets[k] ?? 0;
+      const target = top - el.clientHeight / 2;
       el.scrollTo({ top: Math.max(0, target), behavior: smooth ? "smooth" : "auto" });
     },
-    [rowH],
+    [offsets],
   );
+
+  /**
+   * 实测行高并回填。渲染后 DOM 才有真实高度，所以放在 useLayoutEffect 里
+   * 同步测量（避免用户看到「先错位再跳一下」）。
+   *
+   * ⚠️ 必须做**收敛保护**：只有高度真的变了才 bump rev，
+   * 否则会「测量 → setState → 重渲染 → 再测量」无限循环把页面卡死。
+   * 同一批指纹只回填一次，第二次测量值相同就不再触发更新。
+   */
+  useLayoutEffect(() => {
+    if (!slice.length) return;
+    let changed = false;
+    const seen = new Set<number>();
+    for (let k = 0; k < slice.length; k++) {
+      const r = slice[k];
+      const el = rowRefs.current[r.i];
+      if (!el) continue;
+      const h = el.offsetHeight;
+      if (!h) continue;
+      const t = r.text;
+      const fp = (t.length >> 3) * 1000 + Math.min(999, t.length & 7);
+      if (seen.has(fp)) continue;
+      seen.add(fp);
+      const prev = heights.current.get(fp);
+      if (prev == null || Math.abs(prev - h) > 0.5) {
+        heights.current.set(fp, h);
+        changed = true;
+      }
+    }
+    if (heights.current.size > HEIGHT_CACHE_MAX) {
+      // ⚠️ 不能 clear() 整表：那会让所有行退回估算高度 → 偏移全变 → 再测一遍，
+      // 永远超阈值，形成**永久抖动**（滚动条乱跳）。
+      // 正确做法：只丢掉视口附近没用到的那一半，保留局部性。
+      const keep = new Set(seen);
+      for (const fp of Array.from(heights.current.keys())) {
+        if (!keep.has(fp)) heights.current.delete(fp);
+      }
+    }
+    if (changed) setRev((v) => v + 1);
+  }, [slice, rev]);
 
   // 源文件翻页 → 本栏滚到该页第一行（用户未主动滚动时）
   // 「按页」模式下 rows 本身就已经只剩当前页，无需再滚动定位；
@@ -206,10 +341,12 @@ export default function MdPane({
     const el = scrollerRef.current;
     if (!el) return;
     // 已经在可视区附近就不动，避免每次翻页都跳
-    const cur = el.scrollTop / rowH;
+    // ⚠️ 必须用二分查偏移表换算行号，不能用 scrollTop / rowH ——
+    // 折行行高不是 rowH 的整数倍，除法会算出错误的行号。
+    const cur = rowAt(el.scrollTop);
     if (Math.abs(cur - k) < 6) return;
     scrollToIndex(k);
-  }, [page, firstIndexOfPage, rowH, scrollToIndex, scoped]);
+  }, [page, firstIndexOfPage, rowH, scrollToIndex, scoped, rowAt]);
 
   // 外部指定行（左栏点击 → 右栏定位并高亮）
   useEffect(() => {
@@ -334,8 +471,11 @@ export default function MdPane({
                   className={`mdline ${r.st} ${curLine === r.i ? "cur" : ""}`}
                   style={{
                     position: "absolute",
-                    top: abs * rowH,
-                    height: rowH,
+                    top: offsets[abs],
+                    // ⚠️ 关键：min-height 而非 height。
+                    // 写死 height 会让折行文字被压掉（用户报告的「显示不完整」）。
+                    // 高度交给内容决定，虚拟滚动靠 offsets 前缀和定位，不依赖行高恒定。
+                    minHeight: rowH,
                     lineHeight: `${rowH}px`,
                   }}
                   onClick={() => onPickLine(r.i, r.page)}

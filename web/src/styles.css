@@ -608,10 +608,15 @@ textarea { resize: vertical; }
 
 /* ---- 虚拟滚动容器 ---- */
 .pane-body.virtual { overflow: auto; position: relative; contain: strict; }
-.pane-body.virtual .mdline { left: 0; right: 0; display: flex; align-items: center; }
+/* align-items: flex-start —— 折行时 .tx 变高，center 会让行号/页码相对多行文字
+   垂直居中，看着像「这一行是歪的」。顶对齐才能与首行文字对齐。 */
+.pane-body.virtual .mdline { left: 0; right: 0; display: flex; align-items: flex-start; }
 
-/* 行高由 JS 决定（虚拟滚动），这里不能写死 height，否则定位会错位 */
+/* 行高由 JS 决定（虚拟滚动），这里不能写死 height，否则定位会错位。
+   ⚠️ JS 侧同样是 min-height 而非 height：长行会折行，写死高度会把第 2 行压掉。 */
 .mdline { box-sizing: border-box; }
+/* 折行文字必须能自然增高：不能出现省略号/裁剪（用户要看到全文） */
+.mdline .tx { align-self: stretch; }
 
 /* 右栏被左栏点选时的强调 */
 .mdline.cur { box-shadow: inset 2px 0 0 var(--brand); }

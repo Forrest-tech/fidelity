@@ -857,6 +857,60 @@ def main():
                  or "confirm(\n" in src and "t(" in src,
                  "★ %s 的 confirm 文案已国际化" % label)
 
+    # ---- 动态行高（修「md 文字显示不完整」）--------------------------
+    # 根因：.tx 是 pre-wrap 会折行，但 JS 把每行 height 写死 → 第 2 行被压掉。
+    # 这组断言的作用是**防止有人把它「优化」回固定行高**。
+    mdp = read_src("components", "MdPane.tsx") or ""
+    css_all = read_src("styles.css") or ""
+    if mdp:
+        need("minHeight: rowH" in mdp,
+             "★ md 行用 min-height 而非 height（折行文字不被压掉）")
+        need("height: rowH," not in mdp and "height: rowH\n" not in mdp,
+             "★ md 行未写死 height（写死会截断折行文字）")
+        need("offsets[abs]" in mdp,
+             "★ md 行定位用实测偏移表（折行后不再是 rowH 整数倍）")
+        need("top: abs * rowH" not in mdp,
+             "★ md 行未用 i*rowH 定位（折行会导致错位叠字）")
+        need("offsetHeight" in mdp,
+             "★ md 行高由 DOM 实测（offsetHeight）")
+        need("Math.abs(prev - h) > 0.5" in mdp,
+             "★ 高度回填有收敛保护（防止测量→重渲染→再测量 死循环）")
+        need("heights.current.clear()" in mdp and "hKeyRef" in mdp,
+             "★ 宽度/缩放变化时高度缓存失效（折行数会变）")
+        need("firstAfter" in mdp and "while (lo < hi)" in mdp,
+             "★ 视口首行用二分查找（前缀和偏移，O(log n)）")
+        # off-by-one 守卫：第 k 行覆盖 [offsets[k], offsets[k+1])，
+        # 覆盖 y 的行是 firstAfter(y)-1。写成 firstAfter(y) 会每屏少一行。
+        need("offsets[mid] > y" in mdp,
+             "★ 二分查找语义正确（找 offsets>y 的首个下标）")
+        need("rowAt" in mdp and "firstAfter(y) - 1" in mdp,
+             "★ 覆盖 y 的行取 firstAfter(y)-1（否则每屏顶部少一行）")
+        need("startIdx = Math.max(0, rowAt(scrollTop) - OVERSCAN)" in mdp,
+             "★ 视口首行经 rowAt 换算（未用未修正的下标）")
+        # 只看真实代码行（剔除注释），否则会被解释性注释里的文字误伤
+        code_only = "\n".join(
+            ln for ln in mdp.splitlines()
+            if not ln.strip().startswith(("*", "//", "/*"))
+        )
+        need("scrollTop / rowH" not in code_only,
+             "★ 未用 scrollTop/rowH 反推行号（折行时算错）")
+        need("heights.current.clear();\n      changed = true" not in mdp
+             and "heights.current.clear(); changed = true" not in mdp,
+             "★ 高度缓存不整表清空（会永久抖动：清空→重测→再超阈值）")
+    if css_all:
+        need(".pane-body.virtual .mdline" in css_all
+             and "align-items: flex-start" in css_all,
+             "★ md 行顶对齐（center 会让折行文字看着是歪的）")
+        need("align-items: center" not in
+             css_all.split(".pane-body.virtual .mdline")[1].split("}")[0],
+             "★ 虚拟滚动行未用 align-items:center（与折行冲突）")
+        # .tx 绝不能加省略号/裁剪 —— 用户要看到全文
+        tx_rule = ""
+        if ".mdline .tx" in css_all:
+            tx_rule = css_all.split(".mdline .tx")[1].split("}")[0]
+        need("text-overflow" not in tx_rule and "nowrap" not in tx_rule,
+             "★ md 正文无省略号/裁剪（折行文字必须完整显示）")
+
     print()
     print("=" * 56)
     if FAILS:
