@@ -428,12 +428,25 @@ export default function MdPane({
               <i style={{ background: "var(--amber-bg)", borderColor: "var(--amber-border)" }} />
               {t("legend.changed")} {counts.changed || 0}
             </span>
-            {align?.truncated && (
-              <span>
-                <i style={{ background: "var(--surface-2)", borderColor: "var(--border)" }} />
-                {t("legend.nocmp")}
-              </span>
-            )}
+          </span>
+        )}
+        {/* ★ 超大文件只比对前 N 行：说明从「整条横幅」降级为图例里的一枚灰 chip。
+            用户反馈这条横幅太抢眼、挤占正文；但完全删掉又会让灰色行变成
+            「没解释的异常」——所以保留 chip 常驻，把完整说明放进 title，
+            悬停才展开。既不喧宾夺主，也不静默隐藏数据。 */}
+        {align?.truncated && (
+          <span className="legend">
+            <span
+              className="nocmp-chip"
+              title={t("compare.truncated", {
+                total: align.total_lines.toLocaleString(),
+                n: compared.toLocaleString(),
+                rest: Math.max(0, lines.length - compared).toLocaleString(),
+              })}
+            >
+              <i style={{ background: "var(--surface-2)", borderColor: "var(--border)" }} />
+              {t("legend.nocmp")}
+            </span>
           </span>
         )}
       </div>
@@ -449,15 +462,6 @@ export default function MdPane({
         </div>
       )}
 
-      {align?.truncated && (
-        <div className="callout warn edge">
-          {t("compare.truncated", {
-            total: align.total_lines.toLocaleString(),
-            n: compared.toLocaleString(),
-            rest: Math.max(0, lines.length - compared).toLocaleString(),
-          })}
-        </div>
-      )}
       {align?.not_applicable && (
         <div className="callout warn edge">
           {t("compare.notApplicable", { r: align.reason || "—" })}

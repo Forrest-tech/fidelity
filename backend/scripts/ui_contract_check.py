@@ -703,8 +703,27 @@ def main():
              "★ MdPane 不再按 min(md行, 状态行) 截断（防静默丢数据）")
         need('"nocmp"' in mdp, "★ MdPane 有独立的 nocmp（未比对）中性态")
         need("i < compared" in mdp, "★ MdPane 按下标判断是否已比对（前缀语义）")
-        need("align?.truncated" in mdp and "not_applicable" in mdp,
-             "MdPane 对截断/不可比对都有明确提示")
+        need("not_applicable" in mdp,
+             "MdPane 对不可比对有明确提示")
+        # ★ 用户 2026-10-05：右栏顶部那条「本次比对 N 行 / 其余未比对」的整幅
+        #   黄色横幅太抢眼、挤掉正文高度，要求去掉。但**不能连说明一起删掉** ——
+        #   灰色「未比对」行如果没有任何解释，就成了静默的数据缺失。
+        #   正确形态：横幅消失，图例里的 nocmp chip 常驻，完整文案降级为 title 悬停。
+        # 因此这里守两件事：(1) 横幅不得复活；(2) 文案必须仍然挂在 chip 上。
+        # 判定方式：compare.truncated 在整个文件里**只能出现一次**，
+        # 且必须出现在 title= 里 —— 出现在 callout 里就是横幅复活了。
+        _trunc = "t(\"compare.truncated\""
+        _n_trunc = mdp.count(_trunc)
+        need(_n_trunc == 1,
+             "★ 截断说明只保留一处（横幅已下线，不重复展示）",
+             "(出现 %d 次)" % _n_trunc)
+        _ti = mdp.find("title={" + _trunc)
+        _ci = mdp.find("nocmp-chip")
+        need(_ti != -1 and _ci != -1 and _ti > _ci,
+             "★ 截断说明降级到 nocmp 图例 chip 的悬停 title（不静默隐藏数据）",
+             "(chip@%d, title@%d)" % (_ci, _ti))
+        need("callout warn edge" in mdp and "compare.notApplicable" in mdp,
+             "不可比对仍保留独立提示（与截断是两件事）")
 
     appx = read_src("App.tsx")
     if appx is not None:
