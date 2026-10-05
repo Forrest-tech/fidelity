@@ -911,6 +911,69 @@ def main():
         need("text-overflow" not in tx_rule and "nowrap" not in tx_rule,
              "★ md 正文无省略号/裁剪（折行文字必须完整显示）")
 
+    # ---- 侧栏树「全部展开 / 全部折叠」（用户 2026-10-05 指出是死按钮）----
+    # 原实现：allOpen || openSet.has(d.name) —— 只短路一级目录，
+    # 且用**目录名**当 key（实测 12 组同名目录，SS×13/DWG×12）互相串联。
+    ft = read_src("components", "FileTree.tsx") or ""
+    # 只看真实代码行：注释里会引用旧写法（allOpen/openSet）作为「之前错在哪」的说明，
+    # 全文匹配会误伤自己写的解释。
+    ft_code = "\n".join(
+        ln for ln in ft.splitlines()
+        if not ln.strip().startswith(("*", "//", "/*", "{/*"))
+    )
+    if ft:
+        need("openSet" not in ft_code and "allOpen ||" not in ft_code,
+             "★ 树不再用 allOpen 短路 / openSet（死按钮根因）")
+        need("type OpenMap" in ft and "dirKey(" in ft,
+             "★ 展开状态用 OpenMap + 完整路径 key（同名目录不串联）")
+        need('parentKey + "/" + name' in ft or 'p + "/" + n' in ft
+             or "return parentKey" in ft,
+             "★ 目录 key 由父路径拼成（不是只有目录名）")
+        need("const expandAll = useCallback" in ft and "const collapseAll = useCallback" in ft,
+             "★ 全部展开/折叠是两个独立可用函数")
+        need("for (const k of allDirKeys) next[k] = true;" in ft,
+             "★ 全部展开遍历**所有**目录 key（真实全展开）")
+        need("setOpenMap({});" in ft,
+             "★ 全部折叠清空 map（不是设 false，残留 true 会让再展开失灵）")
+        need("collectDirKeys" in ft and "flattenTree" in ft,
+             "★ 树已扁平化（配合虚拟滚动支持 2002 行全展开）")
+        need("OVERSCAN" in ft and "ROW_H" in ft and "rows.length * ROW_H" in ft,
+             "★ 树用虚拟滚动（全展开 2002 行不卡）")
+        # 必须是真切片：只断言 OVERSCAN 存在不够，
+        # 把 slice 改成 rows（全量渲染）也必须被抓到。
+        need("const slice = rows.slice(startIdx, endIdx);" in ft_code,
+             "★ 树只渲染视口切片（slice = rows.slice(...)）")
+        need("const endIdx = Math.min(rows.length," in ft_code,
+             "★ 切片上界按视口高度计算（不是全量）")
+        need("if (!q.trim() && !status) return;" in ft,
+             "★ 搜索/筛选时自动展开（否则搜到了看不见）")
+        need('onClick={expandAll}' in ft and 'onClick={collapseAll}' in ft,
+             "★ 两个按钮各自绑定真实处理函数")
+        need("paddingLeft: 6 + INDENT * depth" in ft,
+             "★ 层级缩进用内联 paddingLeft（扁平化后无嵌套 DOM 可依赖）")
+        # 旧版 localStorage 存的是 string[]（目录名），不迁移会让老用户
+        # 刷新后展开状态全丢，且旧键可能误展开同名目录。
+        # 注意要匹配 `if (Array.isArray(raw))` 整段，不能只查 "Array.isArray"
+        # 是否出现 —— 把它改成 if (false) 就能骗过弱断言。
+        need("if (Array.isArray(raw)) {" in ft_code,
+             "★ 展开状态持久化兼容旧格式（旧 string[] 自动迁移）")
+        need('out["/" + nm] = true;' in ft_code,
+             "★ 旧目录名迁移为顶层完整路径 key（不误展开同名目录）")
+    ft_css = read_src("styles.css") or ""
+    if ft_css:
+        trow = ""
+        if ".trow {" in ft_css:
+            trow = ft_css.split(".trow {")[1].split("}")[0]
+        need("height: 24px" in trow,
+             "★ .trow 行高固定 24px（与 ROW_H 一致，否则虚拟滚动错位）")
+        # 同理剔除 CSS 注释（注释里会说明「已移除 xxx」）
+        css_code = "\n".join(
+            ln for ln in ft_css.splitlines()
+            if not ln.strip().startswith(("*", "//", "/*"))
+        )
+        need(".tchildren" not in css_code,
+             "★ 已移除 .tchildren 嵌套缩进（随递归组件废弃）")
+
     print()
     print("=" * 56)
     if FAILS:

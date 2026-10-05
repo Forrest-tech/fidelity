@@ -216,11 +216,15 @@ textarea { resize: vertical; }
 .chip i { width: 6px; height: 6px; border-radius: 99px; display: block; }
 .chip .c { font-variant-numeric: tabular-nums; opacity: 0.7; font-size: 10.5px; }
 
-.tree-body { flex: 1; overflow: auto; padding: 6px 6px 20px; min-height: 0; }
-.tnode { user-select: none; }
+/* 树已是扁平行列表（层级用 JS 内联 paddingLeft 表达），
+   user-select 从原来的 .tnode 移到这里。 */
+.tree-body { flex: 1; overflow: auto; padding: 6px 6px 20px; min-height: 0; user-select: none; }
 .trow {
   display: flex; align-items: center; gap: 5px; padding: 3px 6px;
   border-radius: var(--r-sm); cursor: pointer; font-size: 12.5px;
+  /* ⚠️ 固定行高：树已改为虚拟滚动（ROW_H = 24），高度必须与 JS 常量一致，
+     否则行与行会错位。缩进由 JS 内联 paddingLeft 表达。 */
+  height: 24px; box-sizing: border-box; overflow: hidden;
 }
 .trow:hover { background: rgba(26, 115, 232, 0.08); }
 .trow.sel { background: var(--brand); color: #fff; }
@@ -237,8 +241,8 @@ textarea { resize: vertical; }
 .tname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tcount { font-size: 10.5px; color: var(--text-3); font-variant-numeric: tabular-nums; }
 .tdot { width: 6px; height: 6px; border-radius: 99px; flex-shrink: 0; }
-.tchildren { margin-left: 11px; border-left: 1px solid var(--border); padding-left: 3px; }
-.tree-file { padding-left: 25px; }
+/* 缩进不再用嵌套 margin（.tchildren 已随递归组件一起废弃），
+   层级由 JS 内联 paddingLeft = 6 + 13 * depth 表达。 */
 .tree-file .tpath { font-size: 10.5px; color: var(--text-3); }
 
 /* ---- 右：工作区 ---- */

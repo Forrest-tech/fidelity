@@ -112,18 +112,96 @@ function collectFiles(d: TreeDir, out: string[] = []): string[] {
   return out;
 }
 
+/**
+ * 展开状态的数据结构（2026-10-05 重写「全部展开/折叠」）。
+ *
+ * ⚠️ 之前用 `d.name`（目录**名**）当 key，是个真实缺陷：
+ * 实测本库 1634 个节点里有 **12 组同名目录**（`SS` 13 次、`DWG` 12 次、`RFA` 9 次…），
+ * 用 name 当 key 意味着展开一个 `SS` 会连带展开另外 12 个 `SS`，
+ * 用户看到的就是「点了没反应 / 乱跳」。
+ * 现在统一用 `父路径/目录名` 作为唯一 key。
+ */
+export type OpenMap = Record<string, boolean>;
+
+/** 拼出目录的唯一路径 key。根节点传 ""，其直接子目录 key 就是 "/名称"。 */
+function dirKey(parentKey: string, name: string): string {
+  return parentKey + "/" + name;
+}
+
+/** 一行扁平的树节点：目录或文件。虚拟滚动渲染的就是这个数组。 */
+type FlatRow =
+  | { kind: "dir"; key: string; d: TreeDir; depth: number }
+  | { kind: "file"; f: TreeFile; depth: number };
+
+/**
+ * 把树按展开状态压平成「可见行」数组。
+ *
+ * 为什么要压平：全展开会一次性渲染 1634 个节点、11 层深度，
+ * 递归 DOM 会让浏览器明显卡顿。压平后配合虚拟滚动只渲染视口内的行。
+ * 顺带天然支持了「全部展开 / 全部折叠」—— 只是 openMap 的两种取值。
+ */
+function flattenTree(root: TreeDir, openMap: OpenMap): FlatRow[] {
+  const out: FlatRow[] = [];
+  const walk = (d: TreeDir, key: string, depth: number) => {
+    for (const c of d.dirs) {
+      const k = dirKey(key, c.name);
+      out.push({ kind: "dir", key: k, d: c, depth });
+      if (openMap[k]) walk(c, k, depth + 1);
+    }
+    for (const f of d.files) out.push({ kind: "file", f, depth });
+  };
+  walk(root, "", 0);
+  return out;
+}
+
+/** 收集所有目录的 key —— 「全部展开」用。 */
+function collectDirKeys(d: TreeDir, parentKey = "", out: string[] = []): string[] {
+  for (const c of d.dirs) {
+    const k = dirKey(parentKey, c.name);
+    out.push(k);
+    collectDirKeys(c, k, out);
+  }
+  return out;
+}
+
+/**
+ * 读取持久化的展开状态，并**迁移旧格式**。
+ *
+ * 旧版本存的是 string[]（目录**名**数组，且同名目录会互相串联）。
+ * 新格式是 OpenMap（完整路径 → true）。
+ * 不做迁移的话，老用户 localStorage 里的旧数组会被当成 map 使用，
+ * 展开状态全部丢失（表现为「刷新后全折叠」），而且旧键是目录名，
+ * 可能误展开某个同名目录 —— 正是本次修掉的那个 bug。
+ *
+ * 迁移策略：把旧的 name 转成 "/name"（顶层目录的真实 key），
+ * 匹配不上的直接丢弃 —— 宁可少展开，也不要错误展开。
+ */
+function loadOpenMap(): OpenMap {
+  const raw = loadLS<unknown>(K_OPEN, {});
+  if (raw && !Array.isArray(raw) && typeof raw === "object") return raw as OpenMap;
+  if (Array.isArray(raw)) {
+    const out: OpenMap = {};
+    for (const nm of raw) if (typeof nm === "string") out["/" + nm] = true;
+    return out;
+  }
+  return {};
+}
+
 function FileRow({
   f,
   sel,
   picked,
   onPick,
   onTogglePick,
+  depth,
 }: {
   f: TreeFile;
   sel: string;
   picked: boolean;
   onPick: (rel: string, e: React.MouseEvent) => void;
   onTogglePick: (rel: string) => void;
+  /** 层级缩进（px/层）—— 压平后靠 style 表达缩进，视觉与原递归一致。 */
+  depth: number;
 }) {
   const [t] = useI18n();
   const active = sel === f.rel;
@@ -132,7 +210,7 @@ function FileRow({
   return (
     <div
       className={`trow tree-file ${active ? "sel" : ""} ${picked ? "picked" : ""}`}
-      style={{ borderLeftColor: active ? "var(--brand)" : STATE_BAR[f.state] }}
+      style={{ borderLeftColor: active ? "var(--brand)" : STATE_BAR[f.state], paddingLeft: 6 + INDENT * depth }}
       onClick={(e) => onPick(f.rel, e)}
       title={`${f.rel}\n${f.label}${score != null ? ` · ${score}%` : ""}`}
     >
@@ -151,12 +229,23 @@ function FileRow({
   );
 }
 
-function DirNode({
+/** 单行高度（px）。虚拟滚动用，改一处要同步 CSS 的 .trow 高度。 */
+const ROW_H = 24;
+/** 每层缩进（px）。 */
+const INDENT = 13;
+/** 虚拟滚动视口上下各多渲染的行数。 */
+const OVERSCAN = 12;
+
+/**
+ * 目录行（扁平行，不再递归）。
+ * key 用**完整路径**，不是目录名 —— 同名目录会互相串联（实测 SS×13 / DWG×12）。
+ */
+function DirRow({
   d,
+  keyName,
   sel,
   picked,
-  openSet,
-  allOpen,
+  open,
   depth,
   onToggleOpen,
   onPick,
@@ -164,17 +253,16 @@ function DirNode({
   onToggleDir,
 }: {
   d: TreeDir;
+  keyName: string;
   sel: string;
   picked: Set<string>;
-  openSet: Set<string>;
-  allOpen: boolean;
+  open: boolean;
   depth: number;
-  onToggleOpen: (name: string) => void;
+  onToggleOpen: (key: string) => void;
   onPick: (rel: string, e: React.MouseEvent) => void;
   onTogglePick: (rel: string) => void;
   onToggleDir: (d: TreeDir) => void;
 }) {
-  const open = allOpen || openSet.has(d.name);
   const rels = useMemo(() => collectFiles(d), [d]);
   const pickedCount = useMemo(() => rels.filter((r) => picked.has(r)).length, [rels, picked]);
   const allPicked = rels.length > 0 && pickedCount === rels.length;
@@ -183,61 +271,30 @@ function DirNode({
   const title = `${d.name} · ${c.all}`;
 
   return (
-    <div className="tnode">
-      <div
-        className="trow dir"
-        onClick={() => onToggleOpen(d.name)}
-        title={title}
-        style={depth === 0 ? { fontWeight: 600 } : undefined}
-      >
-        <Check
-          checked={allPicked}
-          mixed={pickedCount > 0 && !allPicked}
-          onChange={() => onToggleDir(d)}
-          title={`${pickedCount}/${rels.length}`}
-        />
-        <span className={`twist ${open ? "open" : ""}`}>▶</span>
-        <span className="ticon">
-          <DirIcon open={open} />
-        </span>
-        <span className="tname">{d.name}</span>
-        <span className="tcount">{c.all}</span>
-        <span className="tstatebar">
-          {c.unreviewed > 0 && <i style={{ background: "var(--brand-border)" }} title={`${c.unreviewed}`} />}
-          {c.trusted > 0 && <i style={{ background: "var(--green)" }} title={`${c.trusted}`} />}
-          {c.need_review > 0 && <i style={{ background: "var(--amber)" }} title={`${c.need_review}`} />}
-          {c.diff_big > 0 && <i style={{ background: "var(--red)" }} title={`${c.diff_big}`} />}
-        </span>
-      </div>
-      {open && (
-        <div className="tchildren">
-          {d.dirs.map((x) => (
-            <DirNode
-              key={x.name}
-              d={x}
-              sel={sel}
-              picked={picked}
-              openSet={openSet}
-              allOpen={allOpen}
-              depth={depth + 1}
-              onToggleOpen={onToggleOpen}
-              onPick={onPick}
-              onTogglePick={onTogglePick}
-              onToggleDir={onToggleDir}
-            />
-          ))}
-          {d.files.map((f) => (
-            <FileRow
-              key={f.rel}
-              f={f}
-              sel={sel}
-              picked={picked.has(f.rel)}
-              onPick={onPick}
-              onTogglePick={onTogglePick}
-            />
-          ))}
-        </div>
-      )}
+    <div
+      className="trow dir"
+      onClick={() => onToggleOpen(keyName)}
+      title={title}
+      style={depth === 0 ? { fontWeight: 600, paddingLeft: 6 + INDENT * depth } : { paddingLeft: 6 + INDENT * depth }}
+    >
+      <Check
+        checked={allPicked}
+        mixed={pickedCount > 0 && !allPicked}
+        onChange={() => onToggleDir(d)}
+        title={`${pickedCount}/${rels.length}`}
+      />
+      <span className={`twist ${open ? "open" : ""}`}>▶</span>
+      <span className="ticon">
+        <DirIcon open={open} />
+      </span>
+      <span className="tname">{d.name}</span>
+      <span className="tcount">{c.all}</span>
+      <span className="tstatebar">
+        {c.unreviewed > 0 && <i style={{ background: "var(--brand-border)" }} title={`${c.unreviewed}`} />}
+        {c.trusted > 0 && <i style={{ background: "var(--green)" }} title={`${c.trusted}`} />}
+        {c.need_review > 0 && <i style={{ background: "var(--amber)" }} title={`${c.need_review}`} />}
+        {c.diff_big > 0 && <i style={{ background: "var(--red)" }} title={`${c.diff_big}`} />}
+      </span>
     </div>
   );
 }
@@ -276,9 +333,12 @@ export default function FileTree({
   const [attempt, setAttempt] = useState(0);
 
   const [width, setWidth] = useState(() => loadLS<number>(K_WIDTH, 300));
-  const [openSet, setOpenSet] = useState<Set<string>>(() => new Set(loadLS<string[]>(K_OPEN, [])));
-  const [allOpen, setAllOpen] = useState(false);
+  const [openMap, setOpenMap] = useState<OpenMap>(() => loadOpenMap());
   const [lastAnchor, setLastAnchor] = useState<string>("");
+
+  /** 虚拟滚动：滚动位置 + 视口高度。 */
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const [bodyRef, setBodyRef] = useState({ top: 0, h: 600 });
 
   const dragging = useRef(false);
 
@@ -286,7 +346,18 @@ export default function FileTree({
   const clampW = (w: number) => Math.max(200, Math.min(640, w));
 
   useEffect(() => saveLS(K_WIDTH, width), [width]);
-  useEffect(() => saveLS(K_OPEN, Array.from(openSet)), [openSet]);
+  useEffect(() => saveLS(K_OPEN, openMap), [openMap]);
+
+  /** 视口高度测量（虚拟滚动用）。 */
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const measure = () => setBodyRef((b) => (b.h === el.clientHeight ? b : { ...b, h: el.clientHeight || 600 }));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
@@ -331,15 +402,67 @@ export default function FileTree({
     };
   }, [sid, status, q, attempt]);
 
-  /** 展开状态持久化后，刷新仍回到同一位置。 */
-  const toggleOpen = useCallback((name: string) => {
-    setAllOpen(false);
-    setOpenSet((prev) => {
-      const next = new Set(prev);
-      if (next.has(name)) next.delete(name);
-      else next.add(name);
+  /** 展开状态持久化后，刷新仍回到同一位置。key 是完整路径，不是目录名。 */
+  const toggleOpen = useCallback((key: string) => {
+    setOpenMap((prev) => {
+      const next = { ...prev };
+      if (next[key]) delete next[key];
+      else next[key] = true;
       return next;
     });
+  }, []);
+
+  /**
+   * 搜索 / 筛选时自动展开。
+   *
+   * ⚠️ 后端在有 q 或 status 时只返回**匹配路径上的目录**（层级仍完整），
+   * 若沿用用户上次的展开状态，新命中路径上的目录多半是折叠的 ——
+   * 用户会看到「搜到了却什么都看不见」。所以这里按当前树全部展开。
+   * 清空搜索后不自动折叠：保留用户刚才看到的结果，避免二次操作。
+   */
+  useEffect(() => {
+    if (!tree) return;
+    if (!q.trim() && !status) return;
+    setOpenMap((prev) => {
+      const next: OpenMap = { ...prev };
+      let n = 0;
+      for (const k of collectDirKeys(tree)) {
+        if (!next[k]) n++;
+        next[k] = true;
+      }
+      return n ? next : prev;
+    });
+  }, [tree, q, status]);
+
+  /**
+   * 全部展开 / 全部折叠（用户 2026-10-05 明确要求「放开这两个功能」）。
+   *
+   * 实现要点：
+   *  - 展开 = 把**所有目录**的 key 置 true（递归收集，实测 368 个目录）；
+   *  - 折叠 = 清空整个 map（不是设 false，留着 true 会让下次展开按钮失灵）；
+   *  - 展开后可见行 2002（1634 文件 + 368 目录）→ 必须靠虚拟滚动才不卡。
+   *
+   * ⚠️ 之前这里是死代码：`allOpen` 只在 `allOpen || openSet.has(d.name)` 里
+   * 短路一级目录，且 key 用目录名（同名目录串联，实测 SS×13/DWG×12），
+   * 所以「点了像没反应」。现在改为真正遍历所有层级。
+   */
+  const allDirKeys = useMemo(
+    () => (tree ? collectDirKeys(tree) : []),
+    [tree],
+  );
+  const expandAll = useCallback(() => {
+    const next: OpenMap = {};
+    for (const k of allDirKeys) next[k] = true;
+    setOpenMap(next);
+    setBodyRef((b) => ({ ...b, top: 0 }));
+    scrollerRef.current?.scrollTo({ top: 0 });
+  }, [allDirKeys]);
+  const collapseAll = useCallback(() => {
+    // 必须清空而不是全置 false：false 的键在 persist 后是噪音，
+    // 且 toggleOpen 用 `if (next[key])` 判断，残留 true 会导致折叠后再点开不了。
+    setOpenMap({});
+    setBodyRef((b) => ({ ...b, top: 0 }));
+    scrollerRef.current?.scrollTo({ top: 0 });
   }, []);
 
   const togglePick = useCallback(
@@ -379,7 +502,7 @@ export default function FileTree({
         };
         if (tree) walk(tree);
         const a = flat.indexOf(lastAnchor);
-      const b = flat.indexOf(rel);
+        const b = flat.indexOf(rel);
         if (a >= 0 && b >= 0) {
           const [lo, hi] = a < b ? [a, b] : [b, a];
           const next = new Set(picked);
@@ -395,6 +518,14 @@ export default function FileTree({
   );
 
   const counts = tree?.counts;
+
+  /** 扁平化：只包含「当前展开状态下可见」的行。 */
+  const rows = useMemo(() => (tree ? flattenTree(tree, openMap) : []), [tree, openMap]);
+
+  /** 虚拟滚动窗口。行高固定（目录/文件都是单行 trow），无需动态测量。 */
+  const startIdx = Math.max(0, Math.floor(bodyRef.top / ROW_H) - OVERSCAN);
+  const endIdx = Math.min(rows.length, Math.ceil((bodyRef.top + bodyRef.h) / ROW_H) + OVERSCAN);
+  const slice = rows.slice(startIdx, endIdx);
   const FILTERS: { key: TrustState | ""; label: string }[] = [
     { key: "", label: t("filter.all") },
     { key: "unreviewed", label: t("filter.unreviewed") },
@@ -424,8 +555,13 @@ export default function FileTree({
           ))}
         </div>
         <div className="tree-tools">
-          <button className="ghost sm" onClick={() => setAllOpen((v) => !v)} title={allOpen ? t("act.collapseAll") : t("act.expandAll")}>
-            {allOpen ? t("act.collapseAll") : t("act.expandAll")}
+          {/* 「全部展开 / 全部折叠」—— 之前是死按钮（allOpen 只短路一级目录，
+              且用目录名当 key 导致同名目录串联）。现在真正作用于所有层级。 */}
+          <button className="ghost sm" onClick={expandAll} disabled={!tree} title={t("act.expandAllTip", { n: allDirKeys.length })}>
+            {t("act.expandAll")}
+          </button>
+          <button className="ghost sm" onClick={collapseAll} disabled={!tree} title={t("act.collapseAllTip")}>
+            {t("act.collapseAll")}
           </button>
           {picked.size > 0 && (
             <>
@@ -440,7 +576,11 @@ export default function FileTree({
         </div>
       </div>
 
-      <div className="tree-body">
+      <div
+        className="tree-body tvirtual"
+        ref={scrollerRef}
+        onScroll={(e) => setBodyRef((b) => (b.top === e.currentTarget.scrollTop ? b : { ...b, top: e.currentTarget.scrollTop }))}
+      >
         {err && (
           <div className="empty">
             <div>{t("tree.failed")}：{err}</div>
@@ -455,33 +595,44 @@ export default function FileTree({
           </div>
         )}
         {tree && tree.dirs.length === 0 && tree.files.length === 0 && <div className="empty">{t("tree.empty")}</div>}
-        {tree &&
-          tree.dirs.map((d) => (
-            <DirNode
-              key={d.name}
-              d={d}
-              sel={sel}
-              picked={picked}
-              openSet={openSet}
-              allOpen={allOpen}
-              depth={0}
-              onToggleOpen={toggleOpen}
-              onPick={handlePick}
-              onTogglePick={togglePick}
-              onToggleDir={toggleDir}
-            />
-          ))}
-        {tree &&
-          tree.files.map((f) => (
-            <FileRow
-              key={f.rel}
-              f={f}
-              sel={sel}
-              picked={picked.has(f.rel)}
-              onPick={handlePick}
-              onTogglePick={togglePick}
-            />
-          ))}
+        {/* 虚拟滚动：全展开 1634 行也只渲染视口内的 ~30 行 */}
+        {tree && rows.length > 0 && (
+          <div style={{ height: rows.length * ROW_H, position: "relative" }}>
+            {slice.map((r, k) => {
+              const abs = startIdx + k;
+              return (
+                <div
+                  key={r.kind === "dir" ? r.key : r.f.rel}
+                  style={{ position: "absolute", top: abs * ROW_H, left: 0, right: 0, height: ROW_H }}
+                >
+                  {r.kind === "dir" ? (
+                    <DirRow
+                      d={r.d}
+                      keyName={r.key}
+                      sel={sel}
+                      picked={picked}
+                      open={!!openMap[r.key]}
+                      depth={r.depth}
+                      onToggleOpen={toggleOpen}
+                      onPick={handlePick}
+                      onTogglePick={togglePick}
+                      onToggleDir={toggleDir}
+                    />
+                  ) : (
+                    <FileRow
+                      f={r.f}
+                      sel={sel}
+                      picked={picked.has(r.f.rel)}
+                      depth={r.depth}
+                      onPick={handlePick}
+                      onTogglePick={togglePick}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* 批量审核：阈值可调 + 多选批量打标 */}

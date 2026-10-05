@@ -46,6 +46,8 @@ const DICT = {
     "act.selectAll": "全选",
     "act.expandAll": "全部展开",
     "act.collapseAll": "全部折叠",
+    "act.expandAllTip": "展开全部目录（{n} 个）",
+    "act.collapseAllTip": "折叠全部目录，只保留顶层",
 
     "tree.search": "搜索文件或目录…",
     "tree.loading": "读取中…",
@@ -289,6 +291,8 @@ const DICT = {
     "act.selectAll": "Select all",
     "act.expandAll": "Expand all",
     "act.collapseAll": "Collapse all",
+    "act.expandAllTip": "Expand every folder ({n})",
+    "act.collapseAllTip": "Collapse all folders, keep top level only",
 
     "tree.search": "Search files or folders…",
     "tree.loading": "Loading…",
