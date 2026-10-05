@@ -205,32 +205,16 @@ export default function SourcePane({
   }, [showMarks, rel, sid, page, data?.kind]);
 
   /**
-   * 滚轮翻页：按**累积滚动量**判定方向，不依赖「能否滚到底」。
-   * 之前只在 scroll 事件里比对 scrollTop/scrollHeight，图片比视口矮时
-   * 没有滚动条 → 滚轮永远推不动页，用户反馈的「不能向下滚动翻页」就是这个。
-   * 现在：向下累计超过阈值且已在底部（或根本无可滚空间）→ 下一页；反向同理。
+   * 原生滚动（拖滚动条 / 触摸板惯性）时清零滚轮累积量。
+   *
+   * ★ 这里**不再判定翻页**（2026-10-05 修正）：翻页判定已移进 wheel 处理器自身。
+   * 旧实现放在本回调里，靠 scroll 事件驱动；但「已到边缘」时我们调用了
+   * preventDefault()，scrollTop 根本不变 → **永远不会有 scroll 事件**，
+   * 于是「滚轮翻页」在图片比视口高（能滚）时也完全失效，是一个死逻辑。
    */
   const onStageScroll = useCallback(() => {
-    if (pages <= 1) return;
-    const el = stageRef.current;
-    if (!el) return;
-    if (Date.now() < settleUntil.current) return;
-    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 2;
-    const atTop = el.scrollTop <= 0;
-    if (atBottom) {
-      // 只有「确实滚到底」才用累积量翻页；否则图片内部滚动会被误判
-      if (wheelAcc.current > WHEEL_PAGE_THRESHOLD) {
-        goto(page + 1);
-      }
-    } else if (atTop) {
-      if (wheelAcc.current < -WHEEL_PAGE_THRESHOLD) {
-        goto(page - 1);
-      }
-    } else {
-      // 在页面内部正常滚动时清零累积，避免带着上一段的滚动量误翻页
-      wheelAcc.current = 0;
-    }
-  }, [pages, page, goto]);
+    wheelAcc.current = 0;
+  }, []);
 
   /**
    * 捕获滚轮事件本身：图片比视口矮时 scroll 事件不触发，只能靠 wheel 累积。
@@ -239,7 +223,13 @@ export default function SourcePane({
    * onWheel：React 18 把 wheel/touchstart/touchmove 在 root 上注册为 **passive**
    * 监听器（见 react-dom 源码 addTrappedEventListener），在 passive 监听器里调
    * preventDefault() 会被浏览器忽略并打警告 —— 也就是「写了但不起作用」。
-   * 这里手动接管，才能真正吞掉边缘处的滚动、避免与翻页打架。
+   *
+   * ★★ 方向感知是硬要求（2026-10-05 用户反馈「不能鼠标滚动来上下查看」的根因）：
+   * 早先只判断「在顶部或不在顶部」，于是**在页面顶部时向下滚也走了 preventDefault
+   * 分支被吞掉** —— 表现为「滚轮完全失灵，只能拖滚动条」。
+   * 正确语义：只有**沿当前滚动方向已经没有可滚空间**时，才接管并转为翻页。
+   *   向下滚（deltaY>0）：不在底部 → 放行，让原生滚动
+   *   向上滚（deltaY<0）：不在顶部 → 放行，让原生滚动
    */
   useEffect(() => {
     const el = stageRef.current;
@@ -249,22 +239,32 @@ export default function SourcePane({
       const scrollable = el.scrollHeight > el.clientHeight + 2;
       const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 2;
       const atTop = el.scrollTop <= 0;
-      // 可滚动且不在边缘 → 交给原生滚动，清零累积
-      if (scrollable && !atBottom && !atTop) {
+      // 沿滚动方向还有空间 → 完全不干预，交给原生滚动
+      const roomToScroll = e.deltaY > 0 ? !atBottom : e.deltaY < 0 && !atTop;
+      if (scrollable && roomToScroll) {
         wheelAcc.current = 0;
         return;
       }
-      // 已在边缘（或压根不可滚）：吞掉滚动并累积，由 onScroll 判定是否翻页
+      // 已在边缘（或压根不可滚）：吞掉滚动并累积，够阈值就翻页
       e.preventDefault();
       wheelAcc.current += e.deltaY;
       if (wheelResetTimer.current) window.clearTimeout(wheelResetTimer.current);
       wheelResetTimer.current = window.setTimeout(() => {
         wheelAcc.current = 0;
       }, 160);
+      // ★ 判定必须在这里做，不能依赖 scroll 事件：已到边缘时我们 preventDefault()
+      //   了，scrollTop 不变 → 不会有 scroll 事件 → 旧实现是死逻辑。
+      if (wheelAcc.current > WHEEL_PAGE_THRESHOLD) {
+        wheelAcc.current = 0;
+        goto(page + 1);
+      } else if (wheelAcc.current < -WHEEL_PAGE_THRESHOLD) {
+        wheelAcc.current = 0;
+        goto(page - 1);
+      }
     };
     el.addEventListener("wheel", onWheelNative, { passive: false });
     return () => el.removeEventListener("wheel", onWheelNative);
-  }, [pages]);
+  }, [pages, page, goto]);
 
   // 键盘：←/→ 与 PageUp/PageDown 翻页，Home/End 跳首页/末页
   useEffect(() => {

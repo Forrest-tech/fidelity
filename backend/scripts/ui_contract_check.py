@@ -795,6 +795,34 @@ def main():
              "★ 滚轮用原生非 passive 监听器（React onWheel 的 preventDefault 会失效）")
         need("onWheel=" not in sp3,
              "★ 未使用 React onWheel 接管滚轮（会静默失效）")
+        # ★★ 方向感知（2026-10-05 用户反馈「不能鼠标滚动来上下查看」的根因）。
+        # 旧写法 `scrollable && !atBottom && !atTop` 只判断「在不在边缘」，
+        # 不看滚动方向 → 位于页面顶部时向下滚也落进 preventDefault 分支被吞掉，
+        # 表现为「滚轮完全失灵，只能拖滚动条」。
+        # 正确语义：沿当前 deltaY 方向还有空间就必须放行。
+        need("roomToScroll" in sp3 and "e.deltaY > 0 ? !atBottom" in sp3
+             and "e.deltaY < 0 && !atTop" in sp3,
+             "★ 滚轮方向感知：沿滚动方向还有空间时放行原生滚动（顶部下滚/底部上滚）")
+        need("if (scrollable && roomToScroll)" in sp3,
+             "★ 仅在「该方向无空间」时才接管滚轮")
+        # ★ 翻页判定必须在 wheel 处理器内完成。
+        # 旧实现把判定放在 onScroll 里，但边缘处已 preventDefault()，
+        # scrollTop 不变 → 永远不触发 scroll 事件 → 滚轮翻页是死逻辑。
+        # ⚠️ 断言必须匹配语句形态而非子串存在性：只查 "goto(page + 1)" 会被
+        #    「onScroll 里也翻页」的写法骗过（那正是要防的死逻辑）。
+        need("      if (wheelAcc.current > WHEEL_PAGE_THRESHOLD) {" in sp3
+             and "        goto(page + 1);" in sp3
+             and "      } else if (wheelAcc.current < -WHEEL_PAGE_THRESHOLD) {" in sp3
+             and "        goto(page - 1);" in sp3,
+             "★ 滚轮翻页判定在 wheel 处理器内（不依赖必然不触发的 scroll 事件）")
+        need("  const onStageScroll = useCallback(() => {\n    wheelAcc.current = 0;\n  }, []);" in sp3,
+             "★ 原生滚动仅清零累积量，不承担翻页判定（避免死逻辑）")
+        # 翻页后必须清零累积量：否则一次长滑动（deltaY 累积到 3000）会连翻 7 页。
+        # 只断言语句形态，不用出现次数 —— 键盘翻页处同样是 8 空格缩进的
+        # `goto(page + 1);`，任何计数条件都会误判。
+        need("      if (wheelAcc.current > WHEEL_PAGE_THRESHOLD) {\n        wheelAcc.current = 0;" in sp3
+             and "      } else if (wheelAcc.current < -WHEEL_PAGE_THRESHOLD) {\n        wheelAcc.current = 0;" in sp3,
+             "★ 翻页后清零滚轮累积量（防止一次长滑连翻多页）")
         need("PREFETCH_MARKS" in sp3 and "warmedMarks" in sp3,
              "★ 翻页预取 marks（最慢的接口，提前热好）")
         need("pv-loading" in sp3 and 't("pane.loadingPage")' in sp3,
