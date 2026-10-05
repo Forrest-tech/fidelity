@@ -74,6 +74,8 @@ export default function MdPane({
   onUserScroll,
   pageScoped,
   onPageScoped,
+  srcPath,
+  rel,
 }: {
   md: MdResp;
   align: AlignResp | null;
@@ -89,6 +91,15 @@ export default function MdPane({
   /** true = 只显示当前源文件页对应的 md 行（与左栏一页对一页）。 */
   pageScoped: boolean;
   onPageScoped: (v: boolean) => void;
+  /**
+   * 源文件的完整本地路径。与左栏 SourcePane 用的是**同一个** srcPath，
+   * 两边必须显示一致的路径，否则比对时无法确认「看的是不是同一份文件」。
+   * 缺省时回退到库内相对路径（rel），不能空着 —— 空路径会让用户
+   * 不知道这份 md 来自哪个文件。
+   */
+  srcPath?: string;
+  /** 库内相对路径，作为 srcPath 缺失时的回退值。 */
+  rel?: string;
 }) {
   const [t] = useI18n();
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -426,6 +437,17 @@ export default function MdPane({
           </span>
         )}
       </div>
+
+      {/* 源文件完整路径：与左栏显示同一个 srcPath，两侧一致才能确认
+          「左边的原文」和「右边的 md」确实是同一份文件。
+          路径超长时靠 .mono 的 direction:rtl + ellipsis 从末尾截断
+          （保留最有辨识度的尾部），完整值放在 title 里悬停可见。 */}
+      {(srcPath || rel) && (
+        <div className="pane-path truncate" title={srcPath || rel}>
+          <span className="dim">{t("pane.path")}</span>
+          <span className="mono">{srcPath || rel}</span>
+        </div>
+      )}
 
       {align?.truncated && (
         <div className="callout warn edge">

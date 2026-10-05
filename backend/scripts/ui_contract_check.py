@@ -939,6 +939,30 @@ def main():
         need("text-overflow" not in tx_rule and "nowrap" not in tx_rule,
              "★ md 正文无省略号/裁剪（折行文字必须完整显示）")
 
+    # ---- 两侧都必须显示源文件完整路径（用户 2026-10-05 反馈右栏缺路径）----
+    # 比对场景下「左栏原文」与「右栏 md」必须能确认是同一份文件，
+    # 因此两侧要显示**同一个** srcPath（不能各自算，避免不一致）。
+    mdp = read_src("components", "MdPane.tsx") or ""
+    # ⚠️ read_src 以 web/src 为根，App.tsx 就在根下 —— 传 ".." 会指向
+    # web/App.tsx（不存在）→ 返回 None → 下面整块断言被静默跳过。
+    app3 = read_src("App.tsx") or ""
+    if mdp:
+        need('<div className="pane-path truncate" title={srcPath || rel}>' in mdp,
+             "★ 右栏 md 显示源文件完整路径（可确认与左栏是同一份文件）")
+        need("{t(\"pane.path\")}" in mdp and "<span className=\"mono\">{srcPath || rel}</span>" in mdp,
+             "★ 右栏路径复用左栏同一标记与文案（含悬停完整值）")
+        need("(srcPath || rel) && (" in mdp,
+             "★ 路径两者皆无时不渲染空行（srcPath 缺失回退 rel）")
+    if app3:
+        # ⚠️ 必须整段匹配：只查 "srcPath={srcPath}" 会被「只删掉这一行、
+        #    留下 rel={sel}」的写法骗过（实测破坏测试确实漏过）。
+        need("                      srcPath={srcPath}\n                      rel={sel}" in app3,
+             "★ App 向 MdPane 同时传入 srcPath 与 rel（与 SourcePane 同一来源）")
+    # 两处必须共用 App 里同一个 srcPath 变量，不能各自拼路径
+    if app3 and "srcPath={srcPath}" in app3:
+        need(app3.count("srcPath={srcPath}") >= 2,
+             "★ 左右两栏共用同一 srcPath（各自拼路径会出现两侧不一致）")
+
     # ---- 侧栏树「全部展开 / 全部折叠」（用户 2026-10-05 指出是死按钮）----
     # 原实现：allOpen || openSet.has(d.name) —— 只短路一级目录，
     # 且用**目录名**当 key（实测 12 组同名目录，SS×13/DWG×12）互相串联。

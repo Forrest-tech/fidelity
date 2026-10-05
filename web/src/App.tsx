@@ -600,6 +600,8 @@ export default function App() {
                       focusLine={focusLine}
                       pageScoped={pageScoped}
                       onPageScoped={setPageScoped}
+                      srcPath={srcPath}
+                      rel={sel}
                     />
                   )}
                 </div>
