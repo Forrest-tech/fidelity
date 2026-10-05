@@ -70,6 +70,8 @@ export default function App() {
   const [reviewers, setReviewers] = useState<Reviewer[]>([]);
   const [reviewer, setReviewer] = useState(() => localStorage.getItem(REVIEWER_KEY) || "");
   const [note, setNote] = useState("");
+  /** 备注框是否展开：默认收起，避免长期占走工具栏宽度（用户 2026-10-05）。 */
+  const [noteOpen, setNoteOpen] = useState(false);
 
   const [showReviewers, setShowReviewers] = useState(false);
   const [showDecide, setShowDecide] = useState(false);
@@ -258,6 +260,13 @@ export default function App() {
     }
   };
 
+  /** trust_state → 已国际化的裁决文案。
+   *  写成显式映射而不是模板字符串 t()：
+   *  模板字面量让 t() 的 key 类型退化成 string，编译期失去校验，
+   *  拼错 key 只会静默显示成原始 key 文本。 */
+  const verdictLabel = (s: string) =>
+    s === "ok" ? t("verdict.ok") : s === "diff_big" ? t("verdict.diff_big") : t("verdict.rejected");
+
   const doVerdict = async (v: string) => {
     if (!sel) return;
     if (!reviewer) {
@@ -267,9 +276,11 @@ export default function App() {
     try {
       await api.review(sel, v, reviewer, note);
       setNote("");
+      // 备注已随本次裁决落库，收起输入框把工具栏宽度还给常用控件
+      setNoteOpen(false);
       refreshBadge();
       refreshStats();
-      const label = v === "ok" ? t("verdict.ok") : v === "diff_big" ? t("verdict.diff_big") : t("verdict.rejected");
+      const label = verdictLabel(v);
       say("ok", v === "" ? t("msg.verdictRevoked") : t("msg.verdictSaved", { v: label, r: reviewer }));
     } catch (e: any) {
       say("err", e.message);
@@ -532,15 +543,21 @@ export default function App() {
                 </div>
               </div>
 
+              {/* 工具栏：按「操作 / 视图 / 裁决」分组。
+                  分组依据主流桌面工具的惯例：高频主动作靠左，模式切换居中，
+                  状态判定与身份靠右并与左侧用竖线隔开 —— 避免「重新比对」
+                  这种不可撤销动作和「一致/差异大」这种随手可改的判定混在一起。 */}
               <div className="toolbar">
                 <button className="primary" onClick={runCompare} disabled={busy}>
                   {t("act.recalc")}
                 </button>
-                <div className="vsep" />
                 <button className={showMarks ? "on" : ""} onClick={() => setShowMarks((v) => !v)}>
                   {t("act.marks")}
                 </button>
-                <div className="seg">
+
+                <div className="vsep" />
+
+                <div className="seg" role="group" aria-label={t("act.scopeLabel")}>
                   <button className={!onlyDiff ? "on" : ""} onClick={() => setOnlyDiff(false)}>
                     {t("act.all")}
                   </button>
@@ -555,9 +572,88 @@ export default function App() {
                   placeholder={t("act.searchMd")}
                   className="w-search"
                 />
+
                 <div className="spacer" />
+
                 {align && !align.not_applicable && (
                   <span className="hint num nowrap">{t("file.lines", { n: align.total_lines.toLocaleString() })}</span>
+                )}
+
+                <div className="vsep" />
+
+                {/* 裁决组：三态互斥，用 segmented 语义（同一时刻只有一个生效）。
+                    放在工具栏右端，与左侧的「操作」组用竖线分隔。 */}
+                <div className="vgroup" role="group" aria-label={t("verdict.label")}>
+                  <button
+                    className={`vbtn ok ${badge?.trust_state === "ok" ? "sel" : ""}`}
+                    onClick={() => doVerdict("ok")}
+                    aria-pressed={badge?.trust_state === "ok"}
+                  >
+                    {t("verdict.ok")}
+                  </button>
+                  <button
+                    className={`vbtn diff ${badge?.trust_state === "diff_big" ? "sel" : ""}`}
+                    onClick={() => doVerdict("diff_big")}
+                    aria-pressed={badge?.trust_state === "diff_big"}
+                  >
+                    {t("verdict.diff_big")}
+                  </button>
+                  <button
+                    className={`vbtn rej ${badge?.trust_state === "rejected" ? "sel" : ""}`}
+                    onClick={() => doVerdict("rejected")}
+                    aria-pressed={badge?.trust_state === "rejected"}
+                  >
+                    {t("verdict.rejected")}
+                  </button>
+                </div>
+                {badge?.trust_state && (
+                  <button className="ghost sm" onClick={() => doVerdict("")} title={t("act.revoke")}>
+                    {t("act.revoke")}
+                  </button>
+                )}
+
+                <div className="reviewer-pick">
+                  <span className="lbl nowrap">{t("verdict.reviewer")}</span>
+                  <select
+                    value={reviewer}
+                    onChange={(e) => setReviewer(e.target.value)}
+                    aria-label={t("verdict.reviewer")}
+                  >
+                    <option value="">{t("verdict.pick")}</option>
+                    {reviewers.filter((r) => r.enabled).map((r) => (
+                      <option key={r.id || r.name} value={r.name}>
+                        {r.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button className="ghost sm" onClick={() => setShowReviewers(true)}>
+                    {t("verdict.manage")}
+                  </button>
+                </div>
+
+                {/* 备注：按需展开。收起态只留一个按钮，不长期占用工具栏。 */}
+                {noteOpen ? (
+                  <>
+                    <input
+                      className="note"
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      placeholder={t("verdict.note")}
+                      aria-label={t("verdict.note")}
+                      autoFocus
+                    />
+                    <button className="ghost sm" onClick={() => { setNoteOpen(false); setNote(""); }} title={t("act.noteClose")}>
+                      ✕
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    className={`ghost sm notebtn ${note ? "on" : ""}`}
+                    onClick={() => setNoteOpen(true)}
+                    title={t("verdict.note")}
+                  >
+                    {t("act.note")}
+                  </button>
                 )}
               </div>
 
@@ -607,42 +703,20 @@ export default function App() {
                 </div>
               </div>
 
-              {/* 裁决区：三个状态用色块 + 文案，符合行业规范 */}
-              <div className="verdictbar">
-                <span className="lbl nowrap">{t("verdict.label")}</span>
-                <div className="vgroup">
-                  <button className={`vbtn ok ${badge?.trust_state === "ok" ? "sel" : ""}`} onClick={() => doVerdict("ok")}>
-                    {t("verdict.ok")}
-                  </button>
-                  <button className={`vbtn diff ${badge?.trust_state === "diff_big" ? "sel" : ""}`} onClick={() => doVerdict("diff_big")}>
-                    {t("verdict.diff_big")}
-                  </button>
-                  <button className={`vbtn rej ${badge?.trust_state === "rejected" ? "sel" : ""}`} onClick={() => doVerdict("rejected")}>
-                    {t("verdict.rejected")}
-                  </button>
-                </div>
-                {badge?.trust_state && (
-                  <button className="ghost sm" onClick={() => doVerdict("")}>
-                    {t("act.revoke")}
-                  </button>
+              {/* 底部只保留状态行：所有可点控件都已上移到工具栏。
+                  这里若再放按钮会与上方重复，且会让正文区少一屏高度。 */}
+              <div className="statusbar">
+                <span className={`dot ${badge?.trust_state || "unreviewed"}`} aria-hidden="true" />
+                <span className="nowrap">
+                  {badge?.trust_state
+                    ? t("verdict.stateOf", { v: verdictLabel(badge.trust_state) })
+                    : t("verdict.none")}
+                </span>
+                {badge?.reviewer && (
+                  <span className="dim nowrap">
+                    {t("verdict.by")} {badge.reviewer}
+                  </span>
                 )}
-                <div className="vsep" />
-                <div className="reviewer-pick">
-                  <span className="lbl nowrap">{t("verdict.reviewer")}</span>
-                  <select value={reviewer} onChange={(e) => setReviewer(e.target.value)}>
-                    <option value="">{t("verdict.pick")}</option>
-                    {reviewers.filter((r) => r.enabled).map((r) => (
-                      <option key={r.id || r.name} value={r.name}>
-                        {r.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button className="ghost sm" onClick={() => setShowReviewers(true)}>
-                    {t("verdict.manage")}
-                  </button>
-                </div>
-                <input className="note" value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("verdict.note")} />
-                {!badge?.trust_state && <span className="dim nowrap">{t("verdict.none")}</span>}
               </div>
             </>
           )}

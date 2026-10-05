@@ -982,6 +982,123 @@ def main():
         need(app3.count("srcPath={srcPath}") >= 2,
              "★ 左右两栏共用同一 srcPath（各自拼路径会出现两侧不一致）")
 
+    # ---- 头部等高 + 裁决栏布局（用户 2026-10-05「头部错位」「没对齐」「Note 框不要」）----
+    # 三条真实缺陷：
+    #   a) .pane-head 只有 min-height，右栏内容一多就换行撑高 → 左右不等高、正文错位；
+    #   b) .vbtn(32px) 与 ghost sm(23px) 同行 → 底边不齐；
+    #   c) Note 输入框 flex:1 常驻占走整行宽度，把状态文字顶到最右。
+    # 修法：头部固定 height + nowrap；控件统一 --ctl-h；Note 收进「+ 备注」按需展开；
+    #      底部裁决栏改为纯状态行，所有可点控件上移工具栏。
+    css_all2 = read_src("styles.css") or ""
+    if app3:
+        need("className=\"verdictbar\"" not in app3,
+             "★ 底部裁决栏已移除（不再与工具栏重复占两行）")
+        need('className="statusbar"' in app3 and "verdict.stateOf" in app3,
+             "★ 底部改为纯状态行（只显示状态，无可点控件）")
+        # 三个裁决按钮 + 审核人必须都在工具栏里。
+        # ⚠️ 不能用 split("</div>") 截断：工具栏内部有嵌套 div（.vgroup/.seg/
+        #    .reviewer-pick），会在第一个 </div> 处腰斩，后面的控件全看不到 ——
+        #    实测正是这个 bug 让 4 条断言误报失败。改为按下一个顶层区块
+        #    （statusbar / verdictbar / callout）作为结束标记。
+        tb = ""
+        if 'className="toolbar"' in app3:
+            _after = app3.split('className="toolbar"', 1)[1]
+            for _end in ('className="statusbar"', "className=\"filehead\"",
+                         'className="pane-path"'):
+                if _end in _after:
+                    _after = _after.split(_end, 1)[0]
+                    break
+            tb = _after
+        need('className="vgroup"' in tb and "doVerdict(\"ok\")" in tb
+             and "doVerdict(\"rejected\")" in tb,
+             "★ 裁决按钮已上移进工具栏")
+        need("reviewer-pick" in tb and "setReviewer" in tb,
+             "★ 审核人选择器已上移进工具栏")
+        need('className="vsep"' in tb,
+             "★ 工具栏按分组用竖线分隔（操作 / 视图 / 裁决）")
+        # Note 必须按需展开，不能常驻占宽。
+        # ⚠️ 只查 "noteOpen" 和 'className="note"' 出现过是不够的 ——
+        #    实测破坏测试里把条件写成 `{true || noteOpen ? (...)}`（永远为真，
+        #    Note 框永久常驻）依然能通过。必须确认 Note 输入框位于
+        #    「三元真分支」里，且同一个三元里存在折叠按钮分支。
+        _m = re.search(r"\{(noteOpen)\s*\?\s*\(", tb)
+        need(_m is not None,
+             "★ Note 收进「+ 备注」按需展开（不再常驻占满整行）")
+        if _m:
+            _seg = tb[_m.start():_m.start() + 1400]
+            # 展开分支里必须有 input.note，折叠分支里必须有 notebtn
+            need(_seg.index('className="note"') < _seg.find("notebtn"),
+                 "★ Note 输入框在展开分支、收起时只剩按钮（宽度可回收）")
+            need("setNoteOpen(true)" in tb,
+                 "★ 存在把 Note 展开的入口（收起态按钮）")
+            # 展开分支里不应再有 flex:1 类的永久占位写法（CSS 侧已限宽 220px）
+            need(".toolbar .note" in css_all2 and "flex: 1" not in
+                 css_all2.split(".toolbar .note {")[1].split("}")[0],
+                 "★ Note 输入框不再 flex:1 占满整行")
+        need("setNoteOpen(false)" in app3,
+             "★ 备注提交后自动收起（宽度还给常用控件）")
+        # 三态互斥要有 aria-pressed，不能只靠颜色区分
+        need(tb.count("aria-pressed") >= 3,
+             "★ 三态按钮带 aria-pressed（不只靠颜色表意）",
+             "(found %d)" % tb.count("aria-pressed"))
+
+    if css_all2:
+        ph = ""
+        # ⚠️ 必须匹配「裸」选择器 ".pane-head {"：
+        #    ".pane-head {" 也会命中 ".pane-head b {" / ".pane-head .legend {"，
+        #    取出来的会是子规则，断言就查错了对象（实测导致误报失败）。
+        if "\n.pane-head {" in css_all2:
+            ph = css_all2.split("\n.pane-head {")[1].split("}")[0]
+        need("height: var(--pane-head-h)" in ph,
+             "★ .pane-head 固定高度（左右两栏等高，正文不错位）")
+        need("overflow: hidden" in ph and "white-space: nowrap" in ph,
+             "★ .pane-head 禁止换行溢出（标题/图例不再撑高或被裁掉）")
+        # 图例必须可收缩：它是参考信息，空间不足时优先省略。
+        # 这条规则写在子选择器 .pane-head .legend 上，不在裸规则里。
+        lg = ""
+        if "\n.pane-head .legend {" in css_all2:
+            lg = css_all2.split("\n.pane-head .legend {")[1].split("}")[0]
+        need("flex-shrink: 1" in lg,
+             "★ .pane-head 内图例可收缩（优先保住操作控件）",
+             "(rule=%r)" % lg.strip()[:60])
+        # 操作控件必须禁止收缩
+        need(".pane-head .pager" in css_all2 and "flex-shrink: 0" in ph,
+             "★ .pane-head 翻页/缩放控件不参与收缩（始终完整可见）")
+        # 同一份 CSS 里不能有两份 .verdictbar 定义（历史上出现过互相覆盖）
+        need(css_all2.count(".verdictbar {") == 0,
+             "★ 样式表里不再有重复的 .verdictbar 定义（曾互相覆盖 padding）",
+             "(found %d)" % css_all2.count(".verdictbar {"))
+        need("--ctl-h" in css_all2,
+             "★ 控件高度用 --ctl-h 统一（并排控件底边对齐）")
+
+        # ⚠️ 取子规则不能无脑 split(sel)[1] —— 选择器匹配不到时会抛
+        #    IndexError 让整个契约检查崩掉（比断言失败更糟：什么都看不到）。
+        def _rule(src, sel):
+            if sel not in src:
+                return ""
+            return src.split(sel)[1].split("}")[0]
+
+        # ⚠️ 只查 "--ctl-h 存在" 是纸面通过：实测把 .vbtn 写回 height:32px、
+        #    select 写回 23px（正是用户报的错位）依然全绿。必须逐个确认
+        #    同一行上的控件**确实引用** --ctl-h，而不是各自写死高度。
+        _vb = _rule(css_all2, ".vbtn {")
+        need(not _vb or "height" not in _vb,
+             "★ .vbtn 不写死高度（否则与 ghost sm 不齐）",
+             "(rule=%r)" % _vb.strip()[:50])
+        need("height: var(--ctl-h)" in _rule(css_all2, ".reviewer-pick select {"),
+             "★ 审核人下拉高度用 --ctl-h（与裁决按钮底边对齐）")
+        # 工具栏内每个控件族都要显式给高度
+        for _sel, _expect in (
+            (".toolbar > button,", "height: var(--ctl-h)"),
+            (".toolbar .seg button", "height: var(--ctl-h)"),
+            (".toolbar input.w-search,", "height: var(--ctl-h)"),
+            (".toolbar .reviewer-pick .sm,", "height: var(--ctl-h)"),
+        ):
+            _r = _rule(css_all2, _sel)
+            need(_expect in _r,
+                 "★ 工具栏 %s 高度用 --ctl-h" % _sel.strip(" ,"),
+                 "(rule=%r)" % _r.strip()[:50])
+
     # ---- 侧栏树「全部展开 / 全部折叠」（用户 2026-10-05 指出是死按钮）----
     # 原实现：allOpen || openSet.has(d.name) —— 只短路一级目录，
     # 且用**目录名**当 key（实测 12 组同名目录，SS×13/DWG×12）互相串联。

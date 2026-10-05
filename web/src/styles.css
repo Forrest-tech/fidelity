@@ -53,6 +53,13 @@
 
   --header-h: 52px;
   --stats-h: 60px;
+
+  /* ★ 控件统一高度。原先同一行里 .vbtn 是 32px、button.sm 是 23px，
+     底边不齐正是用户报的「没对齐」。凡是并排放在工具栏/分栏头的控件，
+     都用这个值锁死高度，改一处即可全局对齐。 */
+  --ctl-h: 28px;
+  /* 分栏头固定高度：左右两栏必须等高，否则正文起始位置错开。 */
+  --pane-head-h: 36px;
   --tree-w: 306px;
 }
 
@@ -279,12 +286,22 @@ textarea { resize: vertical; }
 .badge.unreviewed { background: var(--surface-3); color: var(--text-2); border-color: var(--border); }
 
 /* ---- 工具条 ---- */
+/* ★ 全部控件统一 --ctl-h，否则并排元素底边不齐（用户报的「没对齐」）。 */
 .toolbar {
   display: flex; align-items: center; gap: 7px; flex-shrink: 0;
   padding: 7px 16px; background: var(--surface-3); border-bottom: 1px solid var(--border);
-  flex-wrap: wrap;
+  flex-wrap: wrap; row-gap: 7px;
 }
+.toolbar > button, .toolbar .seg button { height: var(--ctl-h); }
+.toolbar .seg { height: var(--ctl-h); }
+.toolbar .seg button { display: inline-flex; align-items: center; }
+.toolbar input.w-search, .toolbar select, .toolbar input.note { height: var(--ctl-h); }
+.toolbar .lbl { font-size: 12px; color: var(--text-2); font-weight: 500; flex-shrink: 0; }
 .toolbar .hint { font-size: 12px; color: var(--text-2); }
+.toolbar .reviewer-pick .sm, .toolbar .notebtn { height: var(--ctl-h); }
+/* 竖分隔：与控件等高居中，避免比按钮高出一截 */
+.toolbar .vsep { height: 18px; align-self: center; }
+
 .seg { display: inline-flex; border: 1px solid var(--border-strong); border-radius: var(--r); overflow: hidden; background: var(--surface); }
 .seg button { border: none; border-radius: 0; padding: 5px 11px; font-size: 12.5px; }
 .seg button + button { border-left: 1px solid var(--border); }
@@ -305,12 +322,34 @@ textarea { resize: vertical; }
 .split { flex: 1; display: flex; min-height: 0; }
 .pane { flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0; background: var(--surface); }
 .pane + .pane { border-left: 1px solid var(--border); }
+/* ★ 分栏头等高修复（用户 2026-10-05「头部这个错位了，信息也超出了」）。
+   原规则只有 `min-height: 34px`：右栏内容一多（字数 + 范围切换 + 页数 + 图例），
+   `Stored .md` 与图例数字就换行，把右栏头撑到 50px，左栏仍是 34px ——
+   两栏正文起始位置错开，且溢出内容被右边界裁掉（图例最后一项看不见）。
+   修法三条：
+     1) height 固定 + overflow hidden —— 换行不再可能，等高；
+     2) 头部内所有元素 nowrap —— 文字不折行；
+     3) min-width:0 + flex-shrink —— 图例作为最不重要的信息可被压缩省略，
+        优先保住标题、翻页、缩放等操作控件。 */
 .pane-head {
   display: flex; align-items: center; gap: 8px; flex-shrink: 0;
-  padding: 6px 12px; background: var(--surface-3); border-bottom: 1px solid var(--border);
-  font-size: 12px; color: var(--text-2); min-height: 34px;
+  padding: 0 12px; background: var(--surface-3); border-bottom: 1px solid var(--border);
+  font-size: 12px; color: var(--text-2);
+  height: var(--pane-head-h); min-height: var(--pane-head-h);
+  overflow: hidden; white-space: nowrap;
 }
-.pane-head b { color: var(--text); font-weight: 600; font-size: 12.5px; }
+.pane-head > * { flex-shrink: 0; }
+/* 图例是参考信息而非操作项：空间不足时优先让它省略 */
+.pane-head .legend { min-width: 0; flex-shrink: 1; overflow: hidden; }
+.pane-head .legend span { flex-shrink: 0; }
+.pane-head b { color: var(--text); font-weight: 600; font-size: 12.5px; flex-shrink: 0; }
+/* 头部里的数字类文本也要能收缩，否则大数字会顶掉操作按钮 */
+.pane-head .dim, .pane-head .hint { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* 操作控件（翻页/缩放/范围切换）永远完整可见，不参与收缩 */
+.pane-head .pager, .pane-head .zoomctl, .pane-head .seg,
+.pane-head select, .pane-head .badge { flex-shrink: 0; }
+.pane-head button, .pane-head select { height: 24px; }
+
 .pane-body { flex: 1; overflow: auto; min-height: 0; position: relative; }
 
 .kv { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-2); }
@@ -401,23 +440,18 @@ textarea { resize: vertical; }
 .mdline:hover .tx { box-shadow: inset 0 0 0 1px var(--brand-border); }
 .mdline.cur .tx { box-shadow: inset 2px 0 0 var(--brand), inset 0 0 0 1px var(--brand-border); }
 
-/* ---- 裁决栏 ---- */
-.verdictbar {
-  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
-  padding: 9px 16px; background: var(--surface); border-top: 1px solid var(--border);
-  box-shadow: 0 -1px 2px rgba(60, 64, 67, 0.04);
-}
-.verdictbar .lbl { font-size: 12px; color: var(--text-2); font-weight: 500; }
-.vbtn { font-weight: 500; }
-.vbtn.ok { color: var(--green-strong); border-color: var(--green-border); }
-.vbtn.ok.sel { background: var(--green-bg); border-color: var(--green); color: var(--green-strong); }
-.vbtn.diff { color: var(--red); border-color: var(--red-border); }
-.vbtn.diff.sel { background: var(--red-bg); border-color: var(--red); color: var(--red); }
-.vbtn.rej { color: var(--text-2); border-color: var(--border-strong); }
-.vbtn.rej.sel { background: #eceef2; border-color: var(--text-2); color: var(--text); }
-.reviewer-pick { display: flex; align-items: center; gap: 6px; }
-.reviewer-pick select { width: 160px; }
-.verdictbar .note { flex: 1; min-width: 120px; }
+/* ---- 裁决按钮（三态互斥） ----
+   注意：原先这里有两份 .verdictbar 定义（405 与 644），后者覆盖前者，
+   造成 padding/阴影不一致。裁决控件上移到工具栏后，这里只保留按钮样式。 */
+.vbtn { font-weight: 600; min-width: 84px; }
+.vbtn.ok { color: var(--green-strong); border-color: var(--green-border); background: var(--green-bg); }
+.vbtn.ok.sel { background: var(--green-strong); color: #fff; border-color: var(--green-strong); }
+.vbtn.diff { color: var(--red); border-color: var(--red-border); background: var(--red-bg); }
+.vbtn.diff.sel { background: var(--red); color: #fff; border-color: var(--red); }
+.vbtn.rej { color: var(--text-2); border-color: var(--border-strong); background: var(--surface-3); }
+.vbtn.rej.sel { background: var(--text-2); color: #fff; border-color: var(--text-2); }
+/* 选中态除了填色还要有非颜色线索（描边加粗），色觉障碍用户也能分辨 */
+.vbtn.sel { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18); }
 
 /* ============================== 弹层 ============================== */
 .mask {
@@ -640,20 +674,29 @@ textarea { resize: vertical; }
   z-index: 3;
 }
 
-/* ---- 裁决区：三态按钮组 ---- */
-.verdictbar { display: flex; align-items: center; gap: 10px; flex-shrink: 0; padding: 8px 16px;
-  background: var(--surface); border-top: 1px solid var(--border); overflow-x: auto; }
+/* ---- 裁决区：三态按钮组（已并入工具栏） ----
+   所有控件统一 28px 高：原先 .vbtn(32px) 与 ghost sm(23px) 同行，
+   底边不齐正是用户报的「没对齐」。这里用 --ctl-h 一次锁死。 */
 .vgroup { display: inline-flex; gap: 6px; flex-shrink: 0; }
-.vbtn { font-weight: 600; min-width: 84px; }
-.vbtn.ok { color: var(--green-strong); border-color: var(--green-border); background: var(--green-bg); }
-.vbtn.ok.sel { background: var(--green-strong); color: #fff; border-color: var(--green-strong); }
-.vbtn.diff { color: var(--red); border-color: var(--red-border); background: var(--red-bg); }
-.vbtn.diff.sel { background: var(--red); color: #fff; border-color: var(--red); }
-.vbtn.rej { color: var(--text-2); border-color: var(--border-strong); background: var(--surface-3); }
-.vbtn.rej.sel { background: var(--text-2); color: #fff; border-color: var(--text-2); }
 .reviewer-pick { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
-.reviewer-pick select { width: 118px; }
-.verdictbar .note { flex: 1; min-width: 140px; }
+.reviewer-pick select { width: 118px; height: var(--ctl-h); padding: 0 8px; }
+/* 备注展开时占位但不让它把整行撑破：限宽 + 可收起 */
+.toolbar .note { width: 220px; flex: 0 1 220px; height: var(--ctl-h); }
+.notebtn { white-space: nowrap; }
+
+/* ---- 底部状态行：只显示状态，无可点控件 ---- */
+.statusbar {
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  padding: 6px 16px; background: var(--surface-3); border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--text-2); min-height: 30px;
+}
+.statusbar .dot {
+  width: 8px; height: 8px; border-radius: 99px; flex-shrink: 0;
+  background: var(--text-3); border: 1px solid var(--border-strong);
+}
+.statusbar .dot.ok { background: var(--green-strong); border-color: var(--green-strong); }
+.statusbar .dot.diff_big { background: var(--red); border-color: var(--red); }
+.statusbar .dot.rejected { background: var(--text-2); border-color: var(--text-2); }
 
 /* ---- 工具栏竖分隔 ---- */
 .vsep { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
