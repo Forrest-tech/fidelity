@@ -958,29 +958,80 @@ def main():
         need("text-overflow" not in tx_rule and "nowrap" not in tx_rule,
              "★ md 正文无省略号/裁剪（折行文字必须完整显示）")
 
-    # ---- 两侧都必须显示源文件完整路径（用户 2026-10-05 反馈右栏缺路径）----
-    # 比对场景下「左栏原文」与「右栏 md」必须能确认是同一份文件，
-    # 因此两侧要显示**同一个** srcPath（不能各自算，避免不一致）。
+    # ---- 两侧路径：左栏=源文件 .pdf，右栏=入库 .md（用户 2026-10-05「为啥这两个路径是一样的」）----
+    # 真实缺陷：srcPath 由 src_root 拼出，且**同一个值传给了左右两栏**。
+    # 右栏标题写着「入库 .md」，显示的却是 Library 下的 .pdf 路径 ——
+    # 标签与内容自相矛盾，用户无法确认比对用的是哪份 md。
+    # 正确做法：paths.src = src_root\<rel>（左栏）、
+    #           paths.md  = md_root\<rel>.md（右栏），两个不同文件。
     mdp = read_src("components", "MdPane.tsx") or ""
+    sp2 = read_src("components", "SourcePane.tsx") or ""
     # ⚠️ read_src 以 web/src 为根，App.tsx 就在根下 —— 传 ".." 会指向
     # web/App.tsx（不存在）→ 返回 None → 下面整块断言被静默跳过。
     app3 = read_src("App.tsx") or ""
+    parsers_py = ""
+    _pp = os.path.join(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))), "app", "ingest", "parsers.py")
+    if os.path.exists(_pp):
+        with open(_pp, "r", encoding="utf-8") as _f:
+            parsers_py = _f.read()
+
+    def _mdp_prop(src):
+        """取出 App 传给 MdPane 的 srcPath 实参名，用于断言失败时定位。"""
+        i = src.find("<MdPane")
+        if i == -1:
+            return "<no MdPane>"
+        seg = src[i:i + 1200]
+        m = re.search(r"srcPath=\{([A-Za-z_][A-Za-z0-9_]*)\}", seg)
+        return m.group(1) if m else "<no srcPath prop>"
+
+    if app3:
+        # ⚠️ 用正则而非硬编码变量名：写死 `${relWin}` 会在有人把中间变量
+        #    改名（rel_win/relW）后**静默失效**，守卫变绿而实际已不符。
+        #    这里只锁定真正要守的不变量——右栏用 md_root 且追加 .md。
+        need(re.search(r"md:\s*`\$\{s\.md_root\}[^`]*\.md`", app3) is not None,
+             "★ 右栏路径用 md_root 拼（不是 src_root —— 那是左栏的 .pdf）",
+             "(未找到 md_root 模板)")
+        need(re.search(r"src:\s*`\$\{s\.src_root\}[^`]*`", app3) is not None,
+             "★ 左栏路径用 src_root 拼")
+        need("const mdPath = paths.md;" in app3,
+             "★ App 导出独立的 mdPath（供右栏使用）")
+        # ⚠️ 必须整段匹配：只查 "srcPath={mdPath}" 会被「只删这一行、
+        #    留下 rel={sel}」骗过（此前破坏测试确实漏过这种写法）。
+        need("                      srcPath={mdPath}\n                      rel={sel}" in app3,
+             "★ App 向 MdPane 传的是 mdPath（不是 srcPath）",
+             "(实际传参=%r)" % _mdp_prop(app3))
+        need('srcPath={srcPath}' in app3,
+             "★ App 向 SourcePane 传的仍是 srcPath（源文件路径）")
     if mdp:
+        need("{t(\"pane.mdPathLabel\")}" in mdp,
+             "★ 右栏标签为「MD 路径」而非笼统的「路径」"
+             "（否则用户以为两栏指向同一文件）")
+        need("{t(\"pane.path\")}" not in mdp,
+             "★ 右栏不再使用含糊的 pane.path 标签")
         need('<div className="pane-path truncate" title={srcPath || rel}>' in mdp,
-             "★ 右栏 md 显示源文件完整路径（可确认与左栏是同一份文件）")
-        need("{t(\"pane.path\")}" in mdp and "<span className=\"mono\">{srcPath || rel}</span>" in mdp,
-             "★ 右栏路径复用左栏同一标记与文案（含悬停完整值）")
+             "★ 右栏 md 显示完整路径（含悬停完整值）")
+        need("<span className=\"mono\">{srcPath || rel}</span>" in mdp,
+             "★ 右栏路径内容为 srcPath（此时即 md 路径），回退 rel")
         need("(srcPath || rel) && (" in mdp,
              "★ 路径两者皆无时不渲染空行（srcPath 缺失回退 rel）")
-    if app3:
-        # ⚠️ 必须整段匹配：只查 "srcPath={srcPath}" 会被「只删掉这一行、
-        #    留下 rel={sel}」的写法骗过（实测破坏测试确实漏过）。
-        need("                      srcPath={srcPath}\n                      rel={sel}" in app3,
-             "★ App 向 MdPane 同时传入 srcPath 与 rel（与 SourcePane 同一来源）")
-    # 两处必须共用 App 里同一个 srcPath 变量，不能各自拼路径
-    if app3 and "srcPath={srcPath}" in app3:
-        need(app3.count("srcPath={srcPath}") >= 2,
-             "★ 左右两栏共用同一 srcPath（各自拼路径会出现两侧不一致）")
+    if sp2:
+        need("{t(\"pane.srcPathLabel\")}" in sp2,
+             "★ 左栏标签为「源文件路径」，与右栏「MD 路径」成对区分")
+
+    # ---- 前后端 md 路径拼接规则必须一致（否则前端显示的路径指向不存在的文件）----
+    # 后端权威实现在 parsers.md_path_for：out_rel = rel + ".md"。
+    # 前端只能"声称"路径，所以这条不变量必须由检查双向锁定。
+    if parsers_py and app3:
+        _be = parsers_py.split("def md_path_for(", 1)[-1].split("\ndef ", 1)[0] \
+            if "def md_path_for(" in parsers_py else ""
+        need('rel + ".md"' in _be,
+             "★ 后端 md 路径规则为 rel + '.md'（前端按此对齐）",
+             "(md_path_for=%r)" % _be.strip()[:80])
+        _mdtpl = re.search(r"md:\s*`\$\{s\.md_root\}([^`]*)`", app3)
+        need(_mdtpl is not None and ".md" in _mdtpl.group(1),
+             "★ 前端同样追加 .md 后缀（与后端规则对齐）",
+             "(模板=%r)" % (_mdtpl.group(0) if _mdtpl else None))
 
     # ---- 头部等高 + 裁决栏布局（用户 2026-10-05「头部错位」「没对齐」「Note 框不要」）----
     # 三条真实缺陷：

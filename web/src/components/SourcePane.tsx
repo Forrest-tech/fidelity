@@ -387,7 +387,7 @@ export default function SourcePane({
 
       {/* 文件完整路径：让用户始终知道自己在看哪个文件 */}
       <div className="pane-path truncate" title={srcPath || rel}>
-        <span className="dim">{t("pane.path")}</span>
+        <span className="dim">{t("pane.srcPathLabel")}</span>
         <span className="mono">{srcPath || rel}</span>
       </div>
 

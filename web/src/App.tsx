@@ -323,11 +323,29 @@ export default function App() {
 
   const score = badge?.auto_score ?? null;
   const scoreCls = score == null ? "none" : score >= 90 ? "good" : score >= 70 ? "mid" : "bad";
-  const srcPath = useMemo(() => {
+
+  /**
+   * 左栏 = 源文件（Library/….pdf），右栏 = 入库 md（Md_Library/….pdf.md）。
+   *
+   * 两者是**不同磁盘位置上的两个不同文件**：源文在 src_root，比对用的 md 在
+   * md_root。早期版本把同一个 srcPath 传给左右两栏，右栏标题写着「入库 .md」
+   * 却显示 .pdf 的路径 —— 标签与内容自相矛盾，用户无法确认比对的是哪份 md。
+   *
+   * 拼接规则必须与后端 parsers.md_path_for 完全一致（out_rel = rel + ".md"），
+   * 否则显示的路径指向一个并不存在的文件。前端只能"声称"路径，所以这条
+   * 规则由 ui_contract_check 双向锁定（前端 md_root+rel+".md" ≡ 后端 md_path_for）。
+   */
+  const paths = useMemo(() => {
     const s = sources.find((x) => x.id === sid);
-    if (!s || !sel) return sel;
-    return `${s.src_root}\\${sel.replace(/\//g, "\\")}`;
+    if (!s || !sel) return { src: sel, md: sel };
+    const relWin = sel.replace(/\//g, "\\");
+    return {
+      src: `${s.src_root}\\${relWin}`,
+      md: `${s.md_root}\\${relWin}.md`,
+    };
   }, [sources, sid, sel]);
+  const srcPath = paths.src;
+  const mdPath = paths.md;
 
   const st = stats?.by_state || {};
 
@@ -696,7 +714,7 @@ export default function App() {
                       focusLine={focusLine}
                       pageScoped={pageScoped}
                       onPageScoped={setPageScoped}
-                      srcPath={srcPath}
+                      srcPath={mdPath}
                       rel={sel}
                     />
                   )}

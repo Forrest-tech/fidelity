@@ -92,10 +92,10 @@ export default function MdPane({
   pageScoped: boolean;
   onPageScoped: (v: boolean) => void;
   /**
-   * 源文件的完整本地路径。与左栏 SourcePane 用的是**同一个** srcPath，
-   * 两边必须显示一致的路径，否则比对时无法确认「看的是不是同一份文件」。
-   * 缺省时回退到库内相对路径（rel），不能空着 —— 空路径会让用户
-   * 不知道这份 md 来自哪个文件。
+   * **入库 md 自身**的完整本地路径（md_root/<rel>.md），不是源文件路径。
+   * 左栏展示 Library 下的 .pdf，本栏展示 Md_Library 下的 .pdf.md ——
+   * 两者是不同磁盘位置上的不同文件，显示同一个路径会让用户无法确认
+   * 比对用的到底是哪份 md。缺省时回退到库内相对路径（rel）。
    */
   srcPath?: string;
   /** 库内相对路径，作为 srcPath 缺失时的回退值。 */
@@ -451,13 +451,14 @@ export default function MdPane({
         )}
       </div>
 
-      {/* 源文件完整路径：与左栏显示同一个 srcPath，两侧一致才能确认
-          「左边的原文」和「右边的 md」确实是同一份文件。
+      {/* 入库 md 自身的完整路径（md_root/<rel>.md），不是左栏那份 .pdf。
+          标签用「MD 路径」而非笼统的「路径」：右栏标题已声明这是
+          「入库 .md」，若标签仍写「路径」，用户会以为两栏指向同一个文件。
           路径超长时靠 .mono 的 direction:rtl + ellipsis 从末尾截断
           （保留最有辨识度的尾部），完整值放在 title 里悬停可见。 */}
       {(srcPath || rel) && (
         <div className="pane-path truncate" title={srcPath || rel}>
-          <span className="dim">{t("pane.path")}</span>
+          <span className="dim">{t("pane.mdPathLabel")}</span>
           <span className="mono">{srcPath || rel}</span>
         </div>
       )}
