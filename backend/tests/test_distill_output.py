@@ -8,13 +8,10 @@ import pytest
 from app.distill import run as R
 
 
-@pytest.fixture(scope="module")
-def distilled(tmp_path_factory):
-    base = tmp_path_factory.mktemp("distill")
+def _make_pdf(base, pages=6):
     pdf = str(base / "Test Standard 2025.pdf")
     doc = pymupdf.open()
-    toc = []
-    for i in range(1, 7):
+    for i in range(1, pages + 1):
         page = doc.new_page()
         page.insert_text((72, 90), "Section %d Scope" % i if i % 2 else "Part %d.1 Rules" % i, fontsize=16, fontname="hebo")
         y = 130
@@ -23,11 +20,31 @@ def distilled(tmp_path_factory):
             y += 18
     doc.set_toc([[1, "Section 1 Scope", 1], [1, "Section 3 Scope", 3], [1, "Section 5 Scope", 5]])
     doc.save(pdf)
-    out = str(base / "out")
-    cache = str(base / "cache")
+    return pdf
+
+
+def _run(base, monkeypatch=None, limit=None):
+    pdf = _make_pdf(base)
+    out, cache = str(base / "out"), str(base / "cache")
     os.makedirs(out), os.makedirs(cache)
-    res = R.distill_pdf(pdf, "Test Standard 2025.pdf", out, "/2025", cache, log=lambda *_: None)
+    if limit is not None:
+        R.SINGLE_FILE_MAX_CHARS = limit
+    try:
+        res = R.distill_pdf(pdf, "Test Standard 2025.pdf", out, "/2025", cache, log=lambda *_: None)
+    finally:
+        R.SINGLE_FILE_MAX_CHARS = 100000
     return res, out
+
+
+@pytest.fixture(scope="module")
+def distilled(tmp_path_factory):
+    # a tiny threshold forces the chapter-folder layout
+    return _run(tmp_path_factory.mktemp("big"), limit=10)
+
+
+@pytest.fixture(scope="module")
+def small(tmp_path_factory):
+    return _run(tmp_path_factory.mktemp("small"))
 
 
 def test_passes_verification(distilled):
@@ -54,3 +71,21 @@ def test_no_auxiliary_files(distilled):
     _, out = distilled
     names = [f for _, _, fs in os.walk(out) for f in fs]
     assert not [n for n in names if n.startswith("_") or "README" in n.upper() or "catalog" in n.lower()]
+
+
+def test_small_document_is_a_single_file(small):
+    res, out = small
+    assert res["verdict"] == "PASS" and res["single_file"]
+    assert res["out_dir"] == "Test Standard 2025.pdf.md"
+    assert [f for _, _, fs in os.walk(out) for f in fs] == ["Test Standard 2025.pdf.md"]
+    body = open(os.path.join(out, res["out_dir"]), encoding="utf-8").read()
+    assert body.count("<!-- unit:") == 6
+
+
+def test_front_matter_has_library_and_new_keys(small):
+    res, out = small
+    fm = open(os.path.join(out, res["out_dir"]), encoding="utf-8").read().split("---")[1]
+    for key in ("format_version: 2", "edition_status: published", "std_year: \"2025\"", "source_filename:",
+                "source_relative_path:", "source_file_hash:", "audit_status: auto_verified", "units: 6",
+                "languages: [en]", "jurisdiction:"):
+        assert key in fm, key

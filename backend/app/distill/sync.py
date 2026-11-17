@@ -103,9 +103,14 @@ def main(argv=None):
             print(f"  NOT uploaded (failed verification) — local copy: {os.path.join(out, r['out_dir'])}", flush=True)
         elif not a.dry_run:
             n0 = len(guard.written)
-            doc["uploaded"] = guard.upload_tree(os.path.join(out, r["out_dir"]), dest_prefix=doc["dest"])
+            if r.get("single_file"):
+                with open(R.longpath(os.path.join(out, r["out_dir"])), "rb") as fh:
+                    guard.upload(doc["dest"], fh.read())
+                doc["uploaded"] = 1
+            else:
+                doc["uploaded"] = guard.upload_tree(os.path.join(out, r["out_dir"]), dest_prefix=doc["dest"])
             mine = {D._norm(p) for p in guard.written[n0:]}
-            stale = sorted(p for p in D.list_tree(writer, doc["dest"]) if p not in mine)
+            stale = [] if r.get("single_file") else sorted(p for p in D.list_tree(writer, doc["dest"]) if p not in mine)
             doc["stale_remote_files"] = len(stale)
             if stale and a.prune:
                 for p in stale:
