@@ -134,17 +134,22 @@ def download(dbx, url, rel, local_path):
 # ------------------------------------------------------------------ writing
 
 class SafeWriter:
-    def __init__(self, dbx, dest_root, forbidden_roots):
-        if not dest_root or _norm(dest_root) == "/":
-            raise IronRuleViolation("refusing to write to the Dropbox root")
-        for fr in forbidden_roots:
-            if fr and (is_under(dest_root, fr) or is_under(fr, dest_root)):
-                raise IronRuleViolation(f"output root {dest_root} overlaps source root {fr}")
+    def __init__(self, dbx, dest_root, forbidden_roots, extra_roots=()):
+        """dest_root is the live knowledge-base folder; extra_roots (staging, archive) are further
+        OUTPUT-side folders. Every output root must stay clear of every source root."""
+        roots = [dest_root] + [r for r in extra_roots if r]
+        for r in roots:
+            if not r or _norm(r) == "/":
+                raise IronRuleViolation("refusing to write to the Dropbox root")
+            for fr in forbidden_roots:
+                if fr and (is_under(r, fr) or is_under(fr, r)):
+                    raise IronRuleViolation(f"output root {r} overlaps source root {fr}")
         self.dbx, self.dest_root, self.forbidden = dbx, _norm(dest_root), [f for f in forbidden_roots if f]
+        self.roots = [_norm(r) for r in roots]
         self.written = []
 
     def check(self, path):
-        if not is_under(path, self.dest_root) or _norm(path) == self.dest_root:
+        if not any(is_under(path, r) and _norm(path) != r for r in self.roots):
             raise IronRuleViolation(f"write outside output root: {path}")
         for fr in self.forbidden:
             if is_under(path, fr):
@@ -155,6 +160,12 @@ class SafeWriter:
         self.check(path)
         self.dbx.files_upload(data, path, mode=dropbox.files.WriteMode.overwrite, mute=True)
         self.written.append(path)
+
+    def move(self, src, dst):
+        """Server-side move of a file or folder; both ends must be inside output roots."""
+        self.check(src)
+        self.check(dst)
+        self.dbx.files_move_v2(src, dst, autorename=False, allow_ownership_transfer=False)
 
     def delete(self, path):
         """Delete one file inside the OUTPUT root (same guard as upload; goes to Dropbox
@@ -233,3 +244,40 @@ def main(argv=None):
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
+class DropboxStore:
+    """Storage interface used by publish.Publisher, on top of the guarded writer."""
+
+    def __init__(self, writer: SafeWriter):
+        self.w = writer
+
+    def upload(self, path, data):
+        self.w.upload(path, data)
+
+    def move(self, src, dst):
+        self.w.move(src, dst)
+
+    def delete(self, path):
+        self.w.delete(path)
+
+    def list(self, path):
+        import dropbox
+        out = {}
+        try:
+            res = self.w.dbx.files_list_folder(path, recursive=True)
+        except dropbox.exceptions.ApiError:
+            # a single file (or nothing) rather than a folder
+            try:
+                md = self.w.dbx.files_get_metadata(path)
+                return {md.path_display: getattr(md, "size", 0)}
+            except dropbox.exceptions.ApiError:
+                return {}
+        while True:
+            for e in res.entries:
+                if isinstance(e, dropbox.files.FileMetadata):
+                    out[e.path_display] = e.size
+            if not res.has_more:
+                break
+            res = self.w.dbx.files_list_folder_continue(res.cursor)
+        return out
