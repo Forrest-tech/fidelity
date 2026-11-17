@@ -71,14 +71,22 @@ def main(argv=None):
     before = D.snapshot(reader, a.source_link)
     report = {"source": src_root, "dest": dest_root, "run": stamp, "documents": []}
     results = []
+    seen_hash = {}
 
     for rel, f in sorted(before.items()):
         name = rel.rsplit("/", 1)[-1]
         if not rel.lower().endswith(SUPPORTED):
             print(f"skip (format not handled yet): {rel}", flush=True)
+            report.setdefault("unsupported", []).append({"source": rel, "reason": "format not handled yet"})
             continue
         if a.only and a.only not in name:
             continue
+        first = seen_hash.get(f["content_hash"])
+        if first:                                   # F-26: duplicate sources are detected by content hash
+            print(f"skip duplicate of {first}: {rel}", flush=True)
+            report.setdefault("duplicates", []).append({"source": rel, "duplicate_of": first})
+            continue
+        seen_hash[f["content_hash"]] = rel
         rel_local = os.path.join(src_name, *rel.strip("/").split("/"))
         lp = os.path.join(a.work, "src", rel_local)
         print(f"\n[{len(results) + 1}] {rel}", flush=True)
@@ -90,6 +98,9 @@ def main(argv=None):
 
         r = R.distill_pdf(lp, rel_local, out, "", cache, log=lambda m: print(m, flush=True))
         results.append(r)
+        if r["verdict"] == "SKIP":                  # triaged out: listed with its class, never silently dropped
+            report.setdefault("triaged_out", []).append({"source": rel, **r["triage"]})
+            continue
         print(f"  verification: {r['verdict']}  files={r['files']}", flush=True)
 
         now = D.file_identity(reader, a.source_link, rel)
