@@ -15,6 +15,12 @@ CACHE_DIR = os.path.join(DATA_DIR, "cache")
 SERVER_PORT = int(os.environ.get("QA_SERVER_PORT", "8000"))
 SERVER_HOST = os.environ.get("QA_SERVER_HOST", "127.0.0.1")
 
+# Browser origins allowed to call the API (the app's own origin only; spec section 8).
+CORS_ORIGINS = [o for o in os.environ.get(
+    "FIDELITY_CORS_ORIGINS",
+    "http://127.0.0.1:%d,http://localhost:%d,http://localhost:5173" % (SERVER_PORT, SERVER_PORT),
+).split(",") if o]
+
 os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(CACHE_DIR, exist_ok=True)
 

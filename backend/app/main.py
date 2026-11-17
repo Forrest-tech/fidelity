@@ -10,16 +10,35 @@ from . import db, config, instance
 from .jobs import handlers
 from .jobs.queue import queue
 from .api.routes import router
+from .auth.routes import router as auth_router
+from .auth.users import current_user, require_role
+from .auth.models import Role
+from fastapi import Depends, Request
 
 app = FastAPI(title="转换保真度评测系统 (Fidelity)", version="0.4.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], allow_credentials=True,
+    allow_origins=config.CORS_ORIGINS, allow_credentials=True,
     allow_methods=["*"], allow_headers=["*"],
 )
 
-app.include_router(router, prefix="/api")
+
+async def _authorize(request: Request, user=Depends(current_user)):
+    """Every API route needs a login; mutating routes need reviewer or admin."""
+    if request.method not in ("GET", "HEAD", "OPTIONS"):
+        if user.role not in (Role.reviewer, Role.admin):
+            from fastapi import HTTPException
+            raise HTTPException(status_code=403, detail="insufficient role")
+    return user
+
+
+app.include_router(auth_router, prefix="/api/v1")
+app.include_router(router, prefix="/api/v1", dependencies=[Depends(_authorize)])
+# Deprecated unversioned, UNAUTHENTICATED alias for the pre-auth UI. Off by default;
+# set FIDELITY_LEGACY_API=1 to re-enable until the Phase 3 UI replaces it.
+if os.environ.get("FIDELITY_LEGACY_API") == "1":
+    app.include_router(router, prefix="/api")
 
 
 _OWNED = {"ok": False, "pid": None}
@@ -52,6 +71,8 @@ def _reap_stale_jobs():
 @app.on_event("startup")
 def _startup():
     db.init_trust()
+    from .migrate import upgrade
+    upgrade()
 
     # 单实例守卫：抢不到所有权说明已有一个健康的实例在跑。
     # 此时**不启动 worker、不清理任务**，让新进程安静退出即可。
@@ -76,7 +97,7 @@ def _shutdown():
         print("[shutdown] 已释放实例锁")
 
 
-@app.get("/api/health")
+@app.get("/api/v1/health")
 def health():
     owner = instance.read_owner() or {}
     return {
