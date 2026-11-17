@@ -17,6 +17,8 @@ from fastapi import Depends, Request
 
 app = FastAPI(title="转换保真度评测系统 (Fidelity)", version="0.4.0")
 
+from .auth.guard import GuardMiddleware
+app.add_middleware(GuardMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=config.CORS_ORIGINS, allow_credentials=True,

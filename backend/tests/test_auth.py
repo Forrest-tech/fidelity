@@ -85,3 +85,38 @@ def test_user_management_is_admin_only(users):
 def test_weak_password_rejected(users):
     body = {"email": "weak@example.com", "password": "short", "role": "viewer"}
     assert login("admin").post("/api/v1/users/register", json=body).status_code == 400
+
+
+def test_login_rate_limited_and_audited(users):
+    import asyncio as _a
+    from sqlalchemy import select, func
+    from app.auth import guard
+    from app.auth.models import AuditLog
+    guard.reset()
+    c = client()
+    bad = {"username": "admin@example.com", "password": "wrong-wrong-wrong"}
+    codes = [c.post("/api/v1/auth/login", data=bad).status_code for _ in range(6)]
+    assert codes[:5] == [400] * 5 and codes[5] == 429
+    good = {"username": "admin@example.com", "password": PW}
+    assert c.post("/api/v1/auth/login", data=good).status_code == 429  # locked out even with right password
+    guard.reset()
+
+    async def count():
+        async with SessionLocal() as s:
+            return (await s.execute(select(func.count()).select_from(AuditLog).where(AuditLog.action == "login_failed"))).scalar()
+    assert _a.run(count()) >= 5
+
+
+def test_mutations_are_audited(users):
+    import asyncio as _a
+    from sqlalchemy import select
+    from app.auth import guard
+    from app.auth.models import AuditLog
+    guard.reset()
+    login("viewer").post("/api/v1/sources", json={})
+
+    async def rows():
+        async with SessionLocal() as s:
+            return (await s.execute(select(AuditLog).where(AuditLog.target == "/api/v1/sources"))).scalars().all()
+    r = _a.run(rows())
+    assert r and r[-1].action == "POST 403" and r[-1].user_id is not None
