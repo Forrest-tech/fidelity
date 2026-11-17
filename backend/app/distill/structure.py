@@ -357,7 +357,7 @@ def _to_units(md: str) -> str:
     return "".join(out)
 
 
-def table_md(t: Table):
+def table_grid(t: Table):
     def _cell(c):
         if UNREADABLE_RE.search(c):               # keep readable text around the formula
             fixed = []
@@ -370,7 +370,7 @@ def table_md(t: Table):
     rows = [[_cell(c) if c is not None else None for c in r] for r in t.rows]
     rows = [r for r in rows if any(c for c in r)]
     if not rows:
-        return "", []
+        return [], []
     ncol = max(len(r) for r in rows)
     rows = [r + [None] * (ncol - len(r)) for r in rows]
     notes = []
@@ -383,7 +383,7 @@ def table_md(t: Table):
         else:
             body.append(r)
     if not body:
-        return "", notes
+        return [], notes
     hdr_n = 1
     if len(body) > 2 and any(c is None for c in body[0][1:]):
         hdr_n = 2
@@ -404,10 +404,18 @@ def table_md(t: Table):
             if v and v not in vals:
                 vals.append(v)
         head.append(" — ".join(vals))
+    grid = [head] + [[c or "" for c in r] for r in body[hdr_n:]]
+    return grid, notes
+
+
+def table_md(t: Table):
+    grid, notes = table_grid(t)
+    if not grid:
+        return "", notes
+    ncol = len(grid[0])
     cell = lambda c: (c or "").replace("|", "\\|")
-    lines = ["| " + " | ".join(cell(h) for h in head) + " |",
-             "|" + "---|" * ncol]
-    for r in body[hdr_n:]:
+    lines = ["| " + " | ".join(cell(h) for h in grid[0]) + " |", "|" + "---|" * ncol]
+    for r in grid[1:]:
         lines.append("| " + " | ".join(cell(c) for c in r) + " |")
     return "\n".join(lines), notes
 
