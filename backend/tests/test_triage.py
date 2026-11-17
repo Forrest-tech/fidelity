@@ -93,3 +93,33 @@ def test_pipeline_lists_non_text_and_flags_instruction_text(tmp_path):
     assert r["report"]["instruction_like"]["count"] >= 2
     body = open(os.path.join(out, r["out_dir"]), encoding="utf-8").read()
     assert "instruction_like" in body.split("---")[1] and "flags: instruction_like" in body
+
+
+def test_protected_file_gets_metadata_only_entry_when_asked(tmp_path):
+    out, cache = str(tmp_path / "out"), str(tmp_path / "cache")
+    os.makedirs(out), os.makedirs(cache)
+    pw = text_pdf(str(tmp_path / "Locked 2025.pdf"), encryption=pymupdf.PDF_ENCRYPT_AES_256, user_pw="s", owner_pw="o")
+    r = R.distill_pdf(pw, "Locked 2025.pdf", out, "/2025", cache, log=lambda *_: None, publish_protected=True)
+    assert r["verdict"] == "METADATA" and r["out_dir"] == "Locked 2025.pdf.md" and r["single_file"]
+    body = open(os.path.join(out, r["out_dir"]), encoding="utf-8").read()
+    assert "audit_status: metadata_only" in body and "protected, not distilled" in body
+    assert "2400" not in body                                  # no content leaks
+    assert "source_file_hash:" in body
+
+
+def test_verification_is_reused_from_stage_cache(tmp_path, monkeypatch):
+    out, cache = str(tmp_path / "out"), str(tmp_path / "cache")
+    os.makedirs(out), os.makedirs(cache)
+    pdf = text_pdf(str(tmp_path / "Cached 2025.pdf"), pages=3)
+    r1 = R.distill_pdf(pdf, "Cached 2025.pdf", out, "/2025", cache, log=lambda *_: None)
+    assert r1["verdict"] == "PASS"
+
+    def boom(*a, **k):
+        raise AssertionError("verification must be reused, not recomputed")
+    monkeypatch.setattr(R, "verify_document", boom)
+    msgs = []
+    r2 = R.distill_pdf(pdf, "Cached 2025.pdf", str(tmp_path / "out2"), "/2025", cache, log=msgs.append)
+    assert r2["verdict"] == "PASS" and any("reused" in m for m in msgs)
+    monkeypatch.setattr(R, "VERIFY_VERSION", "other")           # a new verifier version invalidates the cache
+    with pytest.raises(AssertionError):
+        R.distill_pdf(pdf, "Cached 2025.pdf", str(tmp_path / "out3"), "/2025", cache, log=lambda *_: None)

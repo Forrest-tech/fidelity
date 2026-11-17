@@ -29,6 +29,7 @@ from .verify import verify_document
 
 PIPELINE_VERSION = "distill-0.2"
 FORMAT_VERSION = 2
+VERIFY_VERSION = "3"      # bump when the verification checks change (part of the stage-cache key)
 # Up to this many characters of Markdown a document is a single file; above it, a chapter folder.
 SINGLE_FILE_MAX_CHARS = int(os.environ.get("FIDELITY_SINGLE_FILE_MAX_CHARS", "100000"))
 
@@ -146,12 +147,42 @@ def chunk_clauses(c: S.Chunk):
     return out
 
 
-def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=print):
+def _protected_entry(name, rel_path, rel_dir, source_prefix, out_root, h, tri, log):
+    """F-13: a protected file is listed as 'protected, not distilled'; a metadata-only entry may be published."""
+    src_display = "/" + "/".join(x for x in [source_prefix.strip("/"), rel_path.replace(os.sep, "/")] if x)
+    std = parse_standard(name)
+    fm = ["---", f"document: {_yaml_str(name)}", f"format_version: {FORMAT_VERSION}",
+          'status: "protected, not distilled"', "edition_status: unknown",
+          f"std_id: {_yaml_str(std['std_id'])}", f"std_year: {_yaml_str(std['std_year'])}",
+          f"std_kind: {_yaml_str(std['std_kind'])}", f"jurisdiction: {_yaml_str(std['jurisdiction'])}",
+          f"source: {_yaml_str(src_display + ' (content_hash ' + h[:12] + ')')}",
+          f"source_filename: {_yaml_str(os.path.basename(rel_path))}",
+          f"source_relative_path: {_yaml_str(rel_path.replace(os.sep, '/'))}", f"source_file_hash: {h}",
+          f"parser: {PIPELINE_VERSION}", "audit_status: metadata_only", "flags: [protected]",
+          f"reason: {_yaml_str(tri['reason'])}", "---", "",
+          "> **This document is protected and has not been distilled.** Its content is not available here; "
+          "open the original file. Only the listing above is recorded.", ""]
+    fn = os.path.basename(rel_path) + ".md"
+    d = os.path.join(out_root, rel_dir)
+    os.makedirs(d, exist_ok=True)
+    with open(os.path.join(d, fn), "w", encoding="utf-8", newline="\n") as f:
+        f.write("\n".join(fm))
+    log(f"  protected: metadata-only entry written ({tri['reason']})")
+    return {"name": name, "rel_path": rel_path, "source": src_display, "status": "protected, not distilled",
+            "verdict": "METADATA", "triage": tri, "pages": 0, "files": 1, "single_file": True,
+            "max_file_chars": 0, "total_chars": 0, "content_hash": h,
+            "out_dir": os.path.relpath(os.path.join(d, fn), out_root),
+            "report": {"status": "METADATA", "triage": tri}}
+
+
+def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=print, publish_protected=False):
     name = os.path.splitext(os.path.basename(rel_path))[0]
     rel_dir = os.path.dirname(rel_path)
     t0 = time.time()
     h_before = dropbox_content_hash(pdf_path)
     tri = triage_pdf(pdf_path)
+    if tri["class"] == "protected" and publish_protected:
+        return _protected_entry(name, rel_path, rel_dir, source_prefix, out_root, h_before, tri, log)
     if tri["class"] != "text":
         # Listed, never silently skipped: the caller records the class and reason.
         log(f"  triage: {tri['class']} - {tri['reason']} (not distilled by the text route)")
@@ -222,8 +253,20 @@ def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=prin
         for m in re.finditer(r"<!-- unit: p(\d+) .*?-->(.*?)<!-- /unit -->", b, re.S):
             for snip in scan_instructions(m.group(2)):
                 instr.append({"page": int(m.group(1)), "text": snip})
-    rep = verify_document(pdf_path, bodies, len(pages), set(meta["header_footer"]), unmatched,
-                          pages=pages, table_grid=S.table_grid)
+    # Stage cache (spec 6.2): the verification result is keyed by (source hash, verifier version,
+    # hash of the exact Markdown checked). Re-running with unchanged input and rules reuses it.
+    vkey = hashlib.sha256((h_before + "|" + VERIFY_VERSION + "|" + chr(0).join(bodies)).encode("utf-8")).hexdigest()[:40]
+    vcache = os.path.join(cache_dir, h_before + ".verify." + vkey + ".json")
+    rep = None
+    if os.path.exists(vcache):
+        with open(vcache, encoding="utf-8") as f:
+            rep = json.load(f)
+        log("  verification reused from cache")
+    else:
+        rep = verify_document(pdf_path, bodies, len(pages), set(meta["header_footer"]), unmatched,
+                              pages=pages, table_grid=S.table_grid)
+        with open(vcache, "w", encoding="utf-8") as f:
+            json.dump(rep, f, ensure_ascii=False, default=str)
     h_after = dropbox_content_hash(pdf_path)
     rep["source_unchanged"] = {"ok": h_before == h_after, "content_hash": h_before}
     if not rep["source_unchanged"]["ok"]:

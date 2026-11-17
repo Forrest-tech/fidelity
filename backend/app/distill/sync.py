@@ -54,6 +54,8 @@ def main(argv=None):
     ap.add_argument("--dry-run", action="store_true", help="distill and verify, upload nothing")
     ap.add_argument("--force", action="store_true", help="re-distill even if the ledger says the file is up to date")
     ap.add_argument("--only", default=None, help="only files whose name contains this text")
+    ap.add_argument("--publish-protected-metadata", action="store_true",
+                    help="publish a metadata-only entry for protected files (they are always listed in the report)")
     ap.add_argument("--rollback", default=None, metavar="RUN", help="undo a published run: restore the previous versions from the archive")
     a = ap.parse_args(argv)
 
@@ -118,7 +120,8 @@ def main(argv=None):
         if R.dropbox_content_hash(lp) != f["content_hash"]:
             raise SystemExit(f"local copy of {rel} does not match Dropbox content_hash")
 
-        r = R.distill_pdf(lp, rel_local, out, "", cache, log=lambda m: print(m, flush=True))
+        r = R.distill_pdf(lp, rel_local, out, "", cache, log=lambda m: print(m, flush=True),
+                         publish_protected=a.publish_protected_metadata)
         results.append(r)
         if r["verdict"] == "SKIP":                  # triaged out: listed with its class, never silently dropped
             report.setdefault("triaged_out", []).append({"source": rel, **r["triage"]})
@@ -133,7 +136,7 @@ def main(argv=None):
 
         doc = {"source": rel, "verdict": r["verdict"], "files": r["files"], "uploaded": 0,
                "dest": f"{dest_root}/{r['out_dir'].replace(os.sep, '/')}"}
-        if r["verdict"] != "PASS":
+        if r["verdict"] not in ("PASS", "METADATA"):
             # a document that fails verification is never published; it stays local
             print(f"  NOT uploaded (failed verification) — local copy: {os.path.join(out, r['out_dir'])}", flush=True)
         elif not a.dry_run:
