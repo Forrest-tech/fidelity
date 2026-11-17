@@ -52,3 +52,12 @@ def test_escaped_pipe_in_cell_is_handled():
     pg = Page(number=1, label=None, items=[Table(page=1, bbox=(0, 0, 1, 1), rows=rows)])
     md, _ = table_md(pg.items[0])
     assert check_tables([pg], {1: md}, table_grid)["ok"]
+
+
+def test_unreadable_formula_marker_in_a_cell_is_not_a_mismatch():
+    from app.distill import structure as S
+    rows = [["Action", "Value"], ["Permanent action G", S.UNREADABLE_MARK + " 3.5"], ["Imposed", "2"]]
+    pg = Page(number=1, label=None, items=[Table(page=1, bbox=(0, 0, 1, 1), rows=rows)])
+    md, _ = table_md(pg.items[0])
+    stripped = md.replace(S.UNREADABLE_MARK, "")           # what the verifier sees after stripping markers
+    assert check_tables([pg], {1: stripped}, table_grid)["ok"]

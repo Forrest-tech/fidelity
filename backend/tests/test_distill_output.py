@@ -89,3 +89,12 @@ def test_front_matter_has_library_and_new_keys(small):
                 "source_relative_path:", "source_file_hash:", "audit_status: auto_verified", "units: 6",
                 "languages: [en]", "jurisdiction:"):
         assert key in fm, key
+
+
+def test_unreadable_marker_is_the_full_text_the_verifier_strips():
+    """Regression: a second, shorter UNREADABLE_MARK once shadowed the real one, so verification
+    counted the marker as extra text and every document with formulas failed."""
+    from app.distill import structure as S
+    from app.distill import verify as V
+    assert S.UNREADABLE_MARK.endswith("check source page]")
+    assert any(rx.search(S.UNREADABLE_MARK) for rx in V._INJECTED)

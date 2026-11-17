@@ -331,7 +331,6 @@ def _page_tag(page, label):
 
 
 _TAG_RE = re.compile(r"^\[p\.(\d+)(?: · printed ([^\]]+))?\]$", re.M)
-UNREADABLE_MARK = "⚠️[formula/symbols not readable"
 
 
 def unit_open(page, chars, flags, printed=None):
