@@ -23,7 +23,7 @@ def safe_name(raw):
 
 
 @router.post("/ingest/upload")
-async def upload(file: UploadFile = File(...), sid: str = "n2"):
+async def upload(file: UploadFile = File(...), sid: str = "n2", distill: bool = False):
     src = config.get_source(sid)
     if not src:
         raise HTTPException(404, "source not found")
@@ -46,5 +46,9 @@ async def upload(file: UploadFile = File(...), sid: str = "n2"):
         if os.path.exists(dest):
             os.remove(dest)
         raise
-    return {"ok": True, "rel": name, "bytes": size,
+    job = None
+    if distill and name.lower().endswith(".pdf"):   # upload, then distil in the background
+        from ..jobs.queue import queue
+        job = queue.submit("distill:" + sid, name, "queued")
+    return {"ok": True, "rel": name, "bytes": size, "job": job,
             "note": "已放入源根目录，等待转换流程生成 .md"}
