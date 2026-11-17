@@ -286,3 +286,5 @@ def register():
     queue.register("compare", handle_compare)
     queue.register("batch", handle_batch)
     queue.register("reconvert", handle_reconvert)
+    from .distill_job import handle_distill
+    queue.register("distill", handle_distill)

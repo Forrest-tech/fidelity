@@ -3,9 +3,9 @@
 from fastapi import APIRouter
 
 from . import (sources, files, decisions, reviewers, tree, align, preview,
-               review, stats, ingest)
+               review, stats, ingest, distill)
 from .align import ALIGN_MAX_LINES, MAX_SEG_CHARS  # noqa: F401  (re-export, used by scripts)
 
 router = APIRouter()
-for _m in (sources, files, decisions, reviewers, tree, align, preview, review, stats, ingest):
+for _m in (sources, files, decisions, reviewers, tree, align, preview, review, stats, ingest, distill):
     router.include_router(_m.router)
