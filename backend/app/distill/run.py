@@ -26,7 +26,30 @@ from . import structure as S
 from .pdf_extract import extract_pdf
 from .verify import verify_document
 
-PIPELINE_VERSION = "distill-0.1"
+PIPELINE_VERSION = "distill-0.2"
+FORMAT_VERSION = 2
+# Up to this many characters of Markdown a document is a single file; above it, a chapter folder.
+SINGLE_FILE_MAX_CHARS = int(os.environ.get("FIDELITY_SINGLE_FILE_MAX_CHARS", "100000"))
+
+
+def edition_status(status: str) -> str:
+    s = status.lower()
+    return "draft" if s.startswith("draft") else ("superseded" if "superseded" in s else "published")
+
+
+_YEAR = re.compile(r"(?<!\d)((?:19|20)\d{2})(?!\d)")
+
+
+def parse_standard(name: str) -> dict:
+    """Best-effort standard id/year/kind/jurisdiction from the document name (confirmed by a person if unsure)."""
+    m = _YEAR.search(name)
+    year = m.group(1) if m else ""
+    n = name.upper()
+    juris = ("AU" if n.startswith(("NCC", "AS ", "AS/", "AS-", "AS1", "AS2", "AS3", "AS4", "AS5")) else
+             "NZ" if n.startswith("NZS") else "US" if n.startswith(("IBC", "ICC", "NFPA", "ASCE", "ACI")) else "unknown")
+    kind = ("code" if n.startswith(("NCC", "IBC")) else "standard" if re.match(r"(AS|NZS|NFPA|ASCE|ACI|ISO|BS|EN)", n) else "document")
+    sid = re.sub(r"\s*(?:19|20)\d{2}\s*", " ", name).strip() if year else name
+    return {"std_id": sid, "std_year": year, "std_kind": kind, "jurisdiction": juris}
 
 
 def dropbox_content_hash(path):
@@ -163,9 +186,16 @@ def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=prin
             if e.clause_id and e.clause_id not in clause_file and not re.match(S.STATE_RE + " ", e.title):
                 clause_file[e.clause_id] = (fn, e)
 
-    bodies = []
-    for c, fn in zip(chunks, files):
-        body = S.render_chunk(c)
+    raw = [S.render_chunk(c) for c in chunks]
+    # Hybrid rule (spec 6.5): a small document is ONE file at the mirrored path (X.pdf -> X.pdf.md);
+    # a large one becomes a folder of chapter files.
+    single = sum(len(b) for b in raw) <= SINGLE_FILE_MAX_CHARS
+    if single:
+        bodies = ["\n".join(raw)]
+        files = [os.path.basename(rel_path) + ".md"]
+    if not single:
+        bodies = []
+    for c, fn, body in ([] if single else zip(chunks, files, raw)):
         defined = {e.clause_id for e in chunk_clauses(c) if e.clause_id}
         refs = sorted({m for m in S.CLAUSE_ID_RE.findall(body) if m not in defined and m in clause_file})
         if refs:
@@ -183,27 +213,50 @@ def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=prin
     rep["seconds"] = round(time.time() - t0, 1)
 
     trusted = rep["status"] == "PASS"
-    doc_dir = os.path.join(out_root, rel_dir, name) if trusted else os.path.join(out_root, "_pending", rel_dir, name)
+    base_dir = os.path.join(out_root, rel_dir) if trusted else os.path.join(out_root, "_pending", rel_dir)
+    doc_dir = base_dir if single else os.path.join(base_dir, name)   # single file lives beside its siblings
     os.makedirs(doc_dir, exist_ok=True)
     verdict = "PASS" if trusted else "FAIL — not trusted"
-    layout = ("This document's folder → one sub-folder per Section/Schedule → one file per Part. "
+    layout = ("One file for the whole document (small documents are not split)." if single else
+              "This document's folder → one sub-folder per Section/Schedule → one file per Part. "
               "Names show clause range and pages; a clause ID gives its Part (D2D13 → Part D2, S5C11 → Specification 5)."
               + (f" Italic terms are defined in '{defs_dir}'." if defs_dir else ""))
+    std = parse_standard(name)
 
     # Every file is self-sufficient: what it is, whether it is in force, how to cite it and
     # how to find the rest. This replaces any README/catalog/index file.
-    for c, fn, body in zip(chunks, files, bodies):
-        p0, p1 = c.pages
-        cl = [e.clause_id for e in chunk_clauses(c) if e.clause_id]
+    pieces = [None] if single else chunks
+    for c, fn, body in zip(pieces, files, bodies):
+        if single:
+            p0, p1, title = 1, len(pages), name
+            cl = [e.clause_id for e in entries if getattr(e, "clause_id", None)]
+        else:
+            p0, p1 = c.pages
+            title = c.title
+            cl = [e.clause_id for e in chunk_clauses(c) if e.clause_id]
         nflag = body.count("⚠️[formula/symbols not readable")
         fm = ["---",
               f"document: {_yaml_str(name + ' — ' + meta['title'] if meta['title'] and meta['title'] != name else name)}",
+              f"format_version: {FORMAT_VERSION}",
               f"status: {_yaml_str(status)}",
-              f"chapter: {_yaml_str(c.title)}",
+              f"edition_status: {edition_status(status)}",
+              f"std_id: {_yaml_str(std['std_id'])}",
+              f"std_year: {_yaml_str(std['std_year'])}",
+              f"std_kind: {_yaml_str(std['std_kind'])}",
+              f"jurisdiction: {_yaml_str(std['jurisdiction'])}",
+              "languages: [en]",
+              f"chapter: {_yaml_str(title)}",
               f"pages: \"{p0}–{p1}\"" if p0 != p1 else f"pages: \"{p0}\"",
+              f"units: {p1 - p0 + 1}",
               f"clauses: [{', '.join(cl)}]" if len(cl) <= 120 else f"clauses: \"{cl[0]} … {cl[-1]} ({len(cl)})\"",
               f"cite_as: {_yaml_str(name + ', <clause ID>, p.<N> — N is the page in the nearest unit marker (src: p.N) above the text')}",
               f"source: {_yaml_str(src_display + ' (content_hash ' + h_before[:12] + ')')}",
+              f"source_filename: {_yaml_str(os.path.basename(rel_path))}",
+              f"source_relative_path: {_yaml_str(rel_path.replace(os.sep, '/'))}",
+              f"source_file_hash: {h_before}",
+              f"parser: {PIPELINE_VERSION}/pymupdf",
+              f"audit_status: {'auto_verified' if trusted else 'pending_review'}",
+              f"flags: [{'unreadable_formula' if nflag else ''}]",
               f"verified: {_yaml_str(verdict + (f'; {nflag} formula(s) in this file marked ⚠️ are not readable — check the source page' if nflag else ''))}",
               f"layout: {_yaml_str(layout)}",
               "---", ""]
@@ -218,10 +271,12 @@ def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=prin
     with open(os.path.join(cache_dir, h_before + ".report.json"), "w", encoding="utf-8") as f:
         json.dump(rep, f, ensure_ascii=False, indent=1, default=str)
     sizes = [len(b) for b in bodies]
+    out_path = os.path.join(doc_dir, files[0]) if single else doc_dir
     return {"name": name, "rel_path": rel_path, "source": src_display, "status": status,
-            "verdict": rep["status"], "pages": len(pages), "files": len(files),
+            "verdict": rep["status"], "pages": len(pages), "files": len(files), "single_file": single,
+            "verdict_trusted": trusted,
             "max_file_chars": max(sizes), "total_chars": sum(sizes),
-            "content_hash": h_before, "out_dir": os.path.relpath(doc_dir, out_root), "report": rep}
+            "content_hash": h_before, "out_dir": os.path.relpath(out_path, out_root), "report": rep}
 
 
 def main(argv=None):
