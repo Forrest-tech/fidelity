@@ -204,7 +204,8 @@ def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=prin
             body += "\n".join(f"- {r} → {clause_file[r][0]} (p.{clause_file[r][1].page})" for r in refs) + "\n"
         bodies.append(body)
 
-    rep = verify_document(pdf_path, bodies, len(pages), set(meta["header_footer"]), unmatched)
+    rep = verify_document(pdf_path, bodies, len(pages), set(meta["header_footer"]), unmatched,
+                          pages=pages, table_grid=S.table_grid)
     h_after = dropbox_content_hash(pdf_path)
     rep["source_unchanged"] = {"ok": h_before == h_after, "content_hash": h_before}
     if not rep["source_unchanged"]["ok"]:

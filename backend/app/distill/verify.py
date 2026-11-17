@@ -124,7 +124,7 @@ def _recall(src: Counter, got: Counter):
 
 
 def verify_document(pdf_path, md_texts, page_count, hf_set, unmatched_headings,
-                    check_agreement=True):
+                    check_agreement=True, pages=None, table_grid=None):
     rep = {"page_count": page_count}
     per_md, marks = md_pages(md_texts)
     missing_pages = [p for p in range(1, page_count + 1) if marks.get(p, 0) == 0]
@@ -192,6 +192,67 @@ def verify_document(pdf_path, md_texts, page_count, hf_set, unmatched_headings,
             rep["agreement"] = {"engine": "pypdf", "recall": round(ah / at, 6) if at else 1.0,
                                 "pages_below_98": sorted(low)[:30],
                                 "ok": (ah / at if at else 1) >= 0.99}
-    checks = ["pages", "headings", "chars", "numbers", "extra_text"] + (["agreement"] if "agreement" in rep else [])
+    if pages is not None and table_grid is not None:
+        rep["tables"] = check_tables(pages, per_md, table_grid)
+    checks = (["pages", "headings", "chars", "numbers", "extra_text"] + (["agreement"] if "agreement" in rep else [])
+              + (["tables"] if "tables" in rep else []))
     rep["status"] = "PASS" if all(rep[c]["ok"] for c in checks) else "FAIL"
     return rep
+
+
+# ---------------------------------------------------------------- table cell check (spec 6.4)
+_CELL_SPLIT = re.compile("(?<!" + chr(92) * 2 + ")" + chr(92) + "|")
+_TABLE_LINE = re.compile(r"^\|.*\|\s*$")
+_SEP_LINE = re.compile(r"^\|(?:\s*:?-+:?\s*\|)+\s*$")
+
+
+def _ckey(s: str) -> str:
+    return re.sub(r"[^0-9a-z]", "", (s or "").lower())
+
+
+def md_tables(page_md: str):
+    """Markdown tables of one page as grids of cell keys (in order of appearance)."""
+    tables, cur = [], []
+    for ln in page_md.split("\n") + [""]:
+        if _TABLE_LINE.match(ln):
+            if not _SEP_LINE.match(ln.strip()):
+                cells = _CELL_SPLIT.split(ln.strip())[1:-1]
+                cur.append([_ckey(c) for c in cells])
+        elif cur:
+            tables.append(cur)
+            cur = []
+    return tables
+
+
+def check_tables(pages, per_md, table_grid):
+    """Every cell of every source table must sit at the same row/column in the Markdown.
+
+    `pages` are the extracted pages (their Table items carry the source grid), `per_md` is
+    {page: markdown of that page}. Catches swapped, shifted, dropped or merged cells."""
+    n_tables = n_cells = 0
+    bad = []
+    for pg in pages:
+        expected = []
+        for it in pg.items:
+            if it is not None and it.__class__.__name__ == "Table":
+                grid, _ = table_grid(it)
+                if grid:
+                    expected.append([[_ckey(c) for c in r] for r in grid])
+        got = md_tables(per_md.get(pg.number, ""))
+        if len(expected) != len(got):
+            bad.append({"page": pg.number, "problem": f"{len(expected)} source tables, {len(got)} in Markdown"})
+            continue
+        for ti, (e, g) in enumerate(zip(expected, got), 1):
+            n_tables += 1
+            if len(e) != len(g):
+                bad.append({"page": pg.number, "table": ti, "problem": f"{len(e)} rows in source, {len(g)} in Markdown"})
+                continue
+            for ri, (er, gr) in enumerate(zip(e, g)):
+                if len(er) != len(gr):
+                    bad.append({"page": pg.number, "table": ti, "row": ri, "problem": "column count differs"})
+                    continue
+                for ci, (ec, gc) in enumerate(zip(er, gr)):
+                    n_cells += 1
+                    if ec != gc:
+                        bad.append({"page": pg.number, "table": ti, "row": ri, "col": ci, "source": ec[:40], "markdown": gc[:40]})
+    return {"ok": not bad, "tables": n_tables, "cells": n_cells, "mismatches": len(bad), "examples": bad[:20]}
