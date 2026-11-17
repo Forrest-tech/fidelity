@@ -206,8 +206,13 @@ _TABLE_LINE = re.compile(r"^\|.*\|\s*$")
 _SEP_LINE = re.compile(r"^\|(?:\s*:?-+:?\s*\|)+\s*$")
 
 
+_MARK_KEY = re.sub(r"[^0-9a-z]", "", "formula/symbols not readable in source text layer " + chr(8212) + " check source page")
+
+
 def _ckey(s: str) -> str:
-    return re.sub(r"[^0-9a-z]", "", (s or "").lower())
+    """Alphanumeric key of a cell. The unreadable-formula marker is removed first: the page text
+    the checker compares against has the marker stripped (see _INJECTED)."""
+    return re.sub(r"[^0-9a-z]", "", (s or "").lower()).replace(_MARK_KEY, "")
 
 
 def md_tables(page_md: str):
