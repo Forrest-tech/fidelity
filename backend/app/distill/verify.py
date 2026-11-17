@@ -2,7 +2,7 @@
 """Publish gate: prove the Markdown is complete and faithful to the source PDF.
 
 Checks (per document):
-  pages      every physical page appears exactly once as a [p.N] marker
+  pages      every physical page appears exactly once as a unit marker
   headings   every bookmark (Section/Part/clause) became a heading
   chars      per page, alphanumeric characters of the source text layer are all
              present in the Markdown (multiset recall) — nothing dropped
@@ -19,9 +19,10 @@ import pymupdf
 
 from .pdf_extract import clean_text, is_hf, WATERMARK_SIZE, UNREADABLE_RE, formula_span
 
-PAGE_MARK = re.compile(r"^\[p\.(\d+)(?: · printed [^\]]+)?\]\s*$", re.M)
+PAGE_MARK = re.compile(r"^<!-- unit: p\d+ \| src: p\.(\d+)(?: \| printed: [^|]+?)? \| chars: \d+ \| flags: [^>]*?-->\s*$", re.M)
 NUM_RE = re.compile(r"\d+(?:[.,]\d+)*")
 _INJECTED = [
+    re.compile(r"^<!-- /unit -->\s*$", re.M),         # unit close marker
     re.compile(r" · p\.\d+\s*$", re.M),                 # page suffix on headings
     re.compile(r"\*\(informative — not mandatory\)\*"),
     re.compile(r"\*\(no text on this page\)\*"),
@@ -53,7 +54,7 @@ def _rejoin_split_numbers(missing: Counter, md: Counter, src: Counter) -> Counte
 
 
 def md_pages(md_texts):
-    """Split concatenated Markdown into {page: text} using [p.N] markers."""
+    """Split concatenated Markdown into {page: text} using unit markers."""
     per, count = {}, Counter()
     for md in md_texts:
         md = re.sub(r"^---\n.*?\n---\n", "", md, flags=re.S)          # front matter

@@ -323,9 +323,38 @@ def row_md(r: Row) -> str:
 
 
 def _page_tag(page, label):
+    """Internal page tag (rewritten into library unit markers by `_to_units`)."""
     if label and label != str(page):
         return f"[p.{page} · printed {label}]"
     return f"[p.{page}]"
+
+
+_TAG_RE = re.compile(r"^\[p\.(\d+)(?: · printed ([^\]]+))?\]$", re.M)
+UNREADABLE_MARK = "⚠️[formula/symbols not readable"
+
+
+def unit_open(page, chars, flags, printed=None):
+    """Library unit marker: <!-- unit: p0002 | src: p.2 | chars: 1460 | flags: - -->"""
+    pr = f" | printed: {printed}" if printed else ""
+    return f"<!-- unit: p{page:04d} | src: p.{page}{pr} | chars: {chars} | flags: {flags or '-'} -->"
+
+
+UNIT_CLOSE = "<!-- /unit -->"
+
+
+def _to_units(md: str) -> str:
+    """Wrap each page section (started by an internal [p.N] tag) in a unit marker pair."""
+    tags = list(_TAG_RE.finditer(md))
+    if not tags:
+        return md
+    out = [md[:tags[0].start()]]
+    for i, m in enumerate(tags):
+        end = tags[i + 1].start() if i + 1 < len(tags) else len(md)
+        body = md[m.end():end].strip("\n")
+        flags = "unreadable_formula" if UNREADABLE_MARK in body else "-"
+        head = unit_open(int(m.group(1)), len(body), flags, m.group(2))
+        out.append(head + "\n\n" + body + "\n\n" + UNIT_CLOSE + "\n\n")
+    return "".join(out)
 
 
 def table_md(t: Table):
@@ -476,4 +505,4 @@ def render_chunk(c: Chunk) -> str:
     end_quote()
     md = "\n".join(out)
     md = re.sub(r"\n{3,}", "\n\n", md)
-    return md.strip() + "\n"
+    return _to_units(md).strip() + "\n"
