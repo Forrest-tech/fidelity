@@ -24,7 +24,7 @@ import sys
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "data")
 AUTH_PATH = os.path.abspath(os.path.join(DATA_DIR, "dropbox_auth.json"))
-READ_SCOPES = ["files.metadata.read", "files.content.read", "sharing.read"]
+READ_SCOPES = ["files.metadata.read", "files.content.read", "sharing.read", "account_info.read"]  # account_info.read: needed by rclone (get current account); read-only
 WRITE_SCOPES = READ_SCOPES + ["files.content.write"]
 
 
