@@ -8,6 +8,7 @@ import itertools
 import re
 from dataclasses import dataclass, field
 
+from .triage import scan_instructions
 from .pdf_extract import Row, Table, clean_text, UNREADABLE_RE, formula_span
 
 UNREADABLE_MARK = "⚠️[formula/symbols not readable in source text layer — check source page]"
@@ -351,7 +352,8 @@ def _to_units(md: str) -> str:
     for i, m in enumerate(tags):
         end = tags[i + 1].start() if i + 1 < len(tags) else len(md)
         body = md[m.end():end].strip("\n")
-        flags = "unreadable_formula" if UNREADABLE_MARK in body else "-"
+        fl = (["unreadable_formula"] if UNREADABLE_MARK in body else []) + (["instruction_like"] if scan_instructions(body) else [])
+        flags = ",".join(fl) if fl else "-"
         head = unit_open(int(m.group(1)), len(body), flags, m.group(2))
         out.append(head + "\n\n" + body + "\n\n" + UNIT_CLOSE + "\n\n")
     return "".join(out)

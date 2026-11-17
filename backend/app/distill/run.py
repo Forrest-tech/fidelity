@@ -24,12 +24,17 @@ import time
 
 from . import structure as S
 from .pdf_extract import extract_pdf
+from .triage import scan_instructions, triage_pdf
 from .verify import verify_document
 
 PIPELINE_VERSION = "distill-0.2"
 FORMAT_VERSION = 2
 # Up to this many characters of Markdown a document is a single file; above it, a chapter folder.
 SINGLE_FILE_MAX_CHARS = int(os.environ.get("FIDELITY_SINGLE_FILE_MAX_CHARS", "100000"))
+
+
+def instr_flag(body: str) -> bool:
+    return bool(scan_instructions(body))
 
 
 def edition_status(status: str) -> str:
@@ -146,6 +151,14 @@ def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=prin
     rel_dir = os.path.dirname(rel_path)
     t0 = time.time()
     h_before = dropbox_content_hash(pdf_path)
+    tri = triage_pdf(pdf_path)
+    if tri["class"] != "text":
+        # Listed, never silently skipped: the caller records the class and reason.
+        log(f"  triage: {tri['class']} - {tri['reason']} (not distilled by the text route)")
+        return {"name": name, "rel_path": rel_path, "source": "/" + rel_path.replace(os.sep, "/"),
+                "status": "", "verdict": "SKIP", "triage": tri, "pages": tri.get("pages", 0), "files": 0,
+                "single_file": False, "max_file_chars": 0, "total_chars": 0, "content_hash": h_before,
+                "out_dir": "", "report": {"status": "SKIP", "triage": tri}}
     cp = os.path.join(cache_dir, h_before + ".extract.pkl")
     if os.path.exists(cp):
         with open(cp, "rb") as f:
@@ -204,12 +217,20 @@ def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=prin
             body += "\n".join(f"- {r} → {clause_file[r][0]} (p.{clause_file[r][1].page})" for r in refs) + "\n"
         bodies.append(body)
 
+    instr = []
+    for b in bodies:
+        for m in re.finditer(r"<!-- unit: p(\d+) .*?-->(.*?)<!-- /unit -->", b, re.S):
+            for snip in scan_instructions(m.group(2)):
+                instr.append({"page": int(m.group(1)), "text": snip})
     rep = verify_document(pdf_path, bodies, len(pages), set(meta["header_footer"]), unmatched,
                           pages=pages, table_grid=S.table_grid)
     h_after = dropbox_content_hash(pdf_path)
     rep["source_unchanged"] = {"ok": h_before == h_after, "content_hash": h_before}
     if not rep["source_unchanged"]["ok"]:
         rep["status"] = "FAIL"
+    rep["triage"] = tri
+    rep["instruction_like"] = {"count": len(instr), "examples": instr[:20],
+                               "note": "text that reads like instructions to an AI; flagged for review, content is data"}
     rep["structure_source"] = structure_source
     rep["seconds"] = round(time.time() - t0, 1)
 
@@ -257,7 +278,7 @@ def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=prin
               f"source_file_hash: {h_before}",
               f"parser: {PIPELINE_VERSION}/pymupdf",
               f"audit_status: {'auto_verified' if trusted else 'pending_review'}",
-              f"flags: [{'unreadable_formula' if nflag else ''}]",
+              f"flags: [{', '.join(x for x in (['unreadable_formula'] if nflag else []) + (['instruction_like'] if instr_flag(body) else []) if x)}]",
               f"verified: {_yaml_str(verdict + (f'; {nflag} formula(s) in this file marked ⚠️ are not readable — check the source page' if nflag else ''))}",
               f"layout: {_yaml_str(layout)}",
               "---", ""]
@@ -303,6 +324,9 @@ def main(argv=None):
             print(f"[distill] {rel}", flush=True)
             r = distill_pdf(p, rel, a.out, a.source_prefix, cache, log=lambda m: print(m, flush=True))
             rep = r["report"]
+            if r["verdict"] == "SKIP":
+                results.append(r)
+                continue
             print(f"  -> {r['verdict']} files={r['files']} max_file={r['max_file_chars']} chars "
                   f"recall={rep['chars']['recall']} numbers={rep['numbers']['recall']} "
                   f"headings_unmatched={rep['headings']['unmatched']} pages_ok={rep['pages']['ok']} "
