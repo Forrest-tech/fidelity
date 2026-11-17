@@ -1,6 +1,6 @@
 # ADR 0003: Storage access and the read-only source (Spike 3)
 
-Date: 2026-11-17. Status: accepted for Dropbox; rclone verified up to a scope requirement.
+Date: 2026-11-17. Status: accepted; rclone verified.
 
 **Question.** Can rclone with a read-only credential serve as the storage layer for the source folder (spec section 7)?
 
@@ -14,4 +14,9 @@ Date: 2026-11-17. Status: accepted for Dropbox; rclone verified up to a scope re
 
 **Decision.** `READ_SCOPES` now includes `account_info.read` (still read-only). After the reader token is re-authorised, rclone becomes the storage layer for any provider (Dropbox, Google Drive, OneDrive, local), always with: a read-scoped credential for sources; `rclone copy`/`lsf` direction source to local only; writes to the output only through the guarded writer. The SDK stays as the fallback.
 
-**Owner action to complete the test:** enable `account_info.read` in the Dropbox app's Permissions tab, then re-run the reader authorisation: `cd backend; python -m app.distill.dropbox_io auth --app-key <app_key> --role reader --read-only`, open the URL, click Allow, paste the code.
+**Verification after re-authorising the reader token with `account_info.read` (2026-11-17).**
+- `rclone lsd dbx:/` lists the account root; `rclone lsf dbx:/2025` lists the NCC source files: **read works**.
+- `rclone mkdir dbx:/Transfer_Md/_rclone_readonly_probe` with the reader token fails (`missing_scope`, three attempts, nothing created): **write is refused by Dropbox itself**, independent of our code.
+- Credentials were passed through environment variables only; no config file with secrets exists.
+
+**Final decision.** rclone (pinned version, `tools/rclone/`, not committed) is the storage layer behind the storage-adapter interface for all providers. The source remote always uses a read-only credential; the output remote uses a separate writer credential and only through the guarded writer. The SDK implementation stays as fallback and for sharing-link resolution.
