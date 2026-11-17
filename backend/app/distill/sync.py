@@ -23,6 +23,7 @@ import sys
 
 from . import dropbox_io as D
 from . import run as R
+from .ledger import Ledger
 
 SUPPORTED = (".pdf",)
 
@@ -50,6 +51,7 @@ def main(argv=None):
     ap.add_argument("--dest-link", required=True)
     ap.add_argument("--work", default=os.path.join(D.DATA_DIR, "work"))
     ap.add_argument("--dry-run", action="store_true", help="distill and verify, upload nothing")
+    ap.add_argument("--force", action="store_true", help="re-distill even if the ledger says the file is up to date")
     ap.add_argument("--only", default=None, help="only files whose name contains this text")
     ap.add_argument("--prune", action="store_true",
                     help="after uploading a document, delete older files left in ITS output folder")
@@ -72,6 +74,7 @@ def main(argv=None):
     report = {"source": src_root, "dest": dest_root, "run": stamp, "documents": []}
     results = []
     seen_hash = {}
+    ledger = Ledger(os.path.join(a.work, "ledger.json"), src_root or a.source_link)
 
     for rel, f in sorted(before.items()):
         name = rel.rsplit("/", 1)[-1]
@@ -87,6 +90,10 @@ def main(argv=None):
             report.setdefault("duplicates", []).append({"source": rel, "duplicate_of": first})
             continue
         seen_hash[f["content_hash"]] = rel
+        if not a.force and ledger.up_to_date(rel, f["content_hash"], R.PIPELINE_VERSION):
+            print(f"unchanged since last run, skipped: {rel}", flush=True)
+            report.setdefault("unchanged", []).append(rel)
+            continue
         rel_local = os.path.join(src_name, *rel.strip("/").split("/"))
         lp = os.path.join(a.work, "src", rel_local)
         print(f"\n[{len(results) + 1}] {rel}", flush=True)
@@ -100,6 +107,8 @@ def main(argv=None):
         results.append(r)
         if r["verdict"] == "SKIP":                  # triaged out: listed with its class, never silently dropped
             report.setdefault("triaged_out", []).append({"source": rel, **r["triage"]})
+            if not a.dry_run:
+                ledger.record(rel, f["content_hash"], R.PIPELINE_VERSION, "SKIP")
             continue
         print(f"  verification: {r['verdict']}  files={r['files']}", flush=True)
 
@@ -130,8 +139,14 @@ def main(argv=None):
             print(f"  uploaded {doc['uploaded']} files -> {doc['dest']}"
                   + (f"; {len(stale)} older files {'removed' if a.prune else 'left in place (use --prune)'}" if stale else ""),
                   flush=True)
+        if r["verdict"] == "PASS" and not a.dry_run and doc["uploaded"]:
+            ledger.record(rel, f["content_hash"], R.PIPELINE_VERSION, "PASS", doc["dest"], doc["uploaded"])
         report["documents"].append(doc)
 
+    gone = ledger.removed(before.keys())
+    if gone:   # renames/deletions wait for administrator confirmation; published files stay untouched
+        report["removed_sources"] = gone
+        print(f"{len(gone)} previously distilled source(s) no longer present; published files left untouched: {gone[:5]}", flush=True)
     after = D.snapshot(reader, a.source_link)
     diffs = D.compare_snapshots(before, after)
     report["source_unchanged"] = not diffs
