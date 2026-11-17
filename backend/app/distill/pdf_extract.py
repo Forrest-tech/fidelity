@@ -157,6 +157,18 @@ def _is_italic(span) -> bool:
     return bool(span["flags"] & 2) or "italic" in f or "oblique" in f
 
 
+def is_watermark_line(ln) -> bool:
+    """Big text, or text drawn diagonally (watermarks such as DRAFT / PREVIEW DRAFT). Horizontal and
+    vertical text are real content; rotated table headings are vertical, never diagonal."""
+    if max((s["size"] for s in ln["spans"]), default=0) >= WATERMARK_SIZE:
+        return True
+    dx, dy = ln.get("dir", (1, 0))
+    return abs(dx) > 0.2 and abs(dy) > 0.2
+
+
+EXTRACT_VERSION = "2"      # part of the extraction cache key: bump when extraction behaviour changes
+
+
 def _page_lines(page):
     out = []
     d = page.get_text("dict")
@@ -164,7 +176,7 @@ def _page_lines(page):
         if b.get("type") != 0:
             continue
         for ln in b["lines"]:
-            if max((s["size"] for s in ln["spans"]), default=0) >= WATERMARK_SIZE:
+            if is_watermark_line(ln):
                 continue                                  # e.g. diagonal "DRAFT" watermark
             spans = [Span(clean_text(s["text"]), _is_italic(s), _is_bold(s), s["size"])
                      for s in ln["spans"]]

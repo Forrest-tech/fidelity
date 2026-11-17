@@ -23,7 +23,7 @@ import sys
 import time
 
 from . import structure as S
-from .pdf_extract import extract_pdf
+from .pdf_extract import EXTRACT_VERSION, extract_pdf
 from .triage import scan_instructions, triage_pdf
 from .verify import verify_document
 
@@ -159,7 +159,7 @@ def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=prin
                 "status": "", "verdict": "SKIP", "triage": tri, "pages": tri.get("pages", 0), "files": 0,
                 "single_file": False, "max_file_chars": 0, "total_chars": 0, "content_hash": h_before,
                 "out_dir": "", "report": {"status": "SKIP", "triage": tri}}
-    cp = os.path.join(cache_dir, h_before + ".extract.pkl")
+    cp = os.path.join(cache_dir, h_before + ".extract.v" + EXTRACT_VERSION + ".pkl")
     if os.path.exists(cp):
         with open(cp, "rb") as f:
             pages, meta = pickle.load(f)
