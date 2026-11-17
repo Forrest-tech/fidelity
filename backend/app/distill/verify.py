@@ -17,7 +17,7 @@ from collections import Counter, defaultdict
 
 import pymupdf
 
-from .pdf_extract import clean_text, is_hf, WATERMARK_SIZE, UNREADABLE_RE, formula_span
+from .pdf_extract import clean_text, is_hf, is_watermark_line, UNREADABLE_RE, formula_span
 
 PAGE_MARK = re.compile(r"^<!-- unit: p\d+ \| src: p\.(\d+)(?: \| printed: [^|]+?)? \| chars: \d+ \| flags: [^>]*?-->\s*$", re.M)
 NUM_RE = re.compile(r"\d+(?:[.,]\d+)*")
@@ -80,7 +80,7 @@ def source_pages(pdf_path, hf_set, band=0.07):
         keep = []
         for b in page.get_text("dict")["blocks"]:
             for ln in b.get("lines", []):
-                if max((s["size"] for s in ln["spans"]), default=0) >= WATERMARK_SIZE:
+                if is_watermark_line(ln):
                     continue
                 t = "".join(s["text"] for s in ln["spans"])
                 y0, y1 = ln["bbox"][1], ln["bbox"][3]

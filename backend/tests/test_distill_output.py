@@ -98,3 +98,22 @@ def test_unreadable_marker_is_the_full_text_the_verifier_strips():
     from app.distill import verify as V
     assert S.UNREADABLE_MARK.endswith("check source page]")
     assert any(rx.search(S.UNREADABLE_MARK) for rx in V._INJECTED)
+
+
+def test_small_diagonal_watermark_is_not_content(tmp_path):
+    pdf = str(tmp_path / "Marked Standard 2025.pdf")
+    doc = pymupdf.open()
+    for i in range(1, 5):
+        pg = doc.new_page()
+        pg.insert_text((72, 90), "Section %d Scope" % i, fontsize=16, fontname="hebo")
+        pg.insert_text((72, 130), "The maximum height is 2400 mm.", fontsize=11)
+        pt = pymupdf.Point(150, 600)
+        pg.insert_text(pt, "PUBLIC COMMENT DRAFT", fontsize=30, morph=(pt, pymupdf.Matrix(45)), color=(0.8, 0.8, 0.8))
+    doc.set_toc([[1, "Section 1 Scope", 1]])
+    doc.save(pdf)
+    out, cache = str(tmp_path / "out"), str(tmp_path / "cache")
+    os.makedirs(out), os.makedirs(cache)
+    res = R.distill_pdf(pdf, "Marked Standard 2025.pdf", out, "/2025", cache, log=lambda *_: None)
+    assert res["verdict"] == "PASS", res["report"]
+    body = open(os.path.join(out, res["out_dir"]), encoding="utf-8").read()
+    assert "2400 mm" in body and "COMMENT" not in body.split("---", 2)[2]
