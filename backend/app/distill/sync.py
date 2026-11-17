@@ -9,7 +9,7 @@ Per document (the source is only ever read):
   1. download the file (skipped if the local copy already has the same content_hash)
   2. distill + verify locally (a failed document goes to _pending/, never the trusted tree)
   3. re-check that this source file is unchanged in Dropbox (id/rev/size)
-  4. upload its folder + refreshed _catalog.md / _README_FOR_AI.md (guarded writer)
+  4. upload its folder (guarded writer; no catalog/README files are published)
 A full before/after snapshot of the source folder is compared at the end and
 written to /<dest>/_sync/<source folder>.json as proof the source was not modified.
 """

@@ -5,9 +5,10 @@
          [--source-prefix /2025] [--manifest manifest.json] [--only NAME]
 
 The source folder is opened read-only. The output root receives, mirroring the
-source tree:  <rel dir>/<document name>/NNN <chapter>.md + _index.md + _clauses.md,
-plus _catalog.md and _README_FOR_AI.md at the root. A document whose verification
-fails is written under _pending/ instead, so it never enters the trusted tree.
+source tree:  <rel dir>/<document name>/<sub-folder>/<document name> · NNN <chapter>.md.
+No auxiliary files (no README, catalog or index; spec F-6): folder and file names are the
+index. A document whose verification fails is written under _pending/ instead, so it
+never enters the trusted tree.
 """
 from __future__ import annotations
 
@@ -77,7 +78,7 @@ def _term_letters(c: S.Chunk) -> str:
     return letters[0] if letters[0] == letters[-1] else f"{letters[0]}–{letters[-1]}"
 
 
-def chunk_path(c: S.Chunk, l1_order: dict) -> str:
+def chunk_path(c: S.Chunk, l1_order: dict, doc_name: str = "") -> str:
     """Self-describing relative path inside the document folder — the folder and file
     names ARE the index (no auxiliary files):
         <NN Section/Schedule title>/<seq> <Part title> [first–last clause] p<from>-<to>.md"""
@@ -100,7 +101,8 @@ def chunk_path(c: S.Chunk, l1_order: dict) -> str:
         t += f" ({letters})" if letters else f" (part {part[0]} of {part[1]})"
     p0, p1 = c.pages
     t += f" p{p0}-{p1}" if p0 != p1 else f" p{p0}"
-    fn = f"{c.seq:03d} {t}.md"
+    prefix = _safe(doc_name, 60) + " · " if doc_name else ""   # storage search matches file names only
+    fn = f"{prefix}{c.seq:03d} {t}.md"
     return f"{sub}/{fn}" if sub else fn
 
 
@@ -155,7 +157,7 @@ def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=prin
                      and "definitions" in c.l1.title.lower()
                      for n in [l1_order[id(c.l1)]] if c.l2 is not None or c.intro), None)
     for c in chunks:
-        fn = chunk_path(c, l1_order)
+        fn = chunk_path(c, l1_order, name)
         files.append(fn)
         for e in chunk_clauses(c):
             if e.clause_id and e.clause_id not in clause_file and not re.match(S.STATE_RE + " ", e.title):
@@ -200,7 +202,7 @@ def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=prin
               f"chapter: {_yaml_str(c.title)}",
               f"pages: \"{p0}–{p1}\"" if p0 != p1 else f"pages: \"{p0}\"",
               f"clauses: [{', '.join(cl)}]" if len(cl) <= 120 else f"clauses: \"{cl[0]} … {cl[-1]} ({len(cl)})\"",
-              f"cite_as: {_yaml_str(name + ', <clause ID>, p.<N> — N is the nearest [p.N] marker above the text')}",
+              f"cite_as: {_yaml_str(name + ', <clause ID>, p.<N> — N is the page in the nearest unit marker (src: p.N) above the text')}",
               f"source: {_yaml_str(src_display + ' (content_hash ' + h_before[:12] + ')')}",
               f"verified: {_yaml_str(verdict + (f'; {nflag} formula(s) in this file marked ⚠️ are not readable — check the source page' if nflag else ''))}",
               f"layout: {_yaml_str(layout)}",
@@ -220,98 +222,6 @@ def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=prin
             "verdict": rep["status"], "pages": len(pages), "files": len(files),
             "max_file_chars": max(sizes), "total_chars": sum(sizes),
             "content_hash": h_before, "out_dir": os.path.relpath(doc_dir, out_root), "report": rep}
-
-
-def _write_index(doc_dir, name, meta, status, src, h, chunks, files, rep, structure_source):
-    L = [f"# Index — {name}", "",
-         f"- Title: {meta['title']}",
-         f"- Status: **{status}**",
-         f"- Source: `{src}` ({meta['page_count']} pages, content_hash `{h[:16]}…`)",
-         f"- Structure from: {structure_source}",
-         f"- Verification: **{rep['status']}** — pages {'complete' if rep['pages']['ok'] else 'INCOMPLETE'}, "
-         f"characters {rep['chars']['recall'] * 100:.3f}%, numbers {rep['numbers']['recall'] * 100:.3f}%, "
-         f"headings unmatched {rep['headings']['unmatched']}, "
-         f"unreadable regions {rep['unreadable']['lines']} (pages {', '.join(map(str, rep['unreadable']['pages'])) or '—'})"
-         + (f", independent-extractor agreement {rep['agreement']['recall'] * 100:.2f}%" if "agreement" in rep else ""),
-         "",
-         "Find the clause ID or topic below, then open that one file. Clause IDs encode their Part "
-         "(e.g. D2D13 is in Part D2; S5C11 is in Specification 5). Full clause list: `_clauses.md`.",
-         "", "| File | Chapter | Pages | Clauses |", "|---|---|---|---|"]
-    for c, fn in zip(chunks, files):
-        cl = [e.clause_id for e in chunk_clauses(c) if e.clause_id]
-        p0, p1 = c.pages
-        rng = f"{cl[0]}–{cl[-1]} ({len(cl)})" if len(cl) > 1 else (cl[0] if cl else "")
-        L.append(f"| {fn} | {c.title} | {p0}–{p1} | {rng} |")
-    if rep["status"] != "PASS":
-        L += ["", "## Verification problems", "", "```", json.dumps(rep, ensure_ascii=False, indent=1, default=str)[:6000], "```"]
-    with open(os.path.join(doc_dir, "_index.md"), "w", encoding="utf-8", newline="\n") as f:
-        f.write("\n".join(L) + "\n")
-
-
-def _write_clauses(doc_dir, name, clause_file, entries):
-    L = [f"# Clause list — {name}", "", "`ID — title — page — file`", ""]
-    for e in entries:
-        if e.level < 3 or e.row is None:
-            continue
-        fn = None
-        if e.clause_id and e.clause_id in clause_file and clause_file[e.clause_id][1] is e:
-            fn = clause_file[e.clause_id][0]
-        L.append(f"- {e.title} — p.{e.page}" + (f" — {fn}" if fn else ""))
-    with open(os.path.join(doc_dir, "_clauses.md"), "w", encoding="utf-8", newline="\n") as f:
-        f.write("\n".join(L) + "\n")
-
-
-README_FOR_AI = """# How to use this knowledge base (read first)
-
-This folder contains Markdown distilled from source documents. Each source document is a
-folder (same relative path and name as the source file) split into chapter files.
-
-**Finding content**
-1. Read `_catalog.md` to pick the right document. Prefer documents with status
-   "Published edition"; documents marked DRAFT are not in force.
-2. Open that document's `_index.md` (chapters, pages, clause ranges). Clause IDs encode
-   their Part (D2D13 → Part D2; S5C11 → Specification 5). `_clauses.md` lists every
-   clause title for topic searches.
-3. Open only the chapter file(s) you need. If a file lists **Cross-references**, open the
-   referenced files when the question depends on them. Defined terms are in *italics*;
-   their definitions are in the Schedule 1 (Definitions) file. State and Territory
-   variations are in the state Schedule files.
-
-**Citing** — always give: document name + status, clause ID, and page. Page markers
-look like `[p.37]` (physical PDF page); headings end with `· p.N`. Example:
-"NCC 2025 Volume One, clause D2D13, p.231".
-
-**Trust** — text is copied from the source text layer, never paraphrased. Content in
-blockquotes starting "Explanatory Information" is informative, not mandatory. Anything
-under `_pending/` failed verification and must not be cited.
-"""
-
-
-def write_root(out_root, results, source_prefix=""):
-    """One catalog for the whole knowledge base: every document from every source
-    folder, grouped by source folder (results may come from many sync runs)."""
-    groups = {}
-    for r in results:
-        groups.setdefault(r.get("source_folder") or source_prefix or "/", []).append(r)
-    total = sum(r["pages"] for r in results)
-    L = ["# Catalog", "",
-         f"{len(results)} documents, {total} pages, from {len(groups)} source folder(s) (all read-only). "
-         f"Updated {_dt.datetime.now().astimezone().isoformat(timespec='seconds')} by {PIPELINE_VERSION}.", ""]
-    for folder in sorted(groups):
-        L += [f"## Source folder `{folder}`", "",
-              "| Document | Status | Pages | Files | Verification | Folder |", "|---|---|---|---|---|---|"]
-        for r in sorted(groups[folder], key=lambda x: x["out_dir"]):
-            rep = r["report"]
-            v = (f"{r['verdict']} (chars {rep['chars']['recall'] * 100:.2f}%, numbers {rep['numbers']['recall'] * 100:.2f}%"
-                 + (f", ⚠️ {rep['unreadable']['lines']} unreadable regions flagged" if rep['unreadable']['lines'] else "")
-                 + ")")
-            L.append(f"| {r['name']} | {r['status']} | {r['pages']} | {r['files']} | {v} | "
-                     f"`{r['out_dir'].replace(os.sep, '/')}/` |")
-        L.append("")
-    with open(os.path.join(out_root, "_catalog.md"), "w", encoding="utf-8", newline="\n") as f:
-        f.write("\n".join(L) + "\n")
-    with open(os.path.join(out_root, "_README_FOR_AI.md"), "w", encoding="utf-8", newline="\n") as f:
-        f.write(README_FOR_AI)
 
 
 def main(argv=None):
