@@ -24,9 +24,7 @@ jobs:
         env:
           PYTHONUTF8: "1"
         run: |
-          python scripts/unit_tests.py
-          python scripts/test_router.py
-          python scripts/test_distill_guard.py
+          python -m pytest -q
 
   frontend:
     name: frontend-build
