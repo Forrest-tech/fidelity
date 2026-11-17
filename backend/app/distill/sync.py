@@ -24,6 +24,7 @@ import sys
 from . import dropbox_io as D
 from . import run as R
 from .ledger import Ledger
+from .publish import Publisher
 
 SUPPORTED = (".pdf",)
 
@@ -53,8 +54,7 @@ def main(argv=None):
     ap.add_argument("--dry-run", action="store_true", help="distill and verify, upload nothing")
     ap.add_argument("--force", action="store_true", help="re-distill even if the ledger says the file is up to date")
     ap.add_argument("--only", default=None, help="only files whose name contains this text")
-    ap.add_argument("--prune", action="store_true",
-                    help="after uploading a document, delete older files left in ITS output folder")
+    ap.add_argument("--rollback", default=None, metavar="RUN", help="undo a published run: restore the previous versions from the archive")
     a = ap.parse_args(argv)
 
     reader, writer = D.client("reader"), D.client("writer")
@@ -63,17 +63,32 @@ def main(argv=None):
     if not dest_root:
         raise SystemExit("The output link must be a folder in your own Dropbox")
     src_name = src_root.rstrip("/").split("/")[-1] if src_root else "source"
-    guard = D.SafeWriter(writer, dest_root, [src_root])     # raises if the roots overlap
+    stage_root, archive_root = dest_root.rstrip("/") + "_staging", dest_root.rstrip("/") + "_archive"
+    guard = D.SafeWriter(writer, dest_root, [src_root], extra_roots=[stage_root, archive_root])  # raises on overlap
     print(f"source {src_root or a.source_link} (read-only)  ->  output {dest_root}", flush=True)
 
     stamp = _dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     out = os.path.join(a.work, "runs", stamp)
     cache = os.path.join(a.work, "cache")
     os.makedirs(cache, exist_ok=True)
+    if a.rollback:
+        mp = os.path.join(a.work, "publish", f"publish-{a.rollback}.json")
+        undo = Publisher.load(D.DropboxStore(guard), mp, os.path.join(a.work, "publish"))
+        undo.rollback()
+        ledger = Ledger(os.path.join(a.work, "ledger.json"), src_root or a.source_link)
+        keys = set(undo.docs)
+        for rel_, e in list(ledger.docs.items()):
+            if e.get("dest", "").replace(dest_root + "/", "", 1) in keys:
+                del ledger.docs[rel_]            # next run will distill these again
+        ledger.save()
+        print(f"rolled back run {a.rollback}: {len(keys)} document(s) restored to their previous version", flush=True)
+        return 0
     before = D.snapshot(reader, a.source_link)
     report = {"source": src_root, "dest": dest_root, "run": stamp, "documents": []}
     results = []
     seen_hash = {}
+    pub = Publisher(D.DropboxStore(guard), dest_root, stage_root, archive_root, stamp, os.path.join(a.work, "publish"))
+    pending = []       # (rel, content_hash, doc) staged this run, promoted together at the end
     ledger = Ledger(os.path.join(a.work, "ledger.json"), src_root or a.source_link)
 
     for rel, f in sorted(before.items()):
@@ -122,26 +137,37 @@ def main(argv=None):
             # a document that fails verification is never published; it stays local
             print(f"  NOT uploaded (failed verification) — local copy: {os.path.join(out, r['out_dir'])}", flush=True)
         elif not a.dry_run:
-            n0 = len(guard.written)
+            key = r["out_dir"].replace(os.sep, "/")
+            files = {}
             if r.get("single_file"):
                 with open(R.longpath(os.path.join(out, r["out_dir"])), "rb") as fh:
-                    guard.upload(doc["dest"], fh.read())
-                doc["uploaded"] = 1
+                    files[""] = fh.read()
             else:
-                doc["uploaded"] = guard.upload_tree(os.path.join(out, r["out_dir"]), dest_prefix=doc["dest"])
-            mine = {D._norm(p) for p in guard.written[n0:]}
-            stale = [] if r.get("single_file") else sorted(p for p in D.list_tree(writer, doc["dest"]) if p not in mine)
-            doc["stale_remote_files"] = len(stale)
-            if stale and a.prune:
-                for p in stale:
-                    guard.delete(p)
-                doc["pruned"] = len(stale)
-            print(f"  uploaded {doc['uploaded']} files -> {doc['dest']}"
-                  + (f"; {len(stale)} older files {'removed' if a.prune else 'left in place (use --prune)'}" if stale else ""),
-                  flush=True)
-        if r["verdict"] == "PASS" and not a.dry_run and doc["uploaded"]:
-            ledger.record(rel, f["content_hash"], R.PIPELINE_VERSION, "PASS", doc["dest"], doc["uploaded"])
+                base = os.path.join(out, r["out_dir"])
+                for root_, _, fns_ in os.walk(R.longpath(base)):
+                    for fn_ in sorted(fns_):
+                        lp_ = os.path.join(root_, fn_)
+                        with open(lp_, "rb") as fh:
+                            files[os.path.relpath(lp_, R.longpath(base)).replace(os.sep, "/")] = fh.read()
+            pub.stage(key, files)                    # live folder is not touched until promote
+            doc["uploaded"] = len(files)
+            doc["key"] = key
+            pending.append((rel, f["content_hash"], doc))
+            print(f"  staged {len(files)} file(s) -> {stage_root}/{stamp}/{key}", flush=True)
         report["documents"].append(doc)
+
+    if pending:
+        # promote the whole run at once; a document that changed layout (single file <-> folder)
+        # also replaces its old variant. The previous versions are kept in the archive for rollback.
+        replaces = {}
+        for _, _, d in pending:
+            k = d["key"]
+            replaces[k] = [k[:-len(".pdf.md")]] if k.endswith(".pdf.md") else [k + ".pdf.md"]
+        pub.promote(replaces=replaces)
+        for rel_, h_, d in pending:
+            ledger.record(rel_, h_, R.PIPELINE_VERSION, "PASS", d["dest"], d["uploaded"])
+        report["published_run"] = stamp
+        print(f"\npromoted {len(pending)} document(s); undo with: python -m app.distill.sync --rollback {stamp}", flush=True)
 
     gone = ledger.removed(before.keys())
     if gone:   # renames/deletions wait for administrator confirmation; published files stay untouched
