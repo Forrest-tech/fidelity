@@ -1,0 +1,63 @@
+name: Security and licences
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 3 * * 1"
+
+jobs:
+  licences:
+    name: licence-inventory
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Python licences
+        run: |
+          pip install -r backend/requirements.txt pip-licenses
+          pip-licenses --format=markdown --with-urls --order=license > licences-python.md
+      - name: Node licences
+        working-directory: web
+        run: |
+          npm ci
+          npx --yes license-checker-rseidelsohn --production --csv > ../licences-node.csv
+      - uses: actions/upload-artifact@v4
+        with:
+          name: licence-inventory
+          path: |
+            licences-python.md
+            licences-node.csv
+
+  audit:
+    name: dependency-audit
+    runs-on: ubuntu-latest
+    # Reports known vulnerabilities; informational until the pinned set is refreshed.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install pip-audit && pip-audit -r backend/requirements.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: cd web && npm audit --omit=dev
+
+  secrets:
+    name: secret-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        run: |
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz | tar -xz gitleaks
+          ./gitleaks detect --source . --redact --no-banner
