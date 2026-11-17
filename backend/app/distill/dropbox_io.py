@@ -53,8 +53,15 @@ def client(role="writer"):
     return dropbox.Dropbox(oauth2_refresh_token=a["refresh_token"], app_key=a["app_key"])
 
 
+def is_path(src: str) -> bool:
+    """A source may be a shared-folder link or a path in the account itself (F-1)."""
+    return src.startswith("/")
+
+
 def link_root(dbx, url):
-    """Path in the user's Dropbox that a shared link points to ('' if not theirs)."""
+    """Path in the user's Dropbox that a shared link points to ('' if not theirs); a path is returned as is."""
+    if is_path(url):
+        return _norm(url)
     md = dbx.sharing_get_shared_link_metadata(url)
     return md.path_lower or ""
 
@@ -65,8 +72,10 @@ def list_shared_folder(dbx, url, rel=""):
     """Recursively list files behind a shared folder link (shared-link listing is
     not recursive, so walk subfolders). Yields dicts with rel path + identity."""
     import dropbox
-    link = dropbox.files.SharedLink(url=url)
-    res = dbx.files_list_folder(path=rel, shared_link=link)
+    if is_path(url):                                   # read-only listing in the account itself
+        res = dbx.files_list_folder(path=url.rstrip("/") + rel)
+    else:
+        res = dbx.files_list_folder(path=rel, shared_link=dropbox.files.SharedLink(url=url))
     while True:
         for e in res.entries:
             child = f"{rel}/{e.name}"
@@ -101,7 +110,10 @@ def list_tree(dbx, path):
 
 def file_identity(dbx, url, rel):
     """Current id/rev/size of one file behind a shared folder link (read-only call)."""
-    md = dbx.sharing_get_shared_link_metadata(url, path=rel)
+    if is_path(url):
+        md = dbx.files_get_metadata(url.rstrip("/") + rel)
+    else:
+        md = dbx.sharing_get_shared_link_metadata(url, path=rel)
     return {"id": md.id, "rev": getattr(md, "rev", None), "size": getattr(md, "size", None)}
 
 
@@ -121,7 +133,10 @@ def compare_snapshots(before, after):
 
 
 def download(dbx, url, rel, local_path):
-    md, resp = dbx.sharing_get_shared_link_file(url=url, path=rel)
+    if is_path(url):
+        md, resp = dbx.files_download(url.rstrip("/") + rel)
+    else:
+        md, resp = dbx.sharing_get_shared_link_file(url=url, path=rel)
     os.makedirs(os.path.dirname(local_path), exist_ok=True)
     tmp = local_path + ".part"
     with open(tmp, "wb") as f:
