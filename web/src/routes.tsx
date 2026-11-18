@@ -5,7 +5,12 @@ import type { Role } from "./auth/AuthProvider";
 import { EmptyState, ErrorState, Loading } from "./components/ui";
 import { AppShell } from "./layout/AppShell";
 import { LoginPage } from "./pages/LoginPage";
-import { DocumentsPage, JobsPage, OverviewPage, SettingsPage, SourcesPage, UsersPage } from "./pages/Pages";
+import { DocumentsPage } from "./pages/DocumentsPage";
+import { JobsPage } from "./pages/JobsPage";
+import { OverviewPage } from "./pages/OverviewPage";
+import { SettingsPage } from "./pages/SettingsPage";
+import { SourcesPage } from "./pages/SourcesPage";
+import { UsersPage } from "./pages/UsersPage";
 import { LangProvider } from "./i18n";
 import ReviewLegacy from "./pages/ReviewLegacy";
 

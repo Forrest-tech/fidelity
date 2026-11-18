@@ -4,13 +4,16 @@
   "header": { "language": "Language", "theme": "Theme", "light": "Light", "dark": "Dark", "system": "System", "logout": "Sign out", "signedInAs": "Signed in as {{email}}" },
   "login": { "title": "Sign in", "email": "Email", "password": "Password", "submit": "Sign in", "submitting": "Signing in…", "failed": "Wrong email or password.", "tooMany": "Too many failed attempts. Try again in a few minutes.", "error": "Could not sign in. Check your connection and try again." },
   "state": { "loading": "Loading…", "retry": "Try again", "errorTitle": "Something went wrong", "emptyTitle": "Nothing here yet", "forbidden": "You do not have access to this page." },
+  "status": { "queued": "Queued", "running": "Running", "done": "Done", "error": "Error", "PASS": "Verified", "FAIL": "Failed", "SKIP": "Not distilled", "METADATA": "Metadata only" },
+  "verdict": { "PASS": "Verified", "FAIL": "Failed verification", "SKIP": "Not distilled", "METADATA": "Metadata only" },
+  "roles": { "admin": "Administrator", "reviewer": "Reviewer", "viewer": "Viewer" },
   "pages": {
-    "overview": { "title": "Overview", "empty": "No documents have been distilled yet.", "emptyHint": "Add a source, then start a distillation job." },
-    "sources": { "title": "Sources", "empty": "No sources configured.", "emptyHint": "A source is a folder of original documents (read-only)." },
-    "jobs": { "title": "Jobs", "empty": "No jobs have run yet.", "emptyHint": "Jobs appear here when a distillation starts." },
-    "documents": { "title": "Documents", "empty": "No distilled documents yet.", "emptyHint": "Distilled, verified documents are listed here." },
+    "overview": { "title": "Overview", "empty": "No documents have been distilled yet.", "emptyHint": "Add a source, then start a distillation job.", "sources": "Sources", "documents": "Documents", "verified": "Verified", "running": "In progress", "attention": "Needs attention", "attentionNone": "Nothing needs attention." },
+    "sources": { "title": "Sources", "empty": "No sources configured.", "emptyHint": "A source is a folder of original documents (read-only).", "readOnly": "Original documents are never modified.", "distillAll": "Distill all PDFs", "upload": "Upload a PDF", "started": "Started {{count}} job(s).", "uploaded": "Uploaded {{name}}; distillation started." },
+    "jobs": { "title": "Jobs", "empty": "No jobs have run yet.", "emptyHint": "Jobs appear here when a distillation starts.", "file": "File", "kind": "Type", "status": "Status", "message": "Message" },
+    "documents": { "title": "Documents", "empty": "No distilled documents yet.", "emptyHint": "Distilled, verified documents are listed here.", "filter": "Show", "all": "All", "result": "Result", "pages": "Pages", "files": "Files", "single": "1 (single file)", "notes": "Notes", "instruction": "Contains text that looks like instructions to an AI" },
     "review": { "title": "Review" },
-    "settings": { "title": "Settings", "empty": "Settings will appear here." },
-    "users": { "title": "Users", "empty": "No users to show." }
+    "settings": { "title": "Settings", "hint": "Language and theme are chosen in the top bar." },
+    "users": { "title": "Users", "empty": "No users to show.", "role": "Role", "add": "Add a user", "create": "Create user", "passwordHint": "At least 10 characters." }
   }
 }

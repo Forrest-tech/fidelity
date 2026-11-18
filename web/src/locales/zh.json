@@ -4,13 +4,16 @@
   "header": { "language": "语言", "theme": "主题", "light": "浅色", "dark": "深色", "system": "跟随系统", "logout": "退出登录", "signedInAs": "当前用户：{{email}}" },
   "login": { "title": "登录", "email": "邮箱", "password": "密码", "submit": "登录", "submitting": "正在登录…", "failed": "邮箱或密码不正确。", "tooMany": "失败次数过多，请几分钟后再试。", "error": "无法登录，请检查网络后重试。" },
   "state": { "loading": "加载中…", "retry": "重试", "errorTitle": "出错了", "emptyTitle": "这里还没有内容", "forbidden": "你没有权限访问此页面。" },
+  "status": { "queued": "排队中", "running": "运行中", "done": "完成", "error": "出错", "PASS": "已验证", "FAIL": "未通过", "SKIP": "未蒸馏", "METADATA": "仅元数据" },
+  "verdict": { "PASS": "已验证", "FAIL": "验证未通过", "SKIP": "未蒸馏", "METADATA": "仅元数据" },
+  "roles": { "admin": "管理员", "reviewer": "审核员", "viewer": "查看者" },
   "pages": {
-    "overview": { "title": "总览", "empty": "还没有蒸馏过任何文档。", "emptyHint": "先添加一个数据源，再开始蒸馏任务。" },
-    "sources": { "title": "数据源", "empty": "还没有配置数据源。", "emptyHint": "数据源是存放原始文档的文件夹（只读）。" },
-    "jobs": { "title": "任务", "empty": "还没有运行过任务。", "emptyHint": "开始蒸馏后，任务会显示在这里。" },
-    "documents": { "title": "文档", "empty": "还没有蒸馏出的文档。", "emptyHint": "这里列出经过验证的蒸馏文档。" },
+    "overview": { "title": "总览", "empty": "还没有蒸馏过任何文档。", "emptyHint": "先添加一个数据源，再开始蒸馏任务。", "sources": "数据源", "documents": "文档", "verified": "已验证", "running": "进行中", "attention": "需要关注", "attentionNone": "没有需要关注的内容。" },
+    "sources": { "title": "数据源", "empty": "还没有配置数据源。", "emptyHint": "数据源是存放原始文档的文件夹（只读）。", "readOnly": "原始文档不会被修改。", "distillAll": "蒸馏全部 PDF", "upload": "上传 PDF", "started": "已启动 {{count}} 个任务。", "uploaded": "已上传 {{name}}，已开始蒸馏。" },
+    "jobs": { "title": "任务", "empty": "还没有运行过任务。", "emptyHint": "开始蒸馏后，任务会显示在这里。", "file": "文件", "kind": "类型", "status": "状态", "message": "信息" },
+    "documents": { "title": "文档", "empty": "还没有蒸馏出的文档。", "emptyHint": "这里列出经过验证的蒸馏文档。", "filter": "显示", "all": "全部", "result": "结果", "pages": "页数", "files": "文件数", "single": "1（单文件）", "notes": "备注", "instruction": "含有疑似对 AI 下指令的文字" },
     "review": { "title": "审核" },
-    "settings": { "title": "设置", "empty": "设置将显示在这里。" },
-    "users": { "title": "用户", "empty": "没有可显示的用户。" }
+    "settings": { "title": "设置", "hint": "语言和主题在顶栏中选择。" },
+    "users": { "title": "用户", "empty": "没有可显示的用户。", "role": "角色", "add": "添加用户", "create": "创建用户", "passwordHint": "至少 10 个字符。" }
   }
 }
