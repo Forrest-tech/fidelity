@@ -1,14 +1,23 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App";
-import { LangProvider } from "./i18n";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter } from "react-router-dom";
+import { AppRoutes } from "./routes";
+import { AuthProvider } from "./auth/AuthProvider";
+import "./locales";
+import "./index.css";
 import "./styles.css";
+
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } });
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    {/* i18n 必须包在 App 外层：顶栏的语言按钮自身也要能取到 t */}
-    <LangProvider>
-      <App />
-    </LangProvider>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
   </React.StrictMode>,
 );

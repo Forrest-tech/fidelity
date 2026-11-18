@@ -1,0 +1,16 @@
+{
+  "app": { "name": "Fidelity", "tagline": "把源文件转成经过验证、可引用的 Markdown" },
+  "nav": { "overview": "总览", "sources": "数据源", "jobs": "任务", "documents": "文档", "review": "审核", "settings": "设置", "users": "用户", "menu": "菜单", "skip": "跳到主要内容", "main": "主导航" },
+  "header": { "language": "语言", "theme": "主题", "light": "浅色", "dark": "深色", "system": "跟随系统", "logout": "退出登录", "signedInAs": "当前用户：{{email}}" },
+  "login": { "title": "登录", "email": "邮箱", "password": "密码", "submit": "登录", "submitting": "正在登录…", "failed": "邮箱或密码不正确。", "tooMany": "失败次数过多，请几分钟后再试。", "error": "无法登录，请检查网络后重试。" },
+  "state": { "loading": "加载中…", "retry": "重试", "errorTitle": "出错了", "emptyTitle": "这里还没有内容", "forbidden": "你没有权限访问此页面。" },
+  "pages": {
+    "overview": { "title": "总览", "empty": "还没有蒸馏过任何文档。", "emptyHint": "先添加一个数据源，再开始蒸馏任务。" },
+    "sources": { "title": "数据源", "empty": "还没有配置数据源。", "emptyHint": "数据源是存放原始文档的文件夹（只读）。" },
+    "jobs": { "title": "任务", "empty": "还没有运行过任务。", "emptyHint": "开始蒸馏后，任务会显示在这里。" },
+    "documents": { "title": "文档", "empty": "还没有蒸馏出的文档。", "emptyHint": "这里列出经过验证的蒸馏文档。" },
+    "review": { "title": "审核" },
+    "settings": { "title": "设置", "empty": "设置将显示在这里。" },
+    "users": { "title": "用户", "empty": "没有可显示的用户。" }
+  }
+}

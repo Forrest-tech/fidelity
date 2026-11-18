@@ -1,0 +1,60 @@
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { useAuth } from "./auth/AuthProvider";
+import type { Role } from "./auth/AuthProvider";
+import { EmptyState, ErrorState, Loading } from "./components/ui";
+import { AppShell } from "./layout/AppShell";
+import { LoginPage } from "./pages/LoginPage";
+import { DocumentsPage, JobsPage, OverviewPage, SettingsPage, SourcesPage, UsersPage } from "./pages/Pages";
+import { LangProvider } from "./i18n";
+import ReviewLegacy from "./pages/ReviewLegacy";
+
+/** Every page except /login requires a signed-in user (optionally a specific role). */
+function RequireAuth({ roles, children }: { roles?: Role[]; children: JSX.Element }) {
+  const { me, loading, error } = useAuth();
+  const loc = useLocation();
+  const { t } = useTranslation();
+  if (loading) return <Loading />;
+  if (error) return <ErrorState message={error.message} />;
+  if (!me) return <Navigate to="/login" replace state={{ from: loc.pathname }} />;
+  if (roles && !roles.includes(me.role)) return <EmptyState title={t("state.forbidden")} />;
+  return children;
+}
+
+export function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route
+        element={
+          <RequireAuth>
+            <AppShell />
+          </RequireAuth>
+        }
+      >
+        <Route index element={<OverviewPage />} />
+        <Route path="sources" element={<SourcesPage />} />
+        <Route path="jobs" element={<JobsPage />} />
+        <Route path="documents" element={<DocumentsPage />} />
+        <Route
+          path="review"
+          element={
+            <LangProvider>
+              <ReviewLegacy />
+            </LangProvider>
+          }
+        />
+        <Route path="settings" element={<SettingsPage />} />
+        <Route
+          path="users"
+          element={
+            <RequireAuth roles={["admin"]}>
+              <UsersPage />
+            </RequireAuth>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
+  );
+}

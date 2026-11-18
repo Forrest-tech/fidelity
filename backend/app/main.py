@@ -3,7 +3,7 @@
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+from .spa import SPAStaticFiles
 import os
 
 from . import db, config, instance
@@ -11,7 +11,7 @@ from .jobs import handlers
 from .jobs.queue import queue
 from .api.routes import router
 from .auth.routes import router as auth_router
-from .auth.users import current_user, require_role
+from .auth.users import current_user
 from .auth.models import Role
 from fastapi import Depends, Request
 
@@ -37,12 +37,6 @@ async def _authorize(request: Request, user=Depends(current_user)):
 
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(router, prefix="/api/v1", dependencies=[Depends(_authorize)])
-# Deprecated unversioned, UNAUTHENTICATED alias for the pre-auth UI. Off by default;
-# set FIDELITY_LEGACY_API=1 to re-enable until the Phase 3 UI replaces it.
-if os.environ.get("FIDELITY_LEGACY_API") == "1":
-    app.include_router(router, prefix="/api")
-
-
 _OWNED = {"ok": False, "pid": None}
 
 
@@ -119,4 +113,4 @@ def health():
 # 注意 config.BASE_DIR 指向 backend/，前端在同级 web/ 下。
 WEB_DIST = os.path.join(os.path.dirname(config.BASE_DIR), "web", "dist")
 if os.path.isdir(WEB_DIST):
-    app.mount("/", StaticFiles(directory=WEB_DIST, html=True), name="web")
+    app.mount("/", SPAStaticFiles(directory=WEB_DIST, html=True), name="web")

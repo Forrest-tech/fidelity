@@ -51,10 +51,7 @@ def main():
         return 2
 
     print("[serve] 启动 uvicorn on %s:%s ..." % (host, port))
-    # Transitional: the pre-Phase-3 UI has no login, so the launcher re-enables the
-    # unauthenticated legacy /api alias. Remove with the Phase 3 UI. /api/v1 always requires login.
     env = dict(os.environ, QA_SERVER_PORT=str(port), QA_SERVER_HOST=host)
-    env.setdefault("FIDELITY_LEGACY_API", "1")
     cmd = [sys.executable, "-m", "uvicorn", "app.main:app",
            "--host", host, "--port", str(port)]
     try:
