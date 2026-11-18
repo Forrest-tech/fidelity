@@ -26,7 +26,7 @@ from . import run as R
 from .ledger import Ledger
 from .publish import Publisher
 
-SUPPORTED = (".pdf",)
+from .office import SUPPORTED, distill_any  # noqa: E402  (all registered formats)
 
 
 def _state_path(work):
@@ -120,7 +120,7 @@ def main(argv=None):
         if R.dropbox_content_hash(lp) != f["content_hash"]:
             raise SystemExit(f"local copy of {rel} does not match Dropbox content_hash")
 
-        r = R.distill_pdf(lp, rel_local, out, "", cache, log=lambda m: print(m, flush=True),
+        r = distill_any(lp, rel_local, out, "", cache, log=lambda m: print(m, flush=True),
                          publish_protected=a.publish_protected_metadata)
         results.append(r)
         if r["verdict"] == "SKIP":                  # triaged out: listed with its class, never silently dropped

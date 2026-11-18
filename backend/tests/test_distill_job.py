@@ -63,9 +63,9 @@ def test_handler_rejects_unknown_format_and_missing_file(source):
 
 
 def test_batch_listing_is_confined_to_the_source(source):
-    assert DJ.list_source_pdfs("t") == ["sub/Std 2025.pdf"]
-    assert DJ.list_source_pdfs("t", "..") is None
-    assert DJ.list_source_pdfs("nope") is None
+    assert DJ.list_source_files("t") == ["sub/Std 2025.pdf"]
+    assert DJ.list_source_files("t", "..") is None
+    assert DJ.list_source_files("nope") is None
 
 
 async def _mk(email, role):
@@ -107,4 +107,4 @@ def test_batch_endpoint_submits_one_job_per_pdf_and_rejects_bad_folder(api, sour
     r = c.post("/api/v1/distill/batch", json={"sid": "t"})
     assert r.json()["files"] == 1 and submitted[-1] == ("distill:t", "sub/Std 2025.pdf")
     assert c.post("/api/v1/distill/batch", json={"sid": "t", "folder": ".."}).status_code == 404
-    assert c.post("/api/v1/distill", json={"rel": "x.docx"}).status_code == 415
+    assert c.post("/api/v1/distill", json={"rel": "x.dwg"}).status_code == 415
