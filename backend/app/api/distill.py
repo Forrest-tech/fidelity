@@ -33,7 +33,7 @@ def distill_one(body: DistillIn):
 
 @router.post("/distill/batch")
 def distill_batch(body: DistillBatchIn):
-    rels = DJ.list_source_pdfs(body.sid, body.folder, min(max(body.limit, 1), 2000))
+    rels = DJ.list_source_files(body.sid, body.folder, min(max(body.limit, 1), 2000))
     if rels is None:
         raise HTTPException(404, "source or folder not found")
     return {"jobs": [queue.submit("distill:" + body.sid, r, "queued") for r in rels], "files": len(rels)}

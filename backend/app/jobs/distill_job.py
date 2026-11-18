@@ -9,9 +9,8 @@ import json
 import os
 
 from .. import config
-from ..distill import run as R
+from ..distill.office import SUPPORTED, distill_any
 
-SUPPORTED = (".pdf",)
 
 
 def out_root(sid):
@@ -51,7 +50,7 @@ def handle_distill(job, report):
         raise RuntimeError("format not handled yet: %s" % os.path.splitext(rel)[1])
     os.makedirs(config.CACHE_DIR, exist_ok=True)
     report(5, "distilling")
-    r = R.distill_pdf(path, rel, out_root(sid), "", config.CACHE_DIR,
+    r = distill_any(path, rel, out_root(sid), "", config.CACHE_DIR,
                       log=lambda m: report(30, str(m).strip()[:120]))
     summary = summarize(r)
     rp = report_path(sid, job["id"])
@@ -62,7 +61,7 @@ def handle_distill(job, report):
     return summary
 
 
-def list_source_pdfs(sid, folder="", limit=500):
+def list_source_files(sid, folder="", limit=500):
     src = config.get_source(sid)
     if not src:
         return None

@@ -358,14 +358,16 @@ def main(argv=None):
     results = []
     for root, _, fns in os.walk(a.src):
         for fn in sorted(fns):
-            if not fn.lower().endswith(".pdf"):
+            from .office import SUPPORTED
+            if not fn.lower().endswith(SUPPORTED):
                 continue
             if a.only and a.only not in fn:
                 continue
             p = os.path.join(root, fn)
             rel = os.path.relpath(p, a.src)
             print(f"[distill] {rel}", flush=True)
-            r = distill_pdf(p, rel, a.out, a.source_prefix, cache, log=lambda m: print(m, flush=True))
+            from .office import distill_any
+            r = distill_any(p, rel, a.out, a.source_prefix, cache, log=lambda m: print(m, flush=True))
             rep = r["report"]
             if r["verdict"] == "SKIP":
                 results.append(r)
