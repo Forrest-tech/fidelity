@@ -75,8 +75,11 @@ Two or three staff use the tool for real questions for one week (after the bank 
 4. Failures: classify (library content / pack wording / AI tool behaviour); fix the cause, regenerate,
    and re-run **the whole bank**, not only the failed question.
 
-## 7. Decisions needed from the owner
+## 7. Owner decisions (2026-11-18)
 
-1. Agree the categories and targets in section 2 (or change them).
-2. Who writes the 70 extra questions: drafted by Claude from the library for your check, or real staff questions.
-3. Which staff join the human trial, and when.
+1. Categories and targets in section 2: **agreed**.
+2. The 70 extra questions are **written and run by the developer (Claude)** without owner review; every
+   expected answer must be grounded automatically on its cited source page (`scripts/check_bank.py`).
+   Real staff questions are added once the system is in real use.
+3. **No human trial now** (no staff yet). The developer completes the system and demonstrates accuracy
+   and efficiency against this plan; the human trial (section 5) moves to first real use.

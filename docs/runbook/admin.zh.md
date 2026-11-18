@@ -84,6 +84,16 @@ python -m app.distill.sync --source-link <…> --dest-link <…>
 `python scripts/measure_tokens.py --library <本地拷贝> --out ../docs/benchmarks/token-cost`——
 文件大小、列目录成本、在 10k–30k 目标范围内的比例。
 
+## 服务器数据库（PostgreSQL）
+默认使用 `data/` 下的 SQLite 文件。上服务器时，把两个库都指向 PostgreSQL 16：
+```
+FIDELITY_DB_URL=postgresql+asyncpg://fidelity:<密码>@<主机>:5432/fidelity      # 用户、审计日志
+FIDELITY_TRUST_URL=postgresql://fidelity:<密码>@<主机>:5432/fidelity           # 任务、审核决定
+```
+首次启动时自动建表（用户/审计用 Alembic；任务表不存在时自动创建）。服务器访问量大时设
+`FIDELITY_DB_POOL=1` 打开连接池。CI 每次改动都会在 PostgreSQL 上跑完整测试（`backend-tests-postgres`）。
+自己跑测试时，数据库名必须以 `_test` 结尾——测试会先清空它，其他名字一律拒绝。
+
 ## 备份
 备份 `data/fidelity.db`（用户、审计日志）、`data/trust.db`（任务）和 `data/dropbox_auth.json`（注意保密）。
 已发布的 Markdown 随时可以从源文件重新生成。

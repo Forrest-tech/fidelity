@@ -38,7 +38,10 @@ def instr_flag(body: str) -> bool:
     return bool(scan_instructions(body))
 
 
-VISUAL_SAMPLES = int(os.environ.get("FIDELITY_VISUAL_SAMPLES", "3"))
+# How many text-rich pages the visual cross-check OCRs: a number, or "all" (every page — the Phase 6
+# setting for a machine with the OCR capacity, e.g. the Mac mini).
+_VS = os.environ.get("FIDELITY_VISUAL_SAMPLES", "3").strip().lower()
+VISUAL_SAMPLES = 10 ** 9 if _VS == "all" else int(_VS)
 VISUAL_MIN_RECALL = 0.80     # a correct text layer scores ~0.95 against OCR; a broken one far lower
 
 
