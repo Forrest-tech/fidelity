@@ -51,3 +51,4 @@ tools/rclone/
 .e2e/
 playwright-report/
 test-results/
+backend/ocr-benchmark/
