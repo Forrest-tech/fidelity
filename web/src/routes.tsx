@@ -5,6 +5,7 @@ import { useAuth } from "./auth/AuthProvider";
 import type { Role } from "./auth/AuthProvider";
 import { EmptyState, ErrorState, Loading } from "./components/ui";
 import { AppShell } from "./layout/AppShell";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { LoginPage } from "./pages/LoginPage";
 import { DocumentsPage } from "./pages/DocumentsPage";
 import { JobsPage } from "./pages/JobsPage";
@@ -49,9 +50,11 @@ export function AppRoutes() {
             <LangProvider>
               {/* legacy element styles (buttons, inputs) only apply inside this wrapper */}
               <div className="legacy-review h-full">
-                <Suspense fallback={<Loading />}>
-                  <ReviewLegacy />
-                </Suspense>
+                <ErrorBoundary>
+                  <Suspense fallback={<Loading />}>
+                    <ReviewLegacy />
+                  </Suspense>
+                </ErrorBoundary>
               </div>
             </LangProvider>
           }

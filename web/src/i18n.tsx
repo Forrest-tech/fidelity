@@ -9,6 +9,7 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import i18next from "i18next";
 
 export type Lang = "zh" | "en";
 
@@ -541,23 +542,16 @@ function fill(tpl: string, vars?: Record<string, string | number>) {
 }
 
 export function LangProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>(() => {
-    try {
-      const v = localStorage.getItem(KEY);
-      return v === "en" ? "en" : "zh";
-    } catch {
-      return "zh";
-    }
-  });
+  // Follows the application shell's language (i18next), so one switch drives every screen.
+  const [lang, setLangState] = useState<Lang>(() => (i18next.language?.startsWith("zh") ? "zh" : "en"));
+  useEffect(() => {
+    const on = (l: string) => setLangState(l.startsWith("zh") ? "zh" : "en");
+    i18next.on("languageChanged", on);
+    return () => i18next.off("languageChanged", on);
+  }, []);
 
   const setLang = useCallback((l: Lang) => {
-    setLangState(l);
-    try {
-      localStorage.setItem(KEY, l);
-    } catch {
-      /* 隐私模式下写不进去，忽略即可（本次会话仍生效） */
-    }
-    // 切语言会改变所有按钮宽度，立刻重排一次，避免出现点击区错位
+    void i18next.changeLanguage(l);
     window.dispatchEvent(new Event("resize"));
   }, []);
 

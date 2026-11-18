@@ -408,7 +408,7 @@ body {
 .srcline.changed .tx, .srcline.src_only .tx { background: var(--red-bg); }
 .srcline.unmatched .tx { background: var(--amber-bg); }
 
-.empty { padding: 40px 20px; text-align: center; color: var(--text-3); font-size: 13px; }
+.empty { padding: 40px 20px; text-align: center; color: var(--text-2); font-size: 13px; }
 .pv-none { text-align: center; color: var(--text-2); font-size: 12.5px; padding: 40px 16px; }
 .pv-note {
   padding: 5px 12px; border-top: 1px solid var(--border); background: var(--surface-3);
@@ -728,3 +728,6 @@ button.stat.on { background: #fff; box-shadow: inset 0 0 0 1px var(--brand-borde
 /* ---- 英文模式：字更窄，行高略降 ---- */
 html[lang="en"] .trow { font-size: 12px; }
 html[lang="en"] .brand-text b { font-size: 13px; }
+
+/* The carried-over review screen is light-only: keep its own palette inside a dark shell. */
+.legacy-review { color: var(--text); background: var(--bg); color-scheme: light; }

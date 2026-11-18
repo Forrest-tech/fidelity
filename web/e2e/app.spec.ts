@@ -111,6 +111,19 @@ test.describe("pages have content or a clear state", () => {
   });
 });
 
+test.describe("review screen", () => {
+  test("opens inside the shell, follows the shell language, no page-level horizontal scroll", async ({ page }) => {
+    await login(page, "reviewer");
+    await page.goto("/review");
+    await expect(page.locator(".legacy-review .header")).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator(".legacy-review .langsw")).toHaveCount(0); // one language switch, in the shell
+    await page.getByLabel("Language").selectOption("zh");
+    await expect(page.locator(".legacy-review .statsbar")).toContainText(/[一-鿿]/);
+    await page.getByLabel("语言").selectOption("en");
+    await expect(page.locator(".legacy-review .statsbar")).not.toContainText(/[一-鿿]/);
+  });
+});
+
 test.describe("bilingual", () => {
   test("switching to Chinese translates the interface and survives a reload", async ({ page }) => {
     await login(page, "admin");
@@ -170,7 +183,7 @@ test.describe("accessibility (axe-core)", () => {
     test(`main pages, ${theme} theme`, async ({ page }) => {
       await login(page, "admin");
       await page.getByLabel("Theme").selectOption(theme);
-      for (const p of ["/", "/sources", "/jobs", "/documents", "/settings", "/users"]) {
+      for (const p of ["/", "/sources", "/jobs", "/documents", "/settings", "/users", "/review"]) {
         await page.goto(p);
         await page.waitForLoadState("networkidle");
         await openNav(page);
