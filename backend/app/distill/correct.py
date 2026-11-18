@@ -17,6 +17,7 @@ _UNIT = r"(?:mm|cm|km|kg|kN|kPa|MPa|Pa|kW|Hz|mL|m|N|W|V|L|%)"
 _LIG = {"ﬁ": "fi", "ﬂ": "fl", "ﬀ": "ff", "ﬃ": "ffi", "ﬄ": "ffl"}
 
 _INSIDE = re.compile(rf"(?<=\d)[{_C}]+(?=\d)")
+_DOLLAR_ID = re.compile(r"\$\d{1,2}[A-Z]\d+[a-z]?\b")
 _KILO = re.compile(r"(\d\s?)K(N|Pa|g|m|W|Hz|J|V)\b")
 _EDGE = re.compile(rf"(?<![A-Za-z\d])([{_C}]?\d[\d.,]*[{_C}]?|[{_C}]\d*)(?=\s?{_UNIT}\b)")
 
@@ -56,6 +57,13 @@ def correct_text(text: str):
 
     # SI has no capital-K prefix: "2.7 KN" after a number is always a misread "kN"
     out = _KILO.sub(kilo, out)
+
+    def dollar(m):
+        log.append({"rule": "clause_id_dollar", "from": m.group(0), "to": "S" + m.group(0)[1:]})
+        return "S" + m.group(0)[1:]
+
+    # "$17C7" is a clause ID (S17C7) misread: an amount never has a capital letter between digits
+    out = _DOLLAR_ID.sub(dollar, out)
 
     def hyph(m):
         log.append({"rule": "line_break_hyphen", "from": m.group(0).replace("\n", "\\n"), "to": m.group(1) + m.group(2)})

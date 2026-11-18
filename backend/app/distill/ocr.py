@@ -153,9 +153,17 @@ def _join_lines(lines):
 _WORD = re.compile(r"\S+")
 
 
+_TYPO = str.maketrans({"“": '"', "”": '"', "„": '"', "‘": "'", "’": "'", "–": "—"})
+
+
+def _typo(s: str) -> str:
+    """Typographic variants of the same character compare equal (the published text is not changed)."""
+    return s.translate(_TYPO).replace("--", "—")
+
+
 def agreement(a: str, b: str):
     """Share of words read identically by both engines, and the spans where they differ."""
-    wa, wb = _WORD.findall(a), _WORD.findall(b)
+    wa, wb = _WORD.findall(_typo(a)), _WORD.findall(_typo(b))
     if not wa and not wb:
         return 1.0, []
     sm = difflib.SequenceMatcher(None, wa, wb, autojunk=False)
@@ -210,6 +218,14 @@ def ocr_image(img, page: int = 1, engines=None) -> PageOCR:
         readings[e.name] = {"text": text, "text_corrected": fixed, "conf": round(conf, 4), "corrections": log}
     if not readings:
         return PageOCR(page=page, text="", status="review", reasons=failures or ["no OCR engine installed"])
+    if len(readings) >= 2:                  # glossary layer: choose the known word where engines differ
+        from . import glossary
+        n0, n1 = list(readings)[:2]
+        r0, r1 = readings[n0], readings[n1]
+        r0["text_corrected"], r1["text_corrected"], glog = glossary.resolve(
+            r0["text_corrected"], r1["text_corrected"], glossary.load(), (n0, n1))
+        for entry in glog:
+            readings[entry["engine"]]["corrections"].append(entry)
     primary = next(iter(readings.values()))
     r = decide(page, readings, primary["text_corrected"], primary["corrections"])
     if failures:
