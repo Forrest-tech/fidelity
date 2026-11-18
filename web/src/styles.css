@@ -38,6 +38,19 @@
   --amber: #b06000;
   --amber-bg: #fef7e0;
   --amber-border: #fdd663;
+  --amber-strong: #8a4b00;
+
+  /* added for dark mode; light values are the colours used before */
+  --border-hover: #b9c0cf;
+  --surface-active: #eceff5;
+  --brand-strong: #174ea6;
+  --on-fill: #fff;
+  --track: #d8dde8;
+  --neutral-bg: #eceef2;
+  --canvas: #eceff4;
+  --green-soft: #f1f8f3;
+  --scroll: #ccd2dd;
+  --scroll-hover: #b3bbc9;
 
   --shadow-1: 0 1px 2px rgba(60, 64, 67, 0.06);
   --shadow-2: 0 4px 12px rgba(60, 64, 67, 0.1);
@@ -96,8 +109,8 @@ body {
   text-overflow: ellipsis;
   flex-shrink: 0;
 }
-.legacy-review button:hover:not(:disabled) { background: var(--surface-hover); border-color: #b9c0cf; }
-.legacy-review button:active:not(:disabled) { background: #eceff5; }
+.legacy-review button:hover:not(:disabled) { background: var(--surface-hover); border-color: var(--border-hover); }
+.legacy-review button:active:not(:disabled) { background: var(--surface-active); }
 .legacy-review button:disabled { opacity: 0.45; cursor: not-allowed; }
 .legacy-review button:focus-visible, .legacy-review input:focus-visible, .legacy-review select:focus-visible, .legacy-review textarea:focus-visible {
   outline: 2px solid var(--brand);
@@ -105,12 +118,12 @@ body {
 }
 
 .legacy-review button.primary {
-  background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 500;
+  background: var(--brand); border-color: var(--brand); color: var(--on-fill); font-weight: 500;
 }
 .legacy-review button.primary:hover:not(:disabled) { background: var(--brand-hover); border-color: var(--brand-hover); }
 .legacy-review button.ghost { background: transparent; border-color: transparent; color: var(--text-2); }
 .legacy-review button.ghost:hover:not(:disabled) { background: var(--surface-hover); color: var(--text); }
-.legacy-review button.on { background: var(--brand-soft); border-color: var(--brand-border); color: #174ea6; font-weight: 500; }
+.legacy-review button.on { background: var(--brand-soft); border-color: var(--brand-border); color: var(--brand-strong); font-weight: 500; }
 .legacy-review button.sm { padding: 3px 9px; font-size: 12px; }
 .legacy-review button.danger { color: var(--red); border-color: var(--red-border); }
 .legacy-review button.danger:hover:not(:disabled) { background: var(--red-bg); }
@@ -149,7 +162,7 @@ body {
 .brand-mark {
   width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
   background: linear-gradient(135deg, #1a73e8, #6b4fe0);
-  color: #fff; font-weight: 700; font-size: 13px;
+  color: var(--on-fill); font-weight: 700; font-size: 13px;
   display: grid; place-items: center; letter-spacing: -0.3px;
 }
 .brand-text { display: flex; flex-direction: column; line-height: 1.15; }
@@ -177,7 +190,7 @@ body {
 .stat-v small { font-size: 11px; font-weight: 500; color: var(--text-3); margin-left: 3px; }
 .stat.clickable { cursor: pointer; border-radius: var(--r); }
 .stat.clickable:hover { background: rgba(26, 115, 232, 0.06); }
-.stat.clickable.on { background: #fff; box-shadow: inset 0 0 0 1px var(--brand-border); }
+.stat.clickable.on { background: var(--surface); box-shadow: inset 0 0 0 1px var(--brand-border); }
 .stat-v.good { color: var(--green); }
 .stat-v.warn { color: var(--amber); }
 .stat-v.bad { color: var(--red); }
@@ -187,7 +200,7 @@ body {
   display: flex; align-items: center; gap: 8px; flex-shrink: 0;
   padding-left: 14px; margin-left: auto; color: var(--text-2); font-size: 12px;
 }
-.runbar-track { width: 120px; height: 5px; background: #d8dde8; border-radius: 99px; overflow: hidden; }
+.runbar-track { width: 120px; height: 5px; background: var(--track); border-radius: 99px; overflow: hidden; }
 .runbar-track i { display: block; height: 100%; background: var(--brand); transition: width 0.3s; border-radius: 99px; }
 
 /* ---- 通知条：固定在顶栏下方，单独一层 ---- */
@@ -219,7 +232,7 @@ body {
   display: inline-flex; align-items: center; gap: 5px;
 }
 .chip:hover { background: var(--surface-hover); }
-.chip.on { background: var(--brand-soft); border-color: var(--brand-border); color: #174ea6; font-weight: 500; }
+.chip.on { background: var(--brand-soft); border-color: var(--brand-border); color: var(--brand-strong); font-weight: 500; }
 .chip i { width: 6px; height: 6px; border-radius: 99px; display: block; }
 .chip .c { font-variant-numeric: tabular-nums; opacity: 0.7; font-size: 10.5px; }
 
@@ -234,14 +247,14 @@ body {
   height: 24px; box-sizing: border-box; overflow: hidden;
 }
 .trow:hover { background: rgba(26, 115, 232, 0.08); }
-.trow.sel { background: var(--brand); color: #fff; }
+.trow.sel { background: var(--brand); color: var(--on-fill); }
 .trow.sel .tcount, .trow.sel .tpath { color: rgba(255, 255, 255, 0.82); }
 .trow.dir { font-weight: 500; }
 .twist {
   width: 14px; height: 14px; flex-shrink: 0; display: grid; place-items: center;
   color: var(--text-3); font-size: 9px; transition: transform 0.12s;
 }
-.trow.sel .twist { color: #fff; }
+.trow.sel .twist { color: var(--on-fill); }
 .twist.open { transform: rotate(90deg); }
 .ticon { flex-shrink: 0; opacity: 0.75; display: grid; place-items: center; }
 .trow.sel .ticon { opacity: 1; }
@@ -271,7 +284,7 @@ body {
   border: 1px solid transparent;
 }
 .score-pill.good { background: var(--green-bg); color: var(--green-strong); border-color: var(--green-border); }
-.score-pill.mid { background: var(--amber-bg); color: #8a4b00; border-color: var(--amber-border); }
+.score-pill.mid { background: var(--amber-bg); color: var(--amber-strong); border-color: var(--amber-border); }
 .score-pill.bad { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
 .score-pill.none { background: var(--surface-3); color: var(--text-2); border-color: var(--border); }
 
@@ -280,9 +293,9 @@ body {
   border: 1px solid transparent; white-space: nowrap; font-weight: 500;
 }
 .badge.trusted { background: var(--green-bg); color: var(--green-strong); border-color: var(--green-border); }
-.badge.need_review { background: var(--amber-bg); color: #8a4b00; border-color: var(--amber-border); }
+.badge.need_review { background: var(--amber-bg); color: var(--amber-strong); border-color: var(--amber-border); }
 .badge.diff_big { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
-.badge.rejected { background: #eceef2; color: var(--text-2); border-color: var(--border-strong); }
+.badge.rejected { background: var(--neutral-bg); color: var(--text-2); border-color: var(--border-strong); }
 .badge.unreviewed { background: var(--surface-3); color: var(--text-2); border-color: var(--border); }
 
 /* ---- 工具条 ---- */
@@ -305,7 +318,7 @@ body {
 .seg { display: inline-flex; border: 1px solid var(--border-strong); border-radius: var(--r); overflow: hidden; background: var(--surface); }
 .seg button { border: none; border-radius: 0; padding: 5px 11px; font-size: 12.5px; }
 .seg button + button { border-left: 1px solid var(--border); }
-.seg button.on { background: var(--brand-soft); color: #174ea6; font-weight: 500; }
+.seg button.on { background: var(--brand-soft); color: var(--brand-strong); font-weight: 500; }
 
 .legend { display: flex; align-items: center; gap: 11px; font-size: 11.5px; color: var(--text-2); }
 .legend span { display: inline-flex; align-items: center; gap: 4px; }
@@ -365,7 +378,7 @@ body {
 .pv-stage {
   flex: 1; overflow: auto; min-height: 0; padding: 12px;
   display: flex; align-items: flex-start;
-  background: #eceff4;
+  background: var(--canvas);
   /* 滚动到底/顶时给翻页留出缓冲，避免最后一页反复触发 */
   overscroll-behavior: contain;
   /* 加载角标要相对本容器定位 */
@@ -404,7 +417,7 @@ body {
 .srcline .no { width: 46px; flex-shrink: 0; text-align: right; padding: 1px 7px; color: var(--text-3); background: var(--surface-3); border-right: 1px solid var(--border); user-select: none; font-size: 11px; }
 .srcline .tx { flex: 1; padding: 1px 9px; white-space: pre-wrap; word-break: break-word; }
 .srcline.match .tx { background: var(--green-bg); }
-.srcline.match .no { background: #f1f8f3; }
+.srcline.match .no { background: var(--green-soft); }
 .srcline.changed .tx, .srcline.src_only .tx { background: var(--red-bg); }
 .srcline.unmatched .tx { background: var(--amber-bg); }
 
@@ -429,7 +442,7 @@ body {
 }
 .mdline .pg:hover { color: var(--brand); cursor: pointer; }
 .mdline.match .tx { background: var(--green-bg); }
-.mdline.match .no { background: #f1f8f3; }
+.mdline.match .no { background: var(--green-soft); }
 .mdline.changed .tx { background: var(--amber-bg); }
 .mdline.md_only .tx { background: var(--red-bg); }
 .mdline.unmatched .tx { background: transparent; }
@@ -445,11 +458,11 @@ body {
    造成 padding/阴影不一致。裁决控件上移到工具栏后，这里只保留按钮样式。 */
 .vbtn { font-weight: 600; min-width: 84px; }
 .vbtn.ok { color: var(--green-strong); border-color: var(--green-border); background: var(--green-bg); }
-.vbtn.ok.sel { background: var(--green-strong); color: #fff; border-color: var(--green-strong); }
+.vbtn.ok.sel { background: var(--green-strong); color: var(--on-fill); border-color: var(--green-strong); }
 .vbtn.diff { color: var(--red); border-color: var(--red-border); background: var(--red-bg); }
-.vbtn.diff.sel { background: var(--red); color: #fff; border-color: var(--red); }
+.vbtn.diff.sel { background: var(--red); color: var(--on-fill); border-color: var(--red); }
 .vbtn.rej { color: var(--text-2); border-color: var(--border-strong); background: var(--surface-3); }
-.vbtn.rej.sel { background: var(--text-2); color: #fff; border-color: var(--text-2); }
+.vbtn.rej.sel { background: var(--text-2); color: var(--on-fill); border-color: var(--text-2); }
 /* 选中态除了填色还要有非颜色线索（描边加粗），色觉障碍用户也能分辨 */
 .vbtn.sel { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18); }
 
@@ -535,8 +548,8 @@ body {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 ::-webkit-scrollbar { width: 11px; height: 11px; }
-::-webkit-scrollbar-thumb { background: #ccd2dd; border-radius: 99px; border: 3px solid transparent; background-clip: content-box; }
-::-webkit-scrollbar-thumb:hover { background: #b3bbc9; background-clip: content-box; }
+::-webkit-scrollbar-thumb { background: var(--scroll); border-radius: 99px; border: 3px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--scroll-hover); background-clip: content-box; }
 ::-webkit-scrollbar-track { background: transparent; }
 
 /* ==========================================================================
@@ -553,7 +566,7 @@ body {
   flex-shrink: 0; min-width: auto; max-width: none; overflow: visible;
 }
 .langsw button + button { border-left: 1px solid var(--border); }
-.langsw button.on { background: var(--brand); color: #fff; font-weight: 600; }
+.langsw button.on { background: var(--brand); color: var(--on-fill); font-weight: 600; }
 
 /* 顶栏在窄屏时横向滚动，而不是把按钮文字挤到重叠 */
 .header { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
@@ -578,10 +591,10 @@ body {
   width: 13px; height: 13px; flex-shrink: 0;
   border: 1px solid var(--border-strong); border-radius: 3px;
   background: var(--surface); display: grid; place-items: center;
-  font-size: 9px; line-height: 1; color: #fff; cursor: pointer;
+  font-size: 9px; line-height: 1; color: var(--on-fill); cursor: pointer;
 }
 .tcheck.on { background: var(--brand); border-color: var(--brand); }
-.tcheck.half { background: var(--brand-border); border-color: var(--brand-border); color: #fff; }
+.tcheck.half { background: var(--brand-border); border-color: var(--brand-border); color: var(--on-fill); }
 .tcheck:hover { border-color: var(--brand); }
 
 .tstatebar { display: inline-flex; gap: 2px; flex-shrink: 0; }
@@ -600,16 +613,16 @@ body {
 .tree-file.sel,
 .tree-file.sel.picked {
   background: var(--brand);
-  color: #fff;
+  color: var(--on-fill);
 }
 .tree-file.sel .tname,
 .tree-file.sel .tcount,
-.tree-file.sel .tpath { color: #fff; }
+.tree-file.sel .tpath { color: var(--on-fill); }
 .tree-file.sel.picked { background: var(--brand-hover); }
 /* 勾选框在深色底上要反色，否则蓝底蓝框同样看不见 */
 .tree-file.sel .tcheck { border-color: rgba(255, 255, 255, 0.75); background: rgba(255, 255, 255, 0.16); }
-.tree-file.sel .tcheck.on { background: #fff; border-color: #fff; color: var(--brand); }
-.tree-file.sel .ticon, .tree-file.sel .twist { color: #fff; opacity: 1; }
+.tree-file.sel .tcheck.on { background: var(--on-fill); border-color: var(--on-fill); color: var(--brand); }
+.tree-file.sel .ticon, .tree-file.sel .twist { color: var(--on-fill); opacity: 1; }
 /* 状态圆点在深蓝底上用白边勾出轮廓，保持「不同状态不同颜色」可辨识 */
 .tree-file.sel .tdot { box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.9); }
 
@@ -711,7 +724,7 @@ button.stat {
   border-right: 1px solid var(--border); max-width: none; overflow: visible;
 }
 button.stat:hover { background: rgba(26, 115, 232, 0.06); }
-button.stat.on { background: #fff; box-shadow: inset 0 0 0 1px var(--brand-border); }
+button.stat.on { background: var(--surface); box-shadow: inset 0 0 0 1px var(--brand-border); }
 
 /* ---- 上传按钮（包一层 label，input 隐藏） ---- */
 .btn.upload { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
@@ -731,3 +744,18 @@ html[lang="en"] .brand-text b { font-size: 13px; }
 
 /* The carried-over review screen is light-only: keep its own palette inside a dark shell. */
 .legacy-review { color: var(--text); background: var(--bg); color-scheme: light; }
+/* Dark mode for the review screen (follows the app theme). Values chosen to match the app's
+   dark tokens; fills are light enough that dark text on them (--on-fill) passes 4.5:1. */
+:root[data-theme="dark"] .legacy-review {
+  color-scheme: dark;
+  --bg: #020617; --surface: #0f172a; --surface-2: #1e293b; --surface-3: #111c33; --surface-hover: #1e293b;
+  --surface-active: #273449; --border: #334155; --border-strong: #475569; --border-hover: #64748b;
+  --text: #f1f5f9; --text-2: #94a3b8; --text-3: #8492a6;
+  --brand: #60a5fa; --brand-hover: #93c5fd; --brand-soft: #172554; --brand-border: #1e40af; --brand-strong: #bfdbfe;
+  --green: #4ade80; --green-bg: #052e16; --green-border: #166534; --green-strong: #4ade80; --green-soft: #0b2a17;
+  --red: #f87171; --red-bg: #2b0b0b; --red-border: #7f1d1d;
+  --amber: #facc15; --amber-bg: #2a1f05; --amber-border: #854d0e; --amber-strong: #fde68a;
+  --on-fill: #020617; --track: #334155; --neutral-bg: #1e293b; --canvas: #1e293b;
+  --scroll: #334155; --scroll-hover: #475569;
+  --shadow-1: 0 1px 2px rgba(0,0,0,.4); --shadow-2: 0 4px 12px rgba(0,0,0,.5); --shadow-3: 0 12px 40px rgba(0,0,0,.6);
+}

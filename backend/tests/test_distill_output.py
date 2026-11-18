@@ -117,3 +117,12 @@ def test_small_diagonal_watermark_is_not_content(tmp_path):
     assert res["verdict"] == "PASS", res["report"]
     body = open(os.path.join(out, res["out_dir"]), encoding="utf-8").read()
     assert "2400 mm" in body and "COMMENT" not in body.split("---", 2)[2]
+
+
+def test_symbol_only_titles_get_a_readable_name():
+    from app.distill.run import readable_title
+    assert readable_title("Part F3 * * * * *") == "Part F3 (untitled)"
+    assert readable_title("Part F3 \* \* \*") == "Part F3 (untitled)"
+    assert readable_title("* * *") == "(untitled)"
+    assert readable_title("Part D2 Provision for escape") == "Part D2 Provision for escape"
+    assert readable_title("Front matter") == "Front matter"

@@ -122,6 +122,19 @@ test.describe("review screen", () => {
     await page.getByLabel("语言").selectOption("en");
     await expect(page.locator(".legacy-review .statsbar")).not.toContainText(/[一-鿿]/);
   });
+
+  test("follows the dark theme and stays accessible in it", async ({ page }) => {
+    await login(page, "reviewer");
+    await page.goto("/review");
+    await expect(page.locator(".legacy-review .header")).toBeVisible({ timeout: 15_000 });
+    await page.getByLabel("Theme").selectOption("dark");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    const bg = await page.locator(".legacy-review").evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(bg).toBe("rgb(2, 6, 23)");                                  // dark surface, not the light one
+    const r = await new AxeBuilder({ page }).include(".legacy-review").withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+    const found = r.violations.flatMap((v) => v.nodes.map((n) => `${v.id} ${n.target.join(" ")}: ${n.any[0]?.message ?? v.help}`));
+    expect(found).toEqual([]);
+  });
 });
 
 test.describe("bilingual", () => {
