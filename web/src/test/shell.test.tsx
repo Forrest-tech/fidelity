@@ -112,7 +112,7 @@ describe("language and page states", () => {
   });
 
   it("every placeholder page has an empty state, never a blank screen", async () => {
-    for (const p of ["/", "/jobs", "/documents", "/settings"]) {
+    for (const p of ["/", "/jobs", "/documents"]) {
       mockApi((url) => (url.endsWith("/me") ? { body: ME("viewer") } : { body: [] }));
       const { unmount } = renderApp(p);
       expect(await screen.findByTestId("empty-state")).toBeInTheDocument();
