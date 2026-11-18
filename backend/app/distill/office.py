@@ -99,12 +99,20 @@ def distill_any(path, rel_path, out_root, source_prefix, cache_dir, log=print, p
     from .triage import triage_pdf
     if path.lower().endswith(IMAGE_EXT):
         return distill_scan(path, rel_path, out_root, source_prefix, cache_dir, log=log)
-    if path.lower().endswith(".pdf") and triage_pdf(path)["class"] == "scan":
-        return distill_scan(path, rel_path, out_root, source_prefix, cache_dir, log=log)
+    if path.lower().endswith(".dxf"):
+        from .drawing import distill_drawing
+        return distill_drawing(path, rel_path, out_root, source_prefix, cache_dir, log=log)
+    if path.lower().endswith(".pdf"):
+        cls = triage_pdf(path)["class"]
+        if cls == "scan":
+            return distill_scan(path, rel_path, out_root, source_prefix, cache_dir, log=log)
+        if cls == "drawing":
+            from .drawing import distill_drawing
+            return distill_drawing(path, rel_path, out_root, source_prefix, cache_dir, log=log)
     if path.lower().endswith(".pdf"):
         return R.distill_pdf(path, rel_path, out_root, source_prefix, cache_dir, log=log,
                              publish_protected=publish_protected)
     return distill_document(path, rel_path, out_root, source_prefix, cache_dir, log=log)
 
 
-SUPPORTED = (".pdf", ".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp") + tuple(F.EXTRACTORS)
+SUPPORTED = (".pdf", ".dxf", ".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp") + tuple(F.EXTRACTORS)

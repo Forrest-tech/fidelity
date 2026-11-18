@@ -38,6 +38,43 @@ def instr_flag(body: str) -> bool:
     return bool(scan_instructions(body))
 
 
+VISUAL_SAMPLES = int(os.environ.get("FIDELITY_VISUAL_SAMPLES", "3"))
+VISUAL_MIN_RECALL = 0.80     # a correct text layer scores ~0.95 against OCR; a broken one far lower
+
+
+def visual_check(pdf_path, page_count, log=print, samples=None):
+    """Spec 6.4 'visual cross-check': render a sample of pages, OCR them and compare with the text
+    layer. Catches a text layer that does not match what is printed (wrong font encoding, hidden text)."""
+    n = VISUAL_SAMPLES if samples is None else samples
+    if n <= 0:
+        return {"ok": True, "skipped": "disabled"}
+    from . import ocr as O
+    from .benchmark import char_recall
+    eng = O.available_engines()[:1]
+    if not eng:
+        return {"ok": True, "skipped": "no OCR engine installed"}
+    import pymupdf
+    doc = pymupdf.open(pdf_path)
+    try:
+        cand = [i for i in range(page_count) if len(doc[i].get_text().strip()) >= 200]
+        if not cand:
+            return {"ok": True, "skipped": "no text-rich pages"}
+        step = max(1, len(cand) // n)
+        pick = cand[::step][:n]
+        rows = []
+        for i in pick:
+            truth = doc[i].get_text()
+            img = O.render_page(pdf_path, i, dpi=150)
+            text, conf = eng[0].read(img)
+            rows.append({"page": i + 1, "recall": round(char_recall(truth, text), 4), "ocr_conf": round(conf, 3)})
+            log(f"  visual check p.{i + 1}: {rows[-1]['recall']}")
+    finally:
+        doc.close()
+    low = [r for r in rows if r["recall"] < VISUAL_MIN_RECALL]
+    return {"ok": not low, "engine": eng[0].name, "threshold": VISUAL_MIN_RECALL, "sampled": rows,
+            "mismatched_pages": [r["page"] for r in low]}
+
+
 def edition_status(status: str) -> str:
     s = status.lower()
     return "draft" if s.startswith("draft") else ("superseded" if "superseded" in s else "published")
@@ -270,6 +307,9 @@ def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=prin
     h_after = dropbox_content_hash(pdf_path)
     rep["source_unchanged"] = {"ok": h_before == h_after, "content_hash": h_before}
     if not rep["source_unchanged"]["ok"]:
+        rep["status"] = "FAIL"
+    rep["visual"] = visual_check(pdf_path, len(pages), log)
+    if not rep["visual"]["ok"]:
         rep["status"] = "FAIL"
     rep["triage"] = tri
     rep["instruction_like"] = {"count": len(instr), "examples": instr[:20],
