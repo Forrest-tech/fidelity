@@ -30,7 +30,9 @@ jobs:
         working-directory: backend
         env:
           PYTHONUTF8: "1"
-        run: python scripts/ocr_benchmark.py --synthetic --out ocr-benchmark/synthetic
+        run: |
+          python scripts/ocr_benchmark.py --synthetic --out ocr-benchmark/synthetic
+          cat ocr-benchmark/synthetic.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
           name: ocr-benchmark
