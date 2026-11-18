@@ -116,5 +116,18 @@ def test_visual_check_catches_a_wrong_text_layer(tmp_path):
     assert not v["ok"] and v["mismatched_pages"] == [1]
 
 
+@needs_ocr
+def test_visual_check_every_page(tmp_path):
+    path = str(tmp_path / "three.pdf")
+    doc = pymupdf.open()
+    for _ in range(3):
+        pg = doc.new_page()
+        for k, t in enumerate(LINES * 2):
+            pg.insert_text((60, 80 + k * 24), t, fontsize=13)
+    doc.save(path)
+    v = R.visual_check(path, 3, log=lambda *_: None, samples=10 ** 9)      # what FIDELITY_VISUAL_SAMPLES=all sets
+    assert v["ok"] and [r["page"] for r in v["sampled"]] == [1, 2, 3]
+
+
 def test_visual_check_can_be_disabled():
     assert R.visual_check("unused.pdf", 3, samples=0)["skipped"] == "disabled"

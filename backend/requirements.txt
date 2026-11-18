@@ -60,3 +60,7 @@ pytesseract>=0.3.13
 # --- Adapter packs (Phase 5): template rendering and owner rules ---
 jinja2>=3.1
 pyyaml>=6.0
+
+# --- Server database (Phase 8): PostgreSQL drivers; SQLite stays the default ---
+psycopg[binary]>=3.2
+asyncpg>=0.29

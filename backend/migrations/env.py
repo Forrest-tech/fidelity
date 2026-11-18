@@ -6,7 +6,7 @@ from app.auth import models  # noqa: F401  (register tables)
 
 config = context.config
 # Alembic runs synchronously; strip the async driver from the URL.
-URL = orm.DB_URL.replace("+aiosqlite", "").replace("+asyncpg", "")
+URL = orm.DB_URL.replace("+aiosqlite", "").replace("+asyncpg", "+psycopg")   # psycopg 3 (sync)
 target_metadata = orm.Base.metadata
 
 

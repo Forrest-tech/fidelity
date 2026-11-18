@@ -14,3 +14,21 @@ os.environ.setdefault("FIDELITY_DB_URL", "sqlite+aiosqlite:///" + os.path.join(_
 os.environ.setdefault("FIDELITY_SECRET", "test-secret-test-secret-test-secret-123")
 os.environ.setdefault("FIDELITY_VISUAL_SAMPLES", "0")  # the visual check has its own tests
 os.environ.setdefault("FIDELITY_GLOSSARY", os.path.join(_TMP, "no-glossary.json"))  # tests pass their own
+
+
+def _reset_postgres():
+    """Running the suite on PostgreSQL (Phase 8): start from an empty schema. Refuses any database
+    whose name does not end in _test, so a real database can never be wiped by the tests."""
+    urls = {u for u in (os.environ.get("FIDELITY_DB_URL", ""), os.environ.get("FIDELITY_TRUST_URL", ""))
+            if u.startswith("postgres")}
+    for url in urls:
+        plain = url.replace("+asyncpg", "").replace("+psycopg", "")
+        if not plain.rsplit("/", 1)[-1].split("?")[0].endswith("_test"):
+            raise RuntimeError("refusing to run tests on a PostgreSQL database not named *_test: " + plain.rsplit("@", 1)[-1])
+        import psycopg
+        with psycopg.connect(plain, autocommit=True) as con:
+            con.execute("DROP SCHEMA public CASCADE")
+            con.execute("CREATE SCHEMA public")
+
+
+_reset_postgres()

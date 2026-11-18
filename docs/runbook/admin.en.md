@@ -87,6 +87,17 @@ facts (editions, drafts, counts) are generated — never type them by hand.
 `python scripts/measure_tokens.py --library <local copy> --out ../docs/benchmarks/token-cost` — file
 sizes, listing cost, share inside the 10k–30k target.
 
+## Server database (PostgreSQL)
+SQLite files under `data/` are the default. On a server, point both databases at PostgreSQL 16:
+```
+FIDELITY_DB_URL=postgresql+asyncpg://fidelity:<password>@<host>:5432/fidelity      # users, audit log
+FIDELITY_TRUST_URL=postgresql://fidelity:<password>@<host>:5432/fidelity           # jobs, review decisions
+```
+The schema is created on first start (Alembic for users/audit; the job tables are created if missing).
+`FIDELITY_DB_POOL=1` turns connection pooling on for a busy server. CI runs the whole test suite on
+PostgreSQL on every change (`backend-tests-postgres`). To run it yourself, use a database whose name ends
+in `_test` — the tests empty it first and refuse any other name.
+
 ## Backups
 Back up `data/fidelity.db` (users, audit log), `data/trust.db` (jobs) and `data/dropbox_auth.json`
 (keep it private). Published Markdown can always be regenerated from the source.
