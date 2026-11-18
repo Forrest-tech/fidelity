@@ -45,6 +45,9 @@ jobs:
       - name: Type-check and build
         working-directory: web
         run: npm run build
+      - name: Lighthouse (performance, accessibility, best practices)
+        working-directory: web
+        run: npx --yes @lhci/cli@0.14.0 autorun
 
   e2e:
     name: e2e-a11y-responsive
