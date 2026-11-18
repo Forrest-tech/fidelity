@@ -185,7 +185,7 @@ test.describe("visual regression", () => {
     test.skip(info.project.name !== "desktop", "baselines are kept for the desktop size only");
     // Baselines are made on Linux in CI (spec section 9). Until they are committed for this
     // platform, record the current screens as an artifact instead of failing.
-    if (!fs.existsSync(info.snapshotPath("login.png"))) {
+    if (!fs.existsSync(info.snapshotPath("login.png")) && info.config.updateSnapshots !== "all") {
       await page.goto("/login");
       await page.screenshot({ path: info.outputPath("login.png") });
       await login(page, "reviewer");
