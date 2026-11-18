@@ -11,7 +11,7 @@ export function Button({
   const v = {
     primary: "bg-primary text-primary-fg hover:opacity-90",
     ghost: "bg-transparent text-fg hover:bg-muted border border-border",
-    danger: "bg-danger text-white hover:opacity-90",
+    danger: "bg-danger text-primary-fg hover:opacity-90", // dark text on the lighter red in dark mode
   }[variant];
   return (
     <button

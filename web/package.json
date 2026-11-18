@@ -8,7 +8,10 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build -o storybook-static",
+    "check-stories": "playwright test -c playwright.storybook.config.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.108.0",
@@ -22,6 +25,10 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "1.49",
+    "@storybook/addon-a11y": "8.6",
+    "@storybook/addon-essentials": "8.6",
+    "@storybook/react": "8.6",
+    "@storybook/react-vite": "8.6",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.12",
@@ -32,6 +39,7 @@
     "autoprefixer": "^10.6.2",
     "jsdom": "^29.1.1",
     "postcss": "^8.5.33",
+    "storybook": "8.6",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.6.3",
     "vite": "^5.4.11",

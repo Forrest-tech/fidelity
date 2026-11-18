@@ -48,6 +48,14 @@ jobs:
       - name: Lighthouse (performance, accessibility, best practices)
         working-directory: web
         run: npx --yes @lhci/cli@0.14.0 autorun
+      - name: Storybook - every component story passes axe in both themes and languages
+        working-directory: web
+        env:
+          PYTHON: python
+        run: |
+          npm run build-storybook
+          npx playwright install --with-deps chromium
+          npm run check-stories
 
   e2e:
     name: e2e-a11y-responsive
