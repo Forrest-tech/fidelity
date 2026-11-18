@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "./auth/AuthProvider";
@@ -12,7 +13,8 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { SourcesPage } from "./pages/SourcesPage";
 import { UsersPage } from "./pages/UsersPage";
 import { LangProvider } from "./i18n";
-import ReviewLegacy from "./pages/ReviewLegacy";
+// The review screen is large: load it only when opened.
+const ReviewLegacy = lazy(() => import("./pages/ReviewLegacy"));
 
 /** Every page except /login requires a signed-in user (optionally a specific role). */
 function RequireAuth({ roles, children }: { roles?: Role[]; children: JSX.Element }) {
@@ -47,7 +49,9 @@ export function AppRoutes() {
             <LangProvider>
               {/* legacy element styles (buttons, inputs) only apply inside this wrapper */}
               <div className="legacy-review h-full">
-                <ReviewLegacy />
+                <Suspense fallback={<Loading />}>
+                  <ReviewLegacy />
+                </Suspense>
               </div>
             </LangProvider>
           }
