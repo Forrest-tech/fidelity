@@ -48,6 +48,7 @@ def list_jobs(status: str = "", kind: str = "", limit: int = 100):
         args.append(kind + "%")
     q += " ORDER BY created_at DESC LIMIT ?"
     args.append(limit)
+    db.init_trust()      # idempotent; the table may not exist on a fresh install
     con = db.trust_rw()
     try:
         return [dict(r) for r in con.execute(q, args).fetchall()]
@@ -65,6 +66,7 @@ def list_documents(sid: str = "", verdict: str = "", limit: int = 500):
 
 @router.get("/overview")
 def overview():
+    db.init_trust()
     con = db.trust_rw()
     try:
         jobs = Counter(r["status"] for r in con.execute("SELECT status FROM job WHERE kind LIKE 'distill%'").fetchall())
