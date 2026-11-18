@@ -36,6 +36,32 @@ def front_matter(path: str) -> dict:
     return out
 
 
+_RANGE = re.compile(r"\[([A-Z][A-Z0-9]*)(?:–([A-Z][A-Z0-9]*))?\]")
+_PAGES = re.compile(r" p(\d+)(?:-(\d+))?\.md$")
+
+
+def folder_map(doc_path: str, files: list) -> list:
+    """Sub-folders of a chapter-folder document with the clause and page range each covers, read
+    from the chapter file names, e.g. ('10 Section D Access and egress/', 'D1O1', 'S15C6', 212, 267, 7)."""
+    groups = {}
+    for f in files:
+        rest = f[len(doc_path):]
+        sub = rest.split("/")[0] + "/" if "/" in rest else ""
+        g = groups.setdefault(sub, {"first": "", "last": "", "p0": None, "p1": None, "n": 0})
+        g["n"] += 1
+        name = rest.split("/")[-1]
+        m = _RANGE.search(name)
+        if m:
+            g["first"] = g["first"] or m.group(1)
+            g["last"] = m.group(2) or m.group(1)
+        p = _PAGES.search(name)
+        if p:
+            a, b = int(p.group(1)), int(p.group(2) or p.group(1))
+            g["p0"] = a if g["p0"] is None else min(g["p0"], a)
+            g["p1"] = b if g["p1"] is None else max(g["p1"], b)
+    return [{"folder": k, **v} for k, v in sorted(groups.items())]
+
+
 def _flags(fm: dict) -> set:
     return {f.strip() for f in fm.get("flags", "").strip("[]").split(",") if f.strip()}
 
@@ -78,7 +104,8 @@ def scan(root: str) -> dict:
             path = (src_dir + "/" if src_dir else "") + rest.split("/")[0] + "/"
             layout = "folder"
         out_docs.append({**d, "source_relative_path": key, "path": path, "layout": layout,
-                         "n_files": len(d["files"]), "flags": sorted(d["flags"]), "audit": sorted(d["audit"])})
+                         "n_files": len(d["files"]), "flags": sorted(d["flags"]), "audit": sorted(d["audit"]),
+                         "map": folder_map(path, sorted(d["files"])) if layout == "folder" else []})
     return {"files": files, "documents": out_docs, "top_folders": dict(sorted(top.items()))}
 
 

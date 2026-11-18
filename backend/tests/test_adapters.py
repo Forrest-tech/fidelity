@@ -79,6 +79,19 @@ def test_render_all_packs(tmp_path):
     assert json.loads((out / "build-report.json").read_text(encoding="utf-8"))["library_files"] == 5
 
 
+def test_library_map_lists_sub_folders_with_clause_and_page_ranges(tmp_path):
+    root = library(tmp_path)
+    lib = F.scan(root)
+    vol = next(d for d in lib["documents"] if d["layout"] == "folder")
+    assert vol["map"] == [{"folder": "10 Section D Access and egress/", "first": "D2D1", "last": "D2D23",
+                           "p0": 224, "p1": 254, "n": 2}]
+    out = tmp_path / "d"
+    B.render(root, str(out), ["grok"])
+    text = (out / "grok" / "au-compliance-kb.md").read_text(encoding="utf-8")
+    assert "- `10 Section D Access and egress/` — D2D1–D2D23 · p.224–254 · 2 files" in text
+    assert "Use the Library map" in text
+
+
 def test_only_requested_tools(tmp_path):
     rep = B.render(library(tmp_path), str(tmp_path / "d"), ["grok"])
     assert list(rep["packs"]) == ["grok"]

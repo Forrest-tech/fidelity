@@ -147,6 +147,19 @@ def _term_letters(c: S.Chunk) -> str:
     return letters[0] if letters[0] == letters[-1] else f"{letters[0]}–{letters[-1]}"
 
 
+_LEAD = re.compile(r"^((?:Part|Section|Schedule|Specification)\s+[A-Z0-9]+)\b(.*)$", re.S)
+
+
+def readable_title(t: str) -> str:
+    """A title that is only symbols ('Part F3 * * * * *' — a Part kept for numbering) becomes
+    'Part F3 (untitled)', so its file name still tells a reader what it is."""
+    m = _LEAD.match(t.strip())
+    head, rest = (m.group(1), m.group(2)) if m else ("", t)
+    if any(ch.isalnum() for ch in rest):
+        return t
+    return (head + " (untitled)").strip() if head else "(untitled)"
+
+
 def chunk_path(c: S.Chunk, l1_order: dict, doc_name: str = "") -> str:
     """Self-describing relative path inside the document folder — the folder and file
     names ARE the index (no auxiliary files):
@@ -160,6 +173,7 @@ def chunk_path(c: S.Chunk, l1_order: dict, doc_name: str = "") -> str:
         t = "Introduction" if c.intro else c.l1.title
     else:
         t = "Front matter"
+    t = readable_title(t)
     t = _safe(t, 64)          # fixed cap: keeps every path well under Windows/Dropbox limits
     ids = [e.clause_id for e in chunk_clauses(c) if e.clause_id]
     part = getattr(c, "part", None)

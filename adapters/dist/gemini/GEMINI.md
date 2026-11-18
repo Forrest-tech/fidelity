@@ -85,6 +85,69 @@ If the question is not in English, translate it to English technical terms first
 
 **Documents with unreadable formulas (rule 4.1 applies)**: NCC 2025 Volume One; NCC 2025 Volume Three; NCC 2025 Volume Two; NCC 2025 preview draft – Volume One.
 
+**Library map** — chapter-folder documents, their sub-folders and the clauses and pages each covers.
+Go straight to the sub-folder that covers the clause or page; list only that sub-folder, then fetch one file.
+
+`2025/NCC 2025 Volume One/`
+- `(document root)` — p.1–68 · 14 files
+- `07 Section A Governing Requirements/` — A1G1–S3C6 · p.69–122 · 11 files
+- `08 Section B Structure/` — B1O1–S4C2 · p.123–136 · 3 files
+- `09 Section C Fire resistance/` — C1O1–S13C7 · p.137–211 · 14 files
+- `10 Section D Access and egress/` — D1O1–S16C6 · p.212–270 · 8 files
+- `11 Section E Services and equipment/` — E1O1–S25C6 · p.271–334 · 14 files
+- `12 Section F Health and amenity/` — F1O1–S29C3 · p.335–424 · 13 files
+- `13 Section G Ancillary provisions/` — G1O1–S43C14 · p.425–465 · 11 files
+- `14 Section I Special use buildings/` — I1D1–S32C6 · p.466–479 · 5 files
+- `15 Section J Energy efficiency/` — J1O1–S48C2 · p.480–609 · 23 files
+- `16 Schedule 1 Definitions/` — p.610–652 · 7 files
+- `17 Schedule 2 Referenced documents/` — p.652–669 · 2 files
+- `18 Schedule 3 Commonwealth of Australia/` — p.670–675 · 2 files
+- `19 Schedule 4 Australian Capital Territory/` — p.676–679 · 3 files
+- `20 Schedule 5 New South Wales/` — A2G2–J1V4 · p.680–762 · 18 files
+- `21 Schedule 6 Northern Territory/` — B1D4–G1D5 · p.763–784 · 10 files
+- `22 Schedule 7 Queensland/` — B1P3–J8D5 · p.785–795 · 8 files
+- `23 Schedule 8 South Australia/` — A6G7–I4D10 · p.796–832 · 16 files
+- `24 Schedule 9 Tasmania/` — A1G4–I17D2 · p.833–891 · 27 files
+- `25 Schedule 10 Victoria/` — A2G2–I4D2 · p.892–922 · 13 files
+- `26 Schedule 11 Western Australia/` — F9D1–I4D7 · p.923–937 · 10 files
+
+`2025/NCC 2025 Volume Three/`
+- `(document root)` — p.1–31 · 9 files
+- `07 Section A Governing requirements/` — A1G1–S3C6 · p.32–80 · 11 files
+- `08 Section B Water services/` — B1O1–B7D4 · p.81–130 · 8 files
+- `09 Section C Sanitary plumbing and drainage systems/` — C1O1–C3D7 · p.131–150 · 4 files
+- `10 Section D Excessive noise/` — D1O1–D1D3 · p.151–155 · 2 files
+- `11 Section E Facilities and ancillary additions/` — E1O1–E1D2 · p.155–157 · 2 files
+- `12 Schedule 1 Definitions/` — p.158–200 · 7 files
+- `13 Schedule 2 Referenced documents/` — p.200–217 · 2 files
+- `14 Schedule 3 Commonwealth of Australia/` — p.218–223 · 2 files
+- `15 Schedule 4 Australian Capital Territory/` — p.224–227 · 3 files
+- `16 Schedule 5 New South Wales/` — A2G2–C2D4 · p.228–257 · 9 files
+- `17 Schedule 6 Northern Territory/` — C2P2–D1D3 · p.258–265 · 6 files
+- `18 Schedule 7 Queensland/` — B1D2–B2D2 · p.266–271 · 6 files
+- `19 Schedule 8 South Australia/` — A6G7–C3D7 · p.272–285 · 8 files
+- `20 Schedule 9 Tasmania/` — A1G4–E4D3 · p.286–328 · 13 files
+- `21 Schedule 10 Victoria/` — A2G2–E4D2 · p.329–361 · 13 files
+- `22 Schedule 11 Western Australia/` — B2D5–C2D4 · p.362–372 · 7 files
+
+`2025/NCC 2025 Volume Two/`
+- `(document root)` — p.1–34 · 9 files
+- `07 Section A Governing requirements/` — A1G1–S3C6 · p.35–83 · 11 files
+- `08 Section H Class 1 and 10 buildings/` — H1O1–S44C4 · p.84–163 · 11 files
+- `09 Schedule 1 Definitions/` — p.164–206 · 7 files
+- `10 Schedule 2 Referenced documents/` — p.206–224 · 2 files
+- `11 Schedule 3 Commonwealth of Australia/` — p.224–226 · 2 files
+- `12 Schedule 4 Australian Capital Territory/` — p.227–230 · 3 files
+- `13 Schedule 5 New South Wales/` — A2G2–H7D4 · p.231–253 · 8 files
+- `14 Schedule 6 Northern Territory/` — H2P4–H6D2 · p.254–264 · 5 files
+- `15 Schedule 7 Queensland/` — H1P2–H7D4 · p.265–272 · 6 files
+- `16 Schedule 8 South Australia/` — A6G7–H10D4 · p.273–290 · 8 files
+- `17 Schedule 9 Tasmania/` — A1G4–H7D2 · p.291–300 · 6 files
+- `18 Schedule 10 Victoria/` — A2G2–H2D6 · p.301–317 · 6 files
+- `19 Schedule 11 Western Australia/` — H3D7–H10D2 · p.318–330 · 8 files
+
+Drafts use the same layout under their own folders (see Drafts held).
+
 **Useful starting points**
 - NCC 2025 Volume One (Class 2–9 buildings): `2025/NCC 2025 Volume One/` (chapter folder, 232 files)
 - NCC 2025 Volume Two (Class 1 and 10 buildings): `2025/NCC 2025 Volume Two/` (chapter folder, 92 files)

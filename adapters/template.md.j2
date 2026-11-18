@@ -73,10 +73,12 @@ Every source document is **either one file or one folder**, at the same place as
 {% if C -%}
 **Keep it cheap.** Dropbox search matches **file names**, not the text inside. Listing a folder costs about
 330 tokens per entry, so list a chapter folder **once**, choose by name, then fetch one file.
-1. **Find files**: several short searches with `path` = `<root>/{{ h.library_folder }}`: standard numbers (`3500.2`),
-   topic words (`floor waste`, `gully`), organisation names (`Sydney Water`), clause IDs, Part numbers (`Part D2`).
-2. If searches miss, list the relevant document folder and pick the chapter by name.
-3. If the question is not in English, translate it to English technical terms first.
+1. **Use the Library map (section 6) first**: it shows which sub-folder holds each clause range and page
+   range, so you can list that one sub-folder directly instead of the whole document folder.
+2. **Find files** otherwise: several short searches with `path` = `<root>/{{ h.library_folder }}`: standard numbers (`3500.2`),
+   topic words (`floor waste`, `gully`), organisation names (`Sydney Water`), Part numbers (`Part D2`).
+3. If searches miss, list the relevant document folder and pick the chapter by name.
+4. If the question is not in English, translate it to English technical terms first.
 {%- else -%}
 **Search inside files.** You can search the text directly, e.g. `rg -n "D2D13" "{{ h.library_folder }}"` or
 `rg -il "floor waste" "{{ h.library_folder }}"`; then read only the matching chapter file.
@@ -135,6 +137,18 @@ If the question is not in English, translate it to English technical terms first
 **Protected (metadata only — content not in the library)**: {% for d in f.protected %}{{ d.document }}{% if not loop.last %}; {% endif %}{% endfor %}.
 If asked about these, say the text is not in the knowledge base.
 {% endif %}
+{% if f.folders -%}
+**Library map** — chapter-folder documents, their sub-folders and the clauses and pages each covers.
+Go straight to the sub-folder that covers the clause or page; list only that sub-folder, then fetch one file.
+{% for d in f.folders if d.edition_status != 'draft' %}
+`{{ d.path }}`
+{% for g in d.map -%}
+- `{{ g.folder or '(document root)' }}` — {% if g.first %}{{ g.first }}{% if g.last != g.first %}–{{ g.last }}{% endif %} · {% endif %}{% if g.p0 %}p.{{ g.p0 }}{% if g.p1 != g.p0 %}–{{ g.p1 }}{% endif %}{% endif %} · {{ g.n }} files
+{% endfor %}
+{%- endfor %}
+Drafts use the same layout under their own folders (see Drafts held).
+
+{% endif -%}
 {% if starting_points -%}
 **Useful starting points**
 {% for s in starting_points -%}
