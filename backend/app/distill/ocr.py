@@ -11,6 +11,8 @@
 from __future__ import annotations
 
 import difflib
+import hashlib
+import os
 import re
 import shutil
 from dataclasses import dataclass, field
@@ -19,6 +21,40 @@ AGREE = 0.995          # share of words both engines read identically
 CONF = 0.90            # mean engine confidence
 RENDER_DPI = 300
 MAX_SIDE = 1400        # longest image side fed to an engine: measured best for RapidOCR, and fits a 4 GB machine
+
+# RapidOCR ships a Chinese recognition model; English documents need the English one (PP-OCRv3 en,
+# Apache-2.0). It is downloaded once by scripts/fetch_ocr_models.py, pinned by revision and SHA-256.
+_REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+MODEL_DIR = os.environ.get("FIDELITY_OCR_MODELS") or os.path.join(_REPO, "data", "models")
+EN_REC = {
+    "file": "en_PP-OCRv3_rec_infer.onnx",
+    "url": "https://huggingface.co/SWHL/RapidOCR/resolve/1cfba2e90fc938db55889873735088de210cc173/"
+           "PP-OCRv3/en_PP-OCRv3_rec_infer.onnx",
+    "sha256": "ef7abd8bd3629ae57ea2c28b425c1bd258a871b93fd2fe7c433946ade9b5d9ea",
+    "size": 8967018,
+}
+TESSERACT_WIN = (r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+                 os.path.expandvars(r"%LOCALAPPDATA%\Programs\Tesseract-OCR\tesseract.exe"))
+
+
+def sha256(path: str) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def en_rec_model() -> str | None:
+    """Path of the verified English recognition model, or None when it is missing or altered."""
+    p = os.path.join(MODEL_DIR, EN_REC["file"])
+    if os.path.isfile(p) and os.path.getsize(p) == EN_REC["size"] and sha256(p) == EN_REC["sha256"]:
+        return p
+    return None
+
+
+def tesseract_cmd() -> str | None:
+    return shutil.which("tesseract") or next((p for p in TESSERACT_WIN if os.path.isfile(p)), None)
 
 
 @dataclass
@@ -38,6 +74,7 @@ class PageOCR:
 class RapidOCREngine:
     name = "rapidocr"
     _eng = None
+    model = None           # "en" with the English recognition model, "ch" with the bundled default
 
     @classmethod
     def available(cls) -> bool:
@@ -51,7 +88,12 @@ class RapidOCREngine:
         import numpy as np
         if RapidOCREngine._eng is None:
             from rapidocr_onnxruntime import RapidOCR
-            RapidOCREngine._eng = RapidOCR()
+            en = en_rec_model()
+            # The 0/180 degree line classifier flips long upright lines and turns them into garbage
+            # (measured: one line per page lost). Upside-down scans still go to review: Tesseract disagrees.
+            kw = {"use_angle_cls": False}
+            RapidOCREngine._eng = RapidOCR(rec_model_path=en, **kw) if en else RapidOCR(**kw)
+            RapidOCREngine.model = "en" if en else "ch"
         res, _ = RapidOCREngine._eng(np.asarray(img.convert("RGB")))
         lines = []
         for item in res or []:
@@ -63,6 +105,7 @@ class RapidOCREngine:
 
 class TesseractEngine:
     name = "tesseract"
+    model = "eng"
 
     @classmethod
     def available(cls) -> bool:
@@ -70,11 +113,12 @@ class TesseractEngine:
             import pytesseract  # noqa: F401
         except Exception:
             return False
-        return shutil.which("tesseract") is not None
+        return tesseract_cmd() is not None
 
     def read(self, img):
         import pytesseract
-        d = pytesseract.image_to_data(img, lang="eng", config="--psm 3", output_type=pytesseract.Output.DICT)
+        pytesseract.pytesseract.tesseract_cmd = tesseract_cmd()
+        d =pytesseract.image_to_data(img, lang="eng", config="--psm 3", output_type=pytesseract.Output.DICT)
         words = {}
         for i, w in enumerate(d["text"]):
             if not w.strip() or float(d["conf"][i]) < 0:
@@ -116,8 +160,15 @@ def agreement(a: str, b: str):
         return 1.0, []
     sm = difflib.SequenceMatcher(None, wa, wb, autojunk=False)
     same = sum(bl.size for bl in sm.get_matching_blocks())
-    diffs = [(" ".join(wa[i1:i2]), " ".join(wb[j1:j2])) for op, i1, i2, j1, j2 in sm.get_opcodes() if op != "equal"]
-    return same / max(len(wa), len(wb)), diffs
+    diffs = []
+    for op, i1, i2, j1, j2 in sm.get_opcodes():
+        if op == "equal":
+            continue
+        if "".join(wa[i1:i2]) == "".join(wb[j1:j2]):    # same characters, only spacing differs ("25 m." / "25m.")
+            same += max(i2 - i1, j2 - j1)
+            continue
+        diffs.append((" ".join(wa[i1:i2]), " ".join(wb[j1:j2])))
+    return min(1.0, same / max(len(wa), len(wb))), diffs
 
 
 def decide(page: int, readings: dict, corrected: str, corrections: list) -> PageOCR:
