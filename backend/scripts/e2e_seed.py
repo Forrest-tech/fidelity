@@ -1,0 +1,41 @@
+"""Create the three test users for the browser end-to-end tests (fresh database each run).
+
+Run from backend/ with FIDELITY_DB_URL pointing at a throw-away database file.
+"""
+import asyncio
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+PW = "e2e-password-123"
+
+# fresh throw-away database every run
+os.makedirs(".e2e", exist_ok=True)
+for _f in (".e2e/e2e.db", ".e2e/e2e.db-wal", ".e2e/e2e.db-shm"):
+    if os.path.exists(_f):
+        os.remove(_f)
+
+
+async def main():
+    from app.migrate import upgrade
+    upgrade()
+    from fastapi_users.db import SQLAlchemyUserDatabase
+
+    from app.auth.models import Role, User
+    from app.auth.schemas import UserCreate
+    from app.auth.users import UserManager
+    from app.orm import SessionLocal
+
+    async with SessionLocal() as s:
+        mgr = UserManager(SQLAlchemyUserDatabase(s, User))
+        for role in Role:
+            try:
+                await mgr.create(UserCreate(email=f"{role.value}@example.com", password=PW, role=role, is_verified=True))
+            except Exception:
+                pass  # already exists
+    print("e2e users ready")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
