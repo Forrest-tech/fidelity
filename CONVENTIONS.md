@@ -21,5 +21,11 @@ For developers and AI sessions. The source of truth for requirements is `docs/PR
 ## Frontend (`web/`, Node 20)
 - `npm ci`, `npm run build` (type-check plus build). The UI is redesigned in Phase 3 with Chinese and English (react-i18next); do not add hard-coded user-facing strings to new code.
 
+## Web tests (`web/`)
+- `npm test` (Vitest unit tests), `npm run build` (type-check + build).
+- `npm run e2e` (Playwright: real backend, desktop/tablet/phone, accessibility, bilingual, visual). Set `PYTHON` to the venv python.
+- `npm run build-storybook && npm run check-stories` (every story through axe in light/dark and en/zh).
+- Visual baselines are Linux-only: run the "Update visual baselines" workflow on your branch to refresh them.
+
 ## Licences
 - CI publishes a licence inventory artifact. PyMuPDF is AGPL, accepted for internal use only; revisit before any external use.
