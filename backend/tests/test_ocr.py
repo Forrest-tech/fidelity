@@ -147,3 +147,38 @@ class Boom:
 def test_engine_crash_sends_page_to_review_not_the_run_down():
     r = O.ocr_image(None, 1, [Fake("a", TXT), Boom()])
     assert r.status == "review" and any("boom failed" in x for x in r.reasons)
+
+
+def test_english_model_is_used_only_when_its_hash_matches(tmp_path, monkeypatch):
+    monkeypatch.setattr(O, "MODEL_DIR", str(tmp_path))
+    assert O.en_rec_model() is None                                  # missing
+    (tmp_path / O.EN_REC["file"]).write_bytes(b"x" * O.EN_REC["size"])
+    assert O.en_rec_model() is None                                  # right size, wrong content
+
+
+def test_tesseract_found_in_standard_windows_folder(tmp_path, monkeypatch):
+    exe = tmp_path / "tesseract.exe"
+    exe.write_bytes(b"")
+    monkeypatch.setattr(O.shutil, "which", lambda _: None)
+    monkeypatch.setattr(O, "TESSERACT_WIN", (str(tmp_path / "nope.exe"), str(exe)))
+    assert O.tesseract_cmd() == str(exe)
+
+
+def test_capital_k_after_a_number_becomes_si_kilo():
+    out, log = correct_text("point load is 2.7 KN and 3.0 KPa; KN alone and Class K2 stay")
+    assert out == "point load is 2.7 kN and 3.0 kPa; KN alone and Class K2 stay"
+    assert [l["rule"] for l in log] == ["si_prefix_case", "si_prefix_case"]
+
+
+def test_spacing_only_differences_are_not_disagreements():
+    agree, diffs = O.agreement("above 25 m. and Ioad", "above 25m. and load")
+    assert diffs == [("Ioad", "load")] and 0.75 <= agree < 1.0
+
+
+def test_rapidocr_runs_without_the_angle_classifier():
+    if not O.RapidOCREngine.available():
+        pytest.skip("RapidOCR not installed")
+    from PIL import Image
+    O.RapidOCREngine._eng = None
+    O.RapidOCREngine().read(Image.new("L", (200, 60), 255))
+    assert O.RapidOCREngine._eng.use_angle_cls is False

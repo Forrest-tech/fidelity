@@ -104,7 +104,9 @@ def run(pdf_path: str, pages, engines=None, degradations=None, log=print) -> dic
             row["published_char_acc"] = round(char_accuracy(truth, res.text), 5)
             rows.append(row)
             log(f"  p{idx + 1} {dname}: {row['engines']} -> {res.status}")
-    return {"pdf": pdf_path, "engines": [e.name for e in engines], "rows": rows, "summary": summarize(rows)}
+    models = {e.name: getattr(e, "model", None) or "default" for e in engines}
+    return {"pdf": pdf_path, "engines": [e.name for e in engines], "models": models, "rows": rows,
+            "summary": summarize(rows)}
 
 
 def summarize(rows) -> dict:
@@ -124,7 +126,7 @@ def summarize(rows) -> dict:
 
 def to_markdown(result: dict) -> str:
     lines = ["# OCR synthetic-scan benchmark", "",
-             f"Engines: {', '.join(result['engines']) or 'none'}. Ground truth: text layer of `{result['pdf'].split('/')[-1].split(chr(92))[-1]}`.",
+             f"Engines: {', '.join(e + ' (' + result.get('models', {}).get(e, 'default') + ' model)' for e in result['engines']) or 'none'}. Ground truth: text layer of `{result['pdf'].split('/')[-1].split(chr(92))[-1]}`.",
              "", "| Degradation | Pages | " + " | ".join(f"{e}: accuracy / recall / numbers" for e in result["engines"])
              + " | Auto-accepted | Worst accepted page |", "|---|---|" + "---|" * len(result["engines"]) + "---|---|"]
     for d, s in result["summary"].items():
