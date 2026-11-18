@@ -95,10 +95,16 @@ def distill_document(path, rel_path, out_root, source_prefix, cache_dir, log=pri
 
 def distill_any(path, rel_path, out_root, source_prefix, cache_dir, log=print, publish_protected=False):
     """Entry point for every supported format."""
+    from .scan import IMAGE_EXT, distill_scan
+    from .triage import triage_pdf
+    if path.lower().endswith(IMAGE_EXT):
+        return distill_scan(path, rel_path, out_root, source_prefix, cache_dir, log=log)
+    if path.lower().endswith(".pdf") and triage_pdf(path)["class"] == "scan":
+        return distill_scan(path, rel_path, out_root, source_prefix, cache_dir, log=log)
     if path.lower().endswith(".pdf"):
         return R.distill_pdf(path, rel_path, out_root, source_prefix, cache_dir, log=log,
                              publish_protected=publish_protected)
     return distill_document(path, rel_path, out_root, source_prefix, cache_dir, log=log)
 
 
-SUPPORTED = (".pdf",) + tuple(F.EXTRACTORS)
+SUPPORTED = (".pdf", ".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp") + tuple(F.EXTRACTORS)

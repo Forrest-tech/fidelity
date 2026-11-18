@@ -1,0 +1,262 @@
+{
+ "pdf": "../data/work/src/2025/NCC 2025 Volume One.pdf",
+ "engines": [
+  "rapidocr"
+ ],
+ "rows": [
+  {
+   "page": 120,
+   "degradation": "clean",
+   "status": "review",
+   "agreement": null,
+   "engines": {
+    "rapidocr": {
+     "char_acc": 0.56891,
+     "char_recall": 0.96564,
+     "num_recall": 0.97826,
+     "conf": 0.9013
+    }
+   },
+   "published_char_acc": 0.56891
+  },
+  {
+   "page": 120,
+   "degradation": "skew",
+   "status": "review",
+   "agreement": null,
+   "engines": {
+    "rapidocr": {
+     "char_acc": 0.55129,
+     "char_recall": 0.84361,
+     "num_recall": 0.97826,
+     "conf": 0.9078
+    }
+   },
+   "published_char_acc": 0.55129
+  },
+  {
+   "page": 120,
+   "degradation": "blur",
+   "status": "review",
+   "agreement": null,
+   "engines": {
+    "rapidocr": {
+     "char_acc": 0.55058,
+     "char_recall": 0.93568,
+     "num_recall": 0.97826,
+     "conf": 0.9055
+    }
+   },
+   "published_char_acc": 0.55058
+  },
+  {
+   "page": 120,
+   "degradation": "noise",
+   "status": "review",
+   "agreement": null,
+   "engines": {
+    "rapidocr": {
+     "char_acc": 0.55023,
+     "char_recall": 0.92819,
+     "num_recall": 0.95652,
+     "conf": 0.9039
+    }
+   },
+   "published_char_acc": 0.55023
+  },
+  {
+   "page": 120,
+   "degradation": "low_res",
+   "status": "review",
+   "agreement": null,
+   "engines": {
+    "rapidocr": {
+     "char_acc": 0.54917,
+     "char_recall": 0.90485,
+     "num_recall": 0.97826,
+     "conf": 0.9013
+    }
+   },
+   "published_char_acc": 0.54917
+  },
+  {
+   "page": 120,
+   "degradation": "combined",
+   "status": "review",
+   "agreement": null,
+   "engines": {
+    "rapidocr": {
+     "char_acc": 0.55516,
+     "char_recall": 0.9978,
+     "num_recall": 1.0,
+     "conf": 0.896
+    }
+   },
+   "published_char_acc": 0.55516
+  },
+  {
+   "page": 450,
+   "degradation": "clean",
+   "status": "review",
+   "agreement": null,
+   "engines": {
+    "rapidocr": {
+     "char_acc": 0.89242,
+     "char_recall": 0.99911,
+     "num_recall": 1.0,
+     "conf": 0.8945
+    }
+   },
+   "published_char_acc": 0.89242
+  },
+  {
+   "page": 450,
+   "degradation": "skew",
+   "status": "review",
+   "agreement": null,
+   "engines": {
+    "rapidocr": {
+     "char_acc": 0.89386,
+     "char_recall": 0.99911,
+     "num_recall": 1.0,
+     "conf": 0.9063
+    }
+   },
+   "published_char_acc": 0.89386
+  },
+  {
+   "page": 450,
+   "degradation": "blur",
+   "status": "review",
+   "agreement": null,
+   "engines": {
+    "rapidocr": {
+     "char_acc": 0.91047,
+     "char_recall": 1.0,
+     "num_recall": 1.0,
+     "conf": 0.8962
+    }
+   },
+   "published_char_acc": 0.91047
+  },
+  {
+   "page": 450,
+   "degradation": "noise",
+   "status": "review",
+   "agreement": null,
+   "engines": {
+    "rapidocr": {
+     "char_acc": 0.82599,
+     "char_recall": 0.91563,
+     "num_recall": 0.9697,
+     "conf": 0.9052
+    }
+   },
+   "published_char_acc": 0.82599
+  },
+  {
+   "page": 450,
+   "degradation": "low_res",
+   "status": "review",
+   "agreement": null,
+   "engines": {
+    "rapidocr": {
+     "char_acc": 0.89242,
+     "char_recall": 1.0,
+     "num_recall": 1.0,
+     "conf": 0.9009
+    }
+   },
+   "published_char_acc": 0.89242
+  },
+  {
+   "page": 450,
+   "degradation": "combined",
+   "status": "review",
+   "agreement": null,
+   "engines": {
+    "rapidocr": {
+     "char_acc": 0.85776,
+     "char_recall": 0.95648,
+     "num_recall": 1.0,
+     "conf": 0.9009
+    }
+   },
+   "published_char_acc": 0.85776
+  }
+ ],
+ "summary": {
+  "blur": {
+   "pages": 2,
+   "engines": {
+    "rapidocr": {
+     "char_acc": 0.73052,
+     "char_recall": 0.96784,
+     "num_recall": 0.98913
+    }
+   },
+   "auto_accepted": 0,
+   "auto_accepted_min_char_acc": null
+  },
+  "clean": {
+   "pages": 2,
+   "engines": {
+    "rapidocr": {
+     "char_acc": 0.73067,
+     "char_recall": 0.98237,
+     "num_recall": 0.98913
+    }
+   },
+   "auto_accepted": 0,
+   "auto_accepted_min_char_acc": null
+  },
+  "combined": {
+   "pages": 2,
+   "engines": {
+    "rapidocr": {
+     "char_acc": 0.70646,
+     "char_recall": 0.97714,
+     "num_recall": 1.0
+    }
+   },
+   "auto_accepted": 0,
+   "auto_accepted_min_char_acc": null
+  },
+  "low_res": {
+   "pages": 2,
+   "engines": {
+    "rapidocr": {
+     "char_acc": 0.7208,
+     "char_recall": 0.95243,
+     "num_recall": 0.98913
+    }
+   },
+   "auto_accepted": 0,
+   "auto_accepted_min_char_acc": null
+  },
+  "noise": {
+   "pages": 2,
+   "engines": {
+    "rapidocr": {
+     "char_acc": 0.68811,
+     "char_recall": 0.92191,
+     "num_recall": 0.96311
+    }
+   },
+   "auto_accepted": 0,
+   "auto_accepted_min_char_acc": null
+  },
+  "skew": {
+   "pages": 2,
+   "engines": {
+    "rapidocr": {
+     "char_acc": 0.72257,
+     "char_recall": 0.92136,
+     "num_recall": 0.98913
+    }
+   },
+   "auto_accepted": 0,
+   "auto_accepted_min_char_acc": null
+  }
+ }
+}
