@@ -42,6 +42,7 @@ def main():
     ap.add_argument("--out", required=True, help="output path without extension (.md and .json are written)")
     ap.add_argument("--degradations", default="", help="comma separated subset of " + ",".join(B.DEGRADATIONS))
     a = ap.parse_args()
+    os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     if a.synthetic:
         a.pdf = make_synthetic(os.path.abspath(a.out) + ".source.pdf")
         a.pages = "1,2,3"
