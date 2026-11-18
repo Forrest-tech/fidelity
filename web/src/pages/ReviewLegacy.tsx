@@ -33,7 +33,7 @@ function loadNum(k: string, d: number, lo: number, hi: number) {
 }
 
 export default function ReviewLegacy() {
-  const [t, lang, setLang] = useI18n();
+  const [t] = useI18n(); // language comes from the application shell
 
   const [sources, setSources] = useState<Source[]>([]);
   const [sid, setSid] = useState("n2");
@@ -353,14 +353,6 @@ export default function ReviewLegacy() {
     <div className="app">
       {/* ---------- 顶栏 ---------- */}
       <header className="header">
-        <div className="brand">
-          <div className="brand-mark">F</div>
-          <div className="brand-text">
-            <b>{t("app.title")}</b>
-            <span>{t("app.subtitle")}</span>
-          </div>
-        </div>
-        <div className="divider" />
         <select value={sid} onChange={(e) => setSid(e.target.value)} title={t("src.label")}>
           {sources.map((s) => (
             <option key={s.id} value={s.id}>
@@ -418,16 +410,6 @@ export default function ReviewLegacy() {
           ))}
         </select>
         <button onClick={() => setShowReviewers(true)}>{t("act.config")}</button>
-        <div className="divider" />
-        {/* 语言切换：仅界面文案切换，文件内容始终原样 */}
-        <div className="langsw" role="group" aria-label={t("act.lang")}>
-          <button className={lang === "zh" ? "on" : ""} onClick={() => setLang("zh")}>
-            中文
-          </button>
-          <button className={lang === "en" ? "on" : ""} onClick={() => setLang("en")}>
-            EN
-          </button>
-        </div>
       </header>
 
       {/* ---------- 统计行 ---------- */}
