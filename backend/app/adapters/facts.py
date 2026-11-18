@@ -1,0 +1,116 @@
+# -*- coding: utf-8 -*-
+"""Library facts for adapter packs (spec F-19, 6.6), read from the published Markdown's front matter.
+
+Nothing here is typed by hand: counts, editions held, drafts, chapter folders and flagged documents
+come from the files themselves, so a regenerated pack never states a stale fact.
+"""
+from __future__ import annotations
+
+import collections
+import os
+import re
+
+_KV = re.compile(r'^([a-z_]+):\s*(.*)$')
+
+
+def _longpath(p: str) -> str:
+    p = os.path.abspath(p)
+    return "\\\\?\\" + p if os.name == "nt" and not p.startswith("\\\\?\\") else p
+
+
+def front_matter(path: str) -> dict:
+    """Front matter of one file as plain strings (quotes removed); {} when there is none."""
+    with open(_longpath(path), encoding="utf-8", errors="replace") as f:
+        head = f.read(6000)
+    if not head.startswith("---"):
+        return {}
+    end = head.find("\n---", 3)
+    out = {}
+    for line in head[3:end if end > 0 else len(head)].splitlines():
+        m = _KV.match(line.strip())
+        if m:
+            v = m.group(2).strip()
+            if len(v) >= 2 and v[0] == v[-1] == '"':
+                v = v[1:-1].replace('\\"', '"')
+            out[m.group(1)] = v
+    return out
+
+
+def _flags(fm: dict) -> set:
+    return {f.strip() for f in fm.get("flags", "").strip("[]").split(",") if f.strip()}
+
+
+def scan(root: str) -> dict:
+    """Walk a local copy of the library. Paths are reported relative to `root` with '/'."""
+    docs = {}                 # (relative source path) -> document record
+    files = 0
+    top = collections.Counter()
+    for dirpath, dirs, fns in os.walk(root):
+        dirs[:] = sorted(d for d in dirs if not d.startswith("_"))      # _pending, _staging are not library
+        for fn in sorted(fns):
+            if not fn.endswith(".md"):
+                continue
+            full = os.path.join(dirpath, fn)
+            rel = os.path.relpath(full, root).replace(os.sep, "/")
+            fm = front_matter(full)
+            files += 1
+            top[rel.split("/")[0] if "/" in rel else "."] += 1
+            key = fm.get("source_relative_path") or rel
+            d = docs.setdefault(key, {
+                "document": fm.get("document", "").split(" — ")[0] or os.path.splitext(fn)[0],
+                "source_filename": fm.get("source_filename", ""),
+                "std_id": fm.get("std_id", ""), "std_year": fm.get("std_year", ""),
+                "std_kind": fm.get("std_kind", ""), "status": fm.get("status", ""),
+                "edition_status": fm.get("edition_status", ""), "jurisdiction": fm.get("jurisdiction", ""),
+                "files": [], "flags": set(), "audit": set()})
+            d["files"].append(rel)
+            d["flags"] |= _flags(fm)
+            d["audit"].add(fm.get("audit_status", ""))
+    out_docs = []
+    for key, d in sorted(docs.items()):
+        if len(d["files"]) == 1:
+            path, layout = d["files"][0], "file"
+        else:
+            # the document folder sits beside where the source sits: <source dir>/<document folder>/...
+            src_dir = os.path.dirname(key).replace(os.sep, "/")
+            first = d["files"][0]
+            rest = first[len(src_dir) + 1:] if src_dir and first.startswith(src_dir + "/") else first
+            path = (src_dir + "/" if src_dir else "") + rest.split("/")[0] + "/"
+            layout = "folder"
+        out_docs.append({**d, "source_relative_path": key, "path": path, "layout": layout,
+                         "n_files": len(d["files"]), "flags": sorted(d["flags"]), "audit": sorted(d["audit"])})
+    return {"files": files, "documents": out_docs, "top_folders": dict(sorted(top.items()))}
+
+
+def summarise(lib: dict) -> dict:
+    docs = lib["documents"]
+    latest = {}
+    for d in docs:
+        sid = d["std_id"]
+        if sid and not d["status"].upper().startswith("DRAFT") and d["std_year"]:
+            if sid not in latest or d["std_year"] > latest[sid]["std_year"]:
+                latest[sid] = d
+    return {
+        "files": lib["files"],
+        "n_documents": len(docs),
+        "top_folders": lib["top_folders"],
+        "folders": [d for d in docs if d["layout"] == "folder"],
+        "latest_editions": [latest[k] for k in sorted(latest)],
+        "drafts": [d for d in docs if d["status"].upper().startswith("DRAFT")],
+        "unreadable_formulas": [d for d in docs if "unreadable_formula" in d["flags"]],
+        "pending_review": [d for d in docs if "pending_review" in d["audit"]],
+        "protected": [d for d in docs if "protected" in d["flags"] or "metadata_only" in d["flags"]],
+        "ocr": [d for d in docs if "ocr" in d["flags"]],
+        "jurisdictions": sorted({d["jurisdiction"] for d in docs if d["jurisdiction"]}),
+    }
+
+
+def resolve(lib: dict, source_filename: str):
+    """The library path of a document named by its source file (follows it into a chapter folder)."""
+    want = source_filename.lower()
+    for d in lib["documents"]:
+        names = {d["source_filename"], os.path.basename(d["source_relative_path"])}
+        names |= {os.path.splitext(n)[0] for n in names}
+        if want in {n.lower() for n in names if n}:
+            return d
+    return None

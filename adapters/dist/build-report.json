@@ -1,0 +1,27 @@
+{
+ "generated": "2026-11-18",
+ "version": "1",
+ "library_files": 610,
+ "documents": 5,
+ "packs": {
+  "grok": "grok/au-compliance-kb.md",
+  "claude": "claude/au-compliance-kb/SKILL.md",
+  "codex": "codex/AGENTS.md",
+  "gemini": "gemini/GEMINI.md"
+ },
+ "starting_points_missing": [
+  "AS NZS 3500.2-2021.pdf",
+  "01-note-2-2023-floor-waste-and-fixture-requirements",
+  "02-note-1-2026-overflow-relief-gully-requirements",
+  "19-vt3-nsw-c2",
+  "20-vt3-wa-c2",
+  "34-pca-ps-a224",
+  "Water Mark Report dated 4 Feb 19.pdf"
+ ],
+ "install": {
+  "grok": "Grok → Skills → replace the content of \"au-compliance-kb\" with this file.",
+  "claude": "Claude → Settings → Capabilities → Skills → upload the au-compliance-kb folder (zip). Needs the Dropbox connector.",
+  "codex": "Put AGENTS.md in the folder Codex is opened in (the synced knowledge-base root).",
+  "gemini": "Put GEMINI.md in the folder Gemini CLI is started in (the synced knowledge-base root)."
+ }
+}

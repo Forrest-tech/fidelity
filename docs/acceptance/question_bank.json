@@ -1,0 +1,253 @@
+{
+ "version": "1-draft",
+ "status": "draft - to be agreed with the owner (spec Q-2, open question 2)",
+ "rubric": {
+  "answer": "Value/statement matches expected exactly (numbers and units 100%)",
+  "citation": "Document + clause ID + page (±1 page inside the clause range) are right",
+  "status": "Draft content is labelled 'not in force' and never cited as the current requirement",
+  "honesty": "Says so when content is missing or unreadable; never invents values",
+  "cost": "Number of Dropbox calls and approximate tokens used"
+ },
+ "questions": [
+  {
+   "id": 1,
+   "cat": "A direct",
+   "q": "Under NCC 2025 Volume One, what are the maximum and minimum riser heights for a public stairway in Table D3D14?",
+   "expected": "Max 190 mm, min 115 mm",
+   "cite": "Vol One D3D14, p.240-242",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 2,
+   "cat": "A direct",
+   "q": "What going and quantity (2R + G) limits apply to a private stairway under D3D14 in NCC 2025 Volume One?",
+   "expected": "Going 240-355 mm; 2R+G 550-700 mm",
+   "cite": "Vol One D3D14, p.240-242",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 3,
+   "cat": "A direct",
+   "q": "What is the maximum distance to a single exit serving a storey at the level of access to a road or open space in a Class 5 or Class 6 building (NCC 2025 Volume One)?",
+   "expected": "30 m (D2D5(3)(b)); default for Class 5-9 is 20 m",
+   "cite": "Vol One D2D5, p.226",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 4,
+   "cat": "A direct",
+   "q": "What is the minimum ceiling height for a habitable room, excluding a kitchen, in a Class 2 building under NCC 2025 Volume One?",
+   "expected": "2.4 m",
+   "cite": "Vol One F5D2, p.374",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 5,
+   "cat": "A direct",
+   "q": "What is the maximum floor area of a fire compartment in a Class 5 building of Type A construction (Table C3D3)?",
+   "expected": "8 000 m2",
+   "cite": "Vol One C3D3, p.156",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 6,
+   "cat": "A direct",
+   "q": "In NCC 2025 Volume Three, what is the maximum delivery temperature of heated water at sanitary fixtures in an early childhood centre?",
+   "expected": "45 C (B2D5(a)(iii)); 50 C in all other cases",
+   "cite": "Vol Three B2D5, p.100",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 7,
+   "cat": "A direct",
+   "q": "How does the NCC 2025 Volume One glossary define Flashover?",
+   "expected": "In relation to fire hazard properties, a heat release rate of 1 MW",
+   "cite": "Vol One Schedule 1 Glossary",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 8,
+   "cat": "A direct",
+   "q": "What is the minimum thickness of the baffle in a grease interceptor under the Tasmanian variation TAS C4D12 in NCC 2025 Volume Three?",
+   "expected": "6 mm (mild steel plate or other authorised material)",
+   "cite": "Vol Three TAS C4D12, p.305",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 9,
+   "cat": "B topic (no clause no.)",
+   "q": "When are sprinklers required throughout a Class 2 building under the Deemed-to-Satisfy Provisions of NCC 2025 Volume One?",
+   "expected": "Rise in storeys of 4 or more and effective height not more than 25 m (E1D6(1)); residential care buildings excluded",
+   "cite": "Vol One E1D6, p.280",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 10,
+   "cat": "B topic (no clause no.)",
+   "q": "How many exits must each storey of a Class 3 building with an effective height of more than 25 m have?",
+   "expected": "At least 2 exits (in addition to any horizontal exit)",
+   "cite": "Vol One D2D3, p.224",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 11,
+   "cat": "B topic (no clause no.)",
+   "q": "What does the NCC mean by a Performance Solution?",
+   "expected": "A method of complying with the Performance Requirements other than by a Deemed-to-Satisfy Solution",
+   "cite": "Vol One Schedule 1 Glossary",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 12,
+   "cat": "B topic (no clause no.)",
+   "q": "How is a sole-occupancy unit defined in the NCC?",
+   "expected": "A room or other part of a building for occupation by one or joint owner/lessee/tenant/occupier to the exclusion of any other, and includes ... (see full definition)",
+   "cite": "Vol One Schedule 1 Glossary",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 13,
+   "cat": "B topic (no clause no.)",
+   "q": "What is the maximum hot water delivery temperature for accessible facilities in common areas of a Class 2 building?",
+   "expected": "45 C",
+   "cite": "Vol Three B2D5(a)(iv), p.100",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 14,
+   "cat": "B topic (no clause no.)",
+   "q": "Which stairways count as private stairways for the riser and going limits in Table D3D14?",
+   "expected": "Stairways in a sole-occupancy unit of a Class 2 building or Class 4 part; and any stairway not part of a required exit that the public do not normally access",
+   "cite": "Vol One Table D3D14 Table Notes (1)",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 15,
+   "cat": "C cross-chapter / multi-hop",
+   "q": "What is the maximum distance from the entrance doorway of a sole-occupancy unit in a Class 2 building to an exit, and what is a sole-occupancy unit?",
+   "expected": "6 m to an exit (or point with 2 exits available), or 20 m from a single exit serving the storey at the level of egress; plus the definition",
+   "cite": "Vol One D2D5(1)(a) p.226 + Glossary",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 16,
+   "cat": "C cross-chapter / multi-hop",
+   "q": "For the sprinkler requirement in E1D6, is a top storey containing only plant equipment counted when determining effective height?",
+   "expected": "No - effective height excludes the topmost storey if it contains only heating, ventilating, lift equipment, water tanks or similar service units",
+   "cite": "Vol One E1D6 p.280 + Glossary 'Effective height'",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 17,
+   "cat": "C cross-chapter / multi-hop",
+   "q": "What does the NSW variation to D3D14 change about stairways in NCC 2025 Volume One?",
+   "expected": "Deletes D3D14(1) and inserts NSW D3D14(1): e.g. not more than 18 and not less than 2 risers in each flight ...",
+   "cite": "Vol One Schedule 5 NSW, D3D14, p.706",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 18,
+   "cat": "C cross-chapter / multi-hop",
+   "q": "What stairway riser and going dimensions does NCC 2025 Volume Two give for a Class 1 dwelling?",
+   "expected": "None in the knowledge base: H5D2 says compliance with Part 11.2 of the ABCB Housing Provisions satisfies H5P1 (Housing Provisions not in this folder)",
+   "cite": "Vol Two H5D2, p.138",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 19,
+   "cat": "D draft vs published",
+   "q": "What is the minimum ceiling height of a habitable room in a Class 2 building? Please cite the current NCC.",
+   "expected": "2.4 m, cited from the published Volume One p.374 - NOT from the preview draft (p.365)",
+   "cite": "Vol One F5D2, p.374",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 20,
+   "cat": "D draft vs published",
+   "q": "What is the Objective B1O1 in the NCC 2025 Public Comment Draft of Volume One, and is it in force?",
+   "expected": "Objective text from the PCD; must state the PCD is a draft and not in force",
+   "cite": "PCD Vol One Part B1, p.1",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 21,
+   "cat": "D draft vs published",
+   "q": "Is the NCC 2025 preview draft of Volume One the edition currently in force?",
+   "expected": "No - it is a preview draft, not in force",
+   "cite": "status marker",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 22,
+   "cat": "D draft vs published",
+   "q": "The preview draft and the published Volume One both contain D3D14. Which riser limits apply to a public stairway, and which document is authoritative?",
+   "expected": "190/115 mm; the published edition is authoritative, draft is not in force",
+   "cite": "Vol One D3D14 p.240-242",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 23,
+   "cat": "E number fidelity",
+   "q": "What is the permitted range of the quantity 2R + G for any stairway in Table D3D14?",
+   "expected": "550 to 700 mm",
+   "cite": "Vol One D3D14",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 24,
+   "cat": "E number fidelity",
+   "q": "For a Class 6 building with two exits available, what is the maximum distance to the nearest of those exits and to the further one under D2D5(3)(a)?",
+   "expected": "20 m to the nearest; maximum 40 m to the other",
+   "cite": "Vol One D2D5(3)(a) p.226",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 25,
+   "cat": "E number fidelity",
+   "q": "In E1D6(1), which two conditions must a Class 2 or 3 building satisfy for sprinklers to be required throughout?",
+   "expected": "A rise in storeys of 4 or more AND an effective height of not more than 25 m",
+   "cite": "Vol One E1D6 p.280",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 26,
+   "cat": "E number fidelity",
+   "q": "What kitchen and corridor minimum heights does F5D2 give for a Class 2 sole-occupancy unit?",
+   "expected": "Kitchen/laundry 2.1 m; corridor/passageway 2.1 m",
+   "cite": "Vol One F5D2 p.374",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 27,
+   "cat": "F trap / negative",
+   "q": "What gradient does AS 1428.1 require for a ramp?",
+   "expected": "Not in the knowledge base - AS 1428.1 is only a referenced document (listed in Schedule 2); must not invent a value",
+   "cite": "Schedule 2 Referenced documents",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 28,
+   "cat": "F trap / negative",
+   "q": "Confirm that D3D14 allows a maximum riser of 200 mm for a public stairway.",
+   "expected": "Incorrect: maximum is 190 mm",
+   "cite": "Vol One D3D14",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 29,
+   "cat": "F trap / negative",
+   "q": "What is the heating load limit formula in Specification 44 of NCC 2025 Volume Two?",
+   "expected": "Formula is not readable in the source text layer (marked as unreadable); must refer the user to source p.161, must not invent a formula. Readable parts: limit is the greater of 4 and the formula; HDH and FH definitions",
+   "cite": "Vol Two Spec 44 S44C2, p.161",
+   "source": "phase0-grok-test"
+  },
+  {
+   "id": 30,
+   "cat": "F trap / negative",
+   "q": "What is the maximum exit travel distance?",
+   "expected": "Should ask which Class/building, or list by class (Class 2/3: 6 m / 20 m; Class 5-9: 20 m, 40 m with two exits; Class 9a patient care: 12 m ...)",
+   "cite": "Vol One D2D5 p.226",
+   "source": "phase0-grok-test"
+  }
+ ]
+}

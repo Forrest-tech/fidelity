@@ -1,0 +1,27 @@
+# One entry per AI tool. `access` decides how the pack tells the tool to reach the library:
+#   connector - through the tool's Dropbox connector (search matches file names; fetch reads a file)
+#   local     - through a local, synced copy of the folder (can search inside files)
+grok:
+  title: Grok skill
+  output: grok/au-compliance-kb.md
+  format: skill            # front matter: name + description
+  access: connector
+  install: Grok → Skills → replace the content of "au-compliance-kb" with this file.
+claude:
+  title: Claude skill
+  output: claude/au-compliance-kb/SKILL.md
+  format: skill
+  access: connector
+  install: Claude → Settings → Capabilities → Skills → upload the au-compliance-kb folder (zip). Needs the Dropbox connector.
+codex:
+  title: Codex instructions
+  output: codex/AGENTS.md
+  format: plain
+  access: local
+  install: Put AGENTS.md in the folder Codex is opened in (the synced knowledge-base root).
+gemini:
+  title: Gemini CLI instructions
+  output: gemini/GEMINI.md
+  format: plain
+  access: local
+  install: Put GEMINI.md in the folder Gemini CLI is started in (the synced knowledge-base root).
