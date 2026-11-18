@@ -16,7 +16,7 @@ def run(tmp_path, path):
     rel = os.path.basename(path)
     r = O.distill_any(str(path), rel, str(out), "/src", str(cache), log=lambda *_: None)
     body = ""
-    if r["out_dir"]:
+    if r["out_dir"] and r.get("single_file", True):
         body = open(os.path.join(out, r["out_dir"]), encoding="utf-8").read()
     return r, body
 
@@ -179,3 +179,21 @@ def test_corrupt_office_file_is_listed_not_crashing(tmp_path):
 @pytest.mark.parametrize("ext", [".docx", ".xlsx", ".pptx", ".html", ".htm", ".md", ".msg", ".pdf"])
 def test_supported_formats_are_registered(ext):
     assert ext in O.SUPPORTED
+
+
+def test_large_office_document_becomes_a_folder_of_files(tmp_path, monkeypatch):
+    from app.distill import run as R
+    monkeypatch.setattr(R, "SINGLE_FILE_MAX_CHARS", 150)
+    r, _ = run(tmp_path, make_pptx(tmp_path / "Briefing.pptx"))
+    assert r["verdict"] == "PASS" and not r["single_file"] and r["files"] == 2
+    folder = tmp_path / "out" / "Briefing"
+    files = sorted(p.name for p in folder.iterdir())
+    assert files == ["Briefing · 01 slide 1.md", "Briefing · 02 slide 2.md"]
+    first = (folder / files[0]).read_text(encoding="utf-8")
+    assert 'part: "1 of 2"' in first and "audit_status: auto_verified" in first and "| 9b | 20 m |" in first
+    assert "<!-- unit: u0002" in (folder / files[1]).read_text(encoding="utf-8")   # numbering continues
+
+
+def test_group_keeps_order_and_lets_an_oversize_unit_stand_alone():
+    assert O._group(["a" * 10] * 3, 100) == [(0, 3)]
+    assert O._group(["a" * 40, "b" * 40, "c" * 200, "d" * 10], 100) == [(0, 2), (2, 3), (3, 4)]

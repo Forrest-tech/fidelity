@@ -182,3 +182,14 @@ def test_rapidocr_runs_without_the_angle_classifier():
     O.RapidOCREngine._eng = None
     O.RapidOCREngine().read(Image.new("L", (200, 60), 255))
     assert O.RapidOCREngine._eng.use_angle_cls is False
+
+
+def test_dollar_misread_in_clause_ids_only():
+    out, log = correct_text("see $17C7(2)(a) and $2C26a; fee $250 and $1,200 stay")
+    assert out == "see S17C7(2)(a) and S2C26a; fee $250 and $1,200 stay"
+    assert [l["rule"] for l in log] == ["clause_id_dollar", "clause_id_dollar"]
+
+
+def test_typographic_variants_are_not_disagreements():
+    agree, diffs = O.agreement('the “vertical” face -- and ’s', 'the "vertical" face — and \'s')
+    assert agree == 1.0 and diffs == []

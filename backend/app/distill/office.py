@@ -54,11 +54,12 @@ def distill_document(path, rel_path, out_root, source_prefix, cache_dir, log=pri
     body_parts = []
     for i, u in enumerate(units, 1):
         body_parts.append(_marker(i, u) + "\n\n" + u.text.strip() + "\n\n" + UNIT_CLOSE)
-    body = "\n\n".join(body_parts) + "\n"
+    groups = _group(body_parts, R.SINGLE_FILE_MAX_CHARS)
+    single = len(groups) == 1
     status = R.doc_status(name)
     std = R.parse_standard(name)
     flags = sorted({f for u in units for f in u.flags} | ({"instruction_like"} if instr else set()))
-    fm = ["---",
+    head = ["---",
           f"document: {R._yaml_str(name)}",
           f"format_version: {R.FORMAT_VERSION}",
           f"status: {R._yaml_str(status)}",
@@ -67,9 +68,8 @@ def distill_document(path, rel_path, out_root, source_prefix, cache_dir, log=pri
           f"std_year: {R._yaml_str(std['std_year'])}",
           f"std_kind: {R._yaml_str(std['std_kind'])}",
           f"jurisdiction: {R._yaml_str(std['jurisdiction'])}",
-          "languages: [en]",
-          f"units: {len(units)}",
-          f"cite_as: {R._yaml_str(name + ', <location in the nearest unit marker (src: ...)>')}",
+          "languages: [en]"]
+    tail = [f"cite_as: {R._yaml_str(name + ', <location in the nearest unit marker (src: ...)>')}",
           f"source: {R._yaml_str(src_display + ' (content_hash ' + h[:12] + ')')}",
           f"source_filename: {R._yaml_str(os.path.basename(rel_path))}",
           f"source_relative_path: {R._yaml_str(rel_path.replace(os.sep, '/'))}",
@@ -77,20 +77,54 @@ def distill_document(path, rel_path, out_root, source_prefix, cache_dir, log=pri
           f"parser: {R.PIPELINE_VERSION}/{os.path.splitext(path)[1].lower().lstrip('.')}",
           f"audit_status: {'auto_verified' if trusted else 'pending_review'}",
           f"flags: [{', '.join(flags)}]",
-          f"verified: {R._yaml_str('PASS' if trusted else 'FAIL - not trusted')}",
-          "---", ""]
+          f"verified: {R._yaml_str('PASS' if trusted else 'FAIL - not trusted')}"]
     banner = f"> **{status.upper()}.** Not in force.\n\n" if status.startswith("DRAFT") else ""
     base = os.path.join(out_root, rel_dir) if trusted else os.path.join(out_root, "_pending", rel_dir)
-    os.makedirs(base, exist_ok=True)
-    fn = os.path.basename(rel_path) + ".md"
-    with open(R.longpath(os.path.join(base, fn)), "w", encoding="utf-8", newline="\n") as f:
-        f.write("\n".join(fm) + banner + body)
+    # Hybrid rule (spec 6.5), as for PDFs: small -> one file X.docx.md beside its siblings;
+    # large -> a folder named after the document, one file per run of consecutive units.
+    doc_dir = base if single else os.path.join(base, R._safe(name))
+    os.makedirs(doc_dir, exist_ok=True)
+    layout = ("One file for the whole document (small documents are not split)." if single else
+              f"This document's folder holds {len(groups)} files in source order; each names its first and "
+              "last unit (section, sheet, slide or attachment).")
+    sizes, names = [], []
+    for k, (a, b) in enumerate(groups, 1):
+        body = "\n\n".join(body_parts[a:b]) + "\n"
+        if single:
+            fn, chap = os.path.basename(rel_path) + ".md", []
+        else:
+            first, last = units[a].src, units[b - 1].src
+            label = first if a == b - 1 else f"{first} – {last}"
+            fn = R._safe(f"{name} · {k:02d} {label}") + ".md"
+            chap = [f"chapter: {R._yaml_str(label)}", f"part: \"{k} of {len(groups)}\"",
+                    f"units_in_file: \"{a + 1}–{b}\""]
+        fm = head + chap + [f"units: {len(units)}"] + tail + [f"layout: {R._yaml_str(layout)}", "---", ""]
+        with open(R.longpath(os.path.join(doc_dir, fn)), "w", encoding="utf-8", newline="\n") as f:
+            f.write("\n".join(fm) + banner + body)
+        sizes.append(len(body))
+        names.append(fn)
     with open(os.path.join(cache_dir, h + ".report.json"), "w", encoding="utf-8") as f:
         json.dump(rep, f, ensure_ascii=False, indent=1, default=str)
+    out_path = os.path.join(doc_dir, names[0]) if single else doc_dir
     return {"name": name, "rel_path": rel_path, "source": src_display, "status": status,
-            "verdict": rep["status"], "pages": 0, "files": 1, "single_file": True, "verdict_trusted": trusted,
-            "max_file_chars": len(body), "total_chars": len(body), "content_hash": h,
-            "out_dir": os.path.relpath(os.path.join(base, fn), out_root), "report": rep}
+            "verdict": rep["status"], "pages": 0, "files": len(names), "single_file": single,
+            "verdict_trusted": trusted, "max_file_chars": max(sizes), "total_chars": sum(sizes),
+            "content_hash": h, "out_dir": os.path.relpath(out_path, out_root), "report": rep}
+
+
+def _group(parts, limit):
+    """Consecutive (start, end) runs whose joined size stays <= limit; an oversize unit stands alone."""
+    total = sum(len(p) + 2 for p in parts)
+    if total <= limit or not parts:
+        return [(0, len(parts))]
+    groups, start, size = [], 0, 0
+    for i, p in enumerate(parts):
+        if i > start and size + len(p) + 2 > limit:
+            groups.append((start, i))
+            start, size = i, 0
+        size += len(p) + 2
+    groups.append((start, len(parts)))
+    return groups
 
 
 def distill_any(path, rel_path, out_root, source_prefix, cache_dir, log=print, publish_protected=False):
