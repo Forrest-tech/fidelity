@@ -5,8 +5,8 @@ import { BrowserRouter } from "react-router-dom";
 import { AppRoutes } from "./routes";
 import { AuthProvider } from "./auth/AuthProvider";
 import "./locales";
-import "./index.css";
-import "./styles.css";
+import "./styles.css"; // legacy review screen styles
+import "./index.css"; // design tokens last so they win
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } });
 

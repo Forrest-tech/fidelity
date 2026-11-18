@@ -45,7 +45,10 @@ export function AppRoutes() {
           path="review"
           element={
             <LangProvider>
-              <ReviewLegacy />
+              {/* legacy element styles (buttons, inputs) only apply inside this wrapper */}
+              <div className="legacy-review h-full">
+                <ReviewLegacy />
+              </div>
             </LangProvider>
           }
         />

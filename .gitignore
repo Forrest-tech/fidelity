@@ -48,3 +48,6 @@ backend_run.log
 .tmpcheck/
 *.tmp
 tools/rclone/
+.e2e/
+playwright-report/
+test-results/
