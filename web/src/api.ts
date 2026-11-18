@@ -14,7 +14,7 @@ import type {
   TreeResp,
 } from "./types";
 
-const BASE = "/api";
+const BASE = "/api/v1";
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(BASE + path, init);

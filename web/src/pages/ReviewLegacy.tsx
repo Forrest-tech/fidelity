@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api } from "./api";
+import { api } from "../api";
 import type {
   AlignResp,
   Badge,
@@ -9,16 +9,16 @@ import type {
   Source,
   Stats,
   TrustState,
-} from "./types";
-import FileTree from "./components/FileTree";
-import SourcePane from "./components/SourcePane";
-import MdPane from "./components/MdPane";
-import DecisionsPanel from "./components/DecisionsPanel";
-import SalvagePanel from "./components/SalvagePanel";
-import ReviewerPanel from "./components/ReviewerPanel";
-import SourceManager from "./components/SourceManager";
-import FolderPicker from "./components/FolderPicker";
-import { useI18n } from "./i18n";
+} from "../types";
+import FileTree from "../components/FileTree";
+import SourcePane from "../components/SourcePane";
+import MdPane from "../components/MdPane";
+import DecisionsPanel from "../components/DecisionsPanel";
+import SalvagePanel from "../components/SalvagePanel";
+import ReviewerPanel from "../components/ReviewerPanel";
+import SourceManager from "../components/SourceManager";
+import FolderPicker from "../components/FolderPicker";
+import { useI18n } from "../i18n";
 
 type Notice = { kind: "warn" | "err" | "ok"; text: string };
 
@@ -32,7 +32,7 @@ function loadNum(k: string, d: number, lo: number, hi: number) {
   return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d;
 }
 
-export default function App() {
+export default function ReviewLegacy() {
   const [t, lang, setLang] = useI18n();
 
   const [sources, setSources] = useState<Source[]>([]);

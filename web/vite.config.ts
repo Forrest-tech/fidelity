@@ -1,7 +1,8 @@
-import { defineConfig } from "vite";
+/// <reference types="vitest" />
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 
-// 前端 dev server 走 5173，API 反代到后端 8000，避免跨域配置。
+// Dev server on 5173, API proxied to the backend on 8000 (same origin for cookies).
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -12,4 +13,10 @@ export default defineConfig({
     },
   },
   build: { outDir: "dist", sourcemap: false },
+  test: {
+    environment: "jsdom",
+    globals: true,
+    setupFiles: ["./src/test/setup.ts"],
+    css: false,
+  },
 });

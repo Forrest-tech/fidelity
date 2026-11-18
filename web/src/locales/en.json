@@ -1,0 +1,16 @@
+{
+  "app": { "name": "Fidelity", "tagline": "Verified, citable Markdown from source documents" },
+  "nav": { "overview": "Overview", "sources": "Sources", "jobs": "Jobs", "documents": "Documents", "review": "Review", "settings": "Settings", "users": "Users", "menu": "Menu", "skip": "Skip to content", "main": "Main navigation" },
+  "header": { "language": "Language", "theme": "Theme", "light": "Light", "dark": "Dark", "system": "System", "logout": "Sign out", "signedInAs": "Signed in as {{email}}" },
+  "login": { "title": "Sign in", "email": "Email", "password": "Password", "submit": "Sign in", "submitting": "Signing in…", "failed": "Wrong email or password.", "tooMany": "Too many failed attempts. Try again in a few minutes.", "error": "Could not sign in. Check your connection and try again." },
+  "state": { "loading": "Loading…", "retry": "Try again", "errorTitle": "Something went wrong", "emptyTitle": "Nothing here yet", "forbidden": "You do not have access to this page." },
+  "pages": {
+    "overview": { "title": "Overview", "empty": "No documents have been distilled yet.", "emptyHint": "Add a source, then start a distillation job." },
+    "sources": { "title": "Sources", "empty": "No sources configured.", "emptyHint": "A source is a folder of original documents (read-only)." },
+    "jobs": { "title": "Jobs", "empty": "No jobs have run yet.", "emptyHint": "Jobs appear here when a distillation starts." },
+    "documents": { "title": "Documents", "empty": "No distilled documents yet.", "emptyHint": "Distilled, verified documents are listed here." },
+    "review": { "title": "Review" },
+    "settings": { "title": "Settings", "empty": "Settings will appear here." },
+    "users": { "title": "Users", "empty": "No users to show." }
+  }
+}
