@@ -1,0 +1,60 @@
+{
+ "files": 610,
+ "tokens": {
+  "min": 290,
+  "p5": 331,
+  "median": 1778,
+  "p95": 10195,
+  "max": 21632,
+  "total": 1953948
+ },
+ "share_in_target": 0.054,
+ "share_below_target": 0.946,
+ "share_above_target": 0.0,
+ "biggest": [
+  {
+   "path": "2025/ss/NCC 2025 preview draft – Volume One/14 Section J Energy efficiency/NCC 2025 preview draft – Volume One · 096 Part J3 Elemental provisions for a Class 4 part of a building [J3D1–J3D15] p483-514.md",
+   "tokens": 21632
+  },
+  {
+   "path": "2025/NCC 2025 Volume One/15 Section J Energy efficiency/NCC 2025 Volume One · 097 Part J3 Elemental provisions for a Class 4 part of a building [J3D1–J3D15] p492-523.md",
+   "tokens": 21446
+  },
+  {
+   "path": "2025/ss/NCC 2025 preview draft – Volume One/NCC 2025 preview draft – Volume One · 005 Copyright, Licence Notice and Acknowledgment of Country (part 4 of 8) p22-27.md",
+   "tokens": 16603
+  },
+  {
+   "path": "2025/ss/NCC 2025 preview draft – Volume One/NCC 2025 preview draft – Volume One · 004 Copyright, Licence Notice and Acknowledgment of Country (part 3 of 8) p16-21.md",
+   "tokens": 16346
+  },
+  {
+   "path": "2025/ss/NCC 2025 preview draft – Volume One/NCC 2025 preview draft – Volume One · 003 Copyright, Licence Notice and Acknowledgment of Country (part 2 of 8) p10-15.md",
+   "tokens": 16069
+  },
+  {
+   "path": "2025/ss/NCC 2025 preview draft – Volume One/16 Schedule 2 Referenced documents/NCC 2025 preview draft – Volume One · 124 Referenced documents p642-660.md",
+   "tokens": 15951
+  },
+  {
+   "path": "2025/NCC 2025 Volume One/NCC 2025 Volume One · 005 Copyright, Licence Notice and Acknowledgment of Country (part 4 of 8) p20-25.md",
+   "tokens": 15602
+  },
+  {
+   "path": "2025/NCC 2025 Volume One/NCC 2025 Volume One · 004 Copyright, Licence Notice and Acknowledgment of Country (part 3 of 8) p14-19.md",
+   "tokens": 15343
+  },
+  {
+   "path": "2025/NCC 2025 Volume One/NCC 2025 Volume One · 003 Copyright, Licence Notice and Acknowledgment of Country (part 2 of 8) p8-13.md",
+   "tokens": 15078
+  },
+  {
+   "path": "2025/ss/NCC 2025 preview draft – Volume One/08 Section C Fire resistance/NCC 2025 preview draft – Volume One · 033 Specification 5 Fire-resisting construction [S5C1–S5C25] p163-181.md",
+   "tokens": 14954
+  }
+ ],
+ "listing_tokens": {
+  "median_folder": 2640,
+  "max_folder": 16500
+ }
+}

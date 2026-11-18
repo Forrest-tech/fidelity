@@ -29,3 +29,11 @@ For developers and AI sessions. The source of truth for requirements is `docs/PR
 
 ## Licences
 - CI publishes a licence inventory artifact. PyMuPDF is AGPL, accepted for internal use only; revisit before any external use.
+
+## Adapter packs and handover docs (Phase 5)
+- One template `adapters/template.md.j2`; owner rules in `adapters/house_rules.yaml`; tools in
+  `adapters/tools.yaml`. Generated packs in `adapters/dist/` — never edit them by hand; regenerate with
+  `python -m app.adapters.build --library <local library copy>`.
+- Library facts in packs (editions, drafts, counts, paths) must come from the library, never be typed.
+- Manuals: `docs/manual/user.{en,zh}.md`; runbook: `docs/runbook/admin.{en,zh}.md` — change both
+  languages together. Acceptance: `docs/acceptance/`.

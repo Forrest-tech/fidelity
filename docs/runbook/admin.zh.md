@@ -1,0 +1,98 @@
+# Fidelity 管理员运维手册
+
+给负责蒸馏和维护 AI 工具的人。命令都在 `backend/` 目录下、用项目环境运行（Windows 上是
+`..\.venv\Scripts\python`），并设置 `PYTHONUTF8=1`。
+
+## 铁律（绝不能违反）
+1. **Dropbox 源文件夹只读。** 任何程序都不在那里写入、移动或删除；每次同步都会对比源文件夹前后快照，
+   证明保存在 `<目标>/_sync/`。
+2. **只发布验证通过的内容。** 不通过或需要审核的进入 `_pending/`。
+3. **`data/` 永远不提交到 git**——里面有 Dropbox 凭据和工作文件。
+
+## 启动应用
+- 双击项目文件夹里的 `启动.bat` → 浏览器打开 <http://127.0.0.1:8000>。重复双击无害（只会再打开浏览器）。
+- 或者：`python -m scripts.serve`（加 `--check` 只检查端口）。
+
+## 用户和角色
+- 新建或重置用户：`python scripts/create_admin.py name@example.com --role admin|reviewer|viewer`
+  （密码会提示输入，或取自 `FIDELITY_NEW_PASSWORD`；绝不写在命令行上）。
+- admin：全部权限 · reviewer：审核队列和审核决定 · viewer：只读。
+- 登录限制每个 IP 每 5 分钟 5 次；登录记录在审计日志里。
+
+## Dropbox 权限
+两个应用角色，都保存在 `data/dropbox_auth.json`：
+- **reader**（只读权限）——用于源文件夹和只读拷贝。
+- **writer**——只用于目标文件夹；受保护的写入器会拒绝目标以外的任何路径。
+
+重新授权（例如权限范围改变后）：`python -m app.distill.dropbox_io auth --app-key <key> --role reader --read-only`
+（或 `--role writer`）。打开链接，粘贴授权码。
+
+## 蒸馏和发布
+```
+python -m app.distill.sync --source-link <源共享链接> --dest-link <目标共享链接> --dry-run
+python -m app.distill.sync --source-link <…> --dest-link <…>
+```
+- `--dry-run` 只蒸馏和验证，不上传——新文件夹第一次一定先跑它。
+- 没变化的文件会跳过（账本记录）；`--force` 全部重新蒸馏；`--only 名称` 只处理文件名含该文字的文件。
+- 输出先放到 `<目标>_staging`，检查后再正式发布；旧版本移到 `<目标>_archive`。
+- **回滚一次发布**：`python -m app.distill.sync --source-link <…> --dest-link <…> --rollback <RUN>`
+  （每次同步结束时会打印"undo with: … --rollback <RUN>"；该次运行的清单在
+  `data/work/publish/publish-<RUN>.json`）。
+- 加密文件会被列出但不蒸馏；`--publish-protected-metadata` 为它们发布只含元数据的条目。
+- 看运行汇总：每个文件的 PASS / REVIEW / FAIL / SKIP，重复文件，不支持的文件。
+
+## 审核队列
+在网页里（reviewer 或 admin）：**Overview（概览）→ Needs attention（需要处理）**和 **Documents** 页
+（按结果筛选）列出没有通过的文件；**Review（审核）**页左右对照原文和 Markdown。两个 OCR 引擎读得不一致的
+扫描件、没有标题栏的图纸、任何检查不通过的文件都在这里；在 Dropbox 上它们在 `<目标>/_pending/`，
+不会进入正式目录。
+
+## OCR（扫描件和图片）
+- 引擎：RapidOCR（pip 安装）和 **Tesseract 5**（单独安装；Windows 上用 UB Mannheim 版本，装在
+  `C:\Program Files\Tesseract-OCR`，程序会自动找到）。
+- RapidOCR 英文模型只需下载一次，版本固定并核对哈希：`python scripts/fetch_ocr_models.py`（存到 `data/models/`）。
+- 基准测试：`python scripts/ocr_benchmark.py --synthetic --out <目录>`，或 `--pdf <文字型PDF> --pages 1,5 --out <目录>`。
+
+## 术语表（OCR 修正用）
+大批量发布后重建一次，让它学到新词（只读取 `auto_verified` 的文件）：
+1. 用 **reader** 角色把已发布的知识库拷到本地（rclone 示例）：
+   `rclone copy dbx:/Transfer_Md data/work/transfer_md_snapshot --filter "- _*/**" --filter "+ *.md" --filter "- *"`
+2. `python -m app.distill.glossary build ../data/work/transfer_md_snapshot` → 生成 `data/glossary.json`。
+
+## 适配包（Grok 技能及其他工具）
+知识库有明显变化、或修改了 `adapters/house_rules.yaml` 后，重新生成：
+1. 刷新本地知识库拷贝（同上；正式库则拷贝 `Md_Library`）。
+2. `python -m app.adapters.build --library ../data/work/transfer_md_snapshot`
+3. 看 `adapters/dist/build-report.json`：**starting_points_missing** 列出 `house_rules.yaml` 里知识库没有的
+   常用入口——修正或删掉。
+4. 安装：
+   - **Grok**：Skills → 打开 `au-compliance-kb` → 用 `adapters/dist/grok/au-compliance-kb.md` 替换全部内容。
+   - **Claude**：Settings → Capabilities → Skills → 上传 `adapters/dist/claude/au-compliance-kb/`（压缩成 zip）。
+   - **Codex / Gemini CLI**：把 `AGENTS.md` / `GEMINI.md` 复制到同步到本地的知识库根目录。
+5. 问一个已知答案的问题（例如楼梯踏步高度，D3D14），确认适配包生效。
+
+业主维护的事实（日期、地区规则、常用入口）放在 `adapters/house_rules.yaml`；知识库事实（版本、草案、
+文件数）由程序生成——不要手写。
+
+## 错误报告（每周）
+1. 用 reader 角色把 `<logs>/_error_reports/` 拷到本地。
+2. `python scripts/collect_error_reports.py --reports <本地拷贝>` → 写入 `docs/acceptance/regression.json`。
+3. 对每条 `reported`：核对原文页；改成 `confirmed`（修正原因，填写 `expected`）或 `rejected`。
+   确认的条目加入题库。
+
+## Token 成本
+`python scripts/measure_tokens.py --library <本地拷贝> --out ../docs/benchmarks/token-cost`——
+文件大小、列目录成本、在 10k–30k 目标范围内的比例。
+
+## 备份
+备份 `data/fidelity.db`（用户、审计日志）、`data/trust.db`（任务）和 `data/dropbox_auth.json`（注意保密）。
+已发布的 Markdown 随时可以从源文件重新生成。
+
+## 常见问题
+| 现象 | 原因 / 处理 |
+|---|---|
+| Dropbox 报 `missing_scope` | 重新授权该角色（见"Dropbox 权限"） |
+| 找不到 Tesseract | 安装它，或把 `tesseract.exe` 加到 PATH |
+| 某扫描件总是进审核 | 两个引擎不一致时这是预期的；看报告里的 `disagreements` |
+| Windows 长路径找不到文件 | 用提供的命令——它们已处理长路径 |
+| GitHub API "rate limit" | 等一小时；轮询不要快于每分钟一次 |

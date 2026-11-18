@@ -1,0 +1,55 @@
+# Owner-maintained rules for every adapter pack (carried over from the live au-compliance-kb skill).
+# Library facts (counts, editions held, drafts, flagged documents) are NOT typed here: the generator
+# reads them from the library itself. Edit this file, then regenerate: see docs/runbook/admin.en.md.
+
+skill_name: au-compliance-kb
+skill_description: >-
+  AU compliance knowledge base (plumbing, drainage, fire, NCC, AS/NZS 3500, Sydney Water, NSW Fair
+  Trading). Use whenever the user asks an Australian compliance question or wants clause citations.
+  Reads the distilled library (Markdown) and saves every answer to a chat-log folder.
+
+default_root: /Library_Installation          # knowledge-base root; the library is <root>/Md_Library
+library_folder: Md_Library
+log_timezone: America/Toronto
+log_timezone_label: Toronto local time (America/Toronto, ET)
+
+# What each top-level library folder holds (shown next to the generated file counts).
+folder_descriptions:
+  Code: standards text (e.g. AS/NZS 3500 series)
+  NCC2022: NCC / PCA volumes (2022 edition)
+  "2025": NCC 2025 volumes and drafts
+  n2_Technical: technical memos, manufacturer documents, defect reports
+  n0_Web_Reference: snapshots of NSW Fair Trading, Sydney Water, ABCB, ABCB NCC, Jemena web pages
+
+# Jurisdiction and timing rules (owner facts, not derivable from the files).
+rules:
+  - "**Jurisdiction**: confirm the project's state first. Victorian clauses must not be applied to NSW projects without \"⚠️ cross-state, reference only\". Jemena material is Victoria-only."
+  - "**NCC timing**: NCC 2025 was published 2026-05-01; NSW adopts it from 2027-05-01, so NCC 2022 currently applies in NSW."
+  - "**AS/NZS 3500.2**: the 2025 edition was published 2025-04-17. If the library's latest edition (see Library facts) is older, warn \"library is one edition behind; check the 2025 edition\"."
+  - "**Web snapshots** (`n0_Web_Reference`): always give the retrieval date (`retrieved_date`) and warn \"web content may have changed; check the current version\"."
+  - "**Cross-check**: standards text comes first; web snapshots and manufacturer documents are supporting only. For NSW questions also check `n0_Web_Reference/NSW Fair Trading - Building Commission/` and the state amendments in `n0_Web_Reference/ABCB NCC (ncc.abcb.gov.au)/`."
+
+# Starting points: named by SOURCE file name; the generator finds where each one now lives
+# (a single file, or a chapter folder after splitting) and drops any that are not in the library.
+# The extension may be left out (web snapshots).
+starting_points:
+  - source: AS NZS 3500.2-2021.pdf
+    note: AS/NZS 3500.2:2021 (sanitary plumbing & drainage)
+  - source: 01-note-2-2023-floor-waste-and-fixture-requirements
+    note: NSW Note 2/2023 floor waste & fixtures
+  - source: 02-note-1-2026-overflow-relief-gully-requirements
+    note: NSW Note 1/2026 overflow relief gully
+  - source: 19-vt3-nsw-c2
+    note: NCC 2025 Vol 3 NSW Schedule C2 (NSW did not adopt the 600 mm cap; only WA did)
+  - source: 20-vt3-wa-c2
+    note: WA 4.6.2(d) 600 mm (measured to top of grate, not floor level)
+  - source: 34-pca-ps-a224
+    note: Plumbing Performance Solution route
+  - source: Water Mark Report dated 4 Feb 19.pdf
+    note: Watermark defect report (461 pages)
+  - source: NCC 2025 Volume One.pdf
+    note: NCC 2025 Volume One (Class 2–9 buildings)
+  - source: NCC 2025 Volume Two.pdf
+    note: NCC 2025 Volume Two (Class 1 and 10 buildings)
+  - source: NCC 2025 Volume Three.pdf
+    note: NCC 2025 Volume Three (plumbing and drainage)
