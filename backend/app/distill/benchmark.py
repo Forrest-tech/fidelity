@@ -154,6 +154,7 @@ def select(result: dict, path: str = None) -> dict:
     ranked = sorted(score, key=lambda n: -sum(score[n]) / len(score[n]))
     sel = {"engines": ranked[:2], "mean_char_acc": {n: round(sum(score[n]) / len(score[n]), 5) for n in ranked},
            "benchmark": _os.path.basename(result.get("pdf", "")), "selected": _dt.date.today().isoformat()}
+    from . import ocr as O
     path = path or O.SELECTION_FILE
     _os.makedirs(_os.path.dirname(_os.path.abspath(path)), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:

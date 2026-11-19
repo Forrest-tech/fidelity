@@ -55,3 +55,10 @@ def test_mac_and_paddle_engines_report_unavailable_here():
     if sys.platform != "darwin":
         assert not O.AppleVisionEngine.available()
     assert O.PaddleOCREngine.available() in (True, False)
+
+
+def test_select_writes_the_default_selection_file(monkeypatch, tmp_path):
+    target = tmp_path / "data" / "ocr_engines.json"
+    monkeypatch.setattr(O, "SELECTION_FILE", str(target))
+    result = {"pdf": "x.pdf", "summary": {"clean": {"engines": {"a": {"char_acc": 0.9}, "b": {"char_acc": 0.95}}}}}
+    assert B.select(result)["engines"] == ["b", "a"] and target.exists()
