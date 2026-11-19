@@ -22,7 +22,8 @@
     "dark": "深色",
     "system": "跟随系统",
     "logout": "退出登录",
-    "signedInAs": "当前用户：{{email}}"
+    "signedInAs": "当前用户：{{email}}",
+    "account": "账户"
   },
   "login": {
     "title": "登录",

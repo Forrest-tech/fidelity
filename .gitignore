@@ -57,3 +57,5 @@ backend/ocr-benchmark/
 deploy/mac/mac.env
 tools/gitleaks/
 deploy/docker/fidelity.env
+.preview-dist/
+.preview-shots/

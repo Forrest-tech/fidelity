@@ -10,14 +10,26 @@ async function login(page: Page, role: "admin" | "reviewer" | "viewer") {
   await page.getByLabel("Email").fill(`${role}@example.com`);
   await page.getByLabel("Password").fill(PW);
   await page.getByRole("button", { name: "Sign in" }).click();
-  // the sign-out button is visible at every screen size (the navigation is behind a menu on phones)
-  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible({ timeout: 15_000 });
+  // the account button is visible at every screen size (the navigation is behind a menu on phones)
+  await expect(page.getByRole("button", { name: "Account" })).toBeVisible({ timeout: 15_000 });
+}
+
+async function signOut(page: Page) {
+  await page.getByRole("button", { name: "Account" }).click();
+  await page.getByText("Sign out").click();
+}
+
+// The language switch is a segmented control (in the header, or in the menu drawer on phones).
+async function setLanguage(page: Page, lang: "English" | "中文") {
+  const group = page.getByRole("radiogroup", { name: /Language|语言/ });
+  if (!(await group.first().isVisible())) await openNav(page);
+  await group.first().getByText(lang).click();
 }
 
 // On a phone the navigation sits behind a Menu button.
 async function openNav(page: Page) {
   await expect(page.locator("#main")).toBeVisible({ timeout: 15_000 }); // shell rendered (also after a reload)
-  const menu = page.locator('button[aria-controls="side-nav"]'); // label changes with the language
+  const menu = page.locator('button[aria-controls="side-nav"]'); // label changes with the language; phones only
   if (await menu.isVisible()) {
     if ((await menu.getAttribute("aria-expanded")) !== "true") await menu.click();
   }
@@ -42,7 +54,7 @@ test.describe("sign in and out", () => {
     await login(page, "reviewer");
     await page.reload();
     await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
-    await page.getByRole("button", { name: "Sign out" }).click();
+    await signOut(page);
     await expect(page).toHaveURL(/\/login/);
   });
 });
@@ -80,7 +92,7 @@ test.describe("roles", () => {
     await p2.getByLabel("Email").fill(email);
     await p2.getByLabel("Password").fill("another-long-password");
     await p2.getByRole("button", { name: "Sign in" }).click();
-    await expect(p2.getByRole("button", { name: "Sign out" })).toBeVisible({ timeout: 15_000 });
+    await expect(p2.getByRole("button", { name: "Account" })).toBeVisible({ timeout: 15_000 });
     await ctx.close();
   });
 });
@@ -117,9 +129,9 @@ test.describe("review screen", () => {
     await page.goto("/review");
     await expect(page.locator(".legacy-review .header")).toBeVisible({ timeout: 15_000 });
     await expect(page.locator(".legacy-review .langsw")).toHaveCount(0); // one language switch, in the shell
-    await page.getByLabel("Language").selectOption("zh");
+    await setLanguage(page, "中文");
     await expect(page.locator(".legacy-review .statsbar")).toContainText(/[一-鿿]/);
-    await page.getByLabel("语言").selectOption("en");
+    await setLanguage(page, "English");
     await expect(page.locator(".legacy-review .statsbar")).not.toContainText(/[一-鿿]/);
   });
 
@@ -127,7 +139,7 @@ test.describe("review screen", () => {
     await login(page, "reviewer");
     await page.goto("/review");
     await expect(page.locator(".legacy-review .header")).toBeVisible({ timeout: 15_000 });
-    await page.getByLabel("Theme").selectOption("dark");
+    await page.getByRole("button", { name: "Theme" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     const bg = await page.locator(".legacy-review").evaluate((el) => getComputedStyle(el).backgroundColor);
     expect(bg).toBe("rgb(2, 6, 23)");                                  // dark surface, not the light one
@@ -140,14 +152,14 @@ test.describe("review screen", () => {
 test.describe("bilingual", () => {
   test("switching to Chinese translates the interface and survives a reload", async ({ page }) => {
     await login(page, "admin");
-    await page.getByLabel("Language").selectOption("zh");
+    await setLanguage(page, "中文");
     await openNav(page);
     await expect(page.getByRole("link", { name: "数据源" })).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
     await page.reload();
     await openNav(page);
     await expect(page.getByRole("link", { name: "数据源" })).toBeVisible();
-    await page.getByLabel("语言").selectOption("en");
+    await setLanguage(page, "English");
   });
 });
 
@@ -195,7 +207,7 @@ test.describe("accessibility (axe-core)", () => {
   for (const theme of ["light", "dark"] as const) {
     test(`main pages, ${theme} theme`, async ({ page }) => {
       await login(page, "admin");
-      await page.getByLabel("Theme").selectOption(theme);
+      await page.evaluate((t) => localStorage.setItem("fidelity.theme", t), theme); // read on the next page load
       for (const p of ["/", "/sources", "/jobs", "/documents", "/settings", "/users", "/review"]) {
         await page.goto(p);
         await page.waitForLoadState("networkidle");
