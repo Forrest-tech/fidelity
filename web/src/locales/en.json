@@ -1,19 +1,164 @@
 {
-  "app": { "name": "Fidelity", "tagline": "Verified, citable Markdown from source documents" },
-  "nav": { "overview": "Overview", "sources": "Sources", "jobs": "Jobs", "documents": "Documents", "review": "Review", "settings": "Settings", "users": "Users", "menu": "Menu", "skip": "Skip to content", "main": "Main navigation" },
-  "header": { "language": "Language", "theme": "Theme", "light": "Light", "dark": "Dark", "system": "System", "logout": "Sign out", "signedInAs": "Signed in as {{email}}" },
-  "login": { "title": "Sign in", "email": "Email", "password": "Password", "submit": "Sign in", "submitting": "Signing in…", "failed": "Wrong email or password.", "tooMany": "Too many failed attempts. Try again in a few minutes.", "error": "Could not sign in. Check your connection and try again." },
-  "state": { "loading": "Loading…", "retry": "Try again", "errorTitle": "Something went wrong", "emptyTitle": "Nothing here yet", "forbidden": "You do not have access to this page." },
-  "status": { "queued": "Queued", "running": "Running", "done": "Done", "error": "Error", "PASS": "Verified", "FAIL": "Failed", "SKIP": "Not distilled", "METADATA": "Metadata only" },
-  "verdict": { "PASS": "Verified", "FAIL": "Failed verification", "SKIP": "Not distilled", "METADATA": "Metadata only" },
-  "roles": { "admin": "Administrator", "reviewer": "Reviewer", "viewer": "Viewer" },
+  "app": {
+    "name": "Fidelity",
+    "tagline": "Verified, citable Markdown from source documents"
+  },
+  "nav": {
+    "overview": "Overview",
+    "sources": "Sources",
+    "jobs": "Jobs",
+    "documents": "Documents",
+    "review": "Review",
+    "settings": "Settings",
+    "users": "Users",
+    "menu": "Menu",
+    "skip": "Skip to content",
+    "main": "Main navigation"
+  },
+  "header": {
+    "language": "Language",
+    "theme": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
+    "logout": "Sign out",
+    "signedInAs": "Signed in as {{email}}"
+  },
+  "login": {
+    "title": "Sign in",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "failed": "Wrong email or password.",
+    "tooMany": "Too many failed attempts. Try again in a few minutes.",
+    "error": "Could not sign in. Check your connection and try again."
+  },
+  "state": {
+    "loading": "Loading…",
+    "retry": "Try again",
+    "errorTitle": "Something went wrong",
+    "emptyTitle": "Nothing here yet",
+    "forbidden": "You do not have access to this page."
+  },
+  "status": {
+    "queued": "Queued",
+    "running": "Running",
+    "done": "Done",
+    "error": "Error",
+    "PASS": "Verified",
+    "FAIL": "Failed",
+    "SKIP": "Not distilled",
+    "METADATA": "Metadata only"
+  },
+  "verdict": {
+    "PASS": "Verified",
+    "FAIL": "Failed verification",
+    "SKIP": "Not distilled",
+    "METADATA": "Metadata only"
+  },
+  "roles": {
+    "admin": "Administrator",
+    "reviewer": "Reviewer",
+    "viewer": "Viewer"
+  },
   "pages": {
-    "overview": { "title": "Overview", "empty": "No documents have been distilled yet.", "emptyHint": "Add a source, then start a distillation job.", "sources": "Sources", "documents": "Documents", "verified": "Verified", "running": "In progress", "attention": "Needs attention", "attentionNone": "Nothing needs attention." },
-    "sources": { "title": "Sources", "empty": "No sources configured.", "emptyHint": "A source is a folder of original documents (read-only).", "readOnly": "Original documents are never modified.", "distillAll": "Distill all PDFs", "upload": "Upload a PDF", "started": "Started {{count}} job(s).", "uploaded": "Uploaded {{name}}; distillation started." },
-    "jobs": { "title": "Jobs", "empty": "No jobs have run yet.", "emptyHint": "Jobs appear here when a distillation starts.", "file": "File", "kind": "Type", "status": "Status", "message": "Message" },
-    "documents": { "title": "Documents", "empty": "No distilled documents yet.", "emptyHint": "Distilled, verified documents are listed here.", "filter": "Show", "all": "All", "result": "Result", "pages": "Pages", "files": "Files", "single": "1 (single file)", "notes": "Notes", "instruction": "Contains text that looks like instructions to an AI" },
-    "review": { "title": "Review" },
-    "settings": { "title": "Settings", "hint": "Language and theme are chosen in the top bar." },
-    "users": { "title": "Users", "empty": "No users to show.", "role": "Role", "add": "Add a user", "create": "Create user", "passwordHint": "At least 10 characters." }
+    "overview": {
+      "title": "Overview",
+      "empty": "No documents have been distilled yet.",
+      "emptyHint": "Add a source, then start a distillation job.",
+      "sources": "Sources",
+      "documents": "Documents",
+      "verified": "Verified",
+      "running": "In progress",
+      "attention": "Needs attention",
+      "attentionNone": "Nothing needs attention."
+    },
+    "sources": {
+      "title": "Sources",
+      "empty": "No sources configured.",
+      "emptyHint": "A source is a folder of original documents (read-only).",
+      "readOnly": "Original documents are never modified.",
+      "distillAll": "Distill all PDFs",
+      "upload": "Upload a PDF",
+      "started": "Started {{count}} job(s).",
+      "uploaded": "Uploaded {{name}}; distillation started.",
+      "local": "Local folders",
+      "dropbox": {
+        "title": "Dropbox sync",
+        "intro": "Distil a Dropbox folder into another Dropbox folder. Every file is verified against its source; only files that pass are published.",
+        "notAuthorised": "Dropbox access is not set up on this machine (missing: {{roles}}). See the administrator runbook, \"Dropbox access\".",
+        "source": "Source folder — Dropbox shared link (read only)",
+        "dest": "Output folder — Dropbox shared link (an empty folder of your own)",
+        "only": "Only files whose name contains (optional)",
+        "dryRun": "Dry run — distil and check only, upload nothing",
+        "force": "Re-distil files that have not changed",
+        "startDry": "Start dry run",
+        "startPublish": "Distil and publish",
+        "busy": "A sync is already running.",
+        "safety": "The source folder is only read and is checked unchanged at the end. Failed or uncertain files are not published. A published run can be rolled back.",
+        "recent": "Recent runs",
+        "progress": "Progress",
+        "log": "Log",
+        "kindDry": "Dry run",
+        "kindPublish": "Publish",
+        "kindRollback": "Rollback",
+        "status": {
+          "queued": "Queued",
+          "running": "Running",
+          "done": "Finished",
+          "error": "Error"
+        },
+        "pass": "Passed",
+        "review": "Needs review",
+        "fail": "Failed",
+        "unchanged": "Unchanged",
+        "duplicates": "Duplicates",
+        "unsupported": "Not distilled",
+        "sourceOk": "Source folder verified unchanged.",
+        "sourceChanged": "The source folder changed during the run — check the log.",
+        "published": "Published as run {{run}}.",
+        "rollback": "Roll back this run",
+        "rollbackConfirm": "Restore the previous versions of everything run {{run}} published?",
+        "rollbackStarted": "Rollback started."
+      }
+    },
+    "jobs": {
+      "title": "Jobs",
+      "empty": "No jobs have run yet.",
+      "emptyHint": "Jobs appear here when a distillation starts.",
+      "file": "File",
+      "kind": "Type",
+      "status": "Status",
+      "message": "Message"
+    },
+    "documents": {
+      "title": "Documents",
+      "empty": "No distilled documents yet.",
+      "emptyHint": "Distilled, verified documents are listed here.",
+      "filter": "Show",
+      "all": "All",
+      "result": "Result",
+      "pages": "Pages",
+      "files": "Files",
+      "single": "1 (single file)",
+      "notes": "Notes",
+      "instruction": "Contains text that looks like instructions to an AI"
+    },
+    "review": {
+      "title": "Review"
+    },
+    "settings": {
+      "title": "Settings",
+      "hint": "Language and theme are chosen in the top bar."
+    },
+    "users": {
+      "title": "Users",
+      "empty": "No users to show.",
+      "role": "Role",
+      "add": "Add a user",
+      "create": "Create user",
+      "passwordHint": "At least 10 characters."
+    }
   }
 }

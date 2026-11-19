@@ -1,19 +1,164 @@
 {
-  "app": { "name": "Fidelity", "tagline": "把源文件转成经过验证、可引用的 Markdown" },
-  "nav": { "overview": "总览", "sources": "数据源", "jobs": "任务", "documents": "文档", "review": "审核", "settings": "设置", "users": "用户", "menu": "菜单", "skip": "跳到主要内容", "main": "主导航" },
-  "header": { "language": "语言", "theme": "主题", "light": "浅色", "dark": "深色", "system": "跟随系统", "logout": "退出登录", "signedInAs": "当前用户：{{email}}" },
-  "login": { "title": "登录", "email": "邮箱", "password": "密码", "submit": "登录", "submitting": "正在登录…", "failed": "邮箱或密码不正确。", "tooMany": "失败次数过多，请几分钟后再试。", "error": "无法登录，请检查网络后重试。" },
-  "state": { "loading": "加载中…", "retry": "重试", "errorTitle": "出错了", "emptyTitle": "这里还没有内容", "forbidden": "你没有权限访问此页面。" },
-  "status": { "queued": "排队中", "running": "运行中", "done": "完成", "error": "出错", "PASS": "已验证", "FAIL": "未通过", "SKIP": "未蒸馏", "METADATA": "仅元数据" },
-  "verdict": { "PASS": "已验证", "FAIL": "验证未通过", "SKIP": "未蒸馏", "METADATA": "仅元数据" },
-  "roles": { "admin": "管理员", "reviewer": "审核员", "viewer": "查看者" },
+  "app": {
+    "name": "Fidelity",
+    "tagline": "把源文件转成经过验证、可引用的 Markdown"
+  },
+  "nav": {
+    "overview": "总览",
+    "sources": "数据源",
+    "jobs": "任务",
+    "documents": "文档",
+    "review": "审核",
+    "settings": "设置",
+    "users": "用户",
+    "menu": "菜单",
+    "skip": "跳到主要内容",
+    "main": "主导航"
+  },
+  "header": {
+    "language": "语言",
+    "theme": "主题",
+    "light": "浅色",
+    "dark": "深色",
+    "system": "跟随系统",
+    "logout": "退出登录",
+    "signedInAs": "当前用户：{{email}}"
+  },
+  "login": {
+    "title": "登录",
+    "email": "邮箱",
+    "password": "密码",
+    "submit": "登录",
+    "submitting": "正在登录…",
+    "failed": "邮箱或密码不正确。",
+    "tooMany": "失败次数过多，请几分钟后再试。",
+    "error": "无法登录，请检查网络后重试。"
+  },
+  "state": {
+    "loading": "加载中…",
+    "retry": "重试",
+    "errorTitle": "出错了",
+    "emptyTitle": "这里还没有内容",
+    "forbidden": "你没有权限访问此页面。"
+  },
+  "status": {
+    "queued": "排队中",
+    "running": "运行中",
+    "done": "完成",
+    "error": "出错",
+    "PASS": "已验证",
+    "FAIL": "未通过",
+    "SKIP": "未蒸馏",
+    "METADATA": "仅元数据"
+  },
+  "verdict": {
+    "PASS": "已验证",
+    "FAIL": "验证未通过",
+    "SKIP": "未蒸馏",
+    "METADATA": "仅元数据"
+  },
+  "roles": {
+    "admin": "管理员",
+    "reviewer": "审核员",
+    "viewer": "查看者"
+  },
   "pages": {
-    "overview": { "title": "总览", "empty": "还没有蒸馏过任何文档。", "emptyHint": "先添加一个数据源，再开始蒸馏任务。", "sources": "数据源", "documents": "文档", "verified": "已验证", "running": "进行中", "attention": "需要关注", "attentionNone": "没有需要关注的内容。" },
-    "sources": { "title": "数据源", "empty": "还没有配置数据源。", "emptyHint": "数据源是存放原始文档的文件夹（只读）。", "readOnly": "原始文档不会被修改。", "distillAll": "蒸馏全部 PDF", "upload": "上传 PDF", "started": "已启动 {{count}} 个任务。", "uploaded": "已上传 {{name}}，已开始蒸馏。" },
-    "jobs": { "title": "任务", "empty": "还没有运行过任务。", "emptyHint": "开始蒸馏后，任务会显示在这里。", "file": "文件", "kind": "类型", "status": "状态", "message": "信息" },
-    "documents": { "title": "文档", "empty": "还没有蒸馏出的文档。", "emptyHint": "这里列出经过验证的蒸馏文档。", "filter": "显示", "all": "全部", "result": "结果", "pages": "页数", "files": "文件数", "single": "1（单文件）", "notes": "备注", "instruction": "含有疑似对 AI 下指令的文字" },
-    "review": { "title": "审核" },
-    "settings": { "title": "设置", "hint": "语言和主题在顶栏中选择。" },
-    "users": { "title": "用户", "empty": "没有可显示的用户。", "role": "角色", "add": "添加用户", "create": "创建用户", "passwordHint": "至少 10 个字符。" }
+    "overview": {
+      "title": "总览",
+      "empty": "还没有蒸馏过任何文档。",
+      "emptyHint": "先添加一个数据源，再开始蒸馏任务。",
+      "sources": "数据源",
+      "documents": "文档",
+      "verified": "已验证",
+      "running": "进行中",
+      "attention": "需要关注",
+      "attentionNone": "没有需要关注的内容。"
+    },
+    "sources": {
+      "title": "数据源",
+      "empty": "还没有配置数据源。",
+      "emptyHint": "数据源是存放原始文档的文件夹（只读）。",
+      "readOnly": "原始文档不会被修改。",
+      "distillAll": "蒸馏全部 PDF",
+      "upload": "上传 PDF",
+      "started": "已启动 {{count}} 个任务。",
+      "uploaded": "已上传 {{name}}，已开始蒸馏。",
+      "local": "本地文件夹",
+      "dropbox": {
+        "title": "Dropbox 同步",
+        "intro": "把一个 Dropbox 文件夹蒸馏到另一个 Dropbox 文件夹。每个文件都会与原文核对，只有通过的才会发布。",
+        "notAuthorised": "这台机器还没有设置 Dropbox 访问（缺少：{{roles}}）。请参阅管理员运维手册的\"Dropbox 权限\"。",
+        "source": "源文件夹——Dropbox 共享链接（只读）",
+        "dest": "输出文件夹——Dropbox 共享链接（你自己的空文件夹）",
+        "only": "只处理文件名包含以下文字的文件（可选）",
+        "dryRun": "试运行——只蒸馏和检查，不上传",
+        "force": "未变化的文件也重新蒸馏",
+        "startDry": "开始试运行",
+        "startPublish": "蒸馏并发布",
+        "busy": "已有一个同步正在进行。",
+        "safety": "源文件夹只读，结束时会核对未被改动。不通过或不确定的文件不会发布。已发布的运行可以回滚。",
+        "recent": "最近的运行",
+        "progress": "进度",
+        "log": "日志",
+        "kindDry": "试运行",
+        "kindPublish": "发布",
+        "kindRollback": "回滚",
+        "status": {
+          "queued": "排队中",
+          "running": "进行中",
+          "done": "已完成",
+          "error": "出错"
+        },
+        "pass": "通过",
+        "review": "待审核",
+        "fail": "未通过",
+        "unchanged": "未变化",
+        "duplicates": "重复",
+        "unsupported": "未蒸馏",
+        "sourceOk": "已核对：源文件夹未被改动。",
+        "sourceChanged": "运行期间源文件夹发生了变化——请查看日志。",
+        "published": "已发布，运行编号 {{run}}。",
+        "rollback": "回滚这次运行",
+        "rollbackConfirm": "把运行 {{run}} 发布的所有文件恢复到之前的版本？",
+        "rollbackStarted": "已开始回滚。"
+      }
+    },
+    "jobs": {
+      "title": "任务",
+      "empty": "还没有运行过任务。",
+      "emptyHint": "开始蒸馏后，任务会显示在这里。",
+      "file": "文件",
+      "kind": "类型",
+      "status": "状态",
+      "message": "信息"
+    },
+    "documents": {
+      "title": "文档",
+      "empty": "还没有蒸馏出的文档。",
+      "emptyHint": "这里列出经过验证的蒸馏文档。",
+      "filter": "显示",
+      "all": "全部",
+      "result": "结果",
+      "pages": "页数",
+      "files": "文件数",
+      "single": "1（单文件）",
+      "notes": "备注",
+      "instruction": "含有疑似对 AI 下指令的文字"
+    },
+    "review": {
+      "title": "审核"
+    },
+    "settings": {
+      "title": "设置",
+      "hint": "语言和主题在顶栏中选择。"
+    },
+    "users": {
+      "title": "用户",
+      "empty": "没有可显示的用户。",
+      "role": "角色",
+      "add": "添加用户",
+      "create": "创建用户",
+      "passwordHint": "至少 10 个字符。"
+    }
   }
 }

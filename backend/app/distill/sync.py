@@ -86,6 +86,7 @@ def main(argv=None):
         print(f"rolled back run {a.rollback}: {len(keys)} document(s) restored to their previous version", flush=True)
         return 0
     before = D.snapshot(reader, a.source_link)
+    print(f"files to check: {sum(1 for r in before if r.lower().endswith(SUPPORTED))}", flush=True)
     report = {"source": src_root, "dest": dest_root, "run": stamp, "documents": []}
     results = []
     seen_hash = {}

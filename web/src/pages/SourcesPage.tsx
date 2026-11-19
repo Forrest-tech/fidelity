@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { api, json } from "../net/client";
 import { useAuth } from "../auth/AuthProvider";
 import { Button, Card, EmptyState, ErrorState, Loading, PageHeader } from "../components/ui";
+import { DropboxSync } from "../components/DropboxSync";
 
 interface SourceRow {
   id: string;
@@ -82,6 +83,8 @@ export function SourcesPage() {
   return (
     <>
       <PageHeader title={t("pages.sources.title")} />
+      <DropboxSync canEdit={canEdit} isAdmin={me?.role === "admin"} />
+      <h2 className="mb-2 font-medium">{t("pages.sources.local")}</h2>
       {q.isLoading && <Loading />}
       {q.isError && <ErrorState message={(q.error as Error).message} onRetry={() => void q.refetch()} />}
       {q.data && q.data.length === 0 && <EmptyState title={t("pages.sources.empty")} hint={t("pages.sources.emptyHint")} />}

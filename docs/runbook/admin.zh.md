@@ -28,6 +28,11 @@
 （或 `--role writer`）。打开链接，粘贴授权码。
 
 ## 蒸馏和发布
+**在网页里**（reviewer 或 admin）：**数据源 → Dropbox 同步**。粘贴源文件夹的共享链接和输出文件夹的共享链接，
+第一次保持勾选**试运行**，点开始，在"最近的运行"里看进度、每个文件的结果和日志。去掉"试运行"即正式发布。
+管理员可以在同一处回滚已发布的运行。它执行的就是下面的命令。
+
+**用命令行：**
 ```
 python -m app.distill.sync --source-link <源共享链接> --dest-link <目标共享链接> --dry-run
 python -m app.distill.sync --source-link <…> --dest-link <…>
