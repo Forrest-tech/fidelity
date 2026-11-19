@@ -1,0 +1,5 @@
+# Phase 6 extras for the Mac mini (on top of backend/requirements.txt).
+ocrmac>=1.0            # Apple Vision OCR (macOS only)
+paddlepaddle>=3.0      # PaddleOCR runtime
+paddleocr>=3.0         # PP-OCRv5 English
+pix2tex>=0.1.4         # formula OCR (LaTeX-OCR); uses PyTorch (Apple GPU via MPS)

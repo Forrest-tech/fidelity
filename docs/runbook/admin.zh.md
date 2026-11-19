@@ -84,6 +84,25 @@ python -m app.distill.sync --source-link <…> --dest-link <…>
 `python scripts/measure_tokens.py --library <本地拷贝> --out ../docs/benchmarks/token-cost`——
 文件大小、列目录成本、在 10k–30k 目标范围内的比例。
 
+## Mac mini（第六阶段）
+1. 运行 `./deploy/mac/install.sh`：安装 Homebrew 软件（Python 3.11、Tesseract、Node、Ollama）、Python 环境
+   （有 `deploy/mac/requirements-macos.lock` 时按锁定版本安装——从 CI 产物 `macos-benchmarks-and-lock` 下载）、
+   第六阶段组件（Apple Vision、PaddleOCR、pix2tex）、本地修正模型、网页界面，以及开机登录即启动、
+   意外退出自动重启的 launchd 服务。可重复运行。`--check` 只检查前置条件。
+2. 设置在 `deploy/mac/mac.env`（不进 git，由 `mac.env.example` 生成）：逐页视觉抽查、公式 OCR、本地模型、
+   可选的 PostgreSQL。重启：`launchctl kickstart -k gui/$UID/com.fidelity.app`。日志：`data/logs/app.*.log`。
+3. 安装脚本会对所有已装的 OCR 引擎做基准测试，把最准的两个记录在 `data/ocr_engines.json`
+   （随时可重跑：`python scripts/ocr_benchmark.py --synthetic --out <目录> --select`；或用
+   `FIDELITY_OCR_ENGINES=applevision,paddle` 强制指定）。吞吐量：`PERF_PDF=<pdf> ./deploy/mac/install.sh`，或
+   `python scripts/perf_benchmark.py --pdf <pdf> --label "Mac mini" --out ../docs/benchmarks/perf-mac`。
+
+**修正模型。** 设置 `FIDELITY_LLM_URL` 后，两个 OCR 引擎仍读得不一样的词会交给本地模型判断；模型只能在两个引擎
+的读法（或术语表里的词）中选一个，数字一律不由模型决定。每次选择都记录在该页的修正日志里。
+
+**公式。** `python scripts/formulas.py list <pdf>` 列出不可读公式（页码和顺序）；`read <pdf>` 运行公式 OCR 并给出
+候选（两个引擎一致的标为 `agreed`）；对照原文页核对后，执行
+`approve <pdf> --page N --k K --latex "…" --reviewer <姓名>`。下次蒸馏时以"已审核的转录"发布。未经批准一律不发布。
+
 ## 服务器数据库（PostgreSQL）
 默认使用 `data/` 下的 SQLite 文件。上服务器时，把两个库都指向 PostgreSQL 16：
 ```

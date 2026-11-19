@@ -83,7 +83,7 @@ def page_truth(pdf_path: str, index: int) -> str:
 
 def run(pdf_path: str, pages, engines=None, degradations=None, log=print) -> dict:
     from . import ocr as O
-    engines = engines if engines is not None else O.available_engines()
+    engines = engines if engines is not None else O.all_engines()
     degradations = degradations or DEGRADATIONS
     rows = []
     for idx in pages:
@@ -139,3 +139,24 @@ def to_markdown(result: dict) -> str:
               "letters and digits found anywhere on the page (order ignored). Numbers = share of numbers found.",
               "Auto-accepted pages are published without review; all others go to the review queue."]
     return "\n".join(lines) + "\n"
+
+
+def select(result: dict, path: str = None) -> dict:
+    """Rank engines by mean accuracy over all degradations and record the best two as the engines the
+    pipeline uses (spec Phase 6: engines chosen by benchmark). The first one's text is published."""
+    import datetime as _dt
+    import json as _json
+    import os as _os
+    score = {}
+    for d in result["summary"].values():
+        for name, m in d["engines"].items():
+            score.setdefault(name, []).append(m["char_acc"])
+    ranked = sorted(score, key=lambda n: -sum(score[n]) / len(score[n]))
+    sel = {"engines": ranked[:2], "mean_char_acc": {n: round(sum(score[n]) / len(score[n]), 5) for n in ranked},
+           "benchmark": _os.path.basename(result.get("pdf", "")), "selected": _dt.date.today().isoformat()}
+    from . import ocr as O
+    path = path or O.SELECTION_FILE
+    _os.makedirs(_os.path.dirname(_os.path.abspath(path)), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        _json.dump(sel, f, indent=1)
+    return sel

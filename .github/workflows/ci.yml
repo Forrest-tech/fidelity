@@ -85,6 +85,50 @@ jobs:
           FIDELITY_TRUST_URL: postgresql://postgres:postgres@localhost:5432/fidelity_test
         run: python -m pytest -q
 
+  backend-macos:
+    # Phase 6: the Mac mini's platform. Same suite on macOS (Apple silicon), Apple Vision OCR benchmarked
+    # against the other engines, throughput measured, and the locked dependency list for the installer.
+    name: backend-tests-macos
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install dependencies
+        run: |
+          brew install tesseract
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt pytest ocrmac
+      - uses: actions/cache@v4
+        with:
+          path: data/models
+          key: ocr-models-${{ hashFiles('backend/app/distill/ocr.py') }}
+      - name: Fetch OCR models
+        working-directory: backend
+        run: python scripts/fetch_ocr_models.py
+      - name: Run backend tests on macOS
+        working-directory: backend
+        env:
+          PYTHONUTF8: "1"
+        run: python -m pytest -q
+      - name: Benchmark OCR engines incl. Apple Vision; choose the best two
+        working-directory: backend
+        env:
+          PYTHONUTF8: "1"
+        run: |
+          python scripts/ocr_benchmark.py --synthetic --out mac-bench/ocr --select
+          cat mac-bench/ocr.md >> "$GITHUB_STEP_SUMMARY"
+          python scripts/perf_benchmark.py --pdf mac-bench/ocr.source.pdf --pages 3 --ocr-pages 2 --label "GitHub macOS runner (Apple silicon)" --out mac-bench/perf
+          cat mac-bench/perf.md >> "$GITHUB_STEP_SUMMARY"
+          pip freeze --exclude-editable > mac-bench/requirements-macos.lock
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-benchmarks-and-lock
+          path: backend/mac-bench
+
   frontend:
     name: frontend-build
     runs-on: ubuntu-latest

@@ -87,6 +87,29 @@ facts (editions, drafts, counts) are generated — never type them by hand.
 `python scripts/measure_tokens.py --library <local copy> --out ../docs/benchmarks/token-cost` — file
 sizes, listing cost, share inside the 10k–30k target.
 
+## Mac mini (Phase 6)
+1. `./deploy/mac/install.sh` — installs Homebrew packages (Python 3.11, Tesseract, Node, Ollama), the
+   Python environment (locked versions when `deploy/mac/requirements-macos.lock` is present — download it
+   from the CI artifact `macos-benchmarks-and-lock`), the Phase 6 extras (Apple Vision, PaddleOCR, pix2tex),
+   the local correction model, the web interface, and a launchd service that starts at login and restarts
+   if it stops. Safe to run again. `--check` only lists prerequisites.
+2. Settings live in `deploy/mac/mac.env` (git-ignored; created from `mac.env.example`): every-page visual
+   check, formula OCR, local model, optional PostgreSQL. Restart: `launchctl kickstart -k gui/$UID/com.fidelity.app`.
+   Logs: `data/logs/app.*.log`.
+3. The installer benchmarks every installed OCR engine and records the best two in `data/ocr_engines.json`
+   (re-run any time: `python scripts/ocr_benchmark.py --synthetic --out <dir> --select`; or force with
+   `FIDELITY_OCR_ENGINES=applevision,paddle`). Throughput: `PERF_PDF=<pdf> ./deploy/mac/install.sh` or
+   `python scripts/perf_benchmark.py --pdf <pdf> --label "Mac mini" --out ../docs/benchmarks/perf-mac`.
+
+**Correction model.** With `FIDELITY_LLM_URL` set, words the two OCR engines still read differently are
+put to the local model, which may only choose one of the engines' readings (or a glossary word); numbers
+are never decided by the model. Every choice is in the page's correction log.
+
+**Formulas.** `python scripts/formulas.py list <pdf>` lists unreadable formulas (page and order);
+`read <pdf>` runs the formula OCR and shows candidates (two engines agreeing are marked `agreed`);
+after checking against the source page, `approve <pdf> --page N --k K --latex "…" --reviewer <name>`.
+The next distillation publishes it as a reviewed transcription. Nothing is published without approval.
+
 ## Server database (PostgreSQL)
 SQLite files under `data/` are the default. On a server, point both databases at PostgreSQL 16:
 ```
