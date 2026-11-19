@@ -149,7 +149,15 @@
         "soFar": "So far: {{pass}} passed · {{review}} need review · {{fail}} failed · {{skipped}} unchanged",
         "cancel": "Cancel run",
         "cancelConfirm": "Stop this run? Files already checked are kept in the log; nothing more is published.",
-        "quiet": "No new output for a while — normal during a long step (a large scan or a big file). The run is still active while the spinner turns."
+        "quiet": "No new output for a while — normal during a long step (a large scan or a big file). The run is still active while the spinner turns.",
+        "step": {
+          "listing": "List files",
+          "downloading": "Download",
+          "ocr": "OCR",
+          "verifying": "Check",
+          "uploading": "Stage",
+          "publishing": "Publish"
+        }
       }
     },
     "jobs": {
