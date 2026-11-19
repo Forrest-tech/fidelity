@@ -302,6 +302,17 @@ def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=prin
             body += "\n".join(f"- {r} → {clause_file[r][0]} (p.{clause_file[r][1].page})" for r in refs) + "\n"
         bodies.append(body)
 
+    # Phase 6: reviewed formula transcriptions replace their markers; pages with a figure get a notice
+    from . import formula as FM
+    approvals = FM.load_approvals()
+    n_formulas = 0
+    if approvals.get(h_before):
+        for i, b in enumerate(bodies):
+            bodies[i], n = FM.apply_approved(b, h_before, approvals)
+            n_formulas += n
+    fig_pages = FM.figure_pages(pdf_path)
+    bodies = [FM.add_figure_notices(b, fig_pages) for b in bodies]
+
     instr = []
     for b in bodies:
         for m in re.finditer(r"<!-- unit: p(\d+) .*?-->(.*?)<!-- /unit -->", b, re.S):
@@ -326,6 +337,9 @@ def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=prin
     if not rep["source_unchanged"]["ok"]:
         rep["status"] = "FAIL"
     rep["visual"] = visual_check(pdf_path, len(pages), log)
+    rep["formulas"] = {"reviewed_transcriptions": n_formulas, "figure_pages": sorted(fig_pages)}
+    if os.environ.get("FIDELITY_FORMULA_OCR") == "1":      # Phase 6 (Mac): candidates for the reviewer
+        rep["formulas"]["candidates"] = FM.recover(pdf_path, log=log)
     if not rep["visual"]["ok"]:
         rep["status"] = "FAIL"
     rep["triage"] = tri

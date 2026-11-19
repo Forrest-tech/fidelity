@@ -41,6 +41,8 @@ def main():
     ap.add_argument("--pages", default="1", help="1-based page numbers, comma separated")
     ap.add_argument("--out", required=True, help="output path without extension (.md and .json are written)")
     ap.add_argument("--degradations", default="", help="comma separated subset of " + ",".join(B.DEGRADATIONS))
+    ap.add_argument("--select", action="store_true",
+                    help="record the two most accurate engines as the ones the pipeline uses (data/ocr_engines.json)")
     a = ap.parse_args()
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     if a.synthetic:
@@ -57,6 +59,8 @@ def main():
     with open(a.out + ".md", "w", encoding="utf-8") as f:
         f.write(B.to_markdown(res))
     print(B.to_markdown(res))
+    if a.select:
+        print("selected:", B.select(res))
 
 
 if __name__ == "__main__":

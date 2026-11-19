@@ -27,6 +27,9 @@ _INJECTED = [
     re.compile(r"\*\(informative — not mandatory\)\*"),
     re.compile(r"\*\(no text on this page\)\*"),
     re.compile(re.escape("⚠️[formula/symbols not readable in source text layer — check source page]")),
+    # Phase 6: a reviewed formula transcription and the figure notice are added on purpose
+    re.compile(r"\$\$.*?\$\$ \*\(formula transcribed from the source image; reviewed [^)]*\)\*", re.S),
+    re.compile(re.escape("> *(Figure on this page — not reproduced in the text; see the source page.)*")),
 ]
 
 

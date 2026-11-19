@@ -15,6 +15,7 @@ import hashlib
 import os
 import re
 import shutil
+import sys
 from dataclasses import dataclass, field
 
 AGREE = 0.995          # share of words both engines read identically
@@ -133,11 +134,91 @@ class TesseractEngine:
         return _join_lines(lines)
 
 
-ENGINES = [RapidOCREngine, TesseractEngine]
+class AppleVisionEngine:
+    """macOS Vision framework (Phase 6, Mac mini) through the `ocrmac` package; 'accurate' level."""
+    name = "applevision"
+    model = "vision-accurate"
+
+    @classmethod
+    def available(cls) -> bool:
+        if sys.platform != "darwin":
+            return False
+        try:
+            import ocrmac  # noqa: F401
+            return True
+        except Exception:
+            return False
+
+    def read(self, img):
+        from ocrmac import ocrmac
+        res = ocrmac.OCR(img.convert("RGB"), recognition_level="accurate", language_preference=["en-US"]).recognize()
+        lines = []
+        for text, conf, (x, y, w, h) in res:          # normalised box, origin bottom-left
+            if text.strip():
+                lines.append(((1 - y - h) * img.height, x * img.width, text.strip(), float(conf)))
+        return _join_lines(lines)
+
+
+class PaddleOCREngine:
+    """PaddleOCR 3 (PP-OCRv5, English). Heavier than RapidOCR; meant for the Mac mini or a server."""
+    name = "paddle"
+    model = "pp-ocrv5-en"
+    _eng = None
+
+    @classmethod
+    def available(cls) -> bool:
+        try:
+            import paddleocr  # noqa: F401
+            return True
+        except Exception:
+            return False
+
+    def read(self, img):
+        import numpy as np
+        if PaddleOCREngine._eng is None:
+            from paddleocr import PaddleOCR
+            PaddleOCREngine._eng = PaddleOCR(lang="en", use_doc_orientation_classify=False,
+                                             use_doc_unwarping=False, use_textline_orientation=False)
+        lines = []
+        for page in PaddleOCREngine._eng.predict(np.asarray(img.convert("RGB"))):
+            for text, score, box in zip(page["rec_texts"], page["rec_scores"], page["rec_boxes"]):
+                if str(text).strip():
+                    lines.append((float(box[1]), float(box[0]), str(text).strip(), float(score)))
+        return _join_lines(lines)
+
+
+ENGINES = [AppleVisionEngine, PaddleOCREngine, RapidOCREngine, TesseractEngine]
+SELECTION_FILE = os.environ.get("FIDELITY_OCR_SELECTION") or os.path.join(_REPO, "data", "ocr_engines.json")
+
+
+def engine_order():
+    """Engine names in the order to use, best first: FIDELITY_OCR_ENGINES (comma list) wins; otherwise the
+    selection the benchmark wrote (`ocr_benchmark.py --select`); otherwise the built-in order."""
+    env = [x.strip() for x in os.environ.get("FIDELITY_OCR_ENGINES", "").split(",") if x.strip()]
+    if env:
+        return env
+    try:
+        import json
+        with open(SELECTION_FILE, encoding="utf-8") as f:
+            return list(json.load(f)["engines"])
+    except (OSError, ValueError, KeyError):
+        return [e.name for e in ENGINES]
+
+
+def all_engines():
+    """Every installed engine (for benchmarking), regardless of the selection."""
+    return [e() for e in ENGINES if e.available()]
 
 
 def available_engines():
-    return [e() for e in ENGINES if e.available()]
+    """Installed engines in the chosen order. The first one's text is published; the second cross-checks."""
+    by_name = {e.name: e for e in ENGINES}
+    order = [n for n in engine_order() if n in by_name] + [e.name for e in ENGINES if e.name not in engine_order()]
+    chosen = [by_name[n]() for n in order if by_name[n].available()]
+    if os.environ.get("FIDELITY_OCR_ENGINES"):
+        wanted = engine_order()
+        chosen = [e for e in chosen if e.name in wanted]
+    return chosen[:2] if len(chosen) > 2 else chosen
 
 
 def _join_lines(lines):
@@ -226,6 +307,12 @@ def ocr_image(img, page: int = 1, engines=None) -> PageOCR:
             r0["text_corrected"], r1["text_corrected"], glossary.load(), (n0, n1))
         for entry in glog:
             readings[entry["engine"]]["corrections"].append(entry)
+        from . import llm_correct                 # layer 4 (Phase 6, opt-in): constrained local model
+        if llm_correct.enabled():
+            r0["text_corrected"], r1["text_corrected"], llog = llm_correct.resolve(
+                r0["text_corrected"], r1["text_corrected"], (n0, n1))
+            for entry in llog:
+                readings[entry.get("engine") or n0]["corrections"].append(entry)
     primary = next(iter(readings.values()))
     r = decide(page, readings, primary["text_corrected"], primary["corrections"])
     if failures:
