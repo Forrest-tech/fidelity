@@ -33,6 +33,20 @@ Two app roles, both stored in `data/dropbox_auth.json`:
 Re-authorise (e.g. after a scope change): `python -m app.distill.dropbox_io auth --app-key <key> --role reader --read-only`
 (or `--role writer`). Follow the link, paste the code.
 
+## Google Drive
+Settings → Cloud storage → **Google Drive** (administrators), with Google's standard OAuth 2.0 flow:
+1. Google Cloud Console: create or pick a project; enable the **Google Drive API**; OAuth consent screen
+   (Internal for Workspace, or External with yourself as a test user).
+2. Credentials → OAuth client ID → **Web application**; add the *Authorised redirect URI* the page shows
+   (e.g. `http://localhost:8000/api/v1/storage/google/callback` — open the app with the same host name).
+3. Paste the client ID and secret into the page, save, then **Connect** read access (scope `drive.readonly`)
+   and write access (scope `drive`, used only for output folders). Tokens stay on the server
+   (`data/google_auth.json`).
+Use a Drive folder link (`https://drive.google.com/drive/folders/…`) as source or output in Cloud sync.
+Google Docs, Sheets and Slides are exported to .docx, .xlsx and .pptx and distilled like Office files;
+deleting on Drive moves items to the trash. Dropbox and Google Drive can be mixed (e.g. Drive → Dropbox).
+Reference: developers.google.com/identity/protocols/oauth2/web-server and developers.google.com/drive/api.
+
 ## Distil and publish
 **In the web interface** (reviewer or admin): **Sources → Dropbox sync**. Paste the source folder's
 shared link and an output folder's shared link, keep **Dry run** ticked for the first run, start, and

@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from .. import db
 from ..auth.users import require_role
 from ..distill import dropbox_io as D
+from ..distill import gdrive_io as G
 from ..jobs import sync_job as S
 from ..jobs.queue import queue
 
@@ -32,9 +33,10 @@ class RollbackIn(BaseModel):
 def _check_links(src, dest):
     for name, v in (("source", src), ("destination", dest)):
         v = v.strip()
-        if not (S.LINK_RE.match(v) or S.PATH_RE.match(v)) or ".." in v.split("/"):
-            raise HTTPException(422, f"the {name} must be a Dropbox folder path (/Folder/Sub) "
-                                     "or a Dropbox shared link (https://www.dropbox.com/...)")
+        if not (S.LINK_RE.match(v) or S.PATH_RE.match(v) or G.is_gdrive(v)) or ".." in v.split("/"):
+            raise HTTPException(422, f"the {name} must be a Dropbox folder path (/Folder/Sub), a Dropbox shared "
+                                     "link (https://www.dropbox.com/...) or a Google Drive folder link "
+                                     "(https://drive.google.com/drive/folders/...)")
     if src.strip().rstrip("/").lower() == dest.strip().rstrip("/").lower():
         raise HTTPException(422, "source and destination must be different folders")
 
@@ -49,7 +51,10 @@ def status():
                 roles = sorted(k for k, v in json.load(f).items() if isinstance(v, dict) and v.get("refresh_token"))
         except (OSError, ValueError):
             roles = []
-    return {"reader": "reader" in roles, "writer": "writer" in roles}
+    g = G.load_auth()
+    google = {r: bool((g.get(r) or {}).get("refresh_token")) and bool((g.get("client") or {}).get("client_id"))
+              for r in ("reader", "writer")}
+    return {"reader": "reader" in roles, "writer": "writer" in roles, "google": google}
 
 
 @router.post("/dropbox/sync")

@@ -120,3 +120,117 @@ export function CloudStorage() {
     </Card>
   );
 }
+
+interface GoogleStatus {
+  client_configured: boolean;
+  client_id: string;
+  redirect_uri: string;
+  reader: { connected: boolean; account: { name: string; email: string } | null };
+  writer: { connected: boolean; account: { name: string; email: string } | null };
+}
+
+export function GoogleDrive() {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ["google"], queryFn: () => api<GoogleStatus>("/storage/google") });
+  const [cid, setCid] = useState("");
+  const [secret, setSecret] = useState("");
+  const [editClient, setEditClient] = useState(false);
+  const done = () => void qc.invalidateQueries({ queryKey: ["google"] });
+  const save = useMutation({
+    mutationFn: () => api("/storage/google/client", { ...json({ client_id: cid, client_secret: secret }), method: "PUT" }),
+    onSuccess: () => {
+      setSecret("");
+      setEditClient(false);
+      done();
+    },
+  });
+  const start = useMutation({
+    mutationFn: (role: Role) => api<{ url: string }>("/storage/google/start", json({ role })),
+    onSuccess: (r) => {
+      window.location.assign(r.url); // Google's consent page; it returns to this app
+    },
+  });
+  const drop = useMutation({ mutationFn: (role: Role) => api(`/storage/google/${role}`, { method: "DELETE" }), onSuccess: done });
+  const params = new URLSearchParams(window.location.search);
+  const result = params.get("google");
+  const err = (save.error || start.error || drop.error) as Error | null;
+  const s = q.data;
+  const showClientForm = s && (!s.client_configured || editClient);
+  return (
+    <Card className="flex max-w-2xl flex-col gap-3">
+      <div>
+        <h2 className="font-medium">{t("pages.settings.google.title")}</h2>
+        <p className="text-sm text-fg-muted">{t("pages.settings.google.intro")}</p>
+      </div>
+      {result === "connected" && <p role="status" className="text-sm text-ok">{t("pages.settings.google.connectedNow")}</p>}
+      {result === "error" && (
+        <p role="alert" className="text-sm text-danger">{t("pages.settings.google.failed", { reason: params.get("reason") || "" })}</p>
+      )}
+      {q.isLoading && <p className="text-sm text-fg-muted">{t("pages.settings.storage.checking")}</p>}
+      {s && (
+        <div className="rounded-md bg-muted p-2 text-sm">
+          <p>{t("pages.settings.google.redirect")}</p>
+          <code className="block break-all">{s.redirect_uri}</code>
+        </div>
+      )}
+      {s && !showClientForm && (
+        <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+          <span className="break-all">{t("pages.settings.google.clientSet", { id: s.client_id })}</span>
+          <Button variant="ghost" onClick={() => setEditClient(true)}>{t("pages.settings.google.changeClient")}</Button>
+        </div>
+      )}
+      {showClientForm && (
+        <form className="grid gap-2" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
+          <label className="grid gap-1 text-sm">
+            {t("pages.settings.google.clientId")}
+            <input className="rounded-md border border-border bg-surface px-2 py-2" value={cid} onChange={(e) => setCid(e.target.value)}
+              placeholder="123…-abc.apps.googleusercontent.com" required autoComplete="off" spellCheck={false} />
+          </label>
+          <label className="grid gap-1 text-sm">
+            {t("pages.settings.google.clientSecret")}
+            <input type="password" className="rounded-md border border-border bg-surface px-2 py-2" value={secret}
+              onChange={(e) => setSecret(e.target.value)} required autoComplete="off" />
+          </label>
+          <div><Button type="submit" disabled={save.isPending}>{t("pages.settings.google.saveClient")}</Button></div>
+        </form>
+      )}
+      {s?.client_configured &&
+        (["reader", "writer"] as Role[]).map((role) => (
+          <section key={role} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border p-3" aria-labelledby={`g-${role}`}>
+            <div>
+              <h3 id={`g-${role}`} className="font-medium">{t(`pages.settings.storage.${role}`)}</h3>
+              <p className={cx("text-sm", s[role].connected ? "text-ok" : "text-fg-muted")}>
+                {!s[role].connected
+                  ? t("pages.settings.storage.notConnected")
+                  : s[role].account
+                    ? t("pages.settings.storage.connectedAs", { name: s[role].account!.name, email: s[role].account!.email })
+                    : t("pages.settings.storage.connectedUnchecked")}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={() => start.mutate(role)} disabled={start.isPending}>
+                {s[role].connected ? t("pages.settings.storage.reconnect") : t("pages.settings.storage.connect")}
+              </Button>
+              {s[role].connected && (
+                <Button variant="ghost" disabled={drop.isPending}
+                  onClick={() => window.confirm(t("pages.settings.storage.disconnectConfirm")) && drop.mutate(role)}>
+                  {t("pages.settings.storage.disconnect")}
+                </Button>
+              )}
+            </div>
+          </section>
+        ))}
+      {err && <p role="alert" className="text-sm text-danger">{err.message}</p>}
+      <details className="text-sm">
+        <summary className="cursor-pointer text-fg-muted">{t("pages.settings.google.helpTitle")}</summary>
+        <ol className="mt-2 list-decimal pl-5 text-fg-muted">
+          <li>{t("pages.settings.google.help1")}</li>
+          <li>{t("pages.settings.google.help2")}</li>
+          <li>{t("pages.settings.google.help3")}</li>
+          <li>{t("pages.settings.google.help4")}</li>
+        </ol>
+      </details>
+    </Card>
+  );
+}

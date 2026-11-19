@@ -16,6 +16,7 @@ os.environ.setdefault("FIDELITY_VISUAL_SAMPLES", "0")  # the visual check has it
 os.environ.setdefault("FIDELITY_GLOSSARY", os.path.join(_TMP, "no-glossary.json"))  # tests pass their own
 os.environ.setdefault("FIDELITY_OCR_SELECTION", os.path.join(_TMP, "no-ocr-selection.json"))
 os.environ.setdefault("FIDELITY_FORMULA_APPROVALS", os.path.join(_TMP, "no-formula-approvals.json"))
+os.environ.setdefault("FIDELITY_GOOGLE_AUTH", os.path.join(_TMP, "google_auth.json"))
 
 
 def _reset_postgres():

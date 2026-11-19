@@ -128,3 +128,64 @@ def test_first_run_setup_only_while_no_user_exists(login, monkeypatch):
     r = c.post("/api/v1/setup", json={"email": "first-admin@example.com", "password": "long-enough-pw"})
     assert r.status_code == 201 and r.json()["role"] == "admin"
     assert c.post("/api/v1/auth/login", data={"username": "first-admin@example.com", "password": "long-enough-pw"}).status_code in (200, 204)
+
+
+# ------------------------------------------------------------------ Google Drive connection
+from app.distill import gdrive_io as G  # noqa: E402
+
+CID = "123456789012-testclientid.apps.googleusercontent.com"
+
+
+@pytest.fixture()
+def gauth(tmp_path, monkeypatch):
+    p = tmp_path / "google_auth.json"
+    monkeypatch.setattr(G, "AUTH_PATH", str(p))
+    monkeypatch.setattr(ST, "_google_account", lambda role: {"name": "G User", "email": "g@example.com"})
+    return p
+
+
+def test_google_client_is_validated_and_secret_never_returned(login, gauth):
+    c = login("admin")
+    assert c.put("/api/v1/storage/google/client", json={"client_id": "nope", "client_secret": "x" * 20}).status_code == 422
+    assert c.put("/api/v1/storage/google/client", json={"client_id": CID, "client_secret": "fake-secret-for-tests"}).status_code == 200
+    st = c.get("/api/v1/storage/google")
+    j = st.json()
+    assert j["client_configured"] and j["client_id"] == CID and "fake-secret-for-tests" not in st.text
+    assert j["redirect_uri"].endswith("/api/v1/storage/google/callback")
+    assert login("reviewer").get("/api/v1/storage/google").status_code == 403
+
+
+def test_google_connect_uses_the_read_only_scope_and_saves_the_token(login, gauth, monkeypatch):
+    c = login("admin")
+    c.put("/api/v1/storage/google/client", json={"client_id": CID, "client_secret": "fake-secret-for-tests"})
+    url = c.post("/api/v1/storage/google/start", json={"role": "reader"}).json()["url"]
+    assert url.startswith("https://accounts.google.com/o/oauth2/auth") and "drive.readonly" in url and "access_type=offline" in url
+    import urllib.parse as up
+    state = up.parse_qs(up.urlparse(url).query)["state"][0]
+    from google_auth_oauthlib.flow import Flow
+
+    def fake_fetch(self, code=None, **kw):
+        assert code == "AUTHCODE"
+        self.oauth2session.token = {"access_token": "a", "refresh_token": "fake-refresh-for-tests",
+                                    "scope": G.SCOPES["reader"], "token_type": "Bearer", "expires_at": 4102444800}
+        return self.oauth2session.token
+    monkeypatch.setattr(Flow, "fetch_token", fake_fetch)
+    r = c.get(f"/api/v1/storage/google/callback?state={state}&code=AUTHCODE", follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/settings?google=connected&role=reader"
+    assert json.loads(gauth.read_text(encoding="utf-8"))["reader"]["refresh_token"] == "fake-refresh-for-tests"
+    st = c.get("/api/v1/storage/google")
+    assert st.json()["reader"]["connected"] and "fake-refresh-for-tests" not in st.text
+    # the same state cannot be used twice
+    r = c.get(f"/api/v1/storage/google/callback?state={state}&code=AUTHCODE", follow_redirects=False)
+    assert "google=error" in r.headers["location"]
+
+
+def test_google_disconnect_removes_only_that_role(login, gauth, monkeypatch):
+    gauth.write_text(json.dumps({"client": {"client_id": CID, "client_secret": "s" * 12},
+                                 "reader": {"refresh_token": "r"}, "writer": {"refresh_token": "w"}}), encoding="utf-8")
+    import urllib.request
+    monkeypatch.setattr(urllib.request, "urlopen", lambda *a, **k: None)      # no network in tests
+    c = login("admin")
+    assert c.delete("/api/v1/storage/google/writer").json() == {"removed": True}
+    data = json.loads(gauth.read_text(encoding="utf-8"))
+    assert "writer" not in data and data["reader"]["refresh_token"] == "r"

@@ -178,7 +178,7 @@ describe("Dropbox sync on the sources page", () => {
   it("viewer sees the runs but no form", async () => {
     api("viewer");
     renderApp("/sources");
-    expect(await screen.findByText("Dropbox sync")).toBeInTheDocument();
+    expect(await screen.findByText("Cloud sync (Dropbox / Google Drive)")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Start dry run" })).not.toBeInTheDocument();
     expect(await screen.findByText("Finished")).toBeInTheDocument();
   });
@@ -210,7 +210,7 @@ describe("Dropbox sync on the sources page", () => {
   it("warns when Dropbox access is not set up", async () => {
     api("admin", (url) => (url.endsWith("/dropbox/status") ? { body: { reader: true, writer: false } } : undefined));
     renderApp("/sources");
-    expect(await screen.findByRole("alert")).toHaveTextContent("missing: writer");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Not connected yet: Dropbox writer");
     expect(screen.getByRole("button", { name: "Start dry run" })).toBeDisabled();
   });
 });
@@ -261,5 +261,47 @@ describe("first-run setup and cloud storage", () => {
     renderApp("/settings");
     await screen.findByRole("heading", { name: "Settings" });
     expect(screen.queryByText("Cloud storage")).not.toBeInTheDocument();
+  });
+});
+
+describe("Google Drive", () => {
+  const G0 = { client_configured: false, client_id: "", redirect_uri: "http://localhost:8000/api/v1/storage/google/callback",
+    reader: { connected: false, account: null }, writer: { connected: false, account: null } };
+
+  it("shows the redirect URI and asks for the OAuth client first", async () => {
+    const calls = mockApi((url, init) => {
+      if (url.endsWith("/me")) return { body: ME("admin") };
+      if (url.endsWith("/storage/google") && !init?.method) return { body: G0 };
+      if (url.endsWith("/storage/dropbox")) return { body: { reader: { connected: false, app_key: "", account: null }, writer: { connected: false, app_key: "", account: null } } };
+      return { body: {} };
+    });
+    renderApp("/settings");
+    expect(await screen.findByText("http://localhost:8000/api/v1/storage/google/callback")).toBeInTheDocument();
+    const u = userEvent.setup();
+    await u.click(screen.getByLabelText("OAuth client ID"));
+    await u.paste("123-abc.apps.googleusercontent.com");
+    await u.click(screen.getByLabelText("OAuth client secret"));
+    await u.paste("fake-secret-for-tests");
+    await u.click(screen.getByRole("button", { name: "Save client" }));
+    const put = calls.find((c) => c.url.endsWith("/storage/google/client"));
+    expect(put?.init?.method).toBe("PUT");
+  });
+
+  it("a Google Drive source needs the Google reader connection", async () => {
+    mockApi((url) => {
+      if (url.endsWith("/me")) return { body: ME("admin") };
+      if (url.endsWith("/dropbox/status")) return { body: { reader: true, writer: true, google: { reader: false, writer: false } } };
+      if (url.endsWith("/dropbox/sync")) return { body: { runs: [] } };
+      return { body: SRC };
+    });
+    localStorage.removeItem("fidelity.dropboxLinks");
+    renderApp("/sources");
+    const u = userEvent.setup();
+    await u.click(await screen.findByLabelText(/Source folder/));
+    await u.paste("https://drive.google.com/drive/folders/1AbCdEfGhIjKlMnOp");
+    await u.click(screen.getByLabelText(/Output folder/));
+    await u.paste("/Transfer_Md");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Google Drive reader");
+    expect(screen.getByRole("button", { name: "Start dry run" })).toBeDisabled();
   });
 });

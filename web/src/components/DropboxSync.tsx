@@ -110,7 +110,10 @@ export function DropboxSync({ canEdit, isAdmin }: { canEdit: boolean; isAdmin: b
   const [force, setForce] = useState(false);
   const [only, setOnly] = useState("");
   const [open, setOpen] = useState<string | null>(null);
-  const status = useQuery({ queryKey: ["dropbox-status"], queryFn: () => api<{ reader: boolean; writer: boolean }>("/dropbox/status") });
+  const status = useQuery({
+    queryKey: ["dropbox-status"],
+    queryFn: () => api<{ reader: boolean; writer: boolean; google?: { reader: boolean; writer: boolean } }>("/dropbox/status"),
+  });
   const runs = useQuery({
     queryKey: ["dropbox-runs"],
     queryFn: () => api<{ runs: Run[] }>("/dropbox/sync"),
@@ -130,7 +133,14 @@ export function DropboxSync({ canEdit, isAdmin }: { canEdit: boolean; isAdmin: b
       /* storage may be unavailable */
     }
   }, [src, dest]);
-  const ready = status.data?.reader && status.data?.writer;
+  const isGoogle = (v: string) => /^(https:\/\/drive\.google\.com\/|gdrive:)/.test(v.trim());
+  const has = (link: string, role: "reader" | "writer") =>
+    isGoogle(link) ? !!status.data?.google?.[role] : !!status.data?.[role];
+  const ready = has(src || "/", "reader") && has(dest || "/", "writer");
+  const missing = [
+    !has(src || "/", "reader") && (isGoogle(src) ? "Google Drive reader" : "Dropbox reader"),
+    !has(dest || "/", "writer") && (isGoogle(dest) ? "Google Drive writer" : "Dropbox writer"),
+  ].filter(Boolean).join(", ");
   const list = Array.isArray(runs.data?.runs) ? runs.data!.runs : [];
   const busy = list.some((r) => active(r.status));
 
@@ -142,9 +152,7 @@ export function DropboxSync({ canEdit, isAdmin }: { canEdit: boolean; isAdmin: b
       </div>
       {status.data && typeof status.data.reader === "boolean" && !ready && (
         <p role="alert" className="rounded-md border border-warn p-2 text-sm">
-          {t("pages.sources.dropbox.notAuthorised", {
-            roles: [!status.data.reader && "reader", !status.data.writer && "writer"].filter(Boolean).join(", "),
-          })}
+          {t("pages.sources.dropbox.notAuthorised", { roles: missing })}
         </p>
       )}
       {canEdit && (
@@ -158,12 +166,12 @@ export function DropboxSync({ canEdit, isAdmin }: { canEdit: boolean; isAdmin: b
           <label className="grid gap-1 text-sm">
             {t("pages.sources.dropbox.source")}
             <input className="rounded-md border border-border bg-surface px-2 py-2" value={src} onChange={(e) => setSrc(e.target.value)}
-              placeholder="/Folder  or  https://www.dropbox.com/scl/fo/…" required />
+              placeholder="/Folder · https://www.dropbox.com/… · https://drive.google.com/drive/folders/…" required />
           </label>
           <label className="grid gap-1 text-sm">
             {t("pages.sources.dropbox.dest")}
             <input className="rounded-md border border-border bg-surface px-2 py-2" value={dest} onChange={(e) => setDest(e.target.value)}
-              placeholder="/Folder  or  https://www.dropbox.com/scl/fo/…" required />
+              placeholder="/Folder · https://www.dropbox.com/… · https://drive.google.com/drive/folders/…" required />
           </label>
           <label className="grid gap-1 text-sm">
             {t("pages.sources.dropbox.only")}
