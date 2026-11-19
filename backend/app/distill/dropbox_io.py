@@ -233,15 +233,44 @@ def auth(app_key, role, write):
                          "Check: the App key is correct; the 4 permissions were ticked AND submitted "
                          "before authorising; the code was pasted within a few minutes and only once. "
                          "Then run the command again (each run makes a new URL and code).")
-    data = {}
-    if os.path.exists(AUTH_PATH):
-        with open(AUTH_PATH, encoding="utf-8") as f:
-            data = json.load(f)
-    data[role] = {"app_key": app_key, "refresh_token": res.refresh_token, "scopes": res.scope}
-    os.makedirs(os.path.dirname(AUTH_PATH), exist_ok=True)
-    with open(AUTH_PATH, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=1)
+    save_role(role, app_key, res.refresh_token, res.scope)
     print(f"Saved {role} credentials to {AUTH_PATH}")
+
+
+def load_auth() -> dict:
+    try:
+        with open(AUTH_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def _write_auth(data: dict):
+    os.makedirs(os.path.dirname(AUTH_PATH), exist_ok=True)
+    tmp = AUTH_PATH + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=1)
+    os.replace(tmp, AUTH_PATH)
+    try:
+        os.chmod(AUTH_PATH, 0o600)          # credentials: owner only (no effect on Windows ACLs)
+    except OSError:
+        pass
+
+
+def save_role(role: str, app_key: str, refresh_token: str, scopes) -> None:
+    """Store one role's Dropbox credentials (used by the command line and the web settings page)."""
+    data = load_auth()
+    data[role] = {"app_key": app_key, "refresh_token": refresh_token, "scopes": scopes}
+    _write_auth(data)
+
+
+def remove_role(role: str) -> bool:
+    data = load_auth()
+    if role not in data:
+        return False
+    del data[role]
+    _write_auth(data)
+    return True
 
 
 def main(argv=None):

@@ -214,3 +214,52 @@ describe("Dropbox sync on the sources page", () => {
     expect(screen.getByRole("button", { name: "Start dry run" })).toBeDisabled();
   });
 });
+
+describe("first-run setup and cloud storage", () => {
+  it("offers to create the first administrator when there are no users", async () => {
+    const calls = mockApi((url, init) => {
+      if (url.endsWith("/me")) return { status: 401, body: { detail: "Unauthorized" } };
+      if (url.endsWith("/setup") && !init?.method) return { body: { needs_setup: true } };
+      if (url.endsWith("/setup")) return { status: 201, body: { created: "a@example.com", role: "admin" } };
+      return { status: 204 };
+    });
+    renderApp("/login");
+    expect(await screen.findByText("Create the first administrator")).toBeInTheDocument();
+    const u = userEvent.setup();
+    await u.type(screen.getByLabelText("Email"), "a@example.com");
+    await u.type(screen.getByLabelText("Password"), "long-enough-pw");
+    await u.type(screen.getByLabelText("Confirm password"), "different-pw!");
+    await u.click(screen.getByRole("button", { name: "Create administrator and sign in" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("do not match");
+    expect(calls.some((c) => c.url.endsWith("/setup") && c.init?.method === "POST")).toBe(false);
+  });
+
+  it("only administrators see cloud storage; connecting shows the Dropbox link", async () => {
+    const calls = mockApi((url, init) => {
+      if (url.endsWith("/me")) return { body: ME("admin") };
+      if (url.endsWith("/storage/dropbox/start")) return { body: { url: "https://www.dropbox.com/oauth2/authorize?x", expires_in: 600 } };
+      if (url.endsWith("/storage/dropbox") && !init?.method)
+        return { body: { reader: { connected: true, app_key: "k1", account: { name: "Forrest", email: "f@example.com" } },
+                         writer: { connected: false, app_key: "", account: null } } };
+      return { body: {} };
+    });
+    renderApp("/settings");
+    expect(await screen.findByText("Cloud storage")).toBeInTheDocument();
+    expect(await screen.findByText("Connected as Forrest (f@example.com)")).toBeInTheDocument();
+    const u = userEvent.setup();
+    const writer = screen.getByRole("region", { name: "Write access (output folders)" });
+    await u.click(within(writer).getByLabelText("Dropbox App key"));
+    await u.paste("abcdEFGH1234567");
+    await u.click(within(writer).getByRole("button", { name: "Connect" }));
+    expect(await within(writer).findByRole("link", { name: /Open Dropbox/ })).toHaveAttribute("href", "https://www.dropbox.com/oauth2/authorize?x");
+    const post = calls.find((c) => c.url.endsWith("/storage/dropbox/start"));
+    expect(JSON.parse(String(post?.init?.body))).toEqual({ role: "writer", app_key: "abcdEFGH1234567" });
+  });
+
+  it("reviewers do not see cloud storage", async () => {
+    mockApi((url) => (url.endsWith("/me") ? { body: ME("reviewer") } : { body: {} }));
+    renderApp("/settings");
+    await screen.findByRole("heading", { name: "Settings" });
+    expect(screen.queryByText("Cloud storage")).not.toBeInTheDocument();
+  });
+});

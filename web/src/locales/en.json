@@ -32,7 +32,13 @@
     "submitting": "Signing in…",
     "failed": "Wrong email or password.",
     "tooMany": "Too many failed attempts. Try again in a few minutes.",
-    "error": "Could not sign in. Check your connection and try again."
+    "error": "Could not sign in. Check your connection and try again.",
+    "setupTitle": "Create the first administrator",
+    "setupHint": "This installation has no users yet. The account you create here manages everything else.",
+    "setupConfirm": "Confirm password",
+    "setupSubmit": "Create administrator and sign in",
+    "setupMismatch": "The two passwords do not match.",
+    "setupPassword": "The password must be at least 10 characters."
   },
   "state": {
     "loading": "Loading…",
@@ -87,7 +93,7 @@
       "dropbox": {
         "title": "Dropbox sync",
         "intro": "Distil a Dropbox folder into another Dropbox folder. Every file is verified against its source; only files that pass are published.",
-        "notAuthorised": "Dropbox access is not set up on this machine (missing: {{roles}}). See the administrator runbook, \"Dropbox access\".",
+        "notAuthorised": "Dropbox access is not set up yet (missing: {{roles}}). An administrator can connect it under Settings → Cloud storage.",
         "source": "Source folder — Dropbox shared link (read only)",
         "dest": "Output folder — Dropbox shared link (an empty folder of your own)",
         "only": "Only files whose name contains (optional)",
@@ -150,7 +156,35 @@
     },
     "settings": {
       "title": "Settings",
-      "hint": "Language and theme are chosen in the top bar."
+      "hint": "Language and theme are chosen in the top bar.",
+      "storage": {
+        "title": "Cloud storage",
+        "intro": "Connect Dropbox once here; the connection is saved on this server and used by Dropbox sync. Two separate accesses keep sources safe: one can only read, the other may write only to output folders.",
+        "reader": "Read access (sources)",
+        "writer": "Write access (output folders)",
+        "readerHint": "Read-only: used for every source folder. It cannot change anything in Dropbox.",
+        "writerHint": "Used only to publish into the output folders you choose; source folders are protected by the app.",
+        "notConnected": "Not connected",
+        "connectedAs": "Connected as {{name}} ({{email}})",
+        "connectedUnchecked": "Saved, but Dropbox did not answer — check the connection",
+        "appKey": "Dropbox App key",
+        "connect": "Connect",
+        "reconnect": "Reconnect",
+        "disconnect": "Disconnect",
+        "disconnectConfirm": "Remove this Dropbox connection from the server?",
+        "step1": "Open Dropbox and click Allow (opens a new tab)",
+        "step2": "Copy the code Dropbox shows and paste it below.",
+        "code": "Authorisation code",
+        "finish": "Save connection",
+        "cancel": "Cancel",
+        "saved": "Connection saved.",
+        "helpTitle": "Where do I get an App key?",
+        "help1": "Sign in at dropbox.com/developers/apps and open (or create) your app with “Scoped access” and “Full Dropbox”.",
+        "help2": "On the Permissions tab tick files.metadata.read, files.content.read, sharing.read, account_info.read (and files.content.write for the write access), then Submit.",
+        "help3": "Copy the App key from the Settings tab into the field above. You can use one app for both accesses or a separate read-only app.",
+        "connectedNoName": "Connected — works; reconnect once to show the account name",
+        "checking": "Checking…"
+      }
     },
     "users": {
       "title": "Users",

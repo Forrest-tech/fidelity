@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthProvider";
 import { Card, PageHeader } from "../components/ui";
+import { CloudStorage } from "../components/CloudStorage";
 
 export function SettingsPage() {
   const { t } = useTranslation();
@@ -17,6 +18,11 @@ export function SettingsPage() {
         </dl>
         <p className="mt-4 text-sm text-fg-muted">{t("pages.settings.hint")}</p>
       </Card>
+      {me?.role === "admin" && (
+        <div className="mt-4">
+          <CloudStorage />
+        </div>
+      )}
     </>
   );
 }

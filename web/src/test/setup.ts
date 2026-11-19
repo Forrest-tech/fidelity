@@ -11,3 +11,7 @@ afterEach(() => {
     /* ignore */
   }
 });
+
+// findBy* waits 1 s by default; lazily loaded pages can take longer on a busy machine.
+import { configure } from "@testing-library/react";
+configure({ asyncUtilTimeout: 5000 });
