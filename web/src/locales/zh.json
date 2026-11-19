@@ -32,7 +32,13 @@
     "submitting": "正在登录…",
     "failed": "邮箱或密码不正确。",
     "tooMany": "失败次数过多，请几分钟后再试。",
-    "error": "无法登录，请检查网络后重试。"
+    "error": "无法登录，请检查网络后重试。",
+    "setupTitle": "创建第一个管理员",
+    "setupHint": "这个系统还没有任何用户。你在这里创建的账号负责管理其他一切。",
+    "setupConfirm": "确认密码",
+    "setupSubmit": "创建管理员并登录",
+    "setupMismatch": "两次输入的密码不一致。",
+    "setupPassword": "密码至少需要 10 个字符。"
   },
   "state": {
     "loading": "加载中…",
@@ -87,7 +93,7 @@
       "dropbox": {
         "title": "Dropbox 同步",
         "intro": "把一个 Dropbox 文件夹蒸馏到另一个 Dropbox 文件夹。每个文件都会与原文核对，只有通过的才会发布。",
-        "notAuthorised": "这台机器还没有设置 Dropbox 访问（缺少：{{roles}}）。请参阅管理员运维手册的\"Dropbox 权限\"。",
+        "notAuthorised": "还没有设置 Dropbox 访问（缺少：{{roles}}）。管理员可以在“设置 → 网盘连接”里连接。",
         "source": "源文件夹——Dropbox 共享链接（只读）",
         "dest": "输出文件夹——Dropbox 共享链接（你自己的空文件夹）",
         "only": "只处理文件名包含以下文字的文件（可选）",
@@ -150,7 +156,35 @@
     },
     "settings": {
       "title": "设置",
-      "hint": "语言和主题在顶栏中选择。"
+      "hint": "语言和主题在顶栏中选择。",
+      "storage": {
+        "title": "网盘连接",
+        "intro": "在这里连接一次 Dropbox，连接会保存在本服务器上，供 Dropbox 同步使用。分成两个权限以保护源文件：一个只能读，另一个只能写入输出文件夹。",
+        "reader": "读取权限（源文件夹）",
+        "writer": "写入权限（输出文件夹）",
+        "readerHint": "只读：用于所有源文件夹，无法修改 Dropbox 里的任何内容。",
+        "writerHint": "只用于把结果发布到你选择的输出文件夹；源文件夹由系统保护。",
+        "notConnected": "未连接",
+        "connectedAs": "已连接：{{name}}（{{email}}）",
+        "connectedUnchecked": "已保存，但 Dropbox 没有响应——请检查连接",
+        "appKey": "Dropbox App key",
+        "connect": "连接",
+        "reconnect": "重新连接",
+        "disconnect": "断开",
+        "disconnectConfirm": "从服务器上删除这个 Dropbox 连接？",
+        "step1": "打开 Dropbox 并点击 Allow（在新标签页打开）",
+        "step2": "复制 Dropbox 显示的授权码，粘贴到下面。",
+        "code": "授权码",
+        "finish": "保存连接",
+        "cancel": "取消",
+        "saved": "连接已保存。",
+        "helpTitle": "App key 从哪里来？",
+        "help1": "登录 dropbox.com/developers/apps，打开（或新建）你的应用，选择 “Scoped access” 和 “Full Dropbox”。",
+        "help2": "在 Permissions 页勾选 files.metadata.read、files.content.read、sharing.read、account_info.read（写入权限还要勾选 files.content.write），然后点 Submit。",
+        "help3": "从 Settings 页复制 App key，填到上面的输入框。两个权限可以用同一个应用，也可以另建一个只读应用。",
+        "connectedNoName": "已连接，可正常使用；重新连接一次即可显示账号名称",
+        "checking": "正在检查…"
+      }
     },
     "users": {
       "title": "用户",

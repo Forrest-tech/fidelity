@@ -50,4 +50,4 @@ say "Benchmark the engines on this machine and choose the best two"
 ( cd "$ROOT/backend" && "$ROOT/.venv/bin/python" scripts/perf_benchmark.py --pdf "${PERF_PDF:-}" --label "Mac mini" --out ../docs/benchmarks/perf-mac ) || \
   echo "Set PERF_PDF=<a text PDF> to record throughput (docs/benchmarks/perf-mac.md)."
 
-say "Done — open http://127.0.0.1:${QA_SERVER_PORT:-8000}; create the first user with backend/scripts/create_admin.py"
+say "Done — open http://127.0.0.1:${QA_SERVER_PORT:-8000} in a browser: create the first administrator on the sign-in page, then connect Dropbox under Settings → Cloud storage."

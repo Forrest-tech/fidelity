@@ -1,0 +1,6 @@
+# Known false positives: fake Dropbox App keys used as test fixtures (commit 7dd8ef81).
+7dd8ef8199ca8bbed3de5b8ffac3bea7aafc20be:web/src/test/pages.test.tsx:generic-api-key:256
+7dd8ef8199ca8bbed3de5b8ffac3bea7aafc20be:backend/tests/test_storage_setup.py:generic-api-key:73
+7dd8ef8199ca8bbed3de5b8ffac3bea7aafc20be:backend/tests/test_storage_setup.py:generic-api-key:76
+7dd8ef8199ca8bbed3de5b8ffac3bea7aafc20be:backend/tests/test_storage_setup.py:generic-api-key:90
+7dd8ef8199ca8bbed3de5b8ffac3bea7aafc20be:backend/tests/test_storage_setup.py:generic-api-key:98

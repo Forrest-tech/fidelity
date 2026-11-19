@@ -15,12 +15,17 @@ project environment (`..\.venv\Scripts\python` on Windows); set `PYTHONUTF8=1`.
 - Or: `python -m scripts.serve` (`--check` only tests the port).
 
 ## Users and roles
+- **First start:** while there are no users, the sign-in page offers *Create the first administrator*.
 - Create or reset a user: `python scripts/create_admin.py name@example.com --role admin|reviewer|viewer`
   (password is prompted, or taken from `FIDELITY_NEW_PASSWORD`; never on the command line).
 - admin: everything · reviewer: review queue and decisions · viewer: read only.
 - Sign-in is limited to 5 attempts per IP per 5 minutes; attempts are in the audit log.
 
 ## Dropbox access
+**In the web interface (recommended):** Settings → **Cloud storage** (administrators). For each access
+(*Read* for sources, *Write* for output folders) enter the App key, click Connect, allow in Dropbox and
+paste the code. The connection is saved on this server; nothing to copy between machines.
+
 Two app roles, both stored in `data/dropbox_auth.json`:
 - **reader** (read-only scopes) — used for the source and for read-only copies.
 - **writer** — used only for the destination; the guarded writer refuses any path outside it.

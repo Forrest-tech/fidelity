@@ -14,12 +14,16 @@
 - 或者：`python -m scripts.serve`（加 `--check` 只检查端口）。
 
 ## 用户和角色
+- **首次启动：**还没有任何用户时，登录页会提供"创建第一个管理员"。
 - 新建或重置用户：`python scripts/create_admin.py name@example.com --role admin|reviewer|viewer`
   （密码会提示输入，或取自 `FIDELITY_NEW_PASSWORD`；绝不写在命令行上）。
 - admin：全部权限 · reviewer：审核队列和审核决定 · viewer：只读。
 - 登录限制每个 IP 每 5 分钟 5 次；登录记录在审计日志里。
 
 ## Dropbox 权限
+**在网页里（推荐）：**设置 → **网盘连接**（管理员）。两个权限（*读取*用于源文件夹，*写入*用于输出文件夹）
+分别填 App key，点"连接"，在 Dropbox 里允许，然后粘贴授权码。连接保存在本服务器上，不需要在机器之间拷贝文件。
+
 两个应用角色，都保存在 `data/dropbox_auth.json`：
 - **reader**（只读权限）——用于源文件夹和只读拷贝。
 - **writer**——只用于目标文件夹；受保护的写入器会拒绝目标以外的任何路径。
