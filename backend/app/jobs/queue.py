@@ -55,16 +55,27 @@ class JobQueue:
         db.trust_write(_do)
 
     def _claim(self):
+        """Take the oldest queued job. Atomic: a worker only gets the job if ITS update moved the row
+        from queued to running — otherwise two workers that read the same row would both run it
+        (found in testing: one Dropbox sync started twice and the copies collided on the same file)."""
         con = db.trust_rw()
-        row = con.execute(
-            "SELECT * FROM job WHERE status='queued' ORDER BY created_at LIMIT 1"
-        ).fetchone()
-        if row:
-            con.execute("UPDATE job SET status='running', updated_at=? WHERE id=?",
-                        (db.now(), row["id"]))
-            con.commit()
-        con.close()
-        return dict(row) if row else None
+        try:
+            for _ in range(5):
+                row = con.execute(
+                    "SELECT * FROM job WHERE status='queued' ORDER BY created_at LIMIT 1"
+                ).fetchone()
+                if not row:
+                    return None
+                cur = con.execute("UPDATE job SET status='running', updated_at=? WHERE id=? AND status='queued'",
+                                  (db.now(), row["id"]))
+                con.commit()
+                if cur.rowcount == 1:
+                    job = dict(row)
+                    job["status"] = "running"
+                    return job
+            return None                               # lost every race this round; try again on the next tick
+        finally:
+            con.close()
 
     def get(self, jid):
         con = db.trust_rw()
