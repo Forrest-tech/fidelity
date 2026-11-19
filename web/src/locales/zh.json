@@ -91,11 +91,11 @@
       "uploaded": "已上传 {{name}}，已开始蒸馏。",
       "local": "本地文件夹",
       "dropbox": {
-        "title": "Dropbox 同步",
-        "intro": "把一个 Dropbox 文件夹蒸馏到另一个 Dropbox 文件夹。每个文件都会与原文核对，只有通过的才会发布。",
-        "notAuthorised": "还没有设置 Dropbox 访问（缺少：{{roles}}）。管理员可以在“设置 → 网盘连接”里连接。",
-        "source": "源文件夹——Dropbox 路径（/2025）或共享链接（只读）",
-        "dest": "输出文件夹——Dropbox 路径（/Transfer_Md）或共享链接（你自己的文件夹）",
+        "title": "云盘同步（Dropbox / Google Drive）",
+        "intro": "把 Dropbox 或 Google Drive 里的文件夹蒸馏到任一网盘的输出文件夹。每个文件都会与原文核对，只有通过的才会发布。",
+        "notAuthorised": "尚未连接：{{roles}}。管理员可以在“设置 → 网盘连接”里连接。",
+        "source": "源文件夹——Dropbox 路径（/2025）、Dropbox 共享链接或 Google Drive 文件夹链接（只读）",
+        "dest": "输出文件夹——Dropbox 路径、Dropbox 共享链接或 Google Drive 文件夹链接（你自己的文件夹）",
         "only": "只处理文件名包含以下文字的文件（可选）",
         "dryRun": "试运行——只蒸馏和检查，不上传",
         "force": "未变化的文件也重新蒸馏",
@@ -184,6 +184,23 @@
         "help3": "从 Settings 页复制 App key，填到上面的输入框。两个权限可以用同一个应用，也可以另建一个只读应用。",
         "connectedNoName": "已连接，可正常使用；重新连接一次即可显示账号名称",
         "checking": "正在检查…"
+      },
+      "google": {
+        "title": "Google Drive",
+        "intro": "把 Google Drive 文件夹用作源或输出。读取权限使用 Google 的只读 Drive 权限；写入权限只用于你选择的输出文件夹。",
+        "redirect": "需要在 Google Cloud Console 登记的重定向 URI：",
+        "clientSet": "OAuth 客户端：{{id}}",
+        "changeClient": "更换客户端",
+        "clientId": "OAuth 客户端 ID",
+        "clientSecret": "OAuth 客户端密钥",
+        "saveClient": "保存客户端",
+        "connectedNow": "Google Drive 已连接。",
+        "failed": "Google Drive 没有连接成功（{{reason}}）。请再点一次“连接”。",
+        "helpTitle": "怎样创建 OAuth 客户端？",
+        "help1": "在 Google Cloud Console 新建（或选择）一个项目，启用 Google Drive API。",
+        "help2": "OAuth 同意屏幕：选择 Internal（Workspace）或 External，并把自己加为测试用户。",
+        "help3": "凭据 → 创建凭据 → OAuth 客户端 ID → 类型选“Web 应用”；添加上面显示的重定向 URI。",
+        "help4": "把客户端 ID 和密钥复制到本页，保存，然后对每个权限点“连接”。"
       }
     },
     "users": {

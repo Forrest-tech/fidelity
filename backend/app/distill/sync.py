@@ -21,6 +21,7 @@ import json
 import os
 import sys
 
+from . import backends as B
 from . import dropbox_io as D
 from . import run as R
 from .ledger import Ledger
@@ -59,15 +60,11 @@ def main(argv=None):
     ap.add_argument("--rollback", default=None, metavar="RUN", help="undo a published run: restore the previous versions from the archive")
     a = ap.parse_args(argv)
 
-    reader, writer = D.client("reader"), D.client("writer")
-    src_root = D.link_root(reader, a.source_link)          # e.g. /2025
-    dest_root = D.link_root(writer, a.dest_link)           # e.g. /transfer_md
-    if not dest_root:
-        raise SystemExit("The output link must be a folder in your own Dropbox")
-    src_name = src_root.rstrip("/").split("/")[-1] if src_root else "source"
-    stage_root, archive_root = dest_root.rstrip("/") + "_staging", dest_root.rstrip("/") + "_archive"
-    guard = D.SafeWriter(writer, dest_root, [src_root], extra_roots=[stage_root, archive_root])  # raises on overlap
-    print(f"source {src_root or a.source_link} (read-only)  ->  output {dest_root}", flush=True)
+    src = B.open_source(a.source_link)                     # Dropbox or Google Drive, read-only connection
+    dst = B.open_dest(a.dest_link, src)                    # guarded writer; raises if the folders overlap
+    dest_root, stage_root, archive_root = dst.root, dst.stage_root, dst.archive_root
+    src_name = src.name
+    print(f"source {src.provider}:{src.label} (read-only)  ->  output {dst.provider}:{dest_root}", flush=True)
 
     stamp = _dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     out = os.path.join(a.work, "runs", stamp)
@@ -75,9 +72,9 @@ def main(argv=None):
     os.makedirs(cache, exist_ok=True)
     if a.rollback:
         mp = os.path.join(a.work, "publish", f"publish-{a.rollback}.json")
-        undo = Publisher.load(D.DropboxStore(guard), mp, os.path.join(a.work, "publish"))
+        undo = Publisher.load(dst.store, mp, os.path.join(a.work, "publish"))
         undo.rollback()
-        ledger = Ledger(os.path.join(a.work, "ledger.json"), src_root or a.source_link)
+        ledger = Ledger(os.path.join(a.work, "ledger.json"), src.label)
         keys = set(undo.docs)
         for rel_, e in list(ledger.docs.items()):
             if e.get("dest", "").replace(dest_root + "/", "", 1) in keys:
@@ -85,14 +82,15 @@ def main(argv=None):
         ledger.save()
         print(f"rolled back run {a.rollback}: {len(keys)} document(s) restored to their previous version", flush=True)
         return 0
-    before = D.snapshot(reader, a.source_link)
+    before = src.snapshot()
     print(f"files to check: {sum(1 for r in before if r.lower().endswith(SUPPORTED))}", flush=True)
-    report = {"source": src_root, "dest": dest_root, "run": stamp, "documents": []}
+    report = {"source": src.label, "source_provider": src.provider, "dest": dest_root,
+              "dest_provider": dst.provider, "run": stamp, "documents": []}
     results = []
     seen_hash = {}
-    pub = Publisher(D.DropboxStore(guard), dest_root, stage_root, archive_root, stamp, os.path.join(a.work, "publish"))
+    pub = Publisher(dst.store, dest_root, stage_root, archive_root, stamp, os.path.join(a.work, "publish"))
     pending = []       # (rel, content_hash, doc) staged this run, promoted together at the end
-    ledger = Ledger(os.path.join(a.work, "ledger.json"), src_root or a.source_link)
+    ledger = Ledger(os.path.join(a.work, "ledger.json"), src.label)
 
     for rel, f in sorted(before.items()):
         name = rel.rsplit("/", 1)[-1]
@@ -115,11 +113,11 @@ def main(argv=None):
         rel_local = os.path.join(src_name, *rel.strip("/").split("/"))
         lp = os.path.join(a.work, "src", rel_local)
         print(f"\n[{len(results) + 1}] {rel}", flush=True)
-        if not (os.path.exists(lp) and R.dropbox_content_hash(lp) == f["content_hash"]):
+        if not src.local_matches(lp, f):
             print(f"  download ({f['size'] / 1e6:.1f} MB)", flush=True)
-            D.download(reader, a.source_link, rel, lp)
-        if R.dropbox_content_hash(lp) != f["content_hash"]:
-            raise SystemExit(f"local copy of {rel} does not match Dropbox content_hash")
+            src.download(rel, f, lp)
+        if not src.verify_local(lp, f):
+            raise SystemExit(f"local copy of {rel} does not match the source file's checksum")
 
         r = distill_any(lp, rel_local, out, "", cache, log=lambda m: print(m, flush=True),
                          publish_protected=a.publish_protected_metadata)
@@ -131,7 +129,7 @@ def main(argv=None):
             continue
         print(f"  verification: {r['verdict']}  files={r['files']}", flush=True)
 
-        now = D.file_identity(reader, a.source_link, rel)
+        now = src.identity(rel, f)
         if (now["id"], now["rev"], now["size"]) != (f["id"], f["rev"], f["size"]):
             raise SystemExit(f"SOURCE CHANGED during the run: {rel} — stopping, nothing more uploaded")
 
@@ -177,7 +175,7 @@ def main(argv=None):
     if gone:   # renames/deletions wait for administrator confirmation; published files stay untouched
         report["removed_sources"] = gone
         print(f"{len(gone)} previously distilled source(s) no longer present; published files left untouched: {gone[:5]}", flush=True)
-    after = D.snapshot(reader, a.source_link)
+    after = src.snapshot()
     diffs = D.compare_snapshots(before, after)
     report["source_unchanged"] = not diffs
     report["diffs"] = diffs

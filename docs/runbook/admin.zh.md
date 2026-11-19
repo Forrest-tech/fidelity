@@ -31,6 +31,19 @@
 重新授权（例如权限范围改变后）：`python -m app.distill.dropbox_io auth --app-key <key> --role reader --read-only`
 （或 `--role writer`）。打开链接，粘贴授权码。
 
+## Google Drive
+设置 → 网盘连接 → **Google Drive**（管理员），使用 Google 标准的 OAuth 2.0 流程：
+1. Google Cloud Console：新建或选择项目；启用 **Google Drive API**；配置 OAuth 同意屏幕
+   （Workspace 选 Internal，否则选 External 并把自己加为测试用户）。
+2. 凭据 → OAuth 客户端 ID → **Web 应用**；添加页面上显示的*已获授权的重定向 URI*
+   （如 `http://localhost:8000/api/v1/storage/google/callback`——打开本系统时用同一个主机名）。
+3. 把客户端 ID 和密钥粘贴到页面并保存，然后分别**连接**读取权限（范围 `drive.readonly`）和写入权限
+   （范围 `drive`，只用于输出文件夹）。令牌保存在服务器上（`data/google_auth.json`）。
+在云盘同步里用 Drive 文件夹链接（`https://drive.google.com/drive/folders/…`）作为源或输出。Google 文档、表格、
+幻灯片会导出为 .docx、.xlsx、.pptx，按 Office 文件蒸馏；在 Drive 上删除只会移到回收站。Dropbox 和 Google Drive
+可以混用（例如 Drive → Dropbox）。参考：developers.google.com/identity/protocols/oauth2/web-server 和
+developers.google.com/drive/api。
+
 ## 蒸馏和发布
 **在网页里**（reviewer 或 admin）：**数据源 → Dropbox 同步**。粘贴源文件夹的共享链接和输出文件夹的共享链接，
 第一次保持勾选**试运行**，点开始，在"最近的运行"里看进度、每个文件的结果和日志。去掉"试运行"即正式发布。

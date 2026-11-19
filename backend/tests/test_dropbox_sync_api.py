@@ -99,7 +99,8 @@ def test_status_never_returns_secrets(login, tmp_path, monkeypatch):
     p.write_text(json.dumps({"reader": {"refresh_token": "SECRET", "app_key": "k"}}), encoding="utf-8")
     monkeypatch.setattr(D, "AUTH_PATH", str(p))
     r = login("viewer").get("/api/v1/dropbox/status")
-    assert r.json() == {"reader": True, "writer": False} and "SECRET" not in r.text
+    j = r.json()
+    assert (j["reader"], j["writer"]) == (True, False) and "SECRET" not in r.text
 
 
 def test_job_runs_the_command_line_sync_and_keeps_log_and_summary(tmp_path, monkeypatch):

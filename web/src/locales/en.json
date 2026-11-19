@@ -91,11 +91,11 @@
       "uploaded": "Uploaded {{name}}; distillation started.",
       "local": "Local folders",
       "dropbox": {
-        "title": "Dropbox sync",
-        "intro": "Distil a Dropbox folder into another Dropbox folder. Every file is verified against its source; only files that pass are published.",
-        "notAuthorised": "Dropbox access is not set up yet (missing: {{roles}}). An administrator can connect it under Settings → Cloud storage.",
-        "source": "Source folder — Dropbox path (/2025) or shared link (read only)",
-        "dest": "Output folder — Dropbox path (/Transfer_Md) or shared link (a folder of your own)",
+        "title": "Cloud sync (Dropbox / Google Drive)",
+        "intro": "Distil a folder from Dropbox or Google Drive into an output folder on either. Every file is verified against its source; only files that pass are published.",
+        "notAuthorised": "Not connected yet: {{roles}}. An administrator can connect it under Settings → Cloud storage.",
+        "source": "Source folder — Dropbox path (/2025), Dropbox shared link or Google Drive folder link (read only)",
+        "dest": "Output folder — Dropbox path, Dropbox shared link or Google Drive folder link (a folder of your own)",
         "only": "Only files whose name contains (optional)",
         "dryRun": "Dry run — distil and check only, upload nothing",
         "force": "Re-distil files that have not changed",
@@ -184,6 +184,23 @@
         "help3": "Copy the App key from the Settings tab into the field above. You can use one app for both accesses or a separate read-only app.",
         "connectedNoName": "Connected — works; reconnect once to show the account name",
         "checking": "Checking…"
+      },
+      "google": {
+        "title": "Google Drive",
+        "intro": "Use Google Drive folders as sources or outputs. Read access uses Google's read-only Drive permission; write access is used only for the output folders you choose.",
+        "redirect": "Authorised redirect URI to register in Google Cloud Console:",
+        "clientSet": "OAuth client: {{id}}",
+        "changeClient": "Change client",
+        "clientId": "OAuth client ID",
+        "clientSecret": "OAuth client secret",
+        "saveClient": "Save client",
+        "connectedNow": "Google Drive connected.",
+        "failed": "Google Drive was not connected ({{reason}}). Try Connect again.",
+        "helpTitle": "How do I create the OAuth client?",
+        "help1": "In Google Cloud Console create (or pick) a project and enable the Google Drive API.",
+        "help2": "OAuth consent screen: choose Internal (Workspace) or External and add yourself as a test user.",
+        "help3": "Credentials → Create credentials → OAuth client ID → type “Web application”; add the redirect URI shown above.",
+        "help4": "Copy the client ID and secret into this page, save, then click Connect for each access."
       }
     },
     "users": {

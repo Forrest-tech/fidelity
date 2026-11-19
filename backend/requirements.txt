@@ -64,3 +64,8 @@ pyyaml>=6.0
 # --- Server database (Phase 8): PostgreSQL drivers; SQLite stays the default ---
 psycopg[binary]>=3.2
 asyncpg>=0.29
+
+# --- Google Drive (official Google client libraries, Apache-2.0) ---
+google-api-python-client>=2.150
+google-auth>=2.35
+google-auth-oauthlib>=1.2

@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthProvider";
 import { Card, PageHeader } from "../components/ui";
-import { CloudStorage } from "../components/CloudStorage";
+import { CloudStorage, GoogleDrive } from "../components/CloudStorage";
 
 export function SettingsPage() {
   const { t } = useTranslation();
@@ -21,6 +21,9 @@ export function SettingsPage() {
       {me?.role === "admin" && (
         <div className="mt-4">
           <CloudStorage />
+          <div className="mt-4">
+            <GoogleDrive />
+          </div>
         </div>
       )}
     </>
