@@ -69,7 +69,7 @@ function LivePanel({ run, canEdit }: { run: RunDetail; canEdit: boolean }) {
       }
       extra={<Typography.Text type="secondary">{t("pages.sources.dropbox.elapsed", { time: dur(now - started) })}</Typography.Text>}
     >
-      <Space direction="vertical" size={12} style={{ width: "100%" }}>
+      <Space orientation="vertical" size={12} style={{ width: "100%" }}>
         <Steps size="small" current={STEP_OF[stage] ?? 0} responsive items={STEPS.map((k) => ({ title: t(`pages.sources.dropbox.step.${k}`) }))} />
         {live?.file && (
           <Typography.Text ellipsis={{ tooltip: live.file }} code style={{ maxWidth: "100%" }}>
@@ -91,16 +91,16 @@ function LivePanel({ run, canEdit }: { run: RunDetail; canEdit: boolean }) {
             />
           </div>
         )}
-        {live?.scan && <Alert type="info" showIcon message={t("pages.sources.dropbox.scanHint")} />}
+        {live?.scan && <Alert type="info" showIcon title={t("pages.sources.dropbox.scanHint")} />}
         <Row gutter={[16, 8]}>
           <Col xs={12} sm={6}>
-            <Statistic title={t("pages.sources.dropbox.pass")} value={c.PASS ?? 0} valueStyle={{ color: "var(--ant-color-success)" }} />
+            <Statistic title={t("pages.sources.dropbox.pass")} value={c.PASS ?? 0} styles={{ content: { color: "var(--ant-color-success)" } }} />
           </Col>
           <Col xs={12} sm={6}>
-            <Statistic title={t("pages.sources.dropbox.review")} value={c.REVIEW ?? 0} valueStyle={{ color: "var(--ant-color-warning)" }} />
+            <Statistic title={t("pages.sources.dropbox.review")} value={c.REVIEW ?? 0} styles={{ content: { color: "var(--ant-color-warning)" } }} />
           </Col>
           <Col xs={12} sm={6}>
-            <Statistic title={t("pages.sources.dropbox.fail")} value={c.FAIL ?? 0} valueStyle={{ color: "var(--ant-color-error)" }} />
+            <Statistic title={t("pages.sources.dropbox.fail")} value={c.FAIL ?? 0} styles={{ content: { color: "var(--ant-color-error)" } }} />
           </Col>
           <Col xs={12} sm={6}>
             <Statistic title={t("pages.sources.dropbox.unchanged")} value={live?.skipped ?? 0} />
@@ -116,8 +116,8 @@ function LivePanel({ run, canEdit }: { run: RunDetail; canEdit: boolean }) {
             </Popconfirm>
           )}
         </Space>
-        {quiet > 120 && <Alert type="warning" message={t("pages.sources.dropbox.quiet")} />}
-        {stop.isError && <Alert type="error" showIcon message={(stop.error as Error).message} />}
+        {quiet > 120 && <Alert type="warning" title={t("pages.sources.dropbox.quiet")} />}
+        {stop.isError && <Alert type="error" showIcon title={(stop.error as Error).message} />}
       </Space>
     </Card>
   );
@@ -148,11 +148,11 @@ function Counts({ s }: { s: Summary }) {
     [t("pages.sources.dropbox.unsupported"), (s.report?.unsupported?.length ?? 0) + (s.report?.triaged_out?.length ?? 0)],
   ];
   return (
-    <Space direction="vertical" size={8} style={{ width: "100%" }}>
+    <Space orientation="vertical" size={8} style={{ width: "100%" }}>
       <Row gutter={[16, 8]}>
         {items.map(([k, v, c]) => (
           <Col key={k} xs={8} sm={4}>
-            <Statistic title={k} value={v} valueStyle={c ? { color: c } : undefined} />
+            <Statistic title={k} value={v} styles={{ content: c ? { color: c } : undefined }} />
           </Col>
         ))}
       </Row>
@@ -160,7 +160,7 @@ function Counts({ s }: { s: Summary }) {
         <Alert
           type={s.report.source_unchanged ? "success" : "error"}
           showIcon
-          message={s.report.source_unchanged ? t("pages.sources.dropbox.sourceOk") : t("pages.sources.dropbox.sourceChanged")}
+          title={s.report.source_unchanged ? t("pages.sources.dropbox.sourceOk") : t("pages.sources.dropbox.sourceChanged")}
         />
       )}
     </Space>
@@ -184,9 +184,9 @@ function RunView({ id, isAdmin, canEdit }: { id: string; isAdmin: boolean; canEd
   const r = q.data;
   const published = r.summary?.published_run;
   return (
-    <Space direction="vertical" size={12} style={{ width: "100%" }}>
+    <Space orientation="vertical" size={12} style={{ width: "100%" }}>
       {active(r.status) && <LivePanel run={r} canEdit={canEdit} />}
-      {r.status === "error" && r.message && <Alert type="error" showIcon message={r.message} />}
+      {r.status === "error" && r.message && <Alert type="error" showIcon title={r.message} />}
       {r.summary && <Counts s={r.summary} />}
       {published && isAdmin && (
         <Space wrap>
@@ -274,10 +274,10 @@ export function DropboxSync({ canEdit, isAdmin }: { canEdit: boolean; isAdmin: b
 
   return (
     <Card style={{ marginBottom: 16 }} title={t("pages.sources.dropbox.title")}>
-      <Space direction="vertical" size={16} style={{ width: "100%" }}>
+      <Space orientation="vertical" size={16} style={{ width: "100%" }}>
         <Typography.Text type="secondary">{t("pages.sources.dropbox.intro")}</Typography.Text>
         {status.data && typeof status.data.reader === "boolean" && !ready && (
-          <Alert type="warning" showIcon message={t("pages.sources.dropbox.notAuthorised", { roles: missing })} />
+          <Alert type="warning" showIcon title={t("pages.sources.dropbox.notAuthorised", { roles: missing })} />
         )}
         {canEdit && (
           <Form layout="vertical" onFinish={() => start.mutate()} requiredMark={false}>

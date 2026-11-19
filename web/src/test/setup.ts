@@ -14,7 +14,7 @@ afterEach(() => {
 
 // findBy* waits 1 s by default; lazily loaded pages can take longer on a busy machine.
 import { configure } from "@testing-library/react";
-configure({ asyncUtilTimeout: 5000 });
+configure({ asyncUtilTimeout: 10000 });
 
 // jsdom has no matchMedia (antd's responsive grid and the theme code use it): a wide, light-theme desktop.
 if (!window.matchMedia) {

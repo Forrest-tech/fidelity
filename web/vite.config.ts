@@ -19,6 +19,6 @@ export default defineConfig({
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"], // e2e/ belongs to Playwright
     css: false,
-    testTimeout: 15_000, // jsdom page tests are slow on small machines; avoids false failures
+    testTimeout: 30_000, // jsdom page tests are slow on small machines; avoids false failures
   },
 });

@@ -43,7 +43,7 @@ function SourceCard({ s, canEdit }: { s: SourceRow; canEdit: boolean }) {
   });
   return (
     <Card size="small" title={<Space><FolderOpenOutlined />{s.name}</Space>}>
-      <Space direction="vertical" size={8} style={{ width: "100%" }}>
+      <Space orientation="vertical" size={8} style={{ width: "100%" }}>
         <Typography.Text type="secondary" style={{ wordBreak: "break-all" }}>{s.src_root}</Typography.Text>
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>{t("pages.sources.readOnly")}</Typography.Text>
         {canEdit && (
