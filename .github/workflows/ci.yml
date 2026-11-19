@@ -129,6 +129,37 @@ jobs:
           name: macos-benchmarks-and-lock
           path: backend/mac-bench
 
+  docker:
+    # The container build used on the Mac (Docker Desktop) and later on a server: image builds, and the
+    # app works with SQLite inside the container and with a PostgreSQL server outside it.
+    name: docker-image
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fidelity
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the image
+        run: docker build -t fidelity:ci .
+      - name: Run with SQLite in the container
+        run: |
+          docker run -d --name f-sqlite -p 8000:8000 fidelity:ci
+          bash deploy/docker/smoke_test.sh http://127.0.0.1:8000 || (docker logs f-sqlite; exit 1)
+          docker rm -f f-sqlite
+      - name: Run against PostgreSQL outside the container
+        run: |
+          docker run -d --name f-pg --network host \
+            -e FIDELITY_DB_URL=postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/fidelity \
+            -e FIDELITY_TRUST_URL=postgresql://postgres:postgres@127.0.0.1:5432/fidelity fidelity:ci
+          bash deploy/docker/smoke_test.sh http://127.0.0.1:8000 || (docker logs f-pg; exit 1)
+          docker exec f-pg python -c "import os;print(os.environ['FIDELITY_TRUST_URL'].split('@')[1])"
+
   frontend:
     name: frontend-build
     runs-on: ubuntu-latest

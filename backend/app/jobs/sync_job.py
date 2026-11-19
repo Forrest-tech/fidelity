@@ -12,6 +12,7 @@ from .. import config
 BACKEND = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 LOG_DIR = os.path.join(config.DATA_DIR, "work", "sync-logs")
 LINK_RE = re.compile(r"^https://(www\.)?dropbox\.com/\S+$")
+PATH_RE = re.compile(r"^/[^\x00-\x1f]{0,500}$")      # a folder path in the connected Dropbox, e.g. /2025
 _STEP = re.compile(r"^\[(\d+)\] ")
 _TOTAL = re.compile(r"^files to check: (\d+)")
 _RUN = re.compile(r"--rollback (\d{8}-\d{6})")

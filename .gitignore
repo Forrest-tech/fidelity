@@ -56,3 +56,4 @@ backend/ocr-benchmark/
 # Mac mini local settings (may contain the database password)
 deploy/mac/mac.env
 tools/gitleaks/
+deploy/docker/fidelity.env

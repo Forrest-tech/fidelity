@@ -1,0 +1,22 @@
+# Fidelity in Docker. Settings: copy deploy/docker/fidelity.env.example to deploy/docker/fidelity.env.
+#   docker compose up -d --build        start (and rebuild after an update)
+#   docker compose logs -f              follow the log
+#   docker compose down                 stop (data stays in the volumes)
+services:
+  fidelity:
+    build: .
+    image: fidelity:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"          # this machine only; change to "8000:8000" for the office network
+    env_file:
+      - path: deploy/docker/fidelity.env      # optional: without it the container uses SQLite in its volume
+        required: false
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # reach PostgreSQL / Ollama running on this machine
+    volumes:
+      - fidelity-data:/app/data              # Dropbox/Google connections, OCR models, glossary, work files
+      - fidelity-appdata:/app/backend/data   # sign-in secret, job database (when not on PostgreSQL)
+volumes:
+  fidelity-data:
+  fidelity-appdata:

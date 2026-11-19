@@ -67,7 +67,7 @@ def test_reviewer_starts_a_dry_run_by_default(login):
 
 def test_links_are_checked(login):
     c = login("reviewer")
-    assert c.post("/api/v1/dropbox/sync", json={"source_link": "/2025", "dest_link": DST}).status_code == 422
+    assert c.post("/api/v1/dropbox/sync", json={"source_link": "C:/Users/x", "dest_link": DST}).status_code == 422
     assert c.post("/api/v1/dropbox/sync", json={"source_link": SRC, "dest_link": SRC}).status_code == 422
     assert c.post("/api/v1/dropbox/sync", json={"source_link": "https://evil.example/x", "dest_link": DST}).status_code == 422
 
@@ -148,3 +148,12 @@ def test_common_dropbox_errors_get_plain_messages(tmp_path, monkeypatch):
     with pytest.raises(RuntimeError, match="Dropbox cannot find one of the shared links"):
         S.handle_sync({"id": "j7", "rel": json.dumps({"source_link": SRC, "dest_link": DST})}, lambda *a: None)
     assert S.explain("random failure") is None
+
+
+def test_folder_paths_are_accepted_too(login):
+    c = login("reviewer")
+    r = c.post("/api/v1/dropbox/sync", json={"source_link": "/2025", "dest_link": "/Transfer_Md"})
+    assert r.status_code == 200, r.text
+    assert c.post("/api/v1/dropbox/sync", json={"source_link": "/2025", "dest_link": "/2025/"}).status_code == 422
+    assert c.post("/api/v1/dropbox/sync", json={"source_link": "/a/../b", "dest_link": "/out"}).status_code == 422
+    assert c.post("/api/v1/dropbox/sync", json={"source_link": "2025", "dest_link": "/out"}).status_code == 422

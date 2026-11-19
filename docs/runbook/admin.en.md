@@ -98,6 +98,22 @@ facts (editions, drafts, counts) are generated — never type them by hand.
 `python scripts/measure_tokens.py --library <local copy> --out ../docs/benchmarks/token-cost` — file
 sizes, listing cost, share inside the 10k–30k target.
 
+## Docker (recommended on the Mac and on a server)
+Keeps the Mac's own environment untouched: everything runs in one container, data in two Docker volumes.
+1. Install Docker Desktop. In the project folder: `cp deploy/docker/fidelity.env.example deploy/docker/fidelity.env`
+   and set the PostgreSQL password (or delete the two database lines to use SQLite inside the container).
+2. PostgreSQL on the Mac: create the role and database (see "Server database"). The container reaches the Mac
+   as `host.docker.internal`; Docker Desktop forwards that to the Mac itself, so a PostgreSQL that listens on
+   localhost normally works. If the connection is refused, set `listen_addresses = '*'` and allow
+   `192.168.65.0/24` (Docker Desktop's network) in `pg_hba.conf` with `scram-sha-256`.
+3. `docker compose up -d --build` — then open <http://127.0.0.1:8000>, create the first administrator, and
+   connect Dropbox / Google Drive under Settings → Cloud storage. Update: `git pull` and the same command.
+   Logs: `docker compose logs -f`. Stop: `docker compose down` (data stays in the volumes).
+4. Optional local correction model: install Ollama **natively** on the Mac (it uses the Apple GPU, which a
+   container cannot) and uncomment `FIDELITY_LLM_URL=http://host.docker.internal:11434` in the env file.
+In Docker the OCR engines are RapidOCR and Tesseract (CPU). Apple Vision needs macOS itself, so it is only
+available with the native install below; on the benchmark it ranked third, so Docker loses little accuracy.
+
 ## Mac mini (Phase 6)
 1. `./deploy/mac/install.sh` — installs Homebrew packages (Python 3.11, Tesseract, Node, Ollama), the
    Python environment (locked versions when `deploy/mac/requirements-macos.lock` is present — download it

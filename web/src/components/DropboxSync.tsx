@@ -158,12 +158,12 @@ export function DropboxSync({ canEdit, isAdmin }: { canEdit: boolean; isAdmin: b
           <label className="grid gap-1 text-sm">
             {t("pages.sources.dropbox.source")}
             <input className="rounded-md border border-border bg-surface px-2 py-2" value={src} onChange={(e) => setSrc(e.target.value)}
-              placeholder="https://www.dropbox.com/scl/fo/…" required inputMode="url" />
+              placeholder="/Folder  or  https://www.dropbox.com/scl/fo/…" required />
           </label>
           <label className="grid gap-1 text-sm">
             {t("pages.sources.dropbox.dest")}
             <input className="rounded-md border border-border bg-surface px-2 py-2" value={dest} onChange={(e) => setDest(e.target.value)}
-              placeholder="https://www.dropbox.com/scl/fo/…" required inputMode="url" />
+              placeholder="/Folder  or  https://www.dropbox.com/scl/fo/…" required />
           </label>
           <label className="grid gap-1 text-sm">
             {t("pages.sources.dropbox.only")}
