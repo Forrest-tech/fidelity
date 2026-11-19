@@ -58,6 +58,49 @@ def is_path(src: str) -> bool:
     return src.startswith("/")
 
 
+def parse_link(raw: str):
+    """Understand what people paste (found in testing):
+      - a folder path:                         /AS 3500                       -> ("path", "/AS 3500")
+      - the Dropbox website's address bar:     https://www.dropbox.com/home/AS%203500?di=...  -> ("path", "/AS 3500")
+      - a shared folder link:                  https://www.dropbox.com/scl/fo/<id>/<key>?rlkey=..  -> ("link", base, "")
+      - the same link after clicking into a sub-folder on the website:
+                                               https://www.dropbox.com/scl/fo/<id>/<key>/AS%203500?rlkey=..&subfolder_nav_tracking=1
+                                                                               -> ("link", base, "/AS 3500")
+    `base` keeps only the rlkey parameter, which is what the Dropbox API accepts."""
+    from urllib.parse import parse_qs, unquote, urlencode, urlparse
+    s = (raw or "").strip()
+    if s.startswith("/"):
+        return ("path", s.rstrip("/") or "/")
+    u = urlparse(s)
+    if u.netloc.lower() not in ("www.dropbox.com", "dropbox.com"):
+        return ("link", s, "")
+    parts = [unquote(p) for p in u.path.split("/") if p]
+    if parts[:1] == ["home"]:
+        return ("path", "/" + "/".join(parts[1:]) if len(parts) > 1 else "/")
+    if parts[:2] == ["scl", "fo"] and len(parts) >= 4:
+        q = parse_qs(u.query)
+        query = urlencode({"rlkey": q["rlkey"][0]}) if "rlkey" in q else ""
+        base = f"https://www.dropbox.com/scl/fo/{parts[2]}/{parts[3]}" + (f"?{query}" if query else "")
+        return ("link", base, "/" + "/".join(parts[4:]) if len(parts) > 4 else "")
+    return ("link", s, "")
+
+
+def canonical(dbx, raw: str) -> str:
+    """A form every function here accepts: an account path, or a shared link without sub-folder."""
+    kind, *rest = parse_link(raw)
+    if kind == "path":
+        return rest[0]
+    base, sub = rest
+    if not sub:
+        return base
+    md = dbx.sharing_get_shared_link_metadata(base)
+    if md.path_lower:                        # the shared folder is in this account: use the exact path
+        return md.path_lower.rstrip("/") + sub
+    raise SystemExit("This link points into a sub-folder of a folder shared with you. In Dropbox, open "
+                     "that sub-folder and use Share → Copy link on it, or add the shared folder to your Dropbox "
+                     "and use its path (e.g. /Folder/Sub).")
+
+
 def link_root(dbx, url):
     """Path in the user's Dropbox that a shared link points to ('' if not theirs); a path is returned as is."""
     if is_path(url):

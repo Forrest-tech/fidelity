@@ -18,6 +18,14 @@ os.environ.setdefault("FIDELITY_OCR_SELECTION", os.path.join(_TMP, "no-ocr-selec
 os.environ.setdefault("FIDELITY_FORMULA_APPROVALS", os.path.join(_TMP, "no-formula-approvals.json"))
 os.environ.setdefault("FIDELITY_GOOGLE_AUTH", os.path.join(_TMP, "google_auth.json"))
 
+# The job/review database and the cache are module paths, not environment settings: point them at the
+# test folder too, so a test can never touch the real data/trust.db of the machine running the suite
+# (found in testing: job-table tests had cleaned up real Dropbox-sync history rows).
+from app import config as _config  # noqa: E402
+_config.TRUST_DB = os.path.join(_TMP, "trust.db")
+_config.CACHE_DIR = os.path.join(_TMP, "cache")
+os.makedirs(_config.CACHE_DIR, exist_ok=True)
+
 
 def _reset_postgres():
     """Running the suite on PostgreSQL (Phase 8): start from an empty schema. Refuses any database

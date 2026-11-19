@@ -158,3 +158,29 @@ def test_folder_paths_are_accepted_too(login):
     assert c.post("/api/v1/dropbox/sync", json={"source_link": "/2025", "dest_link": "/2025/"}).status_code == 422
     assert c.post("/api/v1/dropbox/sync", json={"source_link": "/a/../b", "dest_link": "/out"}).status_code == 422
     assert c.post("/api/v1/dropbox/sync", json={"source_link": "2025", "dest_link": "/out"}).status_code == 422
+
+
+def test_dropbox_inputs_people_paste_are_understood():
+    from app.distill import dropbox_io as D
+    assert D.parse_link("/AS 3500/") == ("path", "/AS 3500")
+    assert D.parse_link("https://www.dropbox.com/home/AS%203500?di=left_nav_browse") == ("path", "/AS 3500")
+    assert D.parse_link("https://www.dropbox.com/home/Work/Transfer_Md") == ("path", "/Work/Transfer_Md")
+    kind, base, sub = D.parse_link("https://www.dropbox.com/scl/fo/abc123/KEY456/AS%203500?dl=0&rlkey=r1&subfolder_nav_tracking=1")
+    assert (kind, base, sub) == ("link", "https://www.dropbox.com/scl/fo/abc123/KEY456?rlkey=r1", "/AS 3500")
+    assert D.parse_link("https://www.dropbox.com/scl/fo/abc123/KEY456?rlkey=r1&dl=0")[1:] == ("https://www.dropbox.com/scl/fo/abc123/KEY456?rlkey=r1", "")
+
+
+def test_sub_folder_of_an_own_shared_folder_becomes_its_path():
+    from app.distill import dropbox_io as D
+
+    class Dbx:
+        def sharing_get_shared_link_metadata(self, url):
+            return type("M", (), {"path_lower": "/library"})()
+    assert D.canonical(Dbx(), "https://www.dropbox.com/scl/fo/a/b/AS%203500?rlkey=r") == "/library/AS 3500"
+    assert D.canonical(Dbx(), "https://www.dropbox.com/home/Transfer_Md") == "/Transfer_Md"
+
+    class Foreign:
+        def sharing_get_shared_link_metadata(self, url):
+            return type("M", (), {"path_lower": None})()
+    with pytest.raises(SystemExit, match="Copy link"):
+        D.canonical(Foreign(), "https://www.dropbox.com/scl/fo/a/b/Sub?rlkey=r")

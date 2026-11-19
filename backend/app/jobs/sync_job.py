@@ -42,8 +42,11 @@ def command(p: dict) -> list:
 
 # Plain-language messages for the errors people actually hit; the full log stays available.
 _EXPLAIN = [
-    ("shared_link_not_found", "Dropbox cannot find one of the shared links. Check that it is a link to a folder and "
-                              "that the link has not been removed (create a new one in Dropbox if needed)."),
+    ("shared_link_not_found", "Dropbox cannot find one of the shared links (it may have been removed or replaced). "
+                              "Easier: for a folder in your own Dropbox, paste the address from the Dropbox website "
+                              "(https://www.dropbox.com/home/...) or type its path, e.g. /AS 3500."),
+    ("not_found", "Dropbox cannot find that folder. Check the path (e.g. /AS 3500) or paste the address from the "
+                  "Dropbox website (https://www.dropbox.com/home/...)."),
     ("missing_scope", "This machine's Dropbox access lacks a permission. Re-authorise it (runbook: Dropbox access)."),
     ("No Dropbox credentials", "Dropbox access is not set up on this machine (runbook: Dropbox access)."),
     ("must be a folder in your own Dropbox", "The output link must point to a folder in your own Dropbox."),
