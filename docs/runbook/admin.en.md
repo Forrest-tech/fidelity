@@ -29,6 +29,12 @@ Re-authorise (e.g. after a scope change): `python -m app.distill.dropbox_io auth
 (or `--role writer`). Follow the link, paste the code.
 
 ## Distil and publish
+**In the web interface** (reviewer or admin): **Sources → Dropbox sync**. Paste the source folder's
+shared link and an output folder's shared link, keep **Dry run** ticked for the first run, start, and
+follow progress, the per-file results and the log under *Recent runs*. Untick Dry run to publish. An
+administrator can roll a published run back from the same place. It runs exactly the command below.
+
+**From the command line:**
 ```
 python -m app.distill.sync --source-link <source shared link> --dest-link <destination shared link> --dry-run
 python -m app.distill.sync --source-link <…> --dest-link <…>

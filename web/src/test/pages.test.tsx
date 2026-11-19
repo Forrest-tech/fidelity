@@ -151,3 +151,66 @@ describe("users (admin)", () => {
     expect(JSON.parse(String(call.init?.body))).toMatchObject({ email: "new@example.com", role: "viewer" });
   });
 });
+
+describe("Dropbox sync on the sources page", () => {
+  const LINK_A = "https://www.dropbox.com/scl/fo/a/src?rlkey=1";
+  const LINK_B = "https://www.dropbox.com/scl/fo/b/out?rlkey=2";
+  const RUN = {
+    id: "r1", status: "done", progress: 100, message: "published", created_at: 1795000000,
+    params: { source_link: LINK_A, dest_link: LINK_B, dry_run: false },
+  };
+  const DETAIL = {
+    ...RUN, log: ["[1] a.pdf", "  verification: PASS  files=1"],
+    summary: { exit_code: 0, published_run: "20261119-101500",
+      report: { documents: [{ source: "a.pdf", verdict: "PASS" }, { source: "b.pdf", verdict: "FAIL" }], unchanged: ["c.pdf"], source_unchanged: true } },
+  };
+  const api = (role: string, extra: (url: string, init?: RequestInit) => { status?: number; body?: unknown } | undefined = () => undefined) =>
+    mockApi((url, init) => {
+      const e = extra(url, init);
+      if (e) return e;
+      if (url.endsWith("/me")) return { body: ME(role) };
+      if (url.endsWith("/dropbox/status")) return { body: { reader: true, writer: true } };
+      if (url.endsWith("/dropbox/sync") && (!init || init.method !== "POST")) return { body: { runs: [RUN] } };
+      if (url.includes("/dropbox/sync/r1")) return { body: DETAIL };
+      return { body: SRC };
+    });
+
+  it("viewer sees the runs but no form", async () => {
+    api("viewer");
+    renderApp("/sources");
+    expect(await screen.findByText("Dropbox sync")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Start dry run" })).not.toBeInTheDocument();
+    expect(await screen.findByText("Finished")).toBeInTheDocument();
+  });
+
+  it("reviewer starts a dry run by default with both links", async () => {
+    const calls = api("reviewer", (url, init) =>
+      url.endsWith("/dropbox/sync") && init?.method === "POST" ? { body: { job: "r2", command: "-m app.distill.sync" } } : undefined);
+    localStorage.removeItem("fidelity.dropboxLinks");
+    renderApp("/sources");
+    const u = userEvent.setup();
+    await u.click(await screen.findByLabelText(/Source folder/));
+    await u.paste(LINK_A);
+    await u.click(screen.getByLabelText(/Output folder/));
+    await u.paste(LINK_B);
+    await u.click(screen.getByRole("button", { name: "Start dry run" }));
+    const post = calls.find((c) => c.url.endsWith("/dropbox/sync") && c.init?.method === "POST");
+    expect(JSON.parse(String(post?.init?.body))).toMatchObject({ source_link: LINK_A, dest_link: LINK_B, dry_run: true });
+  });
+
+  it("a finished run shows its counts; only admins see rollback", async () => {
+    api("reviewer");
+    renderApp("/sources");
+    const u = userEvent.setup();
+    await u.click(await screen.findByRole("button", { name: /Finished/ }));
+    expect(await screen.findByText("Source folder verified unchanged.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Roll back this run" })).not.toBeInTheDocument();
+  });
+
+  it("warns when Dropbox access is not set up", async () => {
+    api("admin", (url) => (url.endsWith("/dropbox/status") ? { body: { reader: true, writer: false } } : undefined));
+    renderApp("/sources");
+    expect(await screen.findByRole("alert")).toHaveTextContent("missing: writer");
+    expect(screen.getByRole("button", { name: "Start dry run" })).toBeDisabled();
+  });
+});

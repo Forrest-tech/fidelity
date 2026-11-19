@@ -288,3 +288,5 @@ def register():
     queue.register("reconvert", handle_reconvert)
     from .distill_job import handle_distill
     queue.register("distill", handle_distill)
+    from .sync_job import handle_sync
+    queue.register("dropbox_sync", handle_sync)
