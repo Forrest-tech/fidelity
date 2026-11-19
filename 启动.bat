@@ -15,6 +15,8 @@ cd /d "%~dp0"
 set ROOT=%CD%
 set PORT=8000
 set URL=http://127.0.0.1:%PORT%
+REM pip / Python read files as UTF-8 (requirements.txt has Chinese comments)
+set PYTHONUTF8=1
 
 echo.
 echo  ==========================================================
