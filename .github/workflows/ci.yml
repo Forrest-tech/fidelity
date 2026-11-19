@@ -89,7 +89,7 @@ jobs:
     # Phase 6: the Mac mini's platform. Same suite on macOS (Apple silicon), Apple Vision OCR benchmarked
     # against the other engines, throughput measured, and the locked dependency list for the installer.
     name: backend-tests-macos
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
