@@ -140,7 +140,10 @@ export function AppShell() {
           borderRadius: 6,
           fontFamily: "inherit",
           // the dark algorithm darkens the blue; links and the selected menu item need a lighter one to stay readable
-          ...(dark ? { colorLink: "#8fb0ff", colorLinkHover: "#b3c8ff", colorLinkActive: "#8fb0ff" } : {}),
+          ...(dark
+            ? { colorLink: "#8fb0ff", colorLinkHover: "#b3c8ff", colorLinkActive: "#8fb0ff" }
+            : // Ant Design's default secondary grey is 3.4:1 on white; WCAG AA needs 4.5:1
+              { colorTextSecondary: "#595959", colorTextTertiary: "#595959", colorTextDescription: "#595959" }),
         },
         components: dark
           ? { Menu: { itemSelectedColor: "#8fb0ff", horizontalItemSelectedColor: "#8fb0ff", itemHoverColor: "#b3c8ff", horizontalItemHoverColor: "#b3c8ff" } }

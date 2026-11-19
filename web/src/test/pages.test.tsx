@@ -225,7 +225,7 @@ describe("Dropbox sync on the sources page", () => {
     expect(screen.getByText("OCR page 3 of 10")).toBeInTheDocument();
     expect(screen.getByText(/This file is a scan/)).toBeInTheDocument();
     const u = userEvent.setup();
-    await u.click(screen.getByRole("button", { name: "Cancel run" }));
+    await u.click(screen.getByRole("button", { name: /Cancel run/ }));
     await u.click(await screen.findByRole("button", { name: "OK" })); // the confirmation
     await waitFor(() => expect(calls.some((c) => c.url.endsWith("/dropbox/sync/r9/cancel") && c.init?.method === "POST")).toBe(true));
   });
