@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
+import { Card, Descriptions, Space, Typography } from "antd";
 import { useAuth } from "../auth/AuthProvider";
-import { Card, PageHeader } from "../components/ui";
+import { PageHeader } from "../components/ui";
 import { CloudStorage, GoogleDrive } from "../components/CloudStorage";
 
 export function SettingsPage() {
@@ -9,23 +10,21 @@ export function SettingsPage() {
   return (
     <>
       <PageHeader title={t("pages.settings.title")} />
-      <Card className="max-w-md">
-        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-          <dt className="text-fg-muted">{t("login.email")}</dt>
-          <dd>{me?.email}</dd>
-          <dt className="text-fg-muted">{t("pages.users.role")}</dt>
-          <dd>{me ? t(`roles.${me.role}`) : ""}</dd>
-        </dl>
-        <p className="mt-4 text-sm text-fg-muted">{t("pages.settings.hint")}</p>
-      </Card>
-      {me?.role === "admin" && (
-        <div className="mt-4">
-          <CloudStorage />
-          <div className="mt-4">
+      <Space orientation="vertical" size={16} style={{ width: "100%", maxWidth: 760 }}>
+        <Card title={t("login.email")}>
+          <Descriptions column={1} size="small">
+            <Descriptions.Item label={t("login.email")}>{me?.email}</Descriptions.Item>
+            <Descriptions.Item label={t("pages.users.role")}>{me ? t(`roles.${me.role}`) : ""}</Descriptions.Item>
+          </Descriptions>
+          <Typography.Text type="secondary">{t("pages.settings.hint")}</Typography.Text>
+        </Card>
+        {me?.role === "admin" && (
+          <>
+            <CloudStorage />
             <GoogleDrive />
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Space>
     </>
   );
 }

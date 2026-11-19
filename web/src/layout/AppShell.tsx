@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Avatar, Button, ConfigProvider, Drawer, Dropdown, Grid, Layout, Menu, Segmented, theme as antTheme } from "antd";
+import { Avatar, Button, Drawer, Dropdown, Grid, Layout, Menu, Segmented } from "antd";
 import type { MenuProps } from "antd";
-import enUS from "antd/locale/en_US";
-import zhCN from "antd/locale/zh_CN";
 import {
   AuditOutlined,
   CloudSyncOutlined,
@@ -21,46 +19,7 @@ import {
 } from "@ant-design/icons";
 import { useAuth } from "../auth/AuthProvider";
 import { LANGS } from "../locales";
-
-const THEME_KEY = "fidelity.theme";
-type Theme = "system" | "light" | "dark";
-
-function isDark(t: Theme) {
-  return t === "dark" || (t === "system" && !!window.matchMedia?.("(prefers-color-scheme: dark)").matches);
-}
-
-function applyTheme(t: Theme) {
-  document.documentElement.dataset.theme = isDark(t) ? "dark" : "light";
-}
-
-export function useTheme() {
-  const [theme, setTheme] = useState<Theme>(() => {
-    try {
-      return (localStorage.getItem(THEME_KEY) as Theme) || "system";
-    } catch {
-      return "system";
-    }
-  });
-  const [dark, setDark] = useState(() => isDark(theme));
-  useEffect(() => {
-    applyTheme(theme);
-    setDark(isDark(theme));
-    try {
-      localStorage.setItem(THEME_KEY, theme);
-    } catch {
-      /* storage unavailable: the theme still applies for this session */
-    }
-    if (theme !== "system" || !window.matchMedia) return;
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const on = () => {
-      applyTheme("system");
-      setDark(mq.matches);
-    };
-    mq.addEventListener?.("change", on);
-    return () => mq.removeEventListener?.("change", on);
-  }, [theme]);
-  return [theme, setTheme, dark] as const;
-}
+import { useTheme } from "./ThemeProvider";
 
 const NAV = [
   { to: "/", key: "overview", icon: <DashboardOutlined />, end: true },
@@ -79,7 +38,7 @@ function activeKey(path: string) {
 export function AppShell() {
   const { t, i18n } = useTranslation();
   const { me, logout } = useAuth();
-  const [theme, setTheme, dark] = useTheme();
+  const { theme, setTheme, dark } = useTheme();
   const [open, setOpen] = useState(false);
   const loc = useLocation();
   const wide = Grid.useBreakpoint().md !== false;
@@ -131,41 +90,6 @@ export function AppShell() {
   );
 
   return (
-    <ConfigProvider
-      locale={lang === "zh" ? zhCN : enUS}
-      theme={{
-        algorithm: dark ? antTheme.darkAlgorithm : antTheme.defaultAlgorithm,
-        token: {
-          colorPrimary: "#1d4ed8",
-          borderRadius: 6,
-          fontFamily: "inherit",
-          // the dark algorithm darkens the blue; links and the selected menu item need a lighter one to stay readable
-          ...(dark
-            ? {
-                colorLink: "#8fb0ff",
-                colorLinkHover: "#b3c8ff",
-                colorLinkActive: "#8fb0ff",
-                colorTextSecondary: "rgba(255,255,255,0.72)",
-                colorTextTertiary: "rgba(255,255,255,0.72)",
-                colorTextDescription: "rgba(255,255,255,0.72)",
-                colorError: "#ff7875", // red tags and text stay readable on the dark surfaces
-              }
-            : // Ant Design's default secondary grey is 3.4:1 on white; WCAG AA needs 4.5:1
-              {
-                colorTextSecondary: "#595959",
-                colorTextTertiary: "#595959",
-                colorTextDescription: "#595959",
-                // status colours dark enough for text and tags on their pale backgrounds
-                colorSuccess: "#237804",
-                colorError: "#cf1322",
-                colorWarning: "#ad6800",
-              }),
-        },
-        components: dark
-          ? { Menu: { itemSelectedColor: "#8fb0ff", horizontalItemSelectedColor: "#8fb0ff", itemHoverColor: "#b3c8ff", horizontalItemHoverColor: "#b3c8ff" } }
-          : {},
-      }}
-    >
       <Layout style={{ minHeight: "100vh" }}>
         <a
           href="#main"
@@ -275,6 +199,5 @@ export function AppShell() {
           </div>
         </Layout.Content>
       </Layout>
-    </ConfigProvider>
   );
 }
