@@ -20,6 +20,7 @@ import datetime as _dt
 import json
 import os
 import sys
+import time
 
 from . import backends as B
 from . import dropbox_io as D
@@ -45,6 +46,48 @@ def load_state(work):
 def save_state(work, state):
     with open(_state_path(work), "w", encoding="utf-8") as f:
         json.dump(state, f, ensure_ascii=False, indent=1, default=str)
+
+
+# ------------------------------------------------------------------ network hiccups
+# A long run makes thousands of requests; one dropped connection (seen in testing: SSLEOFError
+# while downloading from Dropbox) must not end a 41-file run. Transient errors are retried with
+# backoff; a file that still fails is reported as FAIL with the reason and the run carries on.
+_BACKOFF = (2, 5, 15)
+
+
+def _transient(e) -> bool:
+    import ssl
+    try:
+        import requests
+        if isinstance(e, requests.exceptions.RequestException):
+            return True
+    except ImportError:                                   # pragma: no cover
+        pass
+    if isinstance(e, (ConnectionError, TimeoutError, ssl.SSLError)):
+        return True
+    name = type(e).__name__
+    if name in ("InternalServerError", "RateLimitError"):  # dropbox.exceptions
+        return True
+    status = getattr(getattr(e, "resp", None), "status", None)
+    if name == "HttpError" and status is not None:         # googleapiclient
+        return int(status) == 429 or int(status) >= 500
+    return False
+
+
+def _retry(fn, what):
+    tries = len(_BACKOFF) + 1
+    for n in range(1, tries + 1):
+        try:
+            return fn()
+        except Exception as e:
+            if n == tries or not _transient(e):
+                raise
+            print(f"  network error, retrying ({n}/{tries - 1}) {what}: {type(e).__name__}: {str(e)[:160]}", flush=True)
+            time.sleep(_BACKOFF[n - 1])
+
+
+def _err(e) -> str:
+    return f"{type(e).__name__}: {e}"[:300]
 
 
 def main(argv=None):
@@ -113,14 +156,25 @@ def main(argv=None):
         rel_local = os.path.join(src_name, *rel.strip("/").split("/"))
         lp = os.path.join(a.work, "src", rel_local)
         print(f"\n[{len(results) + 1}] {rel}", flush=True)
-        if not src.local_matches(lp, f):
-            print(f"  download ({f['size'] / 1e6:.1f} MB)", flush=True)
-            src.download(rel, f, lp)
-        if not src.verify_local(lp, f):
-            raise SystemExit(f"local copy of {rel} does not match the source file's checksum")
 
-        r = distill_any(lp, rel_local, out, "", cache, log=lambda m: print(m, flush=True),
-                         publish_protected=a.publish_protected_metadata)
+        def failed(e, step):
+            err = _err(e)
+            print(f"  verification: FAIL  (error while {step}: {err})", flush=True)
+            results.append({"verdict": "FAIL"})
+            report["documents"].append({"source": rel, "verdict": "FAIL", "files": 0, "uploaded": 0,
+                                        "error": f"{step}: {err}"})
+
+        try:
+            if not src.local_matches(lp, f):
+                print(f"  download ({f['size'] / 1e6:.1f} MB)", flush=True)
+                _retry(lambda: src.download(rel, f, lp), "download")
+            if not src.verify_local(lp, f):
+                raise SystemExit(f"local copy of {rel} does not match the source file's checksum")
+            r = distill_any(lp, rel_local, out, "", cache, log=lambda m: print(m, flush=True),
+                            publish_protected=a.publish_protected_metadata)
+        except Exception as e:                      # SystemExit (safety stops) is not caught
+            failed(e, "reading the file")
+            continue
         results.append(r)
         if r["verdict"] == "SKIP":                  # triaged out: listed with its class, never silently dropped
             report.setdefault("triaged_out", []).append({"source": rel, **r["triage"]})
@@ -129,7 +183,12 @@ def main(argv=None):
             continue
         print(f"  verification: {r['verdict']}  files={r['files']}", flush=True)
 
-        now = src.identity(rel, f)
+        try:
+            now = _retry(lambda: src.identity(rel, f), "re-check")
+        except Exception as e:
+            results.pop()
+            failed(e, "re-checking the source")
+            continue
         if (now["id"], now["rev"], now["size"]) != (f["id"], f["rev"], f["size"]):
             raise SystemExit(f"SOURCE CHANGED during the run: {rel} — stopping, nothing more uploaded")
 
@@ -151,7 +210,12 @@ def main(argv=None):
                         lp_ = os.path.join(root_, fn_)
                         with open(lp_, "rb") as fh:
                             files[os.path.relpath(lp_, R.longpath(base)).replace(os.sep, "/")] = fh.read()
-            pub.stage(key, files)                    # live folder is not touched until promote
+            try:
+                _retry(lambda: pub.stage(key, files), "upload")   # live folder is not touched until promote
+            except Exception as e:
+                results.pop()
+                failed(e, "uploading")
+                continue
             doc["uploaded"] = len(files)
             doc["key"] = key
             pending.append((rel, f["content_hash"], doc))
@@ -175,7 +239,7 @@ def main(argv=None):
     if gone:   # renames/deletions wait for administrator confirmation; published files stay untouched
         report["removed_sources"] = gone
         print(f"{len(gone)} previously distilled source(s) no longer present; published files left untouched: {gone[:5]}", flush=True)
-    after = src.snapshot()
+    after = _retry(src.snapshot, "final source check")
     diffs = D.compare_snapshots(before, after)
     report["source_unchanged"] = not diffs
     report["diffs"] = diffs

@@ -184,3 +184,77 @@ def test_sub_folder_of_an_own_shared_folder_becomes_its_path():
             return type("M", (), {"path_lower": None})()
     with pytest.raises(SystemExit, match="Copy link"):
         D.canonical(Foreign(), "https://www.dropbox.com/scl/fo/a/b/Sub?rlkey=r")
+
+
+def test_live_status_follows_files_stages_and_ocr_pages():
+    t = [100.0]
+    live = S.Live("j1", now=lambda: t[0])
+    for line in ["source dropbox:/as 3500 (read-only)  ->  output dropbox:/transfer_md", "files to check: 4",
+                 "unchanged since last run, skipped: /a.pdf", "", "[1] /1990/Scan.pdf", "  download (0.5 MB)",
+                 "  scanned document: OCR of 200 page(s) with 2 engine(s)", "  OCR page 50/200"]:
+        t[0] += 1
+        live.feed(line + "\n")
+    st = live.state
+    assert (st["total"], st["index"], st["file"], st["stage"], st["page"], st["pages"], st["scan"]) == \
+        (4, 1, "/1990/Scan.pdf", "ocr", 50, 200, True)
+    assert st["skipped"] == 1 and st["updated"] == 108.0
+    assert 5 < live.percent() < 50                       # moves within a long scanned file, not stuck at file 1
+    live.feed("  verification: REVIEW  files=1\n")
+    live.feed("[2] /b.pdf\n")
+    live.feed("  verification: PASS  files=3\n")
+    assert live.state["counts"] == {"REVIEW": 1, "PASS": 1}
+
+
+def test_cancel_stops_the_whole_process_tree_and_reports_cancelled(tmp_path, monkeypatch):
+    import sys as _sys
+    import time as _time
+    import threading
+    monkeypatch.setattr(S, "LOG_DIR", str(tmp_path))
+    slow = [_sys.executable, "-c", "import time\nprint('files to check: 1', flush=True)\nprint('[1] /x.pdf', flush=True)\ntime.sleep(60)"]
+    monkeypatch.setattr(S, "command", lambda p: slow)
+    errors = []
+
+    def run():
+        try:
+            S.handle_sync({"id": "jc", "rel": json.dumps({"source_link": SRC, "dest_link": DST})}, lambda *a: None)
+        except RuntimeError as e:
+            errors.append(str(e))
+    th = threading.Thread(target=run)
+    th.start()
+    for _ in range(100):
+        if "jc" in S._procs:
+            break
+        _time.sleep(0.05)
+    _time.sleep(0.5)
+    assert S.cancel("jc") is True
+    th.join(timeout=20)
+    assert not th.is_alive() and errors == ["cancelled by the user"]
+    assert json.loads((tmp_path / "jc.live.json").read_text(encoding="utf-8"))["stage"] == "finished"
+    assert S.cancel("jc") is False                       # nothing left to cancel
+
+
+def test_failure_message_names_the_exception_not_the_last_progress_line():
+    from app.jobs import sync_job as S
+    text = "[1] a.pdf\n  OCR page 4\nTraceback (most recent call last):\n  File \"x.py\", line 1\n" \
+           "PermissionError: [WinError 32] in use\n  OCR page 5\n"
+    assert S.failure_message(text, 1) == "sync failed (exit 1): PermissionError: [WinError 32] in use"
+    assert "Dropbox cannot find one of the shared links" in S.failure_message("ApiError('shared_link_not_found')", 1)
+    assert S.failure_message("", 3) == "sync failed (exit 3): no output"
+
+
+def test_live_status_writes_a_new_step_at_once_even_inside_the_throttle(tmp_path, monkeypatch):
+    import json
+    from app.jobs import sync_job as S
+    monkeypatch.setattr(S, "LOG_DIR", str(tmp_path))
+    clock = [100.0]
+    live = S.Live("j1", now=lambda: clock[0])
+    live.write(force=True)
+    live.feed("files to check: 41")
+    live.write()
+    live.feed("[1] /a.pdf")                 # same second: still written, it is a new file
+    live.write()
+    assert json.load(open(S.live_path("j1")))["index"] == 1
+    live.feed("  some chatty line")         # nothing changed and inside the second: not rewritten
+    live.state["file"] = "marker"
+    live.write()
+    assert json.load(open(S.live_path("j1")))["file"] == "/a.pdf"

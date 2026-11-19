@@ -126,4 +126,30 @@ def run(jid: str, lines: int = 200):
             out["summary"] = json.load(f)
     except (OSError, ValueError):
         out["summary"] = None
+    try:
+        with open(S.live_path(jid), encoding="utf-8") as f:
+            out["live"] = json.load(f)
+    except (OSError, ValueError):
+        out["live"] = None
     return out
+
+
+@router.post("/dropbox/sync/{jid}/cancel")
+def cancel_run(jid: str):
+    """Stop a running sync (reviewer/admin). Nothing is promoted to the output folder after a cancel."""
+    if not jid.replace("-", "").isalnum():
+        raise HTTPException(400, "bad id")
+    job = queue.get(jid)
+    if not job or job.get("kind") != "dropbox_sync":
+        raise HTTPException(404, "no such sync run")
+    if job["status"] == "queued":
+        con = db.trust_rw()
+        try:
+            con.execute("UPDATE job SET status='error', message='cancelled by the user' WHERE id=? AND status='queued'", (jid,))
+            con.commit()
+        finally:
+            con.close()
+        return {"cancelled": True}
+    if job["status"] != "running" or not S.cancel(jid):
+        raise HTTPException(409, "this run is not running")
+    return {"cancelled": True}

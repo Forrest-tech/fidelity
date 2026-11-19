@@ -5,6 +5,7 @@ import json
 import os
 import re
 import subprocess
+import time
 import sys
 
 from .. import config
@@ -63,28 +64,144 @@ def explain(text: str):
     return None
 
 
+_ERRLINE = re.compile(r"^[A-Za-z_][\w.]*(Error|Exception|Exit)\b.*")
+
+
+def failure_message(text: str, code) -> str:
+    """One readable line for a failed run: a plain explanation when we have one, else the actual
+    exception line (not just the last line printed, which is often progress such as "OCR page 5")."""
+    if msg := explain(text):
+        return msg
+    rows = [l.strip() for l in text.splitlines() if l.strip()]
+    errs = [l for l in rows if _ERRLINE.match(l)]
+    line = (errs or rows or ["no output"])[-1]
+    return f"sync failed (exit {code}): {line[:300]}"
+
+
+def live_path(jid):
+    return os.path.join(LOG_DIR, f"{jid}.live.json")
+
+
+_DOC = re.compile(r"^\[(\d+)\] (.+)$")
+_OCR = re.compile(r"^OCR page (\d+)/(\d+|\?)")
+_VERDICT = re.compile(r"^verification: (\w+)")
+
+
+class Live:
+    """Turns the sync's output into a status the page can show: where it is, how far, results so far."""
+
+    def __init__(self, jid, now=time.time):
+        self.jid, self.now = jid, now
+        self.state = {"started": now(), "updated": now(), "total": 0, "index": 0, "file": "", "stage": "starting",
+                      "page": 0, "pages": 0, "scan": False, "counts": {}, "skipped": 0}
+        self._written = 0.0
+
+    def feed(self, line: str):
+        st, s = self.state, line.strip()
+        if not s:
+            return
+        st["updated"] = self.now()
+        if m := _TOTAL.match(s):
+            st["total"], st["stage"] = int(m.group(1)), "listing"
+        elif m := _DOC.match(s):
+            st.update(index=int(m.group(1)), file=m.group(2)[-200:], stage="preparing", page=0, pages=0, scan=False)
+        elif s.startswith("download"):
+            st["stage"] = "downloading"
+        elif s.startswith("scanned document"):
+            st["scan"], st["stage"] = True, "ocr"
+        elif m := _OCR.match(s):
+            st.update(stage="ocr", page=int(m.group(1)), pages=int(m.group(2)) if m.group(2).isdigit() else 0, scan=True)
+        elif s.startswith("extracted"):
+            st["stage"] = "verifying"
+        elif m := _VERDICT.match(s):
+            v = m.group(1)
+            st["counts"][v] = st["counts"].get(v, 0) + 1
+            st["stage"] = "uploading" if v in ("PASS", "METADATA") else "next"
+        elif s.startswith(("unchanged since last run", "skip duplicate", "skip (format")):
+            st["skipped"] += 1
+        elif s.startswith("promoted"):
+            st["stage"] = "publishing"
+
+    def percent(self) -> float:
+        st = self.state
+        if not st["total"]:
+            return 3.0
+        within = st["page"] / st["pages"] if st["pages"] else 0.0
+        done = max(st["index"] - 1, 0) + within
+        return round(min(5 + 90 * (done + st["skipped"]) / st["total"], 98), 1)
+
+    def _key(self):
+        st = self.state
+        return (st["stage"], st["index"], st["page"], st["total"], st["skipped"], sum(st["counts"].values()))
+
+    def write(self, force=False):
+        # Throttled for chatty output, but a change of stage/file/page is always written at once —
+        # otherwise the page can show an old step for as long as the next step stays quiet.
+        key = self._key()
+        if force or key != getattr(self, "_last_key", None) or self.now() - self._written >= 1.0:
+            self._written, self._last_key = self.now(), key
+            tmp = live_path(self.jid) + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(self.state, f)
+            os.replace(tmp, live_path(self.jid))
+
+
+# ------------------------------------------------------------------ cancelling
+_procs: dict = {}
+_cancelled: set = set()
+
+
+def _kill_tree(proc):
+    """Stop the sync and everything it started (a venv python.exe on Windows is a launcher + child)."""
+    if os.name == "nt":
+        subprocess.run(["taskkill", "/PID", str(proc.pid), "/T", "/F"], capture_output=True)
+    else:
+        import signal
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+
+
+def cancel(jid) -> bool:
+    proc = _procs.get(jid)
+    if not proc or proc.poll() is not None:
+        return False
+    _cancelled.add(jid)
+    _kill_tree(proc)
+    return True
+
+
 def handle_sync(job, report):
     p = json.loads(job["rel"])
     os.makedirs(LOG_DIR, exist_ok=True)
     env = dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8")
     report(1, "starting")
-    total, done, lines = 0, 0, []
+    lines = []
+    live = Live(job["id"])
+    live.write(force=True)
+    group = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
     with open(log_path(job["id"]), "w", encoding="utf-8") as log:
         proc = subprocess.Popen(command(p), cwd=BACKEND, env=env, stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
-        for line in proc.stdout:
-            log.write(line)
-            log.flush()
-            lines.append(line)
-            s = line.strip()
-            if m := _TOTAL.match(s):
-                total = int(m.group(1))
-            elif m := _STEP.match(s):
-                done = int(m.group(1))
-            if s:
-                pct = 5 + (85 * done / total if total else 0)
-                report(round(min(pct, 95), 1), s[:160])
-        code = proc.wait()
+                                stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace", **group)
+        _procs[job["id"]] = proc
+        try:
+            for line in proc.stdout:
+                log.write(line)
+                log.flush()
+                lines.append(line)
+                live.feed(line)
+                live.write()
+                if line.strip():
+                    report(live.percent(), line.strip()[:160])
+            code = proc.wait()
+        finally:
+            _procs.pop(job["id"], None)
+    live.state["stage"] = "finished"
+    live.write(force=True)
+    if job["id"] in _cancelled:
+        _cancelled.discard(job["id"])
+        raise RuntimeError("cancelled by the user")
     text = "".join(lines)
     summary = {"params": {k: v for k, v in p.items()}, "exit_code": code}
     start = text.rfind("\n{")
@@ -100,7 +217,6 @@ def handle_sync(job, report):
     if code == 2:
         raise RuntimeError("source folder changed during the run — stopped (see log)")
     if code != 0:
-        tail = [l.strip() for l in lines if l.strip()][-1:] or ["no output"]
-        raise RuntimeError(explain(text) or f"sync failed (exit {code}): {tail[0][:300]}")
+        raise RuntimeError(failure_message(text, code))
     report(99, "rolled back" if p.get("rollback") else ("dry run complete" if p.get("dry_run") else "published"))
     return summary

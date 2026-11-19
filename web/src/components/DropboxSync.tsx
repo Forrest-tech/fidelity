@@ -12,7 +12,84 @@ interface Summary {
   published_run?: string;
   report?: { documents?: Doc[]; unchanged?: string[]; duplicates?: unknown[]; unsupported?: unknown[]; triaged_out?: unknown[]; source_unchanged?: boolean };
 }
-interface RunDetail extends Run { log: string[]; summary: Summary | null }
+interface LiveStatus {
+  started: number; updated: number; total: number; index: number; file: string; stage: string;
+  page: number; pages: number; scan: boolean; counts: Record<string, number>; skipped: number;
+}
+interface RunDetail extends Run { log: string[]; summary: Summary | null; live?: LiveStatus | null }
+
+function useNow(active: boolean) {
+  const [now, setNow] = useState(() => Date.now() / 1000);
+  useEffect(() => {
+    if (!active) return;
+    const t = window.setInterval(() => setNow(Date.now() / 1000), 1000);
+    return () => window.clearInterval(t);
+  }, [active]);
+  return now;
+}
+
+function dur(sec: number) {
+  const s = Math.max(0, Math.floor(sec));
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
+  return h ? `${h}h ${m}m` : m ? `${m}m ${r}s` : `${r}s`;
+}
+
+function Bar({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="h-2 w-full overflow-hidden rounded bg-muted" role="progressbar" aria-label={label}
+      aria-valuenow={Math.round(value)} aria-valuemin={0} aria-valuemax={100}>
+      <div className="fx-stripes h-full rounded bg-primary transition-[width] duration-700" style={{ width: `${Math.max(2, value)}%` }} />
+    </div>
+  );
+}
+
+function LivePanel({ run, canEdit }: { run: RunDetail; canEdit: boolean }) {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const live = run.live;
+  const now = useNow(true);
+  const stop = useMutation({
+    mutationFn: () => api(`/dropbox/sync/${run.id}/cancel`, { method: "POST" }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["dropbox-runs"] }),
+  });
+  const started = run.created_at;   // one clock for the whole run, so the elapsed time never jumps back
+  const quiet = live ? now - live.updated : 0;
+  return (
+    <div className="flex flex-col gap-2 rounded-md border border-border p-3" aria-live="polite">
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-hidden="true" />
+        <span className="font-medium">{t(`pages.sources.dropbox.stage.${live?.stage ?? "starting"}`, { defaultValue: live?.stage ?? "" })}</span>
+        {live && live.total > 0 && live.index > 0 && (
+          <span className="text-fg-muted">{t("pages.sources.dropbox.fileOf", { index: live.index, total: live.total })}</span>
+        )}
+        <span className="ml-auto text-fg-muted">{t("pages.sources.dropbox.elapsed", { time: dur(now - started) })}</span>
+      </div>
+      {live?.file && <p className="truncate text-sm" title={live.file}>{live.file}</p>}
+      <Bar value={run.progress} label={t("pages.sources.dropbox.progress")} />
+      {live?.stage === "ocr" && live.pages > 0 && (
+        <div className="grid gap-1">
+          <span className="text-xs text-fg-muted">{t("pages.sources.dropbox.ocrPage", { page: live.page, pages: live.pages })}</span>
+          <Bar value={(100 * live.page) / live.pages} label={t("pages.sources.dropbox.ocrProgress")} />
+        </div>
+      )}
+      {live?.scan && <p className="text-xs text-warn">{t("pages.sources.dropbox.scanHint")}</p>}
+      <div className="flex flex-wrap items-center gap-3 text-xs text-fg-muted">
+        <span>{t("pages.sources.dropbox.lastActivity", { time: dur(quiet) })}</span>
+        {live && (live.counts.PASS || live.counts.REVIEW || live.counts.FAIL || live.skipped) ? (
+          <span>{t("pages.sources.dropbox.soFar", { pass: live.counts.PASS ?? 0, review: live.counts.REVIEW ?? 0, fail: live.counts.FAIL ?? 0, skipped: live.skipped })}</span>
+        ) : null}
+        {canEdit && (
+          <Button variant="ghost" className="ml-auto" disabled={stop.isPending}
+            onClick={() => window.confirm(t("pages.sources.dropbox.cancelConfirm")) && stop.mutate()}>
+            {t("pages.sources.dropbox.cancel")}
+          </Button>
+        )}
+      </div>
+      {quiet > 120 && <p className="text-xs text-fg-muted">{t("pages.sources.dropbox.quiet")}</p>}
+      {stop.isError && <p role="alert" className="text-xs text-danger">{(stop.error as Error).message}</p>}
+    </div>
+  );
+}
 
 const KEY = "fidelity.dropboxLinks";
 const active = (s: string) => s === "queued" || s === "running";
@@ -56,7 +133,7 @@ function Counts({ s }: { s: Summary }) {
   );
 }
 
-function RunView({ id, isAdmin }: { id: string; isAdmin: boolean }) {
+function RunView({ id, isAdmin, canEdit }: { id: string; isAdmin: boolean; canEdit: boolean }) {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const q = useQuery({
@@ -73,6 +150,7 @@ function RunView({ id, isAdmin }: { id: string; isAdmin: boolean }) {
   const r = q.data;
   return (
     <div className="mt-3 flex flex-col gap-3 border-t border-border pt-3">
+      {active(r.status) && <LivePanel run={r} canEdit={canEdit} />}
       {r.summary && <Counts s={r.summary} />}
       {r.summary?.published_run && isAdmin && (
         <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -143,6 +221,10 @@ export function DropboxSync({ canEdit, isAdmin }: { canEdit: boolean; isAdmin: b
   ].filter(Boolean).join(", ");
   const list = Array.isArray(runs.data?.runs) ? runs.data!.runs : [];
   const busy = list.some((r) => active(r.status));
+  const runningId = list.find((r) => active(r.status))?.id;
+  useEffect(() => {
+    if (runningId) setOpen((o) => o ?? runningId);
+  }, [runningId]);
 
   return (
     <Card className="mb-4 flex flex-col gap-3">
@@ -212,6 +294,9 @@ export function DropboxSync({ canEdit, isAdmin }: { canEdit: boolean; isAdmin: b
                   <span>{r.params?.rollback ? t("pages.sources.dropbox.kindRollback") : r.params?.dry_run ? t("pages.sources.dropbox.kindDry") : t("pages.sources.dropbox.kindPublish")}</span>
                   <span className="text-fg-muted">{new Date(r.created_at * 1000).toLocaleString()}</span>
                   {active(r.status) && (
+                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-hidden="true" />
+                  )}
+                  {active(r.status) && (
                     <span className="h-2 w-24 overflow-hidden rounded bg-muted" role="progressbar" aria-valuenow={Math.round(r.progress)} aria-valuemin={0} aria-valuemax={100}
                       aria-label={t("pages.sources.dropbox.progress")}>
                       <span className="block h-full bg-primary" style={{ width: `${r.progress}%` }} />
@@ -219,7 +304,7 @@ export function DropboxSync({ canEdit, isAdmin }: { canEdit: boolean; isAdmin: b
                   )}
                   {r.status !== "done" && <span className="min-w-0 flex-1 truncate text-fg-muted">{r.message}</span>}
                 </button>
-                {open === r.id && <RunView id={r.id} isAdmin={isAdmin} />}
+                {open === r.id && <RunView id={r.id} isAdmin={isAdmin} canEdit={canEdit} />}
               </li>
             ))}
           </ul>
