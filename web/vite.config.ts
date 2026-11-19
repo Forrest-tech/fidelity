@@ -9,7 +9,7 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 5173,
     proxy: {
-      "/api": { target: "http://127.0.0.1:8000", changeOrigin: true },
+      "/api": { target: process.env.FIDELITY_API || "http://127.0.0.1:8000", changeOrigin: true },
     },
   },
   build: { outDir: "dist", sourcemap: false },

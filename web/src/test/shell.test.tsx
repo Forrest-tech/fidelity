@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import i18n from "../locales";
@@ -21,11 +21,15 @@ describe("auth guard", () => {
     expect(nav).toHaveTextContent("Overview");
     expect(nav).toHaveTextContent("Sources");
     expect(nav).not.toHaveTextContent("Users"); // admin only
+    await userEvent.setup().click(screen.getByRole("button", { name: "Account" }));
+    expect(await screen.findByRole("link", { name: "Settings" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Users" })).not.toBeInTheDocument();
   });
 
   it("shows the Users link to admins", async () => {
     mockApi((url) => (url.endsWith("/me") ? { body: ME("admin") } : { body: [] }));
     renderApp("/");
+    await userEvent.setup().click(await screen.findByRole("button", { name: "Account" }));
     expect(await screen.findByRole("link", { name: "Users" })).toBeInTheDocument();
   });
 
@@ -79,7 +83,7 @@ describe("language and page states", () => {
     renderApp("/");
     const user = userEvent.setup();
     await screen.findByRole("navigation", { name: /main navigation/i });
-    await user.selectOptions(screen.getByLabelText("Language"), "zh");
+    await user.click(within(screen.getByRole("radiogroup", { name: "Language" })).getByText("中文"));
     expect(await screen.findByRole("link", { name: "数据源" })).toBeInTheDocument();
     expect(localStorage.getItem("fidelity.lang")).toBe("zh");
     await i18n.changeLanguage("en");

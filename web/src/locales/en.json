@@ -22,7 +22,8 @@
     "dark": "Dark",
     "system": "System",
     "logout": "Sign out",
-    "signedInAs": "Signed in as {{email}}"
+    "signedInAs": "Signed in as {{email}}",
+    "account": "Account"
   },
   "login": {
     "title": "Sign in",
