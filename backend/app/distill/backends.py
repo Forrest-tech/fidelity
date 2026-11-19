@@ -19,8 +19,8 @@ class DropboxSource:
     provider = "dropbox"
 
     def __init__(self, link: str):
-        self.link = link
         self.dbx = D.client("reader")
+        self.link = link = D.canonical(self.dbx, link)      # website addresses and sub-folder links -> API form
         self.root = D.link_root(self.dbx, link)            # e.g. /2025 ('' for a link outside the account)
         self.label = self.root or link                      # ledger key, shown in logs
         self.name = self.root.rstrip("/").split("/")[-1] if self.root else "source"
@@ -75,7 +75,7 @@ class DropboxDest:
 
     def __init__(self, link: str, source):
         writer = D.client("writer")
-        self.root = D.link_root(writer, link)                # e.g. /transfer_md
+        self.root = D.link_root(writer, D.canonical(writer, link))   # e.g. /transfer_md
         if not self.root:
             raise SystemExit("The output link must be a folder in your own Dropbox")
         self.stage_root, self.archive_root = self.root.rstrip("/") + "_staging", self.root.rstrip("/") + "_archive"
