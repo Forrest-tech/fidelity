@@ -93,6 +93,21 @@ python -m app.distill.sync --source-link <…> --dest-link <…>
 `python scripts/measure_tokens.py --library <本地拷贝> --out ../docs/benchmarks/token-cost`——
 文件大小、列目录成本、在 10k–30k 目标范围内的比例。
 
+## Docker（Mac 和服务器上推荐）
+不改动 Mac 本机环境：全部运行在一个容器里，数据放在两个 Docker 卷中。
+1. 安装 Docker Desktop。在项目文件夹里：`cp deploy/docker/fidelity.env.example deploy/docker/fidelity.env`，
+   填上 PostgreSQL 密码（或删掉两行数据库设置，改用容器内的 SQLite）。
+2. Mac 上的 PostgreSQL：先建好用户和数据库（见"服务器数据库"）。容器通过 `host.docker.internal` 访问 Mac，
+   Docker Desktop 会把它转发到 Mac 本机，所以只监听 localhost 的 PostgreSQL 一般就能连上。如果被拒绝，
+   把 `listen_addresses = '*'`，并在 `pg_hba.conf` 里允许 `192.168.65.0/24`（Docker Desktop 的网络），用 `scram-sha-256`。
+3. 运行 `docker compose up -d --build`，然后打开 <http://127.0.0.1:8000>，创建第一个管理员，在"设置 → 网盘连接"里
+   连接 Dropbox / Google Drive。更新：`git pull` 后再运行同一条命令。日志：`docker compose logs -f`。
+   停止：`docker compose down`（数据保留在卷里）。
+4. 可选的本地修正模型：在 Mac **本机**安装 Ollama（它能用 Apple GPU，容器用不了），然后在 env 文件里取消
+   `FIDELITY_LLM_URL=http://host.docker.internal:11434` 的注释。
+Docker 里的 OCR 引擎是 RapidOCR 和 Tesseract（CPU）。Apple Vision 只能在 macOS 本机运行，所以只有下面的本机安装
+方式才有；基准测试里它排第三，用 Docker 准确率损失很小。
+
 ## Mac mini（第六阶段）
 1. 运行 `./deploy/mac/install.sh`：安装 Homebrew 软件（Python 3.11、Tesseract、Node、Ollama）、Python 环境
    （有 `deploy/mac/requirements-macos.lock` 时按锁定版本安装——从 CI 产物 `macos-benchmarks-and-lock` 下载）、

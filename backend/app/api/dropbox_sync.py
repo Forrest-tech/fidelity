@@ -31,9 +31,11 @@ class RollbackIn(BaseModel):
 
 def _check_links(src, dest):
     for name, v in (("source", src), ("destination", dest)):
-        if not S.LINK_RE.match(v.strip()):
-            raise HTTPException(422, f"the {name} must be a Dropbox shared link (https://www.dropbox.com/...)")
-    if src.strip() == dest.strip():
+        v = v.strip()
+        if not (S.LINK_RE.match(v) or S.PATH_RE.match(v)) or ".." in v.split("/"):
+            raise HTTPException(422, f"the {name} must be a Dropbox folder path (/Folder/Sub) "
+                                     "or a Dropbox shared link (https://www.dropbox.com/...)")
+    if src.strip().rstrip("/").lower() == dest.strip().rstrip("/").lower():
         raise HTTPException(422, "source and destination must be different folders")
 
 
