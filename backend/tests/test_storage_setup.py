@@ -70,14 +70,14 @@ def test_connect_reader_from_the_web_and_tokens_never_leave_the_server(login, au
     import dropbox
     monkeypatch.setattr(dropbox, "DropboxOAuth2FlowNoRedirect", FakeFlow)
     c = login("admin")
-    r = c.post("/api/v1/storage/dropbox/start", json={"role": "reader", "app_key": "abcdEFGH1234567"})
+    r = c.post("/api/v1/storage/dropbox/start", json={"role": "reader", "app_key": "testappkey00001"})
     assert r.status_code == 200 and r.json()["url"].startswith("https://www.dropbox.com/oauth2/authorize")
     assert c.post("/api/v1/storage/dropbox/finish", json={"role": "reader", "code": "BAD"}).status_code == 422
-    c.post("/api/v1/storage/dropbox/start", json={"role": "reader", "app_key": "abcdEFGH1234567"})
+    c.post("/api/v1/storage/dropbox/start", json={"role": "reader", "app_key": "testappkey00001"})
     r = c.post("/api/v1/storage/dropbox/finish", json={"role": "reader", "code": "GOOD"})
     assert r.status_code == 200 and r.json()["account"]["name"] == "Test Account"
     saved = json.loads(auth_file.read_text(encoding="utf-8"))["reader"]
-    assert saved["refresh_token"] == "RT-abcdEFGH1234567" and "files.content.write" not in saved["scopes"]  # read-only
+    assert saved["refresh_token"] == "RT-testappkey00001" and "files.content.write" not in saved["scopes"]  # read-only
     st = c.get("/api/v1/storage/dropbox").text
     assert "RT-" not in st and '"connected":true' in st.replace(" ", "")
 
@@ -87,7 +87,7 @@ def test_writer_gets_write_scope_and_finish_without_start_is_refused(login, auth
     monkeypatch.setattr(dropbox, "DropboxOAuth2FlowNoRedirect", FakeFlow)
     c = login("admin")
     assert c.post("/api/v1/storage/dropbox/finish", json={"role": "writer", "code": "GOOD"}).status_code == 409
-    c.post("/api/v1/storage/dropbox/start", json={"role": "writer", "app_key": "wxyzWXYZ7654321"})
+    c.post("/api/v1/storage/dropbox/start", json={"role": "writer", "app_key": "testappkey00002"})
     c.post("/api/v1/storage/dropbox/finish", json={"role": "writer", "code": "GOOD"})
     assert "files.content.write" in json.loads(auth_file.read_text(encoding="utf-8"))["writer"]["scopes"]
 
@@ -95,7 +95,7 @@ def test_writer_gets_write_scope_and_finish_without_start_is_refused(login, auth
 def test_bad_app_key_and_role_are_rejected(login, auth_file):
     c = login("admin")
     assert c.post("/api/v1/storage/dropbox/start", json={"role": "reader", "app_key": "not a key!"}).status_code == 422
-    assert c.post("/api/v1/storage/dropbox/start", json={"role": "owner", "app_key": "abcdEFGH1234567"}).status_code == 422
+    assert c.post("/api/v1/storage/dropbox/start", json={"role": "owner", "app_key": "testappkey00001"}).status_code == 422
 
 
 def test_disconnect_removes_only_that_role(login, auth_file):

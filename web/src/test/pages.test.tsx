@@ -249,11 +249,11 @@ describe("first-run setup and cloud storage", () => {
     const u = userEvent.setup();
     const writer = screen.getByRole("region", { name: "Write access (output folders)" });
     await u.click(within(writer).getByLabelText("Dropbox App key"));
-    await u.paste("abcdEFGH1234567");
+    await u.paste("testappkey00001");
     await u.click(within(writer).getByRole("button", { name: "Connect" }));
     expect(await within(writer).findByRole("link", { name: /Open Dropbox/ })).toHaveAttribute("href", "https://www.dropbox.com/oauth2/authorize?x");
     const post = calls.find((c) => c.url.endsWith("/storage/dropbox/start"));
-    expect(JSON.parse(String(post?.init?.body))).toEqual({ role: "writer", app_key: "abcdEFGH1234567" });
+    expect(JSON.parse(String(post?.init?.body))).toEqual({ role: "writer", app_key: "testappkey00001" });
   });
 
   it("reviewers do not see cloud storage", async () => {
