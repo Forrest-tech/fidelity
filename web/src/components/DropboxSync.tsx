@@ -217,7 +217,7 @@ export function DropboxSync({ canEdit, isAdmin }: { canEdit: boolean; isAdmin: b
                       <span className="block h-full bg-primary" style={{ width: `${r.progress}%` }} />
                     </span>
                   )}
-                  <span className="min-w-0 flex-1 truncate text-fg-muted">{r.message}</span>
+                  {r.status !== "done" && <span className="min-w-0 flex-1 truncate text-fg-muted">{r.message}</span>}
                 </button>
                 {open === r.id && <RunView id={r.id} isAdmin={isAdmin} />}
               </li>
