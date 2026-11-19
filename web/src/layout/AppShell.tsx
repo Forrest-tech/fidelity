@@ -135,7 +135,16 @@ export function AppShell() {
       locale={lang === "zh" ? zhCN : enUS}
       theme={{
         algorithm: dark ? antTheme.darkAlgorithm : antTheme.defaultAlgorithm,
-        token: { colorPrimary: "#1d4ed8", borderRadius: 6, fontFamily: "inherit" },
+        token: {
+          colorPrimary: "#1d4ed8",
+          borderRadius: 6,
+          fontFamily: "inherit",
+          // the dark algorithm darkens the blue; links and the selected menu item need a lighter one to stay readable
+          ...(dark ? { colorLink: "#8fb0ff", colorLinkHover: "#b3c8ff", colorLinkActive: "#8fb0ff" } : {}),
+        },
+        components: dark
+          ? { Menu: { itemSelectedColor: "#8fb0ff", horizontalItemSelectedColor: "#8fb0ff", itemHoverColor: "#b3c8ff", horizontalItemHoverColor: "#b3c8ff" } }
+          : {},
       }}
     >
       <Layout style={{ minHeight: "100vh" }}>
