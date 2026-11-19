@@ -230,3 +230,55 @@ def test_output_roots_create_siblings_and_refuse_overlap(drive):
         G.output_roots(drive, inside, [drive.src])
     with pytest.raises(D.IronRuleViolation, match="overlap"):
         G.output_roots(drive, drive.src, [inside])                       # source inside the output
+
+
+# ------------------------------------------------------------------ network hiccups (a real run died on one SSLEOFError)
+def test_a_dropped_connection_is_retried(world, monkeypatch, capsys):
+    import requests
+    src, store, run = world
+    monkeypatch.setattr(SY, "_BACKOFF", (0, 0, 0))
+    real, fails = src.download, {"n": 0}
+
+    def flaky(rel, entry, lp):
+        if rel == "/Guide.md" and fails["n"] < 2:
+            fails["n"] += 1
+            raise requests.exceptions.SSLError("EOF occurred in violation of protocol")
+        real(rel, entry, lp)
+    src.download = flaky
+    assert run() == 0
+    assert "/out/src/Guide.md.md" in store.files and fails["n"] == 2
+    assert "network error, retrying (1/3) download" in capsys.readouterr().out
+
+
+def test_a_file_that_keeps_failing_is_reported_and_the_run_continues(world, monkeypatch, capsys):
+    import json
+    import requests
+    src, store, run = world
+    monkeypatch.setattr(SY, "_BACKOFF", (0, 0, 0))
+    real = src.download
+
+    def broken(rel, entry, lp):
+        if rel == "/Guide.md":
+            raise requests.exceptions.ConnectionError("connection reset")
+        real(rel, entry, lp)
+    src.download = broken
+    assert run() == 0
+    assert "/out/src/Note.md.md" in store.files and "/out/src/Guide.md.md" not in store.files
+    out = capsys.readouterr().out
+    assert "verification: FAIL  (error while reading the file: ConnectionError" in out
+    report = json.loads(out[out.rfind("\n{") + 1:])
+    guide = next(d for d in report["documents"] if d["source"] == "/Guide.md")
+    assert guide["verdict"] == "FAIL" and "connection reset" in guide["error"]
+    src.download = real                                     # connection back: the failed file was not
+    assert run() == 0 and "/out/src/Guide.md.md" in store.files   # recorded as done, so the next run picks it up
+
+
+def test_errors_that_are_not_network_errors_are_not_retried():
+    calls = []
+
+    def bad():
+        calls.append(1)
+        raise ValueError("bad data")
+    with pytest.raises(ValueError):
+        SY._retry(bad, "x")
+    assert len(calls) == 1

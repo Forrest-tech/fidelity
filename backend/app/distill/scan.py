@@ -18,6 +18,20 @@ from .triage import scan_instructions
 IMAGE_EXT = (".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp")
 
 
+def page_count(path) -> int:
+    """Pages to OCR (for progress); 0 when unknown."""
+    try:
+        if path.lower().endswith(".pdf"):
+            import pymupdf
+            with pymupdf.open(path) as d:
+                return d.page_count
+        from PIL import Image
+        with Image.open(path) as im:
+            return getattr(im, "n_frames", 1)
+    except Exception:
+        return 0
+
+
 def _images(path):
     """Yield (page number, PIL image) for a scanned PDF or an image file (multi-page TIFF too)."""
     from PIL import Image, ImageSequence
@@ -40,10 +54,12 @@ def distill_scan(path, rel_path, out_root, source_prefix, cache_dir, log=print, 
     src_display = "/" + "/".join(x for x in [source_prefix.strip("/"), rel_path.replace(os.sep, "/")] if x)
     engines = engines if engines is not None else O.available_engines()
     pages = []
+    total = page_count(path)
+    log(f"  scanned document: OCR of {min(total, max_pages) if total else '?'} page(s) with {len(engines)} engine(s)")
     for n, img in _images(path):
         if n > max_pages:
             break
-        log(f"  OCR page {n}")
+        log(f"  OCR page {n}/{min(total, max_pages) if total else '?'}")
         pages.append(O.ocr_image(img, n, engines))
     review = [p for p in pages if p.status != "ok"]
     instr = [{"page": p.page, "text": s} for p in pages for s in scan_instructions(p.text)]

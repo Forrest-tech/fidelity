@@ -126,7 +126,29 @@
         "published": "已发布，运行编号 {{run}}。",
         "rollback": "回滚这次运行",
         "rollbackConfirm": "把运行 {{run}} 发布的所有文件恢复到之前的版本？",
-        "rollbackStarted": "已开始回滚。"
+        "rollbackStarted": "已开始回滚。",
+        "stage": {
+          "starting": "正在启动",
+          "listing": "正在列出源文件夹",
+          "preparing": "正在准备文件",
+          "downloading": "正在下载",
+          "ocr": "正在识别扫描件（OCR）",
+          "verifying": "正在与原文核对",
+          "uploading": "正在准备发布",
+          "next": "正在处理下一个文件",
+          "publishing": "正在发布",
+          "finished": "即将完成"
+        },
+        "fileOf": "第 {{index}} 个，共 {{total}} 个文件",
+        "elapsed": "已运行 {{time}}",
+        "ocrPage": "OCR 第 {{page}} 页，共 {{pages}} 页",
+        "ocrProgress": "OCR 进度",
+        "scanHint": "这个文件是扫描件：每一页都要由两个 OCR 引擎识别，在这台机器上每页约需一分钟。",
+        "lastActivity": "最近一次活动：{{time}}前",
+        "soFar": "目前：{{pass}} 个通过 · {{review}} 个待审核 · {{fail}} 个未通过 · {{skipped}} 个未变化",
+        "cancel": "取消运行",
+        "cancelConfirm": "停止这次运行？已经检查过的文件会保留在日志里，不会再发布任何内容。",
+        "quiet": "暂时没有新的输出——处理大扫描件或大文件时这是正常的。只要转圈图标在动，运行就仍在进行。"
       }
     },
     "jobs": {

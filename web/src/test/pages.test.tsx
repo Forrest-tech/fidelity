@@ -1,6 +1,6 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import en from "../locales/en.json";
 import zh from "../locales/zh.json";
 import { mockApi, renderApp } from "./helpers";
@@ -207,6 +207,28 @@ describe("Dropbox sync on the sources page", () => {
     expect(screen.queryByRole("button", { name: "Roll back this run" })).not.toBeInTheDocument();
   });
 
+  it("a running run opens by itself with live status and can be cancelled", async () => {
+    const now = Date.now() / 1000;
+    const RUNNING = { ...RUN, id: "r9", status: "running", progress: 40, message: "OCR page 3/10" };
+    const LIVE = { ...RUNNING, log: ["[2] Scan.pdf"], summary: null,
+      live: { started: now - 90, updated: now - 2, total: 5, index: 2, file: "Scan.pdf", stage: "ocr", page: 3, pages: 10,
+              scan: true, counts: { PASS: 1 }, skipped: 0 } };
+    const calls = api("reviewer", (url, init) => {
+      if (url.endsWith("/dropbox/sync") && (!init || init.method !== "POST")) return { body: { runs: [RUNNING] } };
+      if (url.endsWith("/dropbox/sync/r9/cancel")) return { body: { cancelled: true } };
+      if (url.includes("/dropbox/sync/r9")) return { body: LIVE };
+      return undefined;
+    });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    renderApp("/sources");
+    expect(await screen.findByText("Reading a scanned document (OCR)")).toBeInTheDocument();
+    expect(screen.getByText("File 2 of 5")).toBeInTheDocument();
+    expect(screen.getByText("OCR page 3 of 10")).toBeInTheDocument();
+    expect(screen.getByText(/This file is a scan/)).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole("button", { name: "Cancel run" }));
+    await waitFor(() => expect(calls.some((c) => c.url.endsWith("/dropbox/sync/r9/cancel") && c.init?.method === "POST")).toBe(true));
+  });
+
   it("warns when Dropbox access is not set up", async () => {
     api("admin", (url) => (url.endsWith("/dropbox/status") ? { body: { reader: true, writer: false } } : undefined));
     renderApp("/sources");
@@ -226,9 +248,12 @@ describe("first-run setup and cloud storage", () => {
     renderApp("/login");
     expect(await screen.findByText("Create the first administrator")).toBeInTheDocument();
     const u = userEvent.setup();
-    await u.type(screen.getByLabelText("Email"), "a@example.com");
-    await u.type(screen.getByLabelText("Password"), "long-enough-pw");
-    await u.type(screen.getByLabelText("Confirm password"), "different-pw!");
+    await u.click(screen.getByLabelText("Email"));
+    await u.paste("a@example.com");
+    await u.click(screen.getByLabelText("Password"));
+    await u.paste("long-enough-pw");
+    await u.click(screen.getByLabelText("Confirm password"));
+    await u.paste("different-pw!");
     await u.click(screen.getByRole("button", { name: "Create administrator and sign in" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("do not match");
     expect(calls.some((c) => c.url.endsWith("/setup") && c.init?.method === "POST")).toBe(false);

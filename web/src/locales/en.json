@@ -126,7 +126,29 @@
         "published": "Published as run {{run}}.",
         "rollback": "Roll back this run",
         "rollbackConfirm": "Restore the previous versions of everything run {{run}} published?",
-        "rollbackStarted": "Rollback started."
+        "rollbackStarted": "Rollback started.",
+        "stage": {
+          "starting": "Starting",
+          "listing": "Listing the source folder",
+          "preparing": "Preparing the file",
+          "downloading": "Downloading",
+          "ocr": "Reading a scanned document (OCR)",
+          "verifying": "Checking against the source",
+          "uploading": "Staging for publication",
+          "next": "Moving to the next file",
+          "publishing": "Publishing",
+          "finished": "Finishing"
+        },
+        "fileOf": "File {{index}} of {{total}}",
+        "elapsed": "Running for {{time}}",
+        "ocrPage": "OCR page {{page}} of {{pages}}",
+        "ocrProgress": "OCR progress",
+        "scanHint": "This file is a scan: every page is read by two OCR engines, which takes about a minute per page on this machine.",
+        "lastActivity": "Last activity {{time}} ago",
+        "soFar": "So far: {{pass}} passed · {{review}} need review · {{fail}} failed · {{skipped}} unchanged",
+        "cancel": "Cancel run",
+        "cancelConfirm": "Stop this run? Files already checked are kept in the log; nothing more is published.",
+        "quiet": "No new output for a while — normal during a long step (a large scan or a big file). The run is still active while the spinner turns."
       }
     },
     "jobs": {
