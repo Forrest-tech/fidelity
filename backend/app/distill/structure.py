@@ -102,6 +102,45 @@ def fallback_toc(pages):
     return out
 
 
+_NUMBERED_TITLE = re.compile(r"^(?:\d+(?:\.\d+)*|[A-Z]\d+(?:\.\d+)*)[.)]?\s")
+# a licence stamp printed in the margin ("Accessed by ... [AVAILABLE SUPERSEDED]") is sometimes
+# glued in front of the first row of the text beside it
+_MARGIN_STAMP = re.compile(
+    r"^(?:Accessed by .{3,90}? on \d{1,2} \w{3} \d{4}(?: \[[A-Z ]+\]| \(Document currency not guaranteed when printed\))?"
+    r"|Licensed to .{3,70}? on \d{1,2} \w{3} \d{4}\.(?: For Committee [\w-]+ use only)?"
+    r"|[A-Z]\d{1,2}(?= \d))", re.I)
+
+
+def _split_row(pages, rows, i, nkey, first_row_of_page):
+    """Split rows[i] after its first `nkey` alphanumeric characters into two rows, so a heading
+    that is printed run-in ("1.1 SCOPE This Standard sets out...") can be separated from the
+    body text that follows it on the same line. Returns True when it split."""
+    r = rows[i]
+    n = 0
+    for si, sp in enumerate(r.spans):
+        for ci, ch in enumerate(sp.text):
+            n += len(key(ch))
+            if n < nkey:
+                continue
+            if n > nkey:                      # a ligature straddles the boundary: leave the row alone
+                return False
+            head_sp = type(sp)(sp.text[:ci + 1], sp.italic, sp.bold, sp.size)
+            rest_sp = type(sp)(sp.text[ci + 1:].lstrip(), sp.italic, sp.bold, sp.size)
+            body = Row(r.page, r.bbox, ([rest_sp] if rest_sp.text else []) + r.spans[si + 1:], r.box, "row")
+            if not body.text:
+                return False
+            r.spans = r.spans[:si] + [head_sp]
+            items = pages[r.page - 1].items
+            at = next(k for k, it in enumerate(items) if it is r)
+            items.insert(at + 1, body)
+            rows.insert(i + 1, body)
+            for pg_no, idx in first_row_of_page.items():
+                if idx > i:
+                    first_row_of_page[pg_no] = idx + 1
+            return True
+    return False
+
+
 def match_headings(pages, entries):
     """Attach each TOC entry to the row that prints it. Returns unmatched entries."""
     rows = [it for pg in pages for it in pg.items if isinstance(it, Row)]
@@ -118,43 +157,71 @@ def match_headings(pages, entries):
             unmatched.append(e)
             continue
         start = max(pos, first_row_of_page.get(max(1, e.page - 1), pos))
+        numbered = bool(_NUMBERED_TITLE.match(e.title)) and len(tk) >= 4
         found = None
-        for i in range(start, len(rows)):
-            r = rows[i]
-            if r.page > e.page + 1:
-                break
-            if r.kind == "heading" or (r.box is not None and not r.all_bold):
-                continue
-            rk = key(r.text)
-            if not rk or not (rk.startswith(tk) or (len(rk) >= 4 and tk.startswith(rk))):
-                continue
-            # merge wrapped heading rows
-            acc, j = rk, i
-            while len(acc) < len(tk) and j + 1 < len(rows) and tk.startswith(acc) and j - i < 3:
-                j += 1
-                acc += key(rows[j].text)
-            if acc == tk or (acc.startswith(tk) and len(tk) >= 0.8 * len(acc)) or (tk.startswith(acc) and len(acc) >= (0.8 if r.all_bold and len(acc) >= 30 else 0.9) * len(tk)):
-                found = (i, j)
-                break
-        order = None
-        if not found:
-            # two-column headings: "Specification 44" left, title wrapped on the right,
-            # so the rows interleave by height — try the orders of 2-3 adjacent bold rows
-            for i in range(start, len(rows)):
-                if rows[i].page > e.page + 1:
+        # Reading order is not always the contents order (two-column pages list the left column
+        # first), so when nothing is found ahead of the cursor, search the page again from its top.
+        page_top = first_row_of_page.get(max(1, e.page - 1), pos)
+        for start in ([start] + ([page_top] if page_top < start else [])):
+            for i in itertools.count(start):      # rows may grow while we split run-in headings
+                if i >= len(rows):
                     break
-                for w in (2, 3):
-                    win = rows[i:i + w]
-                    if len(win) < w or any(x.page != win[0].page or not x.all_bold or x.kind != "row" for x in win):
-                        continue
-                    for perm in itertools.permutations(range(w)):
-                        if "".join(key(win[p].text) for p in perm) == tk:
-                            found, order = (i, i + w - 1), [i + p for p in perm]
+                r = rows[i]
+                if r.page > e.page + 1:
+                    break
+                if r.kind == "heading" or (r.box is not None and not r.all_bold):
+                    continue
+                rk = key(r.text)
+                if numbered and r.kind == "row":
+                    ms = _MARGIN_STAMP.match(r.text)
+                    sk = key(ms.group(0)) if ms else ""
+                    if sk and rk[len(sk):].startswith(tk) and _split_row(pages, rows, i, len(sk), first_row_of_page):
+                        continue                  # the stamp is its own row now; the heading row is next
+                # a one-letter typo in the bookmark ("admiztures") must not lose the heading
+                near = (numbered and len(tk) >= 10 and len(rk) >= len(tk) and not rk.startswith(tk)
+                        and sum(x != y for x, y in zip(rk, tk)) <= 1)
+                if not rk or not (rk.startswith(tk) or near or (len(rk) >= 4 and tk.startswith(rk))):
+                    continue
+                if near and len(rk) == len(tk):
+                    found = (i, i)
+                    break
+                if numbered and r.kind == "row" and len(rk) > len(tk) and (rk.startswith(tk) or near):
+                    # run-in heading: only accept it when it is the first words of the row
+                    if _split_row(pages, rows, i, len(tk), first_row_of_page):
+                        found = (i, i)
+                        break
+                # merge wrapped heading rows
+                acc, j = rk, i
+                while len(acc) < len(tk) and j + 1 < len(rows) and tk.startswith(acc) and j - i < 3:
+                    j += 1
+                    acc += key(rows[j].text)
+                if acc == tk or (acc.startswith(tk) and len(tk) >= 0.8 * len(acc)) or (tk.startswith(acc) and len(acc) >= (0.8 if r.all_bold and len(acc) >= 30 else 0.9) * len(tk)):
+                    found = (i, j)
+                    break
+            order = None
+            if not found:
+                # two-column headings: "Specification 44" left, title wrapped on the right,
+                # so the rows interleave by height — try the orders of 2-3 adjacent bold rows
+                for i in range(start, len(rows)):
+                    if rows[i].page > e.page + 1:
+                        break
+                    for w in (2, 3):
+                        win = rows[i:i + w]
+                        if len(win) < w or any(x.page != win[0].page or x.kind != "row" for x in win):
+                            continue
+                        # a bold title may be split by a short plain line such as "(informative)"
+                        if not any(x.all_bold for x in win) or any(not x.all_bold and len(x.text) > 14 for x in win):
+                            continue
+                        for perm in itertools.permutations(range(w)):
+                            if "".join(key(win[p].text) for p in perm) == tk:
+                                found, order = (i, i + w - 1), [i + p for p in perm]
+                                break
+                        if found:
                             break
                     if found:
                         break
-                if found:
-                    break
+            if found:
+                break
         if not found:
             unmatched.append(e)
             continue
@@ -358,6 +425,24 @@ def _to_units(md: str) -> str:
     return "".join(out)
 
 
+_SLASH_TAIL = re.compile(r"\d+(?:/\d+)+$")
+_NUM_FRAGMENT = re.compile(r"\d{1,3}(?=\s|$)")
+
+
+def _join_wrapped_numbers(c: str) -> str:
+    """A slash number that wrapped inside a narrow cell ("120/120/1" + "20") is written joined
+    ("120/120/120"). Only that case: lines of a cell that stack separate values ("50", "40",
+    "40"...) are left as they are, because joining them would invent numbers."""
+    lines = c.split("\n")
+    out = [lines[0]]
+    for ln in lines[1:]:
+        if _SLASH_TAIL.search(out[-1]) and _NUM_FRAGMENT.match(ln) and "/" not in ln.split(" ")[0]:
+            out[-1] += ln
+        else:
+            out.append(ln)
+    return "\n".join(out)
+
+
 def table_grid(t: Table):
     def _cell(c):
         if UNREADABLE_RE.search(c):               # keep readable text around the formula
@@ -366,8 +451,7 @@ def table_grid(t: Table):
                 bad = [m.start() for m in UNREADABLE_RE.finditer(ln)]
                 fixed.append(ln if not bad else ln[:bad[0]] + " " + UNREADABLE_MARK + " " + ln[bad[-1] + 1:])
             c = "\n".join(fixed)
-        c = re.sub(r"(?<=[\d/])\n(?=\d)", "", c)          # "120/120/1\n20" -> "120/120/120"
-        return c.replace("\n", " ").strip()
+        return _join_wrapped_numbers(c).replace("\n", " ").strip()
     rows = [[_cell(c) if c is not None else None for c in r] for r in t.rows]
     rows = [r for r in rows if any(c for c in r)]
     if not rows:

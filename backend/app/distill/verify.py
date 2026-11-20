@@ -17,7 +17,7 @@ from collections import Counter, defaultdict
 
 import pymupdf
 
-from .pdf_extract import clean_text, is_hf, is_watermark_line, UNREADABLE_RE, formula_span
+from .pdf_extract import clean_text, is_hf, is_watermark_line, to_view, UNREADABLE_RE, formula_span
 
 PAGE_MARK = re.compile(r"^<!-- unit: p\d+ \| src: p\.(\d+)(?: \| printed: [^|]+?)? \| chars: \d+ \| flags: [^>]*?-->\s*$", re.M)
 NUM_RE = re.compile(r"\d+(?:[.,]\d+)*")
@@ -56,6 +56,25 @@ def _rejoin_split_numbers(missing: Counter, md: Counter, src: Counter) -> Counte
     return +missing
 
 
+def _explain_split_decimals(missing: Counter, md: Counter, src: Counter) -> Counter:
+    """A typeset formula ("Q = 0.03n + 0.4554 n") is stored in the PDF as scattered fragments
+    ("4554", ".", "0", "03"...). The Markdown has the decimal put back together. Accept missing
+    fragments only when they are exactly the parts of a decimal that the Markdown has more often
+    than the source."""
+    missing = Counter(missing)
+    spare = Counter({k: c - src.get(k, 0) for k, c in md.items() if c > src.get(k, 0)})
+    for tok in list(spare):
+        parts = re.split(r"[.,]", tok)
+        if len(parts) < 2:
+            continue
+        need = Counter(parts)
+        while spare[tok] > 0 and all(missing.get(p, 0) >= n for p, n in need.items()):
+            for p, n in need.items():
+                missing[p] -= n
+            spare[tok] -= 1
+    return +missing
+
+
 def md_pages(md_texts):
     """Split concatenated Markdown into {page: text} using unit markers."""
     per, count = {}, Counter()
@@ -86,7 +105,7 @@ def source_pages(pdf_path, hf_set, band=0.07):
                 if is_watermark_line(ln):
                     continue
                 t = "".join(s["text"] for s in ln["spans"])
-                y0, y1 = ln["bbox"][1], ln["bbox"][3]
+                _, y0, _, y1 = to_view(page, ln["bbox"])
                 if (y0 < h * band or y1 > h * (1 - band)) and (is_hf(t, y0, hf_set)
                                                             or t.strip() == str(page.number + 1)):
                     continue
@@ -115,6 +134,9 @@ def pypdf_pages(pdf_path):
         except Exception:
             out[i] = ""
     return out
+
+
+BLIND_BELOW = 0.5     # a page where the second engine recovers less than this is "unreadable to it"
 
 
 def _recall(src: Counter, got: Counter):
@@ -166,6 +188,7 @@ def verify_document(pdf_path, md_texts, page_count, hf_set, unmatched_headings,
             excluded_nums += before - sum(sn.values())
         miss = Counter({k: c - mn.get(k, 0) for k, c in sn.items() if mn.get(k, 0) < c})
         miss = _rejoin_split_numbers(miss, mn, sn)
+        miss = _explain_split_decimals(miss, mn, sn)
         nn = sum(sn.values())
         ntot += nn
         nhit += nn - sum(miss.values())
@@ -184,16 +207,24 @@ def verify_document(pdf_path, md_texts, page_count, hf_set, unmatched_headings,
         if alt is not None:
             at = ah = 0
             low = []
+            blind = []
             for p in range(1, page_count + 1):
                 a, b = _alnum(src.get(p, "")), _alnum(alt.get(p, ""))
                 r, lost, _ = _recall(a, b)
                 n = sum(a.values())
+                if n > 50 and r < BLIND_BELOW:
+                    # The second engine cannot read this page at all (a licence cover page whose
+                    # text sits in a stream pypdf does not decode). Its disagreement says nothing
+                    # about our extraction, so the page is left out of the score and confirmed
+                    # independently instead: the caller OCRs it (see run.distill_pdf).
+                    blind.append(p)
+                    continue
                 at += n
                 ah += n - lost
                 if r < 0.98 and n > 50:
                     low.append((round(r, 3), p))
             rep["agreement"] = {"engine": "pypdf", "recall": round(ah / at, 6) if at else 1.0,
-                                "pages_below_98": sorted(low)[:30],
+                                "pages_below_98": sorted(low)[:30], "engine_blind_pages": blind[:30],
                                 "ok": (ah / at if at else 1) >= 0.99}
     if pages is not None and table_grid is not None:
         rep["tables"] = check_tables(pages, per_md, table_grid)

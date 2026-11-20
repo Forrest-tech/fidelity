@@ -23,13 +23,13 @@ import sys
 import time
 
 from . import structure as S
-from .pdf_extract import EXTRACT_VERSION, extract_pdf
+from .pdf_extract import EXTRACT_VERSION, extract_pdf, reader_warnings
 from .triage import scan_instructions, triage_pdf
 from .verify import verify_document
 
 PIPELINE_VERSION = "distill-0.2"
 FORMAT_VERSION = 2
-VERIFY_VERSION = "3"      # bump when the verification checks change (part of the stage-cache key)
+VERIFY_VERSION = "5"      # bump when the verification checks change (part of the stage-cache key)
 # Up to this many characters of Markdown a document is a single file; above it, a chapter folder.
 SINGLE_FILE_MAX_CHARS = int(os.environ.get("FIDELITY_SINGLE_FILE_MAX_CHARS", "100000"))
 
@@ -45,7 +45,10 @@ VISUAL_SAMPLES = 10 ** 9 if _VS == "all" else int(_VS)
 VISUAL_MIN_RECALL = 0.80     # a correct text layer scores ~0.95 against OCR; a broken one far lower
 
 
-def visual_check(pdf_path, page_count, log=print, samples=None):
+BLIND_CONFIRM_MAX = 12     # pages OCR-confirmed when the second text engine cannot read them
+
+
+def visual_check(pdf_path, page_count, log=print, samples=None, pages=None):
     """Spec 6.4 'visual cross-check': render a sample of pages, OCR them and compare with the text
     layer. Catches a text layer that does not match what is printed (wrong font encoding, hidden text)."""
     n = VISUAL_SAMPLES if samples is None else samples
@@ -59,11 +62,14 @@ def visual_check(pdf_path, page_count, log=print, samples=None):
     import pymupdf
     doc = pymupdf.open(pdf_path)
     try:
-        cand = [i for i in range(page_count) if len(doc[i].get_text().strip()) >= 200]
-        if not cand:
-            return {"ok": True, "skipped": "no text-rich pages"}
-        step = max(1, len(cand) // n)
-        pick = cand[::step][:n]
+        if pages:                                  # specific pages to confirm, not a sample
+            pick = [p - 1 for p in pages if 1 <= p <= page_count][:12]
+        else:
+            cand = [i for i in range(page_count) if len(doc[i].get_text().strip()) >= 200]
+            if not cand:
+                return {"ok": True, "skipped": "no text-rich pages"}
+            step = max(1, len(cand) // n)
+            pick = cand[::step][:n]
         rows = []
         for i in pick:
             truth = doc[i].get_text()
@@ -253,6 +259,9 @@ def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=prin
         with open(cp, "wb") as f:
             pickle.dump((pages, meta), f)
     log(f"  extracted {len(pages)} pages in {time.time() - t0:.0f}s")
+    note = reader_warnings()
+    if note:
+        log("  " + note)
 
     entries = S.normalize_toc(meta["toc"])
     structure_source = "bookmarks"
@@ -337,6 +346,16 @@ def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=prin
     if not rep["source_unchanged"]["ok"]:
         rep["status"] = "FAIL"
     rep["visual"] = visual_check(pdf_path, len(pages), log)
+    blind = rep.get("agreement", {}).get("engine_blind_pages") or []
+    if blind:                                      # pages the second text engine cannot read: OCR them
+        step = max(1, len(blind) // BLIND_CONFIRM_MAX)         # an even sample when there are many
+        picked = blind[::step][:BLIND_CONFIRM_MAX]
+        confirm = visual_check(pdf_path, len(pages), log, samples=len(picked), pages=picked)
+        confirm["blind_pages_total"] = len(blind)
+        rep["agreement"]["blind_pages_visual"] = confirm
+        if not confirm["ok"] or confirm.get("skipped"):
+            rep["agreement"]["ok"] = False
+            rep["status"] = "FAIL"
     rep["formulas"] = {"reviewed_transcriptions": n_formulas, "figure_pages": sorted(fig_pages)}
     if os.environ.get("FIDELITY_FORMULA_OCR") == "1":      # Phase 6 (Mac): candidates for the reviewer
         rep["formulas"]["candidates"] = FM.recover(pdf_path, log=log)
