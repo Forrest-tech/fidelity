@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Alert, Button, Card, Collapse, Form, Input, Popconfirm, Space, Tag, Typography } from "antd";
 import { api, json } from "../net/client";
-import { Button, Card, cx } from "./ui";
 
 type Role = "reader" | "writer";
 interface Conn { connected: boolean; app_key: string; account: { name?: string; email?: string; error?: string } | null }
@@ -34,64 +34,82 @@ function Connection({ role, c, loading }: { role: Role; c: Conn | undefined; loa
     onSuccess: done,
   });
   const err = (start.error || finish.error || drop.error) as Error | null;
+  const text = loading
+    ? t("pages.settings.storage.checking")
+    : !c?.connected
+      ? t("pages.settings.storage.notConnected")
+      : c.account?.error === "missing_scope"
+        ? t("pages.settings.storage.connectedNoName")
+        : c.account
+          ? t("pages.settings.storage.connectedAs", { name: c.account.name, email: c.account.email })
+          : t("pages.settings.storage.connectedUnchecked");
+  const tone = c?.connected ? (c.account && !c.account.error ? "success" : "warning") : "default";
   return (
-    <section className="flex flex-col gap-2 rounded-md border border-border p-3" aria-labelledby={`conn-${role}`}>
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 id={`conn-${role}`} className="font-medium">{t(`pages.settings.storage.${role}`)}</h3>
-        <span className={cx("text-sm", c?.connected ? (c.account ? "text-ok" : "text-warn") : "text-fg-muted")}>
-          {loading
-            ? t("pages.settings.storage.checking")
-            : !c?.connected
-            ? t("pages.settings.storage.notConnected")
-            : c.account?.error === "missing_scope"
-              ? t("pages.settings.storage.connectedNoName")
-              : c.account
-                ? t("pages.settings.storage.connectedAs", { name: c.account.name, email: c.account.email })
-                : t("pages.settings.storage.connectedUnchecked")}
-        </span>
-      </div>
-      <p className="text-xs text-fg-muted">{t(`pages.settings.storage.${role}Hint`)}</p>
-      {!url && (
-        <div className="flex flex-wrap items-end gap-2">
-          <label className="grid flex-1 gap-1 text-sm">
-            {t("pages.settings.storage.appKey")}
-            <input className="min-w-0 rounded-md border border-border bg-surface px-2 py-2" value={key}
-              onChange={(e) => setKey(e.target.value)} placeholder={c?.app_key || "abc123…"} autoComplete="off" spellCheck={false} />
-          </label>
-          <Button onClick={() => start.mutate()} disabled={start.isPending || !(key || c?.app_key)}>
-            {c?.connected ? t("pages.settings.storage.reconnect") : t("pages.settings.storage.connect")}
-          </Button>
-          {c?.connected && (
-            <Button variant="ghost" disabled={drop.isPending}
-              onClick={() => window.confirm(t("pages.settings.storage.disconnectConfirm")) && drop.mutate()}>
-              {t("pages.settings.storage.disconnect")}
-            </Button>
+    <section aria-labelledby={`conn-${role}`}>
+      <Card
+        size="small"
+        title={
+          <h3 id={`conn-${role}`} style={{ margin: 0, fontSize: 16 }}>
+            {t(`pages.settings.storage.${role}`)}
+          </h3>
+        }
+        extra={<Tag color={tone} style={{ marginInlineEnd: 0, whiteSpace: "normal" }}>{text}</Tag>}
+      >
+        <Space orientation="vertical" size={12} style={{ width: "100%" }}>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {t(`pages.settings.storage.${role}Hint`)}
+          </Typography.Text>
+          {!url && (
+            <Form layout="vertical">
+              <Form.Item label={t("pages.settings.storage.appKey")} htmlFor={`appkey-${role}`} style={{ marginBottom: 0 }}>
+                <Space.Compact style={{ width: "100%" }}>
+                  <Input
+                    id={`appkey-${role}`}
+                    value={key}
+                    onChange={(e) => setKey(e.target.value)}
+                    placeholder={c?.app_key || "abc123…"}
+                    autoComplete="off"
+                    spellCheck={false}
+                  />
+                  <Button type="primary" onClick={() => start.mutate()} disabled={start.isPending || !(key || c?.app_key)}>
+                    {c?.connected ? t("pages.settings.storage.reconnect") : t("pages.settings.storage.connect")}
+                  </Button>
+                  {c?.connected && (
+                    <Popconfirm title={t("pages.settings.storage.disconnectConfirm")} onConfirm={() => drop.mutate()}>
+                      <Button danger disabled={drop.isPending}>
+                        {t("pages.settings.storage.disconnect")}
+                      </Button>
+                    </Popconfirm>
+                  )}
+                </Space.Compact>
+              </Form.Item>
+            </Form>
           )}
-        </div>
-      )}
-      {url && (
-        <form className="flex flex-col gap-2" onSubmit={(e) => { e.preventDefault(); finish.mutate(); }}>
-          <ol className="list-decimal pl-5 text-sm">
-            <li>
-              <a href={url} target="_blank" rel="noopener noreferrer" className="text-primary underline">
-                {t("pages.settings.storage.step1")}
-              </a>
-            </li>
-            <li>{t("pages.settings.storage.step2")}</li>
-          </ol>
-          <div className="flex flex-wrap items-end gap-2">
-            <label className="grid flex-1 gap-1 text-sm">
-              {t("pages.settings.storage.code")}
-              <input className="min-w-0 rounded-md border border-border bg-surface px-2 py-2" value={code}
-                onChange={(e) => setCode(e.target.value)} required autoComplete="off" spellCheck={false} />
-            </label>
-            <Button type="submit" disabled={finish.isPending || !code.trim()}>{t("pages.settings.storage.finish")}</Button>
-            <Button variant="ghost" type="button" onClick={() => setUrl("")}>{t("pages.settings.storage.cancel")}</Button>
-          </div>
-        </form>
-      )}
-      {err && <p role="alert" className="text-sm text-danger">{err.message}</p>}
-      {finish.isSuccess && !url && <p role="status" className="text-sm text-ok">{t("pages.settings.storage.saved")}</p>}
+          {url && (
+            <Form layout="vertical" onFinish={() => finish.mutate()}>
+              <ol style={{ paddingLeft: 20, marginTop: 0 }}>
+                <li>
+                  <a href={url} target="_blank" rel="noopener noreferrer">
+                    {t("pages.settings.storage.step1")}
+                  </a>
+                </li>
+                <li>{t("pages.settings.storage.step2")}</li>
+              </ol>
+              <Form.Item label={t("pages.settings.storage.code")} htmlFor={`code-${role}`}>
+                <Input id={`code-${role}`} value={code} onChange={(e) => setCode(e.target.value)} required autoComplete="off" spellCheck={false} />
+              </Form.Item>
+              <Space>
+                <Button type="primary" htmlType="submit" loading={finish.isPending} disabled={!code.trim()}>
+                  {t("pages.settings.storage.finish")}
+                </Button>
+                <Button onClick={() => setUrl("")}>{t("pages.settings.storage.cancel")}</Button>
+              </Space>
+            </Form>
+          )}
+          {err && <Alert type="error" showIcon title={err.message} />}
+          {finish.isSuccess && !url && <Alert type="success" showIcon title={t("pages.settings.storage.saved")} />}
+        </Space>
+      </Card>
     </section>
   );
 }
@@ -100,23 +118,31 @@ export function CloudStorage() {
   const { t } = useTranslation();
   const q = useQuery({ queryKey: ["storage"], queryFn: () => api<Status>("/storage/dropbox") });
   return (
-    <Card className="flex max-w-2xl flex-col gap-3">
-      <div>
-        <h2 className="font-medium">{t("pages.settings.storage.title")}</h2>
-        <p className="text-sm text-fg-muted">{t("pages.settings.storage.intro")}</p>
-      </div>
-      {q.isError && <p role="alert" className="text-sm text-danger">{(q.error as Error).message}</p>}
-      {(["reader", "writer"] as Role[]).map((r) => (
-        <Connection key={`${r}-${q.data?.[r]?.app_key ?? ""}`} role={r} c={q.data?.[r]} loading={q.isLoading} />
-      ))}
-      <details className="text-sm">
-        <summary className="cursor-pointer text-fg-muted">{t("pages.settings.storage.helpTitle")}</summary>
-        <ol className="mt-2 list-decimal pl-5 text-fg-muted">
-          <li>{t("pages.settings.storage.help1")}</li>
-          <li>{t("pages.settings.storage.help2")}</li>
-          <li>{t("pages.settings.storage.help3")}</li>
-        </ol>
-      </details>
+    <Card title={t("pages.settings.storage.title")}>
+      <Space orientation="vertical" size={16} style={{ width: "100%" }}>
+        <Typography.Text type="secondary">{t("pages.settings.storage.intro")}</Typography.Text>
+        {q.isError && <Alert type="error" showIcon title={(q.error as Error).message} />}
+        {(["reader", "writer"] as Role[]).map((r) => (
+          <Connection key={`${r}-${q.data?.[r]?.app_key ?? ""}`} role={r} c={q.data?.[r]} loading={q.isLoading} />
+        ))}
+        <Collapse
+          size="small"
+          ghost
+          items={[
+            {
+              key: "help",
+              label: t("pages.settings.storage.helpTitle"),
+              children: (
+                <ol style={{ paddingLeft: 20, margin: 0 }}>
+                  <li>{t("pages.settings.storage.help1")}</li>
+                  <li>{t("pages.settings.storage.help2")}</li>
+                  <li>{t("pages.settings.storage.help3")}</li>
+                </ol>
+              ),
+            },
+          ]}
+        />
+      </Space>
     </Card>
   );
 }
@@ -158,79 +184,93 @@ export function GoogleDrive() {
   const s = q.data;
   const showClientForm = s && (!s.client_configured || editClient);
   return (
-    <Card className="flex max-w-2xl flex-col gap-3">
-      <div>
-        <h2 className="font-medium">{t("pages.settings.google.title")}</h2>
-        <p className="text-sm text-fg-muted">{t("pages.settings.google.intro")}</p>
-      </div>
-      {result === "connected" && <p role="status" className="text-sm text-ok">{t("pages.settings.google.connectedNow")}</p>}
-      {result === "error" && (
-        <p role="alert" className="text-sm text-danger">{t("pages.settings.google.failed", { reason: params.get("reason") || "" })}</p>
-      )}
-      {q.isLoading && <p className="text-sm text-fg-muted">{t("pages.settings.storage.checking")}</p>}
-      {s && (
-        <div className="rounded-md bg-muted p-2 text-sm">
-          <p>{t("pages.settings.google.redirect")}</p>
-          <code className="block break-all">{s.redirect_uri}</code>
-        </div>
-      )}
-      {s && !showClientForm && (
-        <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-          <span className="break-all">{t("pages.settings.google.clientSet", { id: s.client_id })}</span>
-          <Button variant="ghost" onClick={() => setEditClient(true)}>{t("pages.settings.google.changeClient")}</Button>
-        </div>
-      )}
-      {showClientForm && (
-        <form className="grid gap-2" onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
-          <label className="grid gap-1 text-sm">
-            {t("pages.settings.google.clientId")}
-            <input className="rounded-md border border-border bg-surface px-2 py-2" value={cid} onChange={(e) => setCid(e.target.value)}
-              placeholder="123…-abc.apps.googleusercontent.com" required autoComplete="off" spellCheck={false} />
-          </label>
-          <label className="grid gap-1 text-sm">
-            {t("pages.settings.google.clientSecret")}
-            <input type="password" className="rounded-md border border-border bg-surface px-2 py-2" value={secret}
-              onChange={(e) => setSecret(e.target.value)} required autoComplete="off" />
-          </label>
-          <div><Button type="submit" disabled={save.isPending}>{t("pages.settings.google.saveClient")}</Button></div>
-        </form>
-      )}
-      {s?.client_configured &&
-        (["reader", "writer"] as Role[]).map((role) => (
-          <section key={role} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border p-3" aria-labelledby={`g-${role}`}>
-            <div>
-              <h3 id={`g-${role}`} className="font-medium">{t(`pages.settings.storage.${role}`)}</h3>
-              <p className={cx("text-sm", s[role].connected ? "text-ok" : "text-fg-muted")}>
-                {!s[role].connected
-                  ? t("pages.settings.storage.notConnected")
-                  : s[role].account
-                    ? t("pages.settings.storage.connectedAs", { name: s[role].account!.name, email: s[role].account!.email })
-                    : t("pages.settings.storage.connectedUnchecked")}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={() => start.mutate(role)} disabled={start.isPending}>
-                {s[role].connected ? t("pages.settings.storage.reconnect") : t("pages.settings.storage.connect")}
-              </Button>
-              {s[role].connected && (
-                <Button variant="ghost" disabled={drop.isPending}
-                  onClick={() => window.confirm(t("pages.settings.storage.disconnectConfirm")) && drop.mutate(role)}>
-                  {t("pages.settings.storage.disconnect")}
-                </Button>
-              )}
-            </div>
-          </section>
-        ))}
-      {err && <p role="alert" className="text-sm text-danger">{err.message}</p>}
-      <details className="text-sm">
-        <summary className="cursor-pointer text-fg-muted">{t("pages.settings.google.helpTitle")}</summary>
-        <ol className="mt-2 list-decimal pl-5 text-fg-muted">
-          <li>{t("pages.settings.google.help1")}</li>
-          <li>{t("pages.settings.google.help2")}</li>
-          <li>{t("pages.settings.google.help3")}</li>
-          <li>{t("pages.settings.google.help4")}</li>
-        </ol>
-      </details>
+    <Card title={t("pages.settings.google.title")}>
+      <Space orientation="vertical" size={16} style={{ width: "100%" }}>
+        <Typography.Text type="secondary">{t("pages.settings.google.intro")}</Typography.Text>
+        {result === "connected" && <Alert type="success" showIcon title={t("pages.settings.google.connectedNow")} />}
+        {result === "error" && <Alert type="error" showIcon title={t("pages.settings.google.failed", { reason: params.get("reason") || "" })} />}
+        {q.isLoading && <Typography.Text type="secondary">{t("pages.settings.storage.checking")}</Typography.Text>}
+        {s && (
+          <Alert
+            type="info"
+            title={t("pages.settings.google.redirect")}
+            description={<Typography.Text code copyable style={{ wordBreak: "break-all" }}>{s.redirect_uri}</Typography.Text>}
+          />
+        )}
+        {s && !showClientForm && (
+          <Space wrap style={{ width: "100%", justifyContent: "space-between" }}>
+            <span style={{ wordBreak: "break-all" }}>{t("pages.settings.google.clientSet", { id: s.client_id })}</span>
+            <Button onClick={() => setEditClient(true)}>{t("pages.settings.google.changeClient")}</Button>
+          </Space>
+        )}
+        {showClientForm && (
+          <Form layout="vertical" onFinish={() => save.mutate()}>
+            <Form.Item label={t("pages.settings.google.clientId")} htmlFor="g-client-id">
+              <Input id="g-client-id" value={cid} onChange={(e) => setCid(e.target.value)} placeholder="123…-abc.apps.googleusercontent.com" required autoComplete="off" spellCheck={false} />
+            </Form.Item>
+            <Form.Item label={t("pages.settings.google.clientSecret")} htmlFor="g-client-secret">
+              <Input id="g-client-secret" type="password" value={secret} onChange={(e) => setSecret(e.target.value)} required autoComplete="off" />
+            </Form.Item>
+            <Button type="primary" htmlType="submit" loading={save.isPending}>
+              {t("pages.settings.google.saveClient")}
+            </Button>
+          </Form>
+        )}
+        {s?.client_configured &&
+          (["reader", "writer"] as Role[]).map((role) => (
+            <section key={role} aria-labelledby={`g-${role}`}>
+              <Card
+                size="small"
+                title={
+                  <h3 id={`g-${role}`} style={{ margin: 0, fontSize: 16 }}>
+                    {t(`pages.settings.storage.${role}`)}
+                  </h3>
+                }
+                extra={
+                  <Tag color={s[role].connected ? (s[role].account ? "success" : "warning") : "default"} style={{ marginInlineEnd: 0, whiteSpace: "normal" }}>
+                    {!s[role].connected
+                      ? t("pages.settings.storage.notConnected")
+                      : s[role].account
+                        ? t("pages.settings.storage.connectedAs", { name: s[role].account!.name, email: s[role].account!.email })
+                        : t("pages.settings.storage.connectedUnchecked")}
+                  </Tag>
+                }
+              >
+                <Space>
+                  <Button type="primary" onClick={() => start.mutate(role)} disabled={start.isPending}>
+                    {s[role].connected ? t("pages.settings.storage.reconnect") : t("pages.settings.storage.connect")}
+                  </Button>
+                  {s[role].connected && (
+                    <Popconfirm title={t("pages.settings.storage.disconnectConfirm")} onConfirm={() => drop.mutate(role)}>
+                      <Button danger disabled={drop.isPending}>
+                        {t("pages.settings.storage.disconnect")}
+                      </Button>
+                    </Popconfirm>
+                  )}
+                </Space>
+              </Card>
+            </section>
+          ))}
+        {err && <Alert type="error" showIcon title={err.message} />}
+        <Collapse
+          size="small"
+          ghost
+          items={[
+            {
+              key: "help",
+              label: t("pages.settings.google.helpTitle"),
+              children: (
+                <ol style={{ paddingLeft: 20, margin: 0 }}>
+                  <li>{t("pages.settings.google.help1")}</li>
+                  <li>{t("pages.settings.google.help2")}</li>
+                  <li>{t("pages.settings.google.help3")}</li>
+                  <li>{t("pages.settings.google.help4")}</li>
+                </ol>
+              ),
+            },
+          ]}
+        />
+      </Space>
     </Card>
   );
 }
