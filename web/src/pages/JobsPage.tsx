@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { Table, Typography } from "antd";
 import { api } from "../net/client";
-import { EmptyState, ErrorState, Loading, PageHeader, cx } from "../components/ui";
+import { EmptyState, ErrorState, Loading, PageHeader, StatusTag } from "../components/ui";
 
 export interface Job {
   id: string;
@@ -14,20 +15,7 @@ export interface Job {
   updated_at: number;
 }
 
-export function StatusBadge({ status }: { status: string }) {
-  const { t } = useTranslation();
-  const tone =
-    status === "done" || status === "PASS"
-      ? "text-ok border-ok"
-      : status === "error" || status === "FAIL"
-        ? "text-danger border-danger"
-        : "text-fg-muted border-border";
-  return (
-    <span className={cx("inline-block rounded-full border px-2 py-0.5 text-xs font-medium", tone)}>
-      {t(`status.${status}`, { defaultValue: status })}
-    </span>
-  );
-}
+export const StatusBadge = StatusTag;
 
 export function JobsPage() {
   const { t } = useTranslation();
@@ -39,32 +27,27 @@ export function JobsPage() {
       {q.isError && <ErrorState message={(q.error as Error).message} onRetry={() => void q.refetch()} />}
       {q.data && q.data.length === 0 && <EmptyState title={t("pages.jobs.empty")} hint={t("pages.jobs.emptyHint")} />}
       {q.data && q.data.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border border-border">
-          <table className="w-full min-w-[32rem] text-left text-sm">
-            <caption className="sr-only">{t("pages.jobs.title")}</caption>
-            <thead className="bg-muted text-fg-muted">
-              <tr>
-                <th scope="col" className="px-3 py-2">{t("pages.jobs.file")}</th>
-                <th scope="col" className="px-3 py-2">{t("pages.jobs.kind")}</th>
-                <th scope="col" className="px-3 py-2">{t("pages.jobs.status")}</th>
-                <th scope="col" className="px-3 py-2">{t("pages.jobs.message")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {q.data.map((j) => (
-                <tr key={j.id} className="border-t border-border">
-                  <td className="break-all px-3 py-2">{j.rel || "—"}</td>
-                  <td className="px-3 py-2">{j.kind.split(":")[0]}</td>
-                  <td className="px-3 py-2">
-                    <StatusBadge status={j.status} />
-                    {j.status === "running" && <span className="ml-2 text-fg-muted">{Math.round(j.progress)}%</span>}
-                  </td>
-                  <td className="px-3 py-2 text-fg-muted">{j.message}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Table<Job>
+          rowKey="id"
+          dataSource={q.data}
+          pagination={{ pageSize: 25, hideOnSinglePage: true, showSizeChanger: false }}
+          scroll={{ x: 600 }}
+          columns={[
+            { title: t("pages.jobs.file"), dataIndex: "rel", render: (v: string) => <span style={{ wordBreak: "break-all" }}>{v || "—"}</span> },
+            { title: t("pages.jobs.kind"), dataIndex: "kind", render: (v: string) => v.split(":")[0] },
+            {
+              title: t("pages.jobs.status"),
+              dataIndex: "status",
+              render: (s: string, j) => (
+                <>
+                  <StatusTag status={s} />
+                  {s === "running" && <Typography.Text type="secondary">{Math.round(j.progress)}%</Typography.Text>}
+                </>
+              ),
+            },
+            { title: t("pages.jobs.message"), dataIndex: "message", render: (v: string) => <Typography.Text type="secondary">{v}</Typography.Text> },
+          ]}
+        />
       )}
     </>
   );

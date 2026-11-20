@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import type { FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { Alert, Button, Card, Col, Form, Input, Row, Select, Table } from "antd";
 import { api, json } from "../net/client";
-import { Button, Card, EmptyState, ErrorState, Loading, PageHeader } from "../components/ui";
+import { EmptyState, ErrorState, Loading, PageHeader } from "../components/ui";
 
 interface UserRow {
   id: string;
@@ -30,71 +30,55 @@ export function UsersPage() {
     },
     onError: (e: Error) => setErr(e.message),
   });
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    create.mutate();
-  };
   return (
     <>
       <PageHeader title={t("pages.users.title")} />
-      <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
-        <div>
+      <Row gutter={[24, 24]}>
+        <Col xs={24} lg={16}>
           {q.isLoading && <Loading />}
           {q.isError && <ErrorState message={(q.error as Error).message} onRetry={() => void q.refetch()} />}
           {q.data && q.data.length === 0 && <EmptyState title={t("pages.users.empty")} />}
           {q.data && q.data.length > 0 && (
-            <div className="overflow-x-auto rounded-lg border border-border">
-              <table className="w-full text-left text-sm">
-                <caption className="sr-only">{t("pages.users.title")}</caption>
-                <thead className="bg-muted text-fg-muted">
-                  <tr>
-                    <th scope="col" className="px-3 py-2">{t("login.email")}</th>
-                    <th scope="col" className="px-3 py-2">{t("pages.users.role")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {q.data.map((u) => (
-                    <tr key={u.id} className="border-t border-border">
-                      <td className="px-3 py-2">{u.email}</td>
-                      <td className="px-3 py-2">{t(`roles.${u.role}`, { defaultValue: u.role })}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table<UserRow>
+              rowKey="id"
+              dataSource={q.data}
+              pagination={{ pageSize: 25, hideOnSinglePage: true, showSizeChanger: false }}
+              columns={[
+                { title: t("login.email"), dataIndex: "email" },
+                { title: t("pages.users.role"), dataIndex: "role", render: (r: string) => t(`roles.${r}`, { defaultValue: r }) },
+              ]}
+            />
           )}
-        </div>
-        <Card>
-          <h2 className="mb-3 font-medium">{t("pages.users.add")}</h2>
-          <form onSubmit={submit} className="flex flex-col gap-3" aria-label={t("pages.users.add")}>
-            <label className="flex flex-col gap-1 text-sm">
-              {t("login.email")}
-              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="rounded-md border border-border bg-surface px-3 py-2" />
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              {t("login.password")}
-              <input type="password" required minLength={10} value={password} onChange={(e) => setPassword(e.target.value)} className="rounded-md border border-border bg-surface px-3 py-2" />
-              <span className="text-xs text-fg-muted">{t("pages.users.passwordHint")}</span>
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              {t("pages.users.role")}
-              <select value={role} onChange={(e) => setRole(e.target.value)} className="rounded-md border border-border bg-surface px-3 py-2">
-                <option value="viewer">{t("roles.viewer")}</option>
-                <option value="reviewer">{t("roles.reviewer")}</option>
-                <option value="admin">{t("roles.admin")}</option>
-              </select>
-            </label>
-            {err && (
-              <p role="alert" className="text-sm text-danger">
-                {err}
-              </p>
-            )}
-            <Button type="submit" disabled={create.isPending}>
-              {t("pages.users.create")}
-            </Button>
-          </form>
-        </Card>
-      </div>
+        </Col>
+        <Col xs={24} lg={8}>
+          <Card title={t("pages.users.add")}>
+            <Form layout="vertical" aria-label={t("pages.users.add")} onFinish={() => create.mutate()}>
+              <Form.Item label={t("login.email")} htmlFor="new-user-email">
+                <Input id="new-user-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+              </Form.Item>
+              <Form.Item label={t("login.password")} htmlFor="new-user-password" extra={t("pages.users.passwordHint")}>
+                <Input id="new-user-password" type="password" required minLength={10} value={password} onChange={(e) => setPassword(e.target.value)} />
+              </Form.Item>
+              <Form.Item label={t("pages.users.role")} htmlFor="new-user-role">
+                <Select
+                  id="new-user-role"
+                  value={role}
+                  onChange={setRole}
+                  options={[
+                    { value: "viewer", label: t("roles.viewer") },
+                    { value: "reviewer", label: t("roles.reviewer") },
+                    { value: "admin", label: t("roles.admin") },
+                  ]}
+                />
+              </Form.Item>
+              {err && <Alert type="error" showIcon title={err} style={{ marginBottom: 12 }} />}
+              <Button type="primary" htmlType="submit" loading={create.isPending} block>
+                {t("pages.users.create")}
+              </Button>
+            </Form>
+          </Card>
+        </Col>
+      </Row>
     </>
   );
 }

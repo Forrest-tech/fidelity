@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Segmented, Space, Table, Typography } from "antd";
 import { api } from "../net/client";
-import { EmptyState, ErrorState, Loading, PageHeader } from "../components/ui";
-import { StatusBadge } from "./JobsPage";
+import { EmptyState, ErrorState, Loading, PageHeader, StatusTag } from "../components/ui";
 
 interface Doc {
   sid: string;
@@ -17,6 +17,13 @@ interface Doc {
   triage?: { class: string; reason: string };
 }
 
+function notes(d: Doc, instruction: string) {
+  const failed = d.checks ? Object.entries(d.checks).filter(([, ok]) => ok === false).map(([k]) => k) : [];
+  return [d.triage ? `${d.triage.class}: ${d.triage.reason}` : "", d.instruction_like ? instruction : "", failed.join(", ")]
+    .filter(Boolean)
+    .join(" ");
+}
+
 export function DocumentsPage() {
   const { t } = useTranslation();
   const [verdict, setVerdict] = useState("");
@@ -27,56 +34,39 @@ export function DocumentsPage() {
   return (
     <>
       <PageHeader title={t("pages.documents.title")} />
-      <label className="mb-3 flex items-center gap-2 text-sm text-fg-muted">
-        {t("pages.documents.filter")}
-        <select
-          className="rounded-md border border-border bg-surface px-2 py-1 text-fg"
+      <Space style={{ marginBottom: 12 }} wrap>
+        <Typography.Text type="secondary" id="doc-filter">
+          {t("pages.documents.filter")}
+        </Typography.Text>
+        <Segmented
+          aria-labelledby="doc-filter"
           value={verdict}
-          onChange={(e) => setVerdict(e.target.value)}
-        >
-          <option value="">{t("pages.documents.all")}</option>
-          <option value="PASS">{t("status.PASS")}</option>
-          <option value="FAIL">{t("status.FAIL")}</option>
-          <option value="SKIP">{t("status.SKIP")}</option>
-        </select>
-      </label>
+          onChange={(v) => setVerdict(String(v))}
+          options={[
+            { value: "", label: t("pages.documents.all") },
+            { value: "PASS", label: t("status.PASS") },
+            { value: "FAIL", label: t("status.FAIL") },
+            { value: "SKIP", label: t("status.SKIP") },
+          ]}
+        />
+      </Space>
       {q.isLoading && <Loading />}
       {q.isError && <ErrorState message={(q.error as Error).message} onRetry={() => void q.refetch()} />}
       {q.data && q.data.length === 0 && <EmptyState title={t("pages.documents.empty")} hint={t("pages.documents.emptyHint")} />}
       {q.data && q.data.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border border-border">
-          <table className="w-full min-w-[36rem] text-left text-sm">
-            <caption className="sr-only">{t("pages.documents.title")}</caption>
-            <thead className="bg-muted text-fg-muted">
-              <tr>
-                <th scope="col" className="px-3 py-2">{t("pages.jobs.file")}</th>
-                <th scope="col" className="px-3 py-2">{t("pages.documents.result")}</th>
-                <th scope="col" className="px-3 py-2">{t("pages.documents.pages")}</th>
-                <th scope="col" className="px-3 py-2">{t("pages.documents.files")}</th>
-                <th scope="col" className="px-3 py-2">{t("pages.documents.notes")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {q.data.map((d) => (
-                <tr key={d.sid + d.rel} className="border-t border-border">
-                  <td className="break-all px-3 py-2">{d.rel}</td>
-                  <td className="px-3 py-2">
-                    <StatusBadge status={d.verdict} />
-                  </td>
-                  <td className="px-3 py-2">{d.pages}</td>
-                  <td className="px-3 py-2">{d.single_file ? t("pages.documents.single") : d.files}</td>
-                  <td className="px-3 py-2 text-fg-muted">
-                    {d.triage ? `${d.triage.class}: ${d.triage.reason}` : ""}
-                    {d.instruction_like ? ` ${t("pages.documents.instruction")}` : ""}
-                    {d.checks && Object.entries(d.checks).some(([, ok]) => ok === false)
-                      ? " " + Object.entries(d.checks).filter(([, ok]) => ok === false).map(([k]) => k).join(", ")
-                      : ""}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Table<Doc>
+          rowKey={(d) => d.sid + d.rel}
+          dataSource={q.data}
+          pagination={{ pageSize: 25, hideOnSinglePage: true, showSizeChanger: false }}
+          scroll={{ x: 640 }}
+          columns={[
+            { title: t("pages.jobs.file"), dataIndex: "rel", render: (v: string) => <span style={{ wordBreak: "break-all" }}>{v}</span> },
+            { title: t("pages.documents.result"), dataIndex: "verdict", render: (v: string) => <StatusTag status={v} /> },
+            { title: t("pages.documents.pages"), dataIndex: "pages" },
+            { title: t("pages.documents.files"), render: (_, d) => (d.single_file ? t("pages.documents.single") : d.files) },
+            { title: t("pages.documents.notes"), render: (_, d) => <Typography.Text type="secondary">{notes(d, t("pages.documents.instruction"))}</Typography.Text> },
+          ]}
+        />
       )}
     </>
   );

@@ -89,7 +89,7 @@ describe("jobs and documents", () => {
     renderApp("/documents");
     expect(await screen.findByText("a.pdf")).toBeInTheDocument();
     expect(screen.getByText(/tables/)).toBeInTheDocument();
-    await userEvent.setup().selectOptions(screen.getByLabelText("Show"), "FAIL");
+    await userEvent.setup({ pointerEventsCheck: 0 }).click(screen.getByRole("radio", { name: "Failed" })); // the input is visually hidden; its label takes the click
     await screen.findByText("a.pdf");
     expect(calls.some((c) => c.url.includes("verdict=FAIL"))).toBe(true);
   });
