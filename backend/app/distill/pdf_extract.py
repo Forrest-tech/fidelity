@@ -181,7 +181,7 @@ def is_watermark_line(ln) -> bool:
     return abs(dx) > 0.2 and abs(dy) > 0.2
 
 
-EXTRACT_VERSION = "3"      # part of the extraction cache key: bump when extraction behaviour changes
+EXTRACT_VERSION = "4"      # part of the extraction cache key: bump when extraction behaviour changes
 
 
 def to_view(page, bbox):
@@ -266,6 +266,23 @@ def _inside(b, r, pad=2):
     return r[0] - pad <= cx <= r[2] + pad and r[1] - pad <= cy <= r[3] + pad
 
 
+_NUM = re.compile(r"\d+(?:[.,]\d+)*")
+
+
+def _numbers_intact(page, bbox, rows) -> bool:
+    """False when the detected grid cut a number in two ("250" became "2" | "50"). Every number in
+    the cells must exist as a word of the page inside the table; otherwise the grid is not trusted
+    and the text stays as ordinary lines, which keep every number exactly as printed."""
+    got = Counter(n for r in rows for c in r if c for w in c.split() for n in _NUM.findall(w))
+    if not got:
+        return True
+    have = Counter()
+    for w in page.get_text("words"):
+        if _inside(to_view(page, w[:4]), bbox, pad=2):
+            have.update(_NUM.findall(clean_text(w[4])))
+    return not (got - have)
+
+
 def _tables(page):
     out = []
     try:
@@ -288,6 +305,8 @@ def _tables(page):
         toks = [w for r in rows for c in r if c for w in c.split()]
         if toks and sum(1 for w in toks if len(w) == 1 and w.isalpha()) / len(toks) > 0.25:
             continue                                      # letter-spaced map/figure labels, not a table
+        if not _numbers_intact(page, tuple(t.bbox), rows):
+            continue
         out.append(Table(page.number + 1, tuple(t.bbox), rows))
     return out
 

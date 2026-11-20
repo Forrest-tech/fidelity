@@ -80,3 +80,14 @@ def test_rotated_page_coordinates_are_converted_to_the_displayed_page():
     assert (round(x0), round(y0)) == (102, 186)
     plain = doc.new_page(width=595, height=842)
     assert to_view(plain, (1, 2, 3, 4)) == (1, 2, 3, 4)
+
+
+def test_table_grid_that_cuts_a_number_in_two_is_not_trusted():
+    from app.distill.pdf_extract import _numbers_intact
+    doc = pymupdf.open()
+    page = doc.new_page(width=595, height=842)
+    page.insert_text((100, 100), "250 300")
+    bbox = (90, 80, 300, 120)
+    assert _numbers_intact(page, bbox, [["250", "300"]])
+    assert not _numbers_intact(page, bbox, [["2", "50 300"]])      # "250" cut as "2" | "50"
+    assert _numbers_intact(page, bbox, [["no digits here"]])
