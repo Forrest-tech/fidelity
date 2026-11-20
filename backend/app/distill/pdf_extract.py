@@ -12,6 +12,21 @@ from dataclasses import dataclass, field
 
 import pymupdf
 
+# MuPDF prints one line per damaged content-stream operator ("syntax error: unknown keyword 'Bn'"),
+# hundreds per file, which buries real errors in the sync log. They are collected instead and
+# summarised once per document (see reader_warnings).
+pymupdf.TOOLS.mupdf_display_errors(False)
+
+
+def reader_warnings(max_examples: int = 2):
+    """One-line summary of what the PDF reader complained about since the last call, or ''."""
+    raw = [ln.strip() for ln in (pymupdf.TOOLS.mupdf_warnings() or "").splitlines() if ln.strip()]
+    if not raw:
+        return ""
+    kinds = Counter(raw)
+    top = ", ".join(f"{k[:70]} x{n}" for k, n in kinds.most_common(max_examples))
+    return f"PDF reader noted {len(raw)} damaged-content warning(s) ({top}); the text layer was still read"
+
 # Characters that are layout artefacts, not content.
 _SPACE_LIKE = {" ": " ", " ": " ", " ": " ", " ": " ", " ": " ",
                "​": "", "﻿": "", "\t": " "}
@@ -166,7 +181,19 @@ def is_watermark_line(ln) -> bool:
     return abs(dx) > 0.2 and abs(dy) > 0.2
 
 
-EXTRACT_VERSION = "2"      # part of the extraction cache key: bump when extraction behaviour changes
+EXTRACT_VERSION = "4"      # part of the extraction cache key: bump when extraction behaviour changes
+
+
+def to_view(page, bbox):
+    """Coordinates of text and drawings are given on the UNROTATED page, but table detection and the
+    page size (used for the header/footer bands) are given on the page as displayed. A landscape page
+    stored rotated by 90 degrees therefore never matched its own tables (their text was printed twice)
+    and had its header/footer bands in the wrong place. Everything is compared in displayed coordinates."""
+    if not page.rotation:
+        return tuple(bbox)
+    r = pymupdf.Rect(bbox) * page.rotation_matrix
+    r.normalize()
+    return (r.x0, r.y0, r.x1, r.y1)
 
 
 def _page_lines(page):
@@ -182,7 +209,7 @@ def _page_lines(page):
                      for s in ln["spans"]]
             if not "".join(s.text for s in spans).strip():
                 continue
-            out.append((tuple(ln["bbox"]), spans))
+            out.append((to_view(page, ln["bbox"]), spans))
     return out
 
 
@@ -225,7 +252,7 @@ def _shaded_boxes(page):
     boxes = []
     for dr in page.get_drawings():
         fill = dr.get("fill")
-        r = dr["rect"]
+        r = pymupdf.Rect(*to_view(page, dr["rect"]))
         if not fill or r.width < 150 or r.height < 14:
             continue
         if min(fill) > 0.97:                              # white
@@ -237,6 +264,23 @@ def _shaded_boxes(page):
 def _inside(b, r, pad=2):
     cx, cy = (b[0] + b[2]) / 2, (b[1] + b[3]) / 2
     return r[0] - pad <= cx <= r[2] + pad and r[1] - pad <= cy <= r[3] + pad
+
+
+_NUM = re.compile(r"\d+(?:[.,]\d+)*")
+
+
+def _numbers_intact(page, bbox, rows) -> bool:
+    """False when the detected grid cut a number in two ("250" became "2" | "50"). Every number in
+    the cells must exist as a word of the page inside the table; otherwise the grid is not trusted
+    and the text stays as ordinary lines, which keep every number exactly as printed."""
+    got = Counter(n for r in rows for c in r if c for w in c.split() for n in _NUM.findall(w))
+    if not got:
+        return True
+    have = Counter()
+    for w in page.get_text("words"):
+        if _inside(to_view(page, w[:4]), bbox, pad=2):
+            have.update(_NUM.findall(clean_text(w[4])))
+    return not (got - have)
 
 
 def _tables(page):
@@ -261,6 +305,8 @@ def _tables(page):
         toks = [w for r in rows for c in r if c for w in c.split()]
         if toks and sum(1 for w in toks if len(w) == 1 and w.isalpha()) / len(toks) > 0.25:
             continue                                      # letter-spaced map/figure labels, not a table
+        if not _numbers_intact(page, tuple(t.bbox), rows):
+            continue
         out.append(Table(page.number + 1, tuple(t.bbox), rows))
     return out
 
