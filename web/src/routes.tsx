@@ -49,7 +49,7 @@ export function AppRoutes() {
           element={
             <LangProvider>
               {/* legacy element styles (buttons, inputs) only apply inside this wrapper */}
-              <div className="legacy-review h-full">
+              <div className="legacy-review" style={{ height: "calc(100vh - 104px)", minHeight: 480 }}>
                 <ErrorBoundary>
                   <Suspense fallback={<Loading />}>
                     <ReviewLegacy />
