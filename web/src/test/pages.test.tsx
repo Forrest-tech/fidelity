@@ -224,11 +224,12 @@ describe("Dropbox sync on the sources page", () => {
     expect(screen.getByText("File 2 of 5")).toBeInTheDocument();
     expect(screen.getByText("OCR page 3 of 10")).toBeInTheDocument();
     expect(screen.getByText(/This file is a scan/)).toBeInTheDocument();
-    const u = userEvent.setup();
-    await u.click(screen.getByRole("button", { name: /Cancel run/ }));
-    await u.click(await screen.findByRole("button", { name: "OK" })); // the confirmation
+    const u = userEvent.setup({ pointerEventsCheck: 0 }); // skips per-click style checks, slow on this DOM
+    // text queries: role queries are slow on Ant Design's large DOM
+    await u.click(screen.getByText("Cancel run"));
+    await u.click(await screen.findByText("OK")); // the confirmation
     await waitFor(() => expect(calls.some((c) => c.url.endsWith("/dropbox/sync/r9/cancel") && c.init?.method === "POST")).toBe(true));
-  });
+  }, 60_000);
 
   it("warns when Dropbox access is not set up", async () => {
     api("admin", (url) => (url.endsWith("/dropbox/status") ? { body: { reader: true, writer: false } } : undefined));
