@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Card, Col, List, Row, Statistic, Typography } from "antd";
+import { Card, Col, Row, Statistic, Typography } from "antd";
 import { api } from "../net/client";
 import { EmptyState, ErrorState, Loading, PageHeader } from "../components/ui";
 
@@ -53,18 +53,16 @@ export function OverviewPage() {
             {d.needs_attention.length === 0 ? (
               <Typography.Text type="secondary">{t("pages.overview.attentionNone")}</Typography.Text>
             ) : (
-              <List
-                bordered
-                dataSource={d.needs_attention}
-                renderItem={(a) => (
-                  <List.Item key={a.sid + a.rel}>
-                    <span>
+              <Card size="small">
+                <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                  {d.needs_attention.map((a) => (
+                    <li key={a.sid + a.rel} style={{ padding: "8px 4px", borderBottom: "1px solid var(--ant-color-split)" }}>
                       <strong>{a.rel}</strong> · {t(`verdict.${a.verdict}`, { defaultValue: a.verdict })}
                       {a.instruction_like > 0 && <Typography.Text type="warning"> · {t("pages.documents.instruction")}</Typography.Text>}
-                    </span>
-                  </List.Item>
-                )}
-              />
+                    </li>
+                  ))}
+                </ul>
+              </Card>
             )}
           </section>
         </div>

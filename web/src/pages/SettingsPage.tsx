@@ -11,7 +11,7 @@ export function SettingsPage() {
     <>
       <PageHeader title={t("pages.settings.title")} />
       <Space orientation="vertical" size={16} style={{ width: "100%", maxWidth: 760 }}>
-        <Card title={t("login.email")}>
+        <Card title={t("header.account")}>
           <Descriptions column={1} size="small">
             <Descriptions.Item label={t("login.email")}>{me?.email}</Descriptions.Item>
             <Descriptions.Item label={t("pages.users.role")}>{me ? t(`roles.${me.role}`) : ""}</Descriptions.Item>

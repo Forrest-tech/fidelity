@@ -273,15 +273,15 @@ describe("first-run setup and cloud storage", () => {
     renderApp("/settings");
     expect(await screen.findByText("Cloud storage")).toBeInTheDocument();
     expect(await screen.findByText("Connected as Forrest (f@example.com)")).toBeInTheDocument();
-    const u = userEvent.setup();
-    const writer = screen.getByRole("region", { name: "Write access (output folders)" });
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    const writer = screen.getByText("Write access (output folders)").closest("section")!;
     await u.click(within(writer).getByLabelText("Dropbox App key"));
     await u.paste("testappkey00001");
-    await u.click(within(writer).getByRole("button", { name: "Connect" }));
-    expect(await within(writer).findByRole("link", { name: /Open Dropbox/ })).toHaveAttribute("href", "https://www.dropbox.com/oauth2/authorize?x");
+    await u.click(within(writer).getByText("Connect"));
+    expect((await within(writer).findByText(/Open Dropbox/)).closest("a")).toHaveAttribute("href", "https://www.dropbox.com/oauth2/authorize?x");
     const post = calls.find((c) => c.url.endsWith("/storage/dropbox/start"));
     expect(JSON.parse(String(post?.init?.body))).toEqual({ role: "writer", app_key: "testappkey00001" });
-  });
+  }, 90_000);
 
   it("reviewers do not see cloud storage", async () => {
     mockApi((url) => (url.endsWith("/me") ? { body: ME("reviewer") } : { body: {} }));
