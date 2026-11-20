@@ -51,6 +51,10 @@ _EXPLAIN = [
     ("missing_scope", "This machine's Dropbox access lacks a permission. Re-authorise it (runbook: Dropbox access)."),
     ("No Dropbox credentials", "Dropbox access is not set up on this machine (runbook: Dropbox access)."),
     ("must be a folder in your own Dropbox", "The output link must point to a folder in your own Dropbox."),
+    ("not enough free disk space", "This machine ran out of disk space for the work files. Free some space "
+                                   "(or move the work folder to a bigger disk) and run it again; files already "
+                                   "checked are skipped."),
+    ("No space left on device", "This machine ran out of disk space. Free some space and run it again."),
     ("overlap", "The source and output folders overlap. Choose an output folder outside the source folder."),
     ("expired_access_token", "The Dropbox authorisation has expired. Re-authorise it (runbook: Dropbox access)."),
     ("invalid_access_token", "The Dropbox authorisation is no longer valid. Re-authorise it (runbook: Dropbox access)."),
@@ -175,7 +179,9 @@ def cancel(jid) -> bool:
 def handle_sync(job, report):
     p = json.loads(job["rel"])
     os.makedirs(LOG_DIR, exist_ok=True)
-    env = dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8")
+    # backslashreplace: PyMuPDF prints warnings that can hold stray surrogate characters from a
+    # damaged PDF; with strict UTF-8 that print raised inside MuPDF and failed the whole file.
+    env = dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8:backslashreplace")
     report(1, "starting")
     lines = []
     live = Live(job["id"])

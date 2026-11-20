@@ -78,6 +78,8 @@ def world(monkeypatch, tmp_path):
     store = MemStore()
     monkeypatch.setattr(B, "open_source", lambda link: src)
     monkeypatch.setattr(B, "open_dest", lambda link, s: FakeDest(store))
+    import collections                             # tests must not depend on this machine's free disk space
+    monkeypatch.setattr(SY.shutil, "disk_usage", lambda p: collections.namedtuple("u", "total used free")(1, 0, 1 << 40))
 
     def run(*extra):
         return SY.main(["--source-link", "x", "--dest-link", "y", "--work", str(tmp_path / "work"), *extra])
@@ -282,3 +284,24 @@ def test_errors_that_are_not_network_errors_are_not_retried():
     with pytest.raises(ValueError):
         SY._retry(bad, "x")
     assert len(calls) == 1
+
+
+def test_stops_cleanly_before_a_download_would_fill_the_disk(world, monkeypatch):
+    import collections
+    _, store, run = world
+    usage = collections.namedtuple("usage", "total used free")
+    monkeypatch.setattr(SY.shutil, "disk_usage", lambda p: usage(10, 9, 1024))
+    with pytest.raises(SystemExit, match="not enough free disk space"):
+        run()
+    assert store.files == {}
+
+
+def test_sync_output_survives_stray_surrogates():
+    import subprocess
+    import sys
+    from app.jobs import sync_job as S
+    import inspect
+    assert "utf-8:backslashreplace" in inspect.getsource(S.handle_sync)
+    env = dict(__import__("os").environ, PYTHONIOENCODING="utf-8:backslashreplace")
+    out = subprocess.run([sys.executable, "-c", "print('bad \\udcba char')"], env=env, capture_output=True)
+    assert out.returncode == 0 and b"\\udcba" in out.stdout
