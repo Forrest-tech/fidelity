@@ -74,13 +74,10 @@ export function LoginPage() {
         </div>
         <Typography.Paragraph type="secondary">{t("app.tagline")}</Typography.Paragraph>
         {firstRun && (
-          <Alert
-            style={{ marginBottom: 16 }}
-            type="info"
-            showIcon
-            title={<h2 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{t("login.setupTitle")}</h2>}
-            description={t("login.setupHint")}
-          />
+          <div style={{ marginBottom: 16, padding: "12px 16px", borderRadius: 8, background: "var(--ant-color-info-bg)", border: "1px solid var(--ant-color-info-border)" }}>
+            <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{t("login.setupTitle")}</h2>
+            <Typography.Text type="secondary">{t("login.setupHint")}</Typography.Text>
+          </div>
         )}
         <Form layout="vertical" aria-label={firstRun ? t("login.setupTitle") : t("login.title")} onFinish={() => void submit()}>
           <Form.Item label={t("login.email")} htmlFor="login-email">
