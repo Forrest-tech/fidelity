@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { FormEvent } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { Alert, Button, Card, Form, Input, Segmented, Typography } from "antd";
 import { ApiError, api, json } from "../net/client";
 import { useAuth } from "../auth/AuthProvider";
-import { Button, Card, Loading } from "../components/ui";
+import { Loading } from "../components/ui";
+import { LANGS } from "../locales";
 
 export function LoginPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { me, loading, login } = useAuth();
   const loc = useLocation() as { state?: { from?: string } };
   const [email, setEmail] = useState("");
@@ -18,12 +19,12 @@ export function LoginPage() {
   const [confirm, setConfirm] = useState("");
   const setup = useQuery({ queryKey: ["setup"], queryFn: () => api<{ needs_setup: boolean }>("/setup"), retry: false });
   const firstRun = setup.data?.needs_setup === true;
+  const lang = i18n.language.startsWith("zh") ? "zh" : "en";
 
   if (loading) return <Loading />;
   if (me) return <Navigate to={loc.state?.from || "/"} replace />;
 
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
+  const submit = async () => {
     setBusy(true);
     setErr("");
     try {
@@ -49,62 +50,64 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-full items-center justify-center p-4">
-      <Card className="w-full max-w-sm">
-        <h1 className="mb-1 text-xl font-semibold">{t("app.name")}</h1>
-        <p className="mb-4 text-sm text-fg-muted">{t("app.tagline")}</p>
+    <div className="flex min-h-full flex-col items-center justify-center gap-4 p-4" style={{ minHeight: "100vh" }}>
+      <div style={{ position: "absolute", top: 12, right: 16 }}>
+        <Segmented
+          size="small"
+          aria-label={t("header.language")}
+          value={lang}
+          options={LANGS.map((l) => ({ value: l, label: l === "zh" ? "中文" : "English" }))}
+          onChange={(v) => void i18n.changeLanguage(String(v))}
+        />
+      </div>
+      <Card style={{ width: "100%", maxWidth: 400 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
+          <span
+            aria-hidden="true"
+            style={{ width: 36, height: 36, borderRadius: 8, background: "var(--ant-color-primary)", color: "#fff", display: "grid", placeItems: "center", fontWeight: 700, fontSize: 18, lineHeight: 1 }}
+          >
+            F
+          </span>
+          <Typography.Title level={1} style={{ margin: 0, fontSize: 22 }}>
+            {t("app.name")}
+          </Typography.Title>
+        </div>
+        <Typography.Paragraph type="secondary">{t("app.tagline")}</Typography.Paragraph>
         {firstRun && (
-          <div className="mb-3 rounded-md bg-muted p-3 text-sm">
-            <h2 className="font-medium">{t("login.setupTitle")}</h2>
-            <p className="text-fg-muted">{t("login.setupHint")}</p>
-          </div>
+          <Alert
+            style={{ marginBottom: 16 }}
+            type="info"
+            showIcon
+            title={<h2 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{t("login.setupTitle")}</h2>}
+            description={t("login.setupHint")}
+          />
         )}
-        <form onSubmit={submit} className="flex flex-col gap-3" aria-label={firstRun ? t("login.setupTitle") : t("login.title")}>
-          <label className="flex flex-col gap-1 text-sm">
-            {t("login.email")}
-            <input
-              type="email"
-              required
-              autoComplete="username"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="rounded-md border border-border bg-surface px-3 py-2"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            {t("login.password")}
-            <input
+        <Form layout="vertical" aria-label={firstRun ? t("login.setupTitle") : t("login.title")} onFinish={() => void submit()}>
+          <Form.Item label={t("login.email")} htmlFor="login-email">
+            <Input id="login-email" size="large" type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </Form.Item>
+          <Form.Item label={t("login.password")} htmlFor="login-password">
+            <Input
+              id="login-password"
+              size="large"
               type="password"
               required
               autoComplete={firstRun ? "new-password" : "current-password"}
               minLength={firstRun ? 10 : undefined}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="rounded-md border border-border bg-surface px-3 py-2"
             />
-          </label>
+          </Form.Item>
           {firstRun && (
-            <label className="flex flex-col gap-1 text-sm">
-              {t("login.setupConfirm")}
-              <input
-                type="password"
-                required
-                autoComplete="new-password"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                className="rounded-md border border-border bg-surface px-3 py-2"
-              />
-            </label>
+            <Form.Item label={t("login.setupConfirm")} htmlFor="login-confirm">
+              <Input id="login-confirm" size="large" type="password" required autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+            </Form.Item>
           )}
-          {err && (
-            <p role="alert" className="text-sm text-danger">
-              {err}
-            </p>
-          )}
-          <Button type="submit" disabled={busy}>
+          {err && <Alert type="error" showIcon title={err} style={{ marginBottom: 16 }} />}
+          <Button type="primary" htmlType="submit" size="large" block loading={busy}>
             {busy ? t("login.submitting") : firstRun ? t("login.setupSubmit") : t("login.submit")}
           </Button>
-        </form>
+        </Form>
       </Card>
     </div>
   );
