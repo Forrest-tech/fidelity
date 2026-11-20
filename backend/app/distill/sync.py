@@ -26,6 +26,7 @@ import time
 from . import backends as B
 from . import dropbox_io as D
 from . import run as R
+from . import accept as AC
 from . import scoring as SC
 from .events import Events, kind_of
 from .ledger import Ledger
@@ -116,6 +117,60 @@ def _skip(a, ledger, rledger, rel, content_hash) -> bool:
     return a.dry_run or e["verdict"] not in ("PASS", "METADATA") or ledger.up_to_date(rel, content_hash, R.PIPELINE_VERSION)
 
 
+def _publish_accepted(a, src, dst, ev, dest_root, stage_root, archive_root) -> int:
+    """Send results that a person accepted. They are staged, checked and promoted together, like a normal run, and
+    the previous versions go to the archive, so the same --rollback undoes it."""
+    if not dst or not a.room_dir:
+        raise SystemExit("--publish-from needs --dest-link and --room-dir")
+    with open(a.publish_from, encoding="utf-8") as f:
+        plan = json.load(f)
+    stamp = _dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+    out = os.path.join(a.room_dir, "out")
+    pub = Publisher(dst.store, dest_root, stage_root, archive_root, stamp, os.path.join(a.work, "publish"))
+    ledger = Ledger(os.path.join(a.work, "ledger.json"), src.label)
+    when = _dt.datetime.now().astimezone().isoformat(timespec="seconds")
+    pending, failed = [], []
+    print(f"publishing {len(plan['items'])} accepted document(s)  ->  output {dst.provider}:{dest_root}", flush=True)
+    for it in plan["items"]:
+        rel, key = it["rel"], AC.live_key(it["out_dir"])
+        print(f"[{len(pending) + len(failed) + 1}] {rel}", flush=True)
+        try:
+            base = os.path.join(out, it["out_dir"])
+            files = {}
+            paths = [("", base)] if os.path.isfile(R.longpath(base)) else [
+                (os.path.relpath(os.path.join(r_, fn_), base).replace(os.sep, "/"), os.path.join(r_, fn_))
+                for r_, _, fns_ in os.walk(R.longpath(base)) for fn_ in sorted(fns_)]
+            if not paths:
+                raise FileNotFoundError("the distilled result is no longer on this machine; run the room again")
+            for relpath, lp_ in paths:
+                with open(R.longpath(lp_), "rb") as fh:
+                    data = fh.read()
+                if lp_.lower().endswith(".md"):
+                    data = AC.accept_markdown(data.decode("utf-8"), it.get("by") or "", when, it.get("accuracy"),
+                                              bool(it.get("forced"))).encode("utf-8")
+                files[relpath] = data
+            _retry(lambda: pub.stage(key, files), "upload")
+        except Exception as e:                     # noqa: BLE001 - one document failing must not stop the others
+            print(f"  NOT published: {_err(e)}", flush=True)
+            failed.append(rel)
+            ev.emit("publish_failed", rel=rel, error=_err(e))
+            continue
+        pending.append((rel, it, key, len(files)))
+        print(f"  staged {len(files)} file(s)", flush=True)
+    report = {"source": src.label, "dest": dest_root, "run": stamp, "mode": "publish accepted results",
+              "published": [p[0] for p in pending], "failed": failed}
+    if pending:
+        replaces = {k: [k[:-len(".pdf.md")]] if k.endswith(".pdf.md") else [k + ".pdf.md"] for _, _, k, _ in pending}
+        pub.promote(replaces=replaces)
+        for rel, it, key, n in pending:
+            ledger.record(rel, it["content_hash"], R.PIPELINE_VERSION, "PASS", f"{dest_root}/{key}", n)
+            ev.emit("published", rel=rel, files=n, run=stamp)
+        report["published_run"] = stamp
+        print(f"\npromoted {len(pending)} document(s); undo with: python -m app.distill.sync --rollback {stamp}", flush=True)
+    print(json.dumps(report, indent=1), flush=True)
+    return 0
+
+
 def _err(e) -> str:
     return f"{type(e).__name__}: {e}"[:300]
 
@@ -126,6 +181,8 @@ def main(argv=None):
     ap.add_argument("--dest-link", default=None, help="output folder; may be left out with --dry-run (results stay local)")
     ap.add_argument("--room-dir", default=None, help="a room's own folder: its results and its ledger of what was distilled "
                                                       "persist there, so a stopped run can carry on")
+    ap.add_argument("--publish-from", default=None, help="publish the accepted results listed in this JSON file "
+                                                          "(from a room's results folder) instead of distilling")
     ap.add_argument("--events", default=None, help="write one JSON line per file event to this path (used by the web interface)")
     ap.add_argument("--work", default=os.path.join(D.DATA_DIR, "work"))
     ap.add_argument("--dry-run", action="store_true", help="distill and verify, upload nothing")
@@ -168,6 +225,8 @@ def main(argv=None):
         ledger.save()
         print(f"rolled back run {a.rollback}: {len(keys)} document(s) restored to their previous version", flush=True)
         return 0
+    if a.publish_from:
+        return _publish_accepted(a, src, dst, ev, dest_root, stage_root, archive_root)
     before = src.snapshot()
     print(f"files to check: {sum(1 for r in before if r.lower().endswith(SUPPORTED))}", flush=True)
     report = {"source": src.label, "source_provider": src.provider, "dest": dest_root,
@@ -232,7 +291,9 @@ def main(argv=None):
         if rledger is not None:                     # a result of any quality is remembered, so a resumed run skips it
             rledger.record(rel, f["content_hash"], R.PIPELINE_VERSION, r["verdict"])
         _c = SC.classify(r)
-        ev.emit("file", rel=rel, kind=kind_of(rel), pages=r.get("pages"), scan=_c.get("basis") == "ocr_agreement", **_c)
+        ev.emit("file", rel=rel, kind=kind_of(rel), pages=r.get("pages"), scan=_c.get("basis") == "ocr_agreement",
+                out_dir=r.get("out_dir"), content_hash=r.get("content_hash"), single_file=bool(r.get("single_file")),
+                n_files=r.get("files"), verdict=r.get("verdict"), **_c)
         if r["verdict"] == "SKIP":                  # triaged out: listed with its class, never silently dropped
             report.setdefault("triaged_out", []).append({"source": rel, **r["triage"]})
             if not a.dry_run:

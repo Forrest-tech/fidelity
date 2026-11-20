@@ -39,6 +39,12 @@ class RunIn(BaseModel):
     force: bool = False
 
 
+class AcceptIn(BaseModel):
+    all_ok: bool = False
+    rels: list[str] = []
+    force: bool = False
+
+
 @router.get("/rooms")
 def rooms(archived: bool = False):
     return {"rooms": [R.summary(r) for r in R.list_rooms(archived)]}
@@ -116,6 +122,17 @@ def archive_check(room_id: str):
     """What still stands in the way of archiving this room (empty list = it can be archived)."""
     r = _guard(R.get_room, room_id)
     return {"blockers": R.archive_blockers(r)}
+
+
+@router.get("/rooms/{room_id}/accept-preview")
+def accept_preview(room_id: str):
+    return R.accept_preview(_guard(R.get_room, room_id))
+
+
+@router.post("/rooms/{room_id}/accept")
+def accept(room_id: str, body: AcceptIn, user=Depends(current_user)):
+    """Accept results into the knowledge base: all that meet the threshold, or the files named (force = even below it)."""
+    return _guard(R.accept, room_id, getattr(user, "email", "") or "", body.rels, body.all_ok, body.force)
 
 
 @router.get("/rooms/{room_id}/tree")

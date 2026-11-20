@@ -89,6 +89,8 @@ def _startup():
 
     _reap_stale_jobs()
     handlers.register()
+    from .jobs import rooms as _rooms
+    _rooms.install_hooks()
     queue.start()
     print("[startup] trust.db ready, job workers started (owner pid=%s)" % os.getpid())
 

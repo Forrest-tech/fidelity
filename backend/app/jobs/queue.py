@@ -22,6 +22,7 @@ class JobQueue:
         self._stop = False
         self._wake = threading.Event()
         self._claim_lock = threading.Lock()      # capacity is checked and a job taken as one step
+        self.after_done = []                     # callables(job_dict), run once a job has finished well
 
     def register(self, kind, fn):
         self._handlers[kind] = fn
@@ -62,6 +63,13 @@ class JobQueue:
                 con.close()
 
         db.trust_write(_do)
+        if kw.get("status") == "done":
+            row = self.get(jid)
+            for hook in self.after_done:
+                try:
+                    hook(row)
+                except Exception:                              # noqa: BLE001 - a follow-up must never break the job itself
+                    traceback.print_exc()
 
     def _claim(self):
         """Take the next job that may start now.
