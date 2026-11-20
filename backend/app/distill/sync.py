@@ -19,6 +19,7 @@ import argparse
 import datetime as _dt
 import json
 import os
+import shutil
 import sys
 import time
 
@@ -84,6 +85,19 @@ def _retry(fn, what):
                 raise
             print(f"  network error, retrying ({n}/{tries - 1}) {what}: {type(e).__name__}: {str(e)[:160]}", flush=True)
             time.sleep(_BACKOFF[n - 1])
+
+
+MIN_FREE = 2 * 1024 ** 3          # keep this much disk free besides the file and its work files
+
+
+def _check_space(work, size):
+    """Stop cleanly before a download would fill the disk (a real run died mid-download with
+    "No space left on device", and even the error could not be saved)."""
+    free = shutil.disk_usage(work).free
+    need = 3 * size + MIN_FREE      # the file, its rendered pages / extracted text, and headroom
+    if free < need:
+        raise SystemExit(f"not enough free disk space on this machine: {free / 1e9:.1f} GB free, "
+                         f"about {need / 1e9:.1f} GB needed for the next file — stopped before downloading")
 
 
 def _err(e) -> str:
@@ -166,6 +180,8 @@ def main(argv=None):
 
         try:
             if not src.local_matches(lp, f):
+                os.makedirs(a.work, exist_ok=True)
+                _check_space(a.work, f["size"])
                 print(f"  download ({f['size'] / 1e6:.1f} MB)", flush=True)
                 _retry(lambda: src.download(rel, f, lp), "download")
             if not src.verify_local(lp, f):
