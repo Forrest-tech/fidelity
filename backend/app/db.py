@@ -159,7 +159,43 @@ CREATE TABLE IF NOT EXISTS job (
   created_at REAL, updated_at REAL
 );
 CREATE INDEX IF NOT EXISTS idx_job_status ON job(status);
+-- A distillation room: its own input, output and rules. Runs and per-file results hang off it.
+CREATE TABLE IF NOT EXISTS room (
+  id TEXT PRIMARY KEY,
+  name TEXT,
+  position INTEGER DEFAULT 0,
+  source TEXT,                -- JSON {kind: dropbox|gdrive, link: ...}
+  dest TEXT,                  -- JSON, same shape; empty for "distill only"
+  mode TEXT DEFAULT 'distill',-- distill (keep results local) / upload (publish those that qualify)
+  threshold REAL DEFAULT 99,  -- accuracy (%) from which a result may be accepted in one click
+  number_guard INTEGER DEFAULT 1,
+  priority INTEGER DEFAULT 1, -- 0 low / 1 normal / 2 high
+  points INTEGER DEFAULT 1,   -- capacity points a run occupies (2 once a scanned file needed OCR)
+  archived INTEGER DEFAULT 0,
+  archived_at REAL, archived_by TEXT,
+  created_by TEXT, created_at REAL, updated_at REAL,
+  last_job_id TEXT
+);
+-- One row per source file of a room. `outcome` is NULL until the file has been processed.
+CREATE TABLE IF NOT EXISTS room_file (
+  room_id TEXT, rel TEXT,
+  kind TEXT, size INTEGER,
+  activity TEXT,              -- NULL / processing
+  outcome TEXT,               -- result / unprocessable / skipped
+  reason TEXT, detail TEXT,
+  accuracy REAL, parts TEXT, diffs INTEGER DEFAULT 0, number_diffs INTEGER DEFAULT 0, findings TEXT,
+  pages INTEGER, run_id TEXT,
+  confirmed INTEGER DEFAULT 0, confirmed_by TEXT, confirmed_at REAL,
+  updated_at REAL,
+  PRIMARY KEY (room_id, rel)
+);
+CREATE INDEX IF NOT EXISTS idx_room_file_room ON room_file(room_id, outcome);
 """
+
+# Columns added to `job` after its first version (a worker/process id and heartbeat for run supervision,
+# and what the scheduler needs: owning room, priority, capacity points, output folder key).
+_JOB_COLUMNS = (("pid", "INTEGER"), ("heartbeat_at", "REAL"), ("room_id", "TEXT"),
+                ("priority", "INTEGER DEFAULT 1"), ("points", "INTEGER DEFAULT 0"), ("dest_key", "TEXT"))
 
 
 _ADDED_COLUMNS = (("flags", "TEXT"), ("src_chars", "INTEGER"), ("md_chars", "INTEGER"),
@@ -176,6 +212,8 @@ def init_trust():
                 con.execute(body)
         for col, typ in _ADDED_COLUMNS:
             con.execute(f"ALTER TABLE file_eval ADD COLUMN IF NOT EXISTS {col} {typ}")
+        for col, typ in _JOB_COLUMNS:
+            con.execute(f"ALTER TABLE job ADD COLUMN IF NOT EXISTS {col} {typ}")
         con.commit()
         con.close()
         return
@@ -185,6 +223,11 @@ def init_trust():
     for col, typ in _ADDED_COLUMNS:
         try:
             con.execute(f"ALTER TABLE file_eval ADD COLUMN {col} {typ}")
+        except Exception:
+            pass
+    for col, typ in _JOB_COLUMNS:
+        try:
+            con.execute(f"ALTER TABLE job ADD COLUMN {col} {typ}")
         except Exception:
             pass
     con.commit()

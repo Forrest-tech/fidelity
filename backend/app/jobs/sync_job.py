@@ -27,9 +27,17 @@ def summary_path(jid):
     return os.path.join(LOG_DIR, f"{jid}.json")
 
 
-def command(p: dict) -> list:
+def events_path(jid):
+    return os.path.join(LOG_DIR, f"{jid}.events.jsonl")
+
+
+def command(p: dict, events: str | None = None) -> list:
     """The exact command line this job runs (also shown to the user)."""
-    cmd = [sys.executable, "-m", "app.distill.sync", "--source-link", p["source_link"], "--dest-link", p["dest_link"]]
+    cmd = [sys.executable, "-m", "app.distill.sync", "--source-link", p["source_link"]]
+    if p.get("dest_link"):                      # a "distill only" room has no output folder
+        cmd += ["--dest-link", p["dest_link"]]
+    if events:
+        cmd += ["--events", events]
     if p.get("rollback"):
         return cmd + ["--rollback", p["rollback"]]
     if p.get("dry_run"):
@@ -187,10 +195,15 @@ def handle_sync(job, report):
     live = Live(job["id"])
     live.write(force=True)
     group = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
+    reader = None
+    if p.get("room_id"):                          # a room's run: keep one row per file while it goes
+        from . import rooms
+        reader = rooms.EventReader(p["room_id"], job["id"], events_path(job["id"]))
     with open(log_path(job["id"]), "w", encoding="utf-8") as log:
-        proc = subprocess.Popen(command(p), cwd=BACKEND, env=env, stdout=subprocess.PIPE,
+        proc = subprocess.Popen(command(p, events_path(job["id"])) if reader else command(p), cwd=BACKEND, env=env, stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace", **group)
         _procs[job["id"]] = proc
+        last_poll = 0.0
         try:
             for line in proc.stdout:
                 log.write(line)
@@ -198,11 +211,16 @@ def handle_sync(job, report):
                 lines.append(line)
                 live.feed(line)
                 live.write()
+                if reader and time.time() - last_poll >= 1.0:
+                    reader.poll()
+                    last_poll = time.time()
                 if line.strip():
                     report(live.percent(), line.strip()[:160])
             code = proc.wait()
         finally:
             _procs.pop(job["id"], None)
+            if reader:
+                reader.poll()                       # the last events, also when the run ended early
     live.state["stage"] = "finished"
     live.write(force=True)
     if job["id"] in _cancelled:

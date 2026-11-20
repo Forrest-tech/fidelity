@@ -26,6 +26,8 @@ import time
 from . import backends as B
 from . import dropbox_io as D
 from . import run as R
+from . import scoring as SC
+from .events import Events, kind_of
 from .ledger import Ledger
 from .publish import Publisher
 
@@ -107,7 +109,8 @@ def _err(e) -> str:
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--source-link", required=True)
-    ap.add_argument("--dest-link", required=True)
+    ap.add_argument("--dest-link", default=None, help="output folder; may be left out with --dry-run (results stay local)")
+    ap.add_argument("--events", default=None, help="write one JSON line per file event to this path (used by the web interface)")
     ap.add_argument("--work", default=os.path.join(D.DATA_DIR, "work"))
     ap.add_argument("--dry-run", action="store_true", help="distill and verify, upload nothing")
     ap.add_argument("--force", action="store_true", help="re-distill even if the ledger says the file is up to date")
@@ -116,12 +119,18 @@ def main(argv=None):
                     help="publish a metadata-only entry for protected files (they are always listed in the report)")
     ap.add_argument("--rollback", default=None, metavar="RUN", help="undo a published run: restore the previous versions from the archive")
     a = ap.parse_args(argv)
+    if not a.dest_link and not a.dry_run:
+        ap.error("--dest-link is required unless --dry-run")
+    if not a.dest_link and a.rollback:
+        ap.error("--rollback needs --dest-link")
+    ev = Events(a.events)
 
     src = B.open_source(a.source_link)                     # Dropbox or Google Drive, read-only connection
-    dst = B.open_dest(a.dest_link, src)                    # guarded writer; raises if the folders overlap
-    dest_root, stage_root, archive_root = dst.root, dst.stage_root, dst.archive_root
+    dst = B.open_dest(a.dest_link, src) if a.dest_link else None   # guarded writer; raises if the folders overlap
+    dest_root, stage_root, archive_root = (dst.root, dst.stage_root, dst.archive_root) if dst else ("", "", "")
     src_name = src.name
-    print(f"source {src.provider}:{src.label} (read-only)  ->  output {dst.provider}:{dest_root}", flush=True)
+    print(f"source {src.provider}:{src.label} (read-only)  ->  "
+          + (f"output {dst.provider}:{dest_root}" if dst else "no output folder (results stay on this machine)"), flush=True)
 
     stamp = _dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     out = os.path.join(a.work, "runs", stamp)
@@ -142,10 +151,11 @@ def main(argv=None):
     before = src.snapshot()
     print(f"files to check: {sum(1 for r in before if r.lower().endswith(SUPPORTED))}", flush=True)
     report = {"source": src.label, "source_provider": src.provider, "dest": dest_root,
-              "dest_provider": dst.provider, "run": stamp, "documents": []}
+              "dest_provider": dst.provider if dst else "", "run": stamp, "documents": []}
+    ev.emit("listing", files=[{"rel": r_, "size": f_.get("size"), "kind": kind_of(r_)} for r_, f_ in sorted(before.items())])
     results = []
     seen_hash = {}
-    pub = Publisher(dst.store, dest_root, stage_root, archive_root, stamp, os.path.join(a.work, "publish"))
+    pub = Publisher(dst.store, dest_root, stage_root, archive_root, stamp, os.path.join(a.work, "publish")) if dst else None
     pending = []       # (rel, content_hash, doc) staged this run, promoted together at the end
     ledger = Ledger(os.path.join(a.work, "ledger.json"), src.label)
 
@@ -154,6 +164,8 @@ def main(argv=None):
         if not rel.lower().endswith(SUPPORTED):
             print(f"skip (format not handled yet): {rel}", flush=True)
             report.setdefault("unsupported", []).append({"source": rel, "reason": "format not handled yet"})
+            ev.emit("file", rel=rel, kind=kind_of(rel), outcome="unprocessable", reason="unsupported",
+                    detail=SC.REASONS["unsupported"])
             continue
         if a.only and a.only not in name:
             continue
@@ -161,19 +173,24 @@ def main(argv=None):
         if first:                                   # F-26: duplicate sources are detected by content hash
             print(f"skip duplicate of {first}: {rel}", flush=True)
             report.setdefault("duplicates", []).append({"source": rel, "duplicate_of": first})
+            ev.emit("file", rel=rel, kind=kind_of(rel), outcome="skipped", reason="duplicate", detail=f"same content as {first}")
             continue
         seen_hash[f["content_hash"]] = rel
         if not a.force and ledger.up_to_date(rel, f["content_hash"], R.PIPELINE_VERSION):
             print(f"unchanged since last run, skipped: {rel}", flush=True)
             report.setdefault("unchanged", []).append(rel)
+            ev.emit("unchanged", rel=rel)
             continue
         rel_local = os.path.join(src_name, *rel.strip("/").split("/"))
         lp = os.path.join(a.work, "src", rel_local)
         print(f"\n[{len(results) + 1}] {rel}", flush=True)
 
+        ev.emit("start", rel=rel)
+
         def failed(e, step):
             err = _err(e)
             print(f"  verification: FAIL  (error while {step}: {err})", flush=True)
+            ev.emit("file", rel=rel, kind=kind_of(rel), **SC.classify(None, error=f"{step}: {err}"))
             results.append({"verdict": "FAIL"})
             report["documents"].append({"source": rel, "verdict": "FAIL", "files": 0, "uploaded": 0,
                                         "error": f"{step}: {err}"})
@@ -192,6 +209,8 @@ def main(argv=None):
             failed(e, "reading the file")
             continue
         results.append(r)
+        _c = SC.classify(r)
+        ev.emit("file", rel=rel, kind=kind_of(rel), pages=r.get("pages"), scan=_c.get("basis") == "ocr_agreement", **_c)
         if r["verdict"] == "SKIP":                  # triaged out: listed with its class, never silently dropped
             report.setdefault("triaged_out", []).append({"source": rel, **r["triage"]})
             if not a.dry_run:
