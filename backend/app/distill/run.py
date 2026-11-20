@@ -341,6 +341,8 @@ def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=prin
                               pages=pages, table_grid=S.table_grid)
         with open(vcache, "w", encoding="utf-8") as f:
             json.dump(rep, f, ensure_ascii=False, default=str)
+    if isinstance(rep.get("headings"), dict):
+        rep["headings"]["total"] = len(entries)      # lets scoring turn "unmatched" into a share
     h_after = dropbox_content_hash(pdf_path)
     rep["source_unchanged"] = {"ok": h_before == h_after, "content_hash": h_before}
     if not rep["source_unchanged"]["ok"]:

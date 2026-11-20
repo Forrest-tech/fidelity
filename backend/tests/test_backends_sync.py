@@ -305,3 +305,96 @@ def test_sync_output_survives_stray_surrogates():
     env = dict(__import__("os").environ, PYTHONIOENCODING="utf-8:backslashreplace")
     out = subprocess.run([sys.executable, "-c", "print('bad \\udcba char')"], env=env, capture_output=True)
     assert out.returncode == 0 and b"\\udcba" in out.stdout
+
+
+# ------------------------------------------------------------------ per-file events (distillation rooms)
+def _events(path):
+    import json
+    return [json.loads(l) for l in open(path, encoding="utf-8").read().splitlines() if l.strip()]
+
+
+def test_events_list_every_file_then_report_each_outcome(world, tmp_path):
+    _, _, run = world
+    ev = str(tmp_path / "e.jsonl")
+    assert run("--events", ev) == 0
+    evs = _events(ev)
+    listing = next(e for e in evs if e["type"] == "listing")
+    assert {f["rel"] for f in listing["files"]} == {"/Guide.md", "/Note.md"}
+    files = {e["rel"]: e for e in evs if e["type"] == "file"}
+    assert set(files) == {"/Guide.md", "/Note.md"}
+    assert all(f["outcome"] == "result" and f["accuracy"] is not None for f in files.values())
+    assert [e["rel"] for e in evs if e["type"] == "start"] == ["/Guide.md", "/Note.md"]
+
+
+def test_a_dry_run_needs_no_output_folder(monkeypatch, tmp_path):
+    src = FakeSource({"/Guide.md": "# Guide\n\nStep 1 uses 12 mm board.\n"})
+    monkeypatch.setattr(B, "open_source", lambda link: src)
+
+    def no_dest(*a, **k):
+        raise AssertionError("an output folder must not be opened")
+    monkeypatch.setattr(B, "open_dest", no_dest)
+    import collections
+    monkeypatch.setattr(SY.shutil, "disk_usage", lambda p: collections.namedtuple("u", "total used free")(1, 0, 1 << 40))
+    ev = str(tmp_path / "e.jsonl")
+    assert SY.main(["--source-link", "x", "--dry-run", "--work", str(tmp_path / "w"), "--events", ev]) == 0
+    assert any(e["type"] == "file" and e["outcome"] == "result" for e in _events(ev))
+    with pytest.raises(SystemExit):                          # without --dry-run the output is still required
+        SY.main(["--source-link", "x", "--work", str(tmp_path / "w2")])
+
+
+def test_a_file_that_cannot_be_read_is_an_outcome_with_a_reason_not_a_percentage(world, monkeypatch, tmp_path):
+    import requests
+    src, _, run = world
+    monkeypatch.setattr(SY, "_BACKOFF", (0, 0, 0))
+    real = src.download
+
+    def broken(rel, entry, lp):
+        if rel == "/Guide.md":
+            raise requests.exceptions.ConnectionError("connection reset")
+        real(rel, entry, lp)
+    src.download = broken
+    ev = str(tmp_path / "e.jsonl")
+    assert run("--events", ev) == 0
+    bad = next(e for e in _events(ev) if e["type"] == "file" and e["rel"] == "/Guide.md")
+    assert bad["outcome"] == "unprocessable" and bad["reason"] == "download" and bad["accuracy"] is None
+
+
+def test_unchanged_files_are_reported_as_unchanged(world, tmp_path):
+    _, _, run = world
+    assert run() == 0
+    ev = str(tmp_path / "e2.jsonl")
+    assert run("--events", ev) == 0
+    assert {e["rel"] for e in _events(ev) if e["type"] == "unchanged"} == {"/Guide.md", "/Note.md"}
+
+
+def test_a_room_folder_remembers_results_of_any_quality_so_a_stopped_run_carries_on(world, monkeypatch, tmp_path):
+    import requests
+    src, store, run = world
+    monkeypatch.setattr(SY, "_BACKOFF", (0, 0, 0))
+    room = str(tmp_path / "room")
+    real = src.download
+
+    def broken(rel, entry, lp):
+        if rel == "/Guide.md":
+            raise requests.exceptions.ConnectionError("connection reset")
+        real(rel, entry, lp)
+    src.download = broken
+    ev1 = str(tmp_path / "e1.jsonl")
+    assert run("--dry-run", "--room-dir", room, "--events", ev1) == 0
+    assert {e["rel"] for e in _events(ev1) if e["type"] == "file" and e["outcome"] == "result"} == {"/Note.md"}
+    src.download = real                                    # the connection is back
+    ev2 = str(tmp_path / "e2.jsonl")
+    assert run("--dry-run", "--room-dir", room, "--events", ev2) == 0
+    evs = _events(ev2)
+    assert {e["rel"] for e in evs if e["type"] == "unchanged"} == {"/Note.md"}      # done before: not redone
+    assert {e["rel"] for e in evs if e["type"] == "file" and e["outcome"] == "result"} == {"/Guide.md"}
+    assert store.files == {}                               # distill-only: nothing was published
+
+
+def test_force_redoes_everything_in_a_room(world, tmp_path):
+    _, _, run = world
+    room = str(tmp_path / "room")
+    assert run("--dry-run", "--room-dir", room) == 0
+    ev = str(tmp_path / "e.jsonl")
+    assert run("--dry-run", "--room-dir", room, "--force", "--events", ev) == 0
+    assert {e["rel"] for e in _events(ev) if e["type"] == "file"} == {"/Guide.md", "/Note.md"}

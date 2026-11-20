@@ -53,13 +53,20 @@ def _reap_stale_jobs():
     try:
         con = db.trust_rw()
         try:
-            con.execute(
-                "UPDATE job SET status='error', message='服务重启导致任务中断"
-                "（已完成的进度都已保存，可重新提交继续）' "
-                "WHERE status IN ('running','queued')")
-            con.commit()
+            running = [dict(r) for r in con.execute(
+                "SELECT * FROM job WHERE status='running'").fetchall()]
         finally:
             con.close()
+        from .jobs import sync_job
+        for job in running:
+            # A sync runs as its own process and survives a restart of this server: take it back. Anything else
+            # (or a sync whose process is gone) is marked, never left showing "running".
+            if job["kind"] == "dropbox_sync" and sync_job.adopt(job, queue._update):
+                print("[startup] 已接管仍在运行的蒸馏任务 %s" % job["id"])
+                continue
+            status = "interrupted" if job["kind"] == "dropbox_sync" else "error"
+            queue._update(job["id"], status=status,
+                          message="服务重启导致任务中断（已完成的进度都已保存，可重新提交继续）")
     except Exception as e:
         print("[startup] 清理僵死任务失败：%s" % str(e)[:80])
 
