@@ -1,5 +1,6 @@
 import type { Preview } from "@storybook/react";
 import i18n from "../src/locales";
+import { ThemeProvider } from "../src/layout/ThemeProvider";
 import "../src/index.css";
 
 // Toolbar switches for language and theme so every component can be seen in each.
@@ -11,11 +12,12 @@ const preview: Preview = {
   decorators: [
     (Story, ctx) => {
       void i18n.changeLanguage(ctx.globals.locale);
-      document.documentElement.dataset.theme = ctx.globals.theme;
       return (
-        <div className="bg-bg p-6 text-fg">
-          <Story />
-        </div>
+        <ThemeProvider force={ctx.globals.theme}>
+          <div className="bg-bg p-6 text-fg">
+            <Story />
+          </div>
+        </ThemeProvider>
       );
     },
   ],

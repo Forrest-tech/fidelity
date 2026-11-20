@@ -28,7 +28,7 @@ const Ctx = createContext<ThemeCtx>({ theme: "system", setTheme: () => {}, dark:
 export const useTheme = () => useContext(Ctx);
 
 /** Wraps the whole app, so the sign-in page follows the theme and language too. */
-export function ThemeProvider({ children }: { children: ReactNode }) {
+export function ThemeProvider({ children, force }: { children: ReactNode; force?: "light" | "dark" }) {
   const { i18n } = useTranslation();
   const [theme, setTheme] = useState<Theme>(() => {
     try {
@@ -37,16 +37,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       return "system";
     }
   });
-  const [dark, setDark] = useState(() => isDark(theme));
+  const eff: Theme = force ?? theme; // `force` is for Storybook, which picks the theme from its toolbar
+  const [dark, setDark] = useState(() => isDark(eff));
   useEffect(() => {
-    applyTheme(theme);
-    setDark(isDark(theme));
-    try {
-      localStorage.setItem(THEME_KEY, theme);
-    } catch {
-      /* storage unavailable: the theme still applies for this session */
+    applyTheme(eff);
+    setDark(isDark(eff));
+    if (!force) {
+      try {
+        localStorage.setItem(THEME_KEY, theme);
+      } catch {
+        /* storage unavailable: the theme still applies for this session */
+      }
     }
-    if (theme !== "system" || !window.matchMedia) return;
+    if (eff !== "system" || !window.matchMedia) return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const on = () => {
       applyTheme("system");
@@ -54,9 +57,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     };
     mq.addEventListener?.("change", on);
     return () => mq.removeEventListener?.("change", on);
-  }, [theme]);
+  }, [eff, theme, force]);
 
-  const value = useMemo(() => ({ theme, setTheme, dark }), [theme, dark]);
+  const value = useMemo(() => ({ theme: eff, setTheme, dark }), [eff, dark]);
   const zh = i18n.language.startsWith("zh");
   return (
     <Ctx.Provider value={value}>
@@ -84,9 +87,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
                   colorTextSecondary: "#595959",
                   colorTextTertiary: "#595959",
                   colorTextDescription: "#595959",
+                  // dark text colours, with the pale backgrounds pinned (antd would otherwise derive muddy ones from them)
                   colorSuccess: "#237804",
+                  colorSuccessBg: "#f6ffed",
+                  colorSuccessBorder: "#b7eb8f",
                   colorError: "#cf1322",
+                  colorErrorBg: "#fff2f0",
+                  colorErrorBorder: "#ffccc7",
                   colorWarning: "#ad6800",
+                  colorWarningBg: "#fffbe6",
+                  colorWarningBorder: "#ffe58f",
                 }),
           },
           components: dark
