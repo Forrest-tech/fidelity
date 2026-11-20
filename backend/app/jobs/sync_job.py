@@ -192,6 +192,12 @@ def pid_alive(pid) -> bool:
             ok = k.GetExitCodeProcess(h, ctypes.byref(code))
             k.CloseHandle(h)
             return bool(ok) and code.value == 259               # STILL_ACTIVE
+        try:                                                    # our own child that has ended stays a zombie until reaped
+            done, _ = os.waitpid(int(pid), os.WNOHANG)
+            if done:
+                return False
+        except OSError:                                         # not our child: the normal case after a server restart
+            pass
         os.kill(int(pid), 0)
         return True
     except (OSError, ValueError):

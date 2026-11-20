@@ -165,7 +165,7 @@ CREATE TABLE IF NOT EXISTS room (
   name TEXT,
   position INTEGER DEFAULT 0,
   source TEXT,                -- JSON {kind: dropbox|gdrive, link: ...}
-  dest TEXT,                  -- JSON, same shape; empty for "distill only"
+  dest TEXT,                  -- JSON, same shape, empty for "distill only"
   mode TEXT DEFAULT 'distill',-- distill (keep results local) / upload (publish those that qualify)
   threshold REAL DEFAULT 99,  -- accuracy (%) from which a result may be accepted in one click
   number_guard INTEGER DEFAULT 1,
