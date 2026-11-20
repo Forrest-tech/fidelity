@@ -100,6 +100,7 @@ test.describe("roles", () => {
 test.describe("pages have content or a clear state", () => {
   for (const [path, heading] of [
     ["/", "Overview"],
+    ["/distill", "Distill"],
     ["/sources", "Sources"],
     ["/jobs", "Jobs"],
     ["/documents", "Documents"],
@@ -154,11 +155,11 @@ test.describe("bilingual", () => {
     await login(page, "admin");
     await setLanguage(page, "中文");
     await openNav(page);
-    await expect(page.getByRole("link", { name: "数据源" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "蒸馏" })).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
     await page.reload();
     await openNav(page);
-    await expect(page.getByRole("link", { name: "数据源" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "蒸馏" })).toBeVisible();
     await setLanguage(page, "English");
   });
 });
@@ -166,7 +167,7 @@ test.describe("bilingual", () => {
 test.describe("responsive", () => {
   test("no horizontal scrolling on any main page", async ({ page }) => {
     await login(page, "admin");
-    for (const p of ["/", "/sources", "/jobs", "/documents", "/settings", "/users"]) {
+    for (const p of ["/", "/distill", "/sources", "/jobs", "/documents", "/settings", "/users"]) {
       await page.goto(p);
       await page.waitForLoadState("networkidle");
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -210,7 +211,7 @@ test.describe("accessibility (axe-core)", () => {
     test(`main pages, ${theme} theme`, async ({ page }) => {
       await login(page, "admin");
       await page.evaluate((t) => localStorage.setItem("fidelity.theme", t), theme); // read on the next page load
-      for (const p of ["/", "/sources", "/jobs", "/documents", "/settings", "/users", "/review"]) {
+      for (const p of ["/", "/distill", "/sources", "/jobs", "/documents", "/settings", "/users", "/review"]) {
         await page.goto(p);
         await page.waitForLoadState("networkidle");
         await openNav(page);

@@ -95,7 +95,7 @@ export function ThemeProvider({ children, force }: { children: ReactNode; force?
                   colorError: "#cf1322",
                   colorErrorBg: "#fff2f0",
                   colorErrorBorder: "#ffccc7",
-                  colorWarning: "#ad6800",
+                  colorWarning: "#8a5300", // small tag text on the pale background needs this to reach 4.5:1
                   colorWarningBg: "#fffbe6",
                   colorWarningBorder: "#ffe58f",
                   colorInfo: "#0958d9",
@@ -104,7 +104,10 @@ export function ThemeProvider({ children, force }: { children: ReactNode; force?
                 }),
           },
           components: dark
-            ? { Menu: { itemSelectedColor: "#8fb0ff", horizontalItemSelectedColor: "#8fb0ff", itemHoverColor: "#b3c8ff", horizontalItemHoverColor: "#b3c8ff" } }
+            ? {
+                Menu: { itemSelectedColor: "#8fb0ff", horizontalItemSelectedColor: "#8fb0ff", itemHoverColor: "#b3c8ff", horizontalItemHoverColor: "#b3c8ff" },
+                Tabs: { itemSelectedColor: "#8fb0ff", itemActiveColor: "#8fb0ff", itemHoverColor: "#b3c8ff", inkBarColor: "#8fb0ff" },
+              }
             : {},
         }}
       >
