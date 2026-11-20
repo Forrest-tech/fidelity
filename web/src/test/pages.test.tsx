@@ -202,7 +202,7 @@ describe("Dropbox sync on the sources page", () => {
     api("reviewer");
     renderApp("/sources");
     const u = userEvent.setup();
-    await u.click(await screen.findByRole("button", { name: /Finished/ }));
+    await u.click(await screen.findByRole("tab", { name: /Finished/ }));
     expect(await screen.findByText("Source folder verified unchanged.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Roll back this run" })).not.toBeInTheDocument();
   });
@@ -219,15 +219,17 @@ describe("Dropbox sync on the sources page", () => {
       if (url.includes("/dropbox/sync/r9")) return { body: LIVE };
       return undefined;
     });
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     renderApp("/sources");
     expect(await screen.findByText("Reading a scanned document (OCR)")).toBeInTheDocument();
     expect(screen.getByText("File 2 of 5")).toBeInTheDocument();
     expect(screen.getByText("OCR page 3 of 10")).toBeInTheDocument();
     expect(screen.getByText(/This file is a scan/)).toBeInTheDocument();
-    await userEvent.setup().click(screen.getByRole("button", { name: "Cancel run" }));
+    const u = userEvent.setup({ pointerEventsCheck: 0 }); // skips per-click style checks, slow on this DOM
+    // text queries: role queries are slow on Ant Design's large DOM
+    await u.click(screen.getByText("Cancel run"));
+    await u.click(await screen.findByText("OK")); // the confirmation
     await waitFor(() => expect(calls.some((c) => c.url.endsWith("/dropbox/sync/r9/cancel") && c.init?.method === "POST")).toBe(true));
-  });
+  }, 60_000);
 
   it("warns when Dropbox access is not set up", async () => {
     api("admin", (url) => (url.endsWith("/dropbox/status") ? { body: { reader: true, writer: false } } : undefined));

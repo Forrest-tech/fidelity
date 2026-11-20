@@ -3,7 +3,9 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, json } from "../net/client";
 import { useAuth } from "../auth/AuthProvider";
-import { Button, Card, EmptyState, ErrorState, Loading, PageHeader } from "../components/ui";
+import { Button, Card, Col, Row, Space, Typography } from "antd";
+import { FolderOpenOutlined, UploadOutlined } from "@ant-design/icons";
+import { EmptyState, ErrorState, Loading, PageHeader } from "../components/ui";
 import { DropboxSync } from "../components/DropboxSync";
 
 interface SourceRow {
@@ -40,37 +42,34 @@ function SourceCard({ s, canEdit }: { s: SourceRow; canEdit: boolean }) {
     onError: (e: Error) => setMsg(e.message),
   });
   return (
-    <Card className="flex flex-col gap-2">
-      <p className="font-medium">{s.name}</p>
-      <p className="break-all text-sm text-fg-muted">{s.src_root}</p>
-      <p className="text-xs text-fg-muted">{t("pages.sources.readOnly")}</p>
-      {canEdit && (
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={() => batch.mutate()} disabled={batch.isPending}>
-            {t("pages.sources.distillAll")}
-          </Button>
-          <Button variant="ghost" onClick={() => file.current?.click()} disabled={upload.isPending}>
-            {t("pages.sources.upload")}
-          </Button>
-          <input
-            ref={file}
-            type="file"
-            accept="application/pdf,.pdf"
-            hidden
-            aria-label={t("pages.sources.upload")}
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) upload.mutate(f);
-              e.target.value = "";
-            }}
-          />
-        </div>
-      )}
-      {msg && (
-        <p role="status" className="text-sm">
-          {msg}
-        </p>
-      )}
+    <Card size="small" title={<Space><FolderOpenOutlined />{s.name}</Space>}>
+      <Space orientation="vertical" size={8} style={{ width: "100%" }}>
+        <Typography.Text type="secondary" style={{ wordBreak: "break-all" }}>{s.src_root}</Typography.Text>
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>{t("pages.sources.readOnly")}</Typography.Text>
+        {canEdit && (
+          <Space wrap>
+            <Button type="primary" onClick={() => batch.mutate()} loading={batch.isPending}>
+              {t("pages.sources.distillAll")}
+            </Button>
+            <Button icon={<UploadOutlined />} onClick={() => file.current?.click()} disabled={upload.isPending}>
+              {t("pages.sources.upload")}
+            </Button>
+            <input
+              ref={file}
+              type="file"
+              accept="application/pdf,.pdf"
+              hidden
+              aria-label={t("pages.sources.upload")}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) upload.mutate(f);
+                e.target.value = "";
+              }}
+            />
+          </Space>
+        )}
+        {msg && <p role="status">{msg}</p>}
+      </Space>
     </Card>
   );
 }
@@ -84,18 +83,18 @@ export function SourcesPage() {
     <>
       <PageHeader title={t("pages.sources.title")} />
       <DropboxSync canEdit={canEdit} isAdmin={me?.role === "admin"} />
-      <h2 className="mb-2 font-medium">{t("pages.sources.local")}</h2>
+      <Typography.Title level={4}>{t("pages.sources.local")}</Typography.Title>
       {q.isLoading && <Loading />}
       {q.isError && <ErrorState message={(q.error as Error).message} onRetry={() => void q.refetch()} />}
       {q.data && q.data.length === 0 && <EmptyState title={t("pages.sources.empty")} hint={t("pages.sources.emptyHint")} />}
       {q.data && q.data.length > 0 && (
-        <ul className="grid gap-3 md:grid-cols-2">
+        <Row gutter={[16, 16]}>
           {q.data.map((s) => (
-            <li key={s.id}>
+            <Col key={s.id} xs={24} md={12}>
               <SourceCard s={s} canEdit={canEdit} />
-            </li>
+            </Col>
           ))}
-        </ul>
+        </Row>
       )}
     </>
   );

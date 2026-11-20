@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Alert, Button, Card, Checkbox, Col, Collapse, Form, Input, Popconfirm, Progress, Row, Space, Statistic, Steps, Switch, Tag, Typography } from "antd";
+import { StopOutlined } from "@ant-design/icons";
 import { api, json } from "../net/client";
-import { Button, Card, cx } from "./ui";
 
 interface Params { source_link?: string; dest_link?: string; dry_run?: boolean; force?: boolean; only?: string; rollback?: string }
 interface Run { id: string; status: string; progress: number; message: string; created_at: number; params: Params }
@@ -34,14 +35,11 @@ function dur(sec: number) {
   return h ? `${h}h ${m}m` : m ? `${m}m ${r}s` : `${r}s`;
 }
 
-function Bar({ value, label }: { value: number; label: string }) {
-  return (
-    <div className="h-2 w-full overflow-hidden rounded bg-muted" role="progressbar" aria-label={label}
-      aria-valuenow={Math.round(value)} aria-valuemin={0} aria-valuemax={100}>
-      <div className="fx-stripes h-full rounded bg-primary transition-[width] duration-700" style={{ width: `${Math.max(2, value)}%` }} />
-    </div>
-  );
-}
+// The stages of one file, in order; the step shown as current follows the sync's own stage names.
+const STEPS = ["listing", "downloading", "ocr", "verifying", "uploading", "publishing"] as const;
+const STEP_OF: Record<string, number> = {
+  starting: 0, listing: 0, preparing: 1, downloading: 1, ocr: 2, verifying: 3, uploading: 4, next: 4, publishing: 5, finished: 5,
+};
 
 function LivePanel({ run, canEdit }: { run: RunDetail; canEdit: boolean }) {
   const { t } = useTranslation();
@@ -52,47 +50,82 @@ function LivePanel({ run, canEdit }: { run: RunDetail; canEdit: boolean }) {
     mutationFn: () => api(`/dropbox/sync/${run.id}/cancel`, { method: "POST" }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["dropbox-runs"] }),
   });
-  const started = run.created_at;   // one clock for the whole run, so the elapsed time never jumps back
+  const started = run.created_at; // one clock for the whole run, so the elapsed time never jumps back
   const quiet = live ? now - live.updated : 0;
+  const stage = live?.stage ?? "starting";
+  const c = live?.counts ?? {};
   return (
-    <div className="flex flex-col gap-2 rounded-md border border-border p-3" aria-live="polite">
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-hidden="true" />
-        <span className="font-medium">{t(`pages.sources.dropbox.stage.${live?.stage ?? "starting"}`, { defaultValue: live?.stage ?? "" })}</span>
-        {live && live.total > 0 && live.index > 0 && (
-          <span className="text-fg-muted">{t("pages.sources.dropbox.fileOf", { index: live.index, total: live.total })}</span>
+    <Card
+      size="small"
+      aria-live="polite"
+      title={
+        <Space>
+          <span aria-hidden="true" className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          <span>{t(`pages.sources.dropbox.stage.${stage}`, { defaultValue: stage })}</span>
+          {live && live.total > 0 && live.index > 0 && (
+            <Typography.Text type="secondary">{t("pages.sources.dropbox.fileOf", { index: live.index, total: live.total })}</Typography.Text>
+          )}
+        </Space>
+      }
+      extra={<Typography.Text type="secondary">{t("pages.sources.dropbox.elapsed", { time: dur(now - started) })}</Typography.Text>}
+    >
+      <Space orientation="vertical" size={12} style={{ width: "100%" }}>
+        <Steps size="small" current={STEP_OF[stage] ?? 0} responsive items={STEPS.map((k) => ({ title: t(`pages.sources.dropbox.step.${k}`) }))} />
+        {live?.file && (
+          <Typography.Text ellipsis={{ tooltip: live.file }} code style={{ maxWidth: "100%" }}>
+            {live.file}
+          </Typography.Text>
         )}
-        <span className="ml-auto text-fg-muted">{t("pages.sources.dropbox.elapsed", { time: dur(now - started) })}</span>
-      </div>
-      {live?.file && <p className="truncate text-sm" title={live.file}>{live.file}</p>}
-      <Bar value={run.progress} label={t("pages.sources.dropbox.progress")} />
-      {live?.stage === "ocr" && live.pages > 0 && (
-        <div className="grid gap-1">
-          <span className="text-xs text-fg-muted">{t("pages.sources.dropbox.ocrPage", { page: live.page, pages: live.pages })}</span>
-          <Bar value={(100 * live.page) / live.pages} label={t("pages.sources.dropbox.ocrProgress")} />
+        <div>
+          <Typography.Text type="secondary">{t("pages.sources.dropbox.progress")}</Typography.Text>
+          <Progress percent={Math.round(run.progress)} status="active" aria-label={t("pages.sources.dropbox.progress")} />
         </div>
-      )}
-      {live?.scan && <p className="text-xs text-warn">{t("pages.sources.dropbox.scanHint")}</p>}
-      <div className="flex flex-wrap items-center gap-3 text-xs text-fg-muted">
-        <span>{t("pages.sources.dropbox.lastActivity", { time: dur(quiet) })}</span>
-        {live && (live.counts.PASS || live.counts.REVIEW || live.counts.FAIL || live.skipped) ? (
-          <span>{t("pages.sources.dropbox.soFar", { pass: live.counts.PASS ?? 0, review: live.counts.REVIEW ?? 0, fail: live.counts.FAIL ?? 0, skipped: live.skipped })}</span>
-        ) : null}
-        {canEdit && (
-          <Button variant="ghost" className="ml-auto" disabled={stop.isPending}
-            onClick={() => window.confirm(t("pages.sources.dropbox.cancelConfirm")) && stop.mutate()}>
-            {t("pages.sources.dropbox.cancel")}
-          </Button>
+        {stage === "ocr" && live && live.pages > 0 && (
+          <div>
+            <Typography.Text type="secondary">{t("pages.sources.dropbox.ocrPage", { page: live.page, pages: live.pages })}</Typography.Text>
+            <Progress
+              percent={Math.round((100 * live.page) / live.pages)}
+              status="active"
+              strokeColor="#13c2c2"
+              aria-label={t("pages.sources.dropbox.ocrProgress")}
+            />
+          </div>
         )}
-      </div>
-      {quiet > 120 && <p className="text-xs text-fg-muted">{t("pages.sources.dropbox.quiet")}</p>}
-      {stop.isError && <p role="alert" className="text-xs text-danger">{(stop.error as Error).message}</p>}
-    </div>
+        {live?.scan && <Alert type="info" showIcon title={t("pages.sources.dropbox.scanHint")} />}
+        <Row gutter={[16, 8]}>
+          <Col xs={12} sm={6}>
+            <Statistic title={t("pages.sources.dropbox.pass")} value={c.PASS ?? 0} styles={{ content: { color: "var(--ant-color-success)" } }} />
+          </Col>
+          <Col xs={12} sm={6}>
+            <Statistic title={t("pages.sources.dropbox.review")} value={c.REVIEW ?? 0} styles={{ content: { color: "var(--ant-color-warning)" } }} />
+          </Col>
+          <Col xs={12} sm={6}>
+            <Statistic title={t("pages.sources.dropbox.fail")} value={c.FAIL ?? 0} styles={{ content: { color: "var(--ant-color-error)" } }} />
+          </Col>
+          <Col xs={12} sm={6}>
+            <Statistic title={t("pages.sources.dropbox.unchanged")} value={live?.skipped ?? 0} />
+          </Col>
+        </Row>
+        <Space wrap style={{ width: "100%", justifyContent: "space-between" }}>
+          <Typography.Text type="secondary">{t("pages.sources.dropbox.lastActivity", { time: dur(quiet) })}</Typography.Text>
+          {canEdit && (
+            <Popconfirm title={t("pages.sources.dropbox.cancelConfirm")} onConfirm={() => stop.mutate()}>
+              <Button danger icon={<StopOutlined />} disabled={stop.isPending}>
+                {t("pages.sources.dropbox.cancel")}
+              </Button>
+            </Popconfirm>
+          )}
+        </Space>
+        {quiet > 120 && <Alert type="warning" title={t("pages.sources.dropbox.quiet")} />}
+        {stop.isError && <Alert type="error" showIcon title={(stop.error as Error).message} />}
+      </Space>
+    </Card>
   );
 }
 
 const KEY = "fidelity.dropboxLinks";
 const active = (s: string) => s === "queued" || s === "running";
+const TAG: Record<string, string> = { done: "success", error: "error", running: "processing", queued: "default" };
 
 function loadLinks(): { src: string; dest: string } {
   try {
@@ -106,30 +139,31 @@ function Counts({ s }: { s: Summary }) {
   const { t } = useTranslation();
   const docs = s.report?.documents ?? [];
   const n = (v: string) => docs.filter((d) => d.verdict === v).length;
-  const items: Array<[string, number | string, string?]> = [
-    [t("pages.sources.dropbox.pass"), n("PASS") + n("METADATA"), "text-ok"],
-    [t("pages.sources.dropbox.review"), n("REVIEW"), "text-warn"],
-    [t("pages.sources.dropbox.fail"), n("FAIL"), "text-danger"],
+  const items: Array<[string, number, string?]> = [
+    [t("pages.sources.dropbox.pass"), n("PASS") + n("METADATA"), "var(--ant-color-success)"],
+    [t("pages.sources.dropbox.review"), n("REVIEW"), "var(--ant-color-warning)"],
+    [t("pages.sources.dropbox.fail"), n("FAIL"), "var(--ant-color-error)"],
     [t("pages.sources.dropbox.unchanged"), s.report?.unchanged?.length ?? 0],
     [t("pages.sources.dropbox.duplicates"), s.report?.duplicates?.length ?? 0],
     [t("pages.sources.dropbox.unsupported"), (s.report?.unsupported?.length ?? 0) + (s.report?.triaged_out?.length ?? 0)],
   ];
   return (
-    <div>
-      <dl className="grid grid-cols-3 gap-2 text-sm sm:grid-cols-6">
+    <Space orientation="vertical" size={8} style={{ width: "100%" }}>
+      <Row gutter={[16, 8]}>
         {items.map(([k, v, c]) => (
-          <div key={k} className="rounded-md bg-muted p-2">
-            <dt className="text-xs text-fg-muted">{k}</dt>
-            <dd className={cx("text-lg font-semibold", c)}>{v}</dd>
-          </div>
+          <Col key={k} xs={8} sm={4}>
+            <Statistic title={k} value={v} styles={{ content: c ? { color: c } : undefined }} />
+          </Col>
         ))}
-      </dl>
+      </Row>
       {s.report && (
-        <p className={cx("mt-2 text-sm", s.report.source_unchanged ? "text-ok" : "text-danger")}>
-          {s.report.source_unchanged ? t("pages.sources.dropbox.sourceOk") : t("pages.sources.dropbox.sourceChanged")}
-        </p>
+        <Alert
+          type={s.report.source_unchanged ? "success" : "error"}
+          showIcon
+          title={s.report.source_unchanged ? t("pages.sources.dropbox.sourceOk") : t("pages.sources.dropbox.sourceChanged")}
+        />
       )}
-    </div>
+    </Space>
   );
 }
 
@@ -148,33 +182,41 @@ function RunView({ id, isAdmin, canEdit }: { id: string; isAdmin: boolean; canEd
   });
   if (!q.data) return null;
   const r = q.data;
+  const published = r.summary?.published_run;
   return (
-    <div className="mt-3 flex flex-col gap-3 border-t border-border pt-3">
+    <Space orientation="vertical" size={12} style={{ width: "100%" }}>
       {active(r.status) && <LivePanel run={r} canEdit={canEdit} />}
+      {r.status === "error" && r.message && <Alert type="error" showIcon title={r.message} />}
       {r.summary && <Counts s={r.summary} />}
-      {r.summary?.published_run && isAdmin && (
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span>{t("pages.sources.dropbox.published", { run: r.summary.published_run })}</span>
-          <Button
-            variant="danger"
-            disabled={undo.isPending}
-            onClick={() => {
-              if (window.confirm(t("pages.sources.dropbox.rollbackConfirm", { run: r.summary?.published_run }))) undo.mutate(r.summary!.published_run!);
-            }}
-          >
-            {t("pages.sources.dropbox.rollback")}
-          </Button>
-          {undo.isError && <span className="text-danger">{(undo.error as Error).message}</span>}
+      {published && isAdmin && (
+        <Space wrap>
+          <span>{t("pages.sources.dropbox.published", { run: published })}</span>
+          <Popconfirm title={t("pages.sources.dropbox.rollbackConfirm", { run: published })} onConfirm={() => undo.mutate(published)}>
+            <Button danger disabled={undo.isPending}>
+              {t("pages.sources.dropbox.rollback")}
+            </Button>
+          </Popconfirm>
+          {undo.isError && <Typography.Text type="danger">{(undo.error as Error).message}</Typography.Text>}
           {undo.isSuccess && <span role="status">{t("pages.sources.dropbox.rollbackStarted")}</span>}
-        </div>
+        </Space>
       )}
-      <details open={active(r.status)}>
-        <summary className="cursor-pointer text-sm text-fg-muted">{t("pages.sources.dropbox.log")}</summary>
-        <pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap break-all rounded-md bg-muted p-2 text-xs" tabIndex={0}>
-          {r.log.join("\n") || "…"}
-        </pre>
-      </details>
-    </div>
+      <Collapse
+        size="small"
+        ghost
+        defaultActiveKey={active(r.status) ? ["log"] : []}
+        items={[
+          {
+            key: "log",
+            label: t("pages.sources.dropbox.log"),
+            children: (
+              <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-all text-xs" tabIndex={0}>
+                {r.log.join("\n") || "…"}
+              </pre>
+            ),
+          },
+        ]}
+      />
+    </Space>
   );
 }
 
@@ -212,104 +254,108 @@ export function DropboxSync({ canEdit, isAdmin }: { canEdit: boolean; isAdmin: b
     }
   }, [src, dest]);
   const isGoogle = (v: string) => /^(https:\/\/drive\.google\.com\/|gdrive:)/.test(v.trim());
-  const has = (link: string, role: "reader" | "writer") =>
-    isGoogle(link) ? !!status.data?.google?.[role] : !!status.data?.[role];
+  const has = (link: string, role: "reader" | "writer") => (isGoogle(link) ? !!status.data?.google?.[role] : !!status.data?.[role]);
   const ready = has(src || "/", "reader") && has(dest || "/", "writer");
   const missing = [
     !has(src || "/", "reader") && (isGoogle(src) ? "Google Drive reader" : "Dropbox reader"),
     !has(dest || "/", "writer") && (isGoogle(dest) ? "Google Drive writer" : "Dropbox writer"),
-  ].filter(Boolean).join(", ");
+  ]
+    .filter(Boolean)
+    .join(", ");
   const list = Array.isArray(runs.data?.runs) ? runs.data!.runs : [];
   const busy = list.some((r) => active(r.status));
   const runningId = list.find((r) => active(r.status))?.id;
   useEffect(() => {
     if (runningId) setOpen((o) => o ?? runningId);
   }, [runningId]);
+  const placeholder = "/Folder · https://www.dropbox.com/… · https://drive.google.com/drive/folders/…";
+  const kind = (r: Run) =>
+    r.params?.rollback ? t("pages.sources.dropbox.kindRollback") : r.params?.dry_run ? t("pages.sources.dropbox.kindDry") : t("pages.sources.dropbox.kindPublish");
 
   return (
-    <Card className="mb-4 flex flex-col gap-3">
-      <div>
-        <h2 className="font-medium">{t("pages.sources.dropbox.title")}</h2>
-        <p className="text-sm text-fg-muted">{t("pages.sources.dropbox.intro")}</p>
-      </div>
-      {status.data && typeof status.data.reader === "boolean" && !ready && (
-        <p role="alert" className="rounded-md border border-warn p-2 text-sm">
-          {t("pages.sources.dropbox.notAuthorised", { roles: missing })}
-        </p>
-      )}
-      {canEdit && (
-        <form
-          className="grid gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            start.mutate();
-          }}
-        >
-          <label className="grid gap-1 text-sm">
-            {t("pages.sources.dropbox.source")}
-            <input className="rounded-md border border-border bg-surface px-2 py-2" value={src} onChange={(e) => setSrc(e.target.value)}
-              placeholder="/Folder · https://www.dropbox.com/… · https://drive.google.com/drive/folders/…" required />
-          </label>
-          <label className="grid gap-1 text-sm">
-            {t("pages.sources.dropbox.dest")}
-            <input className="rounded-md border border-border bg-surface px-2 py-2" value={dest} onChange={(e) => setDest(e.target.value)}
-              placeholder="/Folder · https://www.dropbox.com/… · https://drive.google.com/drive/folders/…" required />
-          </label>
-          <label className="grid gap-1 text-sm">
-            {t("pages.sources.dropbox.only")}
-            <input className="rounded-md border border-border bg-surface px-2 py-2" value={only} onChange={(e) => setOnly(e.target.value)} />
-          </label>
-          <div className="flex flex-wrap gap-4 text-sm">
-            <label className="flex items-center gap-2">
-              <input type="checkbox" checked={dry} onChange={(e) => setDry(e.target.checked)} />
-              {t("pages.sources.dropbox.dryRun")}
-            </label>
-            <label className="flex items-center gap-2">
-              <input type="checkbox" checked={force} onChange={(e) => setForce(e.target.checked)} />
-              {t("pages.sources.dropbox.force")}
-            </label>
+    <Card style={{ marginBottom: 16 }} title={t("pages.sources.dropbox.title")}>
+      <Space orientation="vertical" size={16} style={{ width: "100%" }}>
+        <Typography.Text type="secondary">{t("pages.sources.dropbox.intro")}</Typography.Text>
+        {status.data && typeof status.data.reader === "boolean" && !ready && (
+          <Alert type="warning" showIcon title={t("pages.sources.dropbox.notAuthorised", { roles: missing })} />
+        )}
+        {canEdit && (
+          <Form layout="vertical" onFinish={() => start.mutate()} requiredMark={false}>
+            <Row gutter={16}>
+              <Col xs={24} lg={12}>
+                <Form.Item label={t("pages.sources.dropbox.source")} htmlFor="sync-src">
+                  <Input id="sync-src" value={src} onChange={(e) => setSrc(e.target.value)} placeholder={placeholder} required />
+                </Form.Item>
+              </Col>
+              <Col xs={24} lg={12}>
+                <Form.Item label={t("pages.sources.dropbox.dest")} htmlFor="sync-dest">
+                  <Input id="sync-dest" value={dest} onChange={(e) => setDest(e.target.value)} placeholder={placeholder} required />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Form.Item label={t("pages.sources.dropbox.only")} htmlFor="sync-only">
+              <Input id="sync-only" value={only} onChange={(e) => setOnly(e.target.value)} />
+            </Form.Item>
+            <Space size={24} wrap style={{ marginBottom: 16 }}>
+              <Space>
+                <Switch id="sync-dry" checked={dry} onChange={setDry} />
+                <label htmlFor="sync-dry">{t("pages.sources.dropbox.dryRun")}</label>
+              </Space>
+              <Checkbox checked={force} onChange={(e) => setForce(e.target.checked)}>
+                {t("pages.sources.dropbox.force")}
+              </Checkbox>
+            </Space>
+            <Space wrap>
+              <Button type="primary" htmlType="submit" loading={start.isPending} disabled={busy || !ready}>
+                {dry ? t("pages.sources.dropbox.startDry") : t("pages.sources.dropbox.startPublish")}
+              </Button>
+              {busy && <Typography.Text type="secondary">{t("pages.sources.dropbox.busy")}</Typography.Text>}
+              {start.isError && (
+                <Typography.Text type="danger" role="alert">
+                  {(start.error as Error).message}
+                </Typography.Text>
+              )}
+            </Space>
+            <div style={{ marginTop: 8 }}>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                {t("pages.sources.dropbox.safety")}
+              </Typography.Text>
+            </div>
+          </Form>
+        )}
+        {list.length > 0 && (
+          <div>
+            <Typography.Title level={5}>{t("pages.sources.dropbox.recent")}</Typography.Title>
+            <Collapse
+              accordion
+              destroyOnHidden
+              activeKey={open ? [open] : []}
+              onChange={(k) => setOpen((Array.isArray(k) ? k[0] : k) ?? null)}
+              items={list.slice(0, 10).map((r) => ({
+                key: r.id,
+                label: (
+                  <Space wrap size={8} style={{ width: "100%" }}>
+                    <Tag color={TAG[r.status] ?? "default"} style={{ marginInlineEnd: 0 }}>
+                      {t(`pages.sources.dropbox.status.${r.status}`, { defaultValue: r.status })}
+                    </Tag>
+                    <span>{kind(r)}</span>
+                    <Typography.Text type="secondary">{new Date(r.created_at * 1000).toLocaleString()}</Typography.Text>
+                    {active(r.status) && (
+                      <Progress percent={Math.round(r.progress)} size="small" status="active" style={{ width: 120, margin: 0 }} aria-label={t("pages.sources.dropbox.progress")} />
+                    )}
+                    {r.status === "error" && (
+                      <Typography.Text type="secondary" ellipsis style={{ maxWidth: 480 }}>
+                        {r.message}
+                      </Typography.Text>
+                    )}
+                  </Space>
+                ),
+                children: <RunView id={r.id} isAdmin={isAdmin} canEdit={canEdit} />,
+              }))}
+            />
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button type="submit" disabled={start.isPending || busy || !ready}>
-              {dry ? t("pages.sources.dropbox.startDry") : t("pages.sources.dropbox.startPublish")}
-            </Button>
-            {busy && <span className="text-sm text-fg-muted">{t("pages.sources.dropbox.busy")}</span>}
-            {start.isError && <span role="alert" className="text-sm text-danger">{(start.error as Error).message}</span>}
-          </div>
-          <p className="text-xs text-fg-muted">{t("pages.sources.dropbox.safety")}</p>
-        </form>
-      )}
-      {list.length > 0 && (
-        <div>
-          <h3 className="mb-2 text-sm font-medium">{t("pages.sources.dropbox.recent")}</h3>
-          <ul className="flex flex-col gap-2">
-            {list.slice(0, 10).map((r) => (
-              <li key={r.id} className="rounded-md border border-border p-2">
-                <button type="button" className="flex w-full flex-wrap items-center gap-2 text-left text-sm"
-                  aria-expanded={open === r.id} onClick={() => setOpen(open === r.id ? null : r.id)}>
-                  <span className={cx("rounded px-2 py-0.5 text-xs font-medium",
-                    r.status === "done" ? "bg-muted text-ok" : r.status === "error" ? "bg-muted text-danger" : "bg-muted text-fg")}>
-                    {t(`pages.sources.dropbox.status.${r.status}`, { defaultValue: r.status })}
-                  </span>
-                  <span>{r.params?.rollback ? t("pages.sources.dropbox.kindRollback") : r.params?.dry_run ? t("pages.sources.dropbox.kindDry") : t("pages.sources.dropbox.kindPublish")}</span>
-                  <span className="text-fg-muted">{new Date(r.created_at * 1000).toLocaleString()}</span>
-                  {active(r.status) && (
-                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-hidden="true" />
-                  )}
-                  {active(r.status) && (
-                    <span className="h-2 w-24 overflow-hidden rounded bg-muted" role="progressbar" aria-valuenow={Math.round(r.progress)} aria-valuemin={0} aria-valuemax={100}
-                      aria-label={t("pages.sources.dropbox.progress")}>
-                      <span className="block h-full bg-primary" style={{ width: `${r.progress}%` }} />
-                    </span>
-                  )}
-                  {r.status !== "done" && <span className="min-w-0 flex-1 truncate text-fg-muted">{r.message}</span>}
-                </button>
-                {open === r.id && <RunView id={r.id} isAdmin={isAdmin} canEdit={canEdit} />}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+        )}
+      </Space>
     </Card>
   );
 }
