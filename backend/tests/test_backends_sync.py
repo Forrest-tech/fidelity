@@ -365,3 +365,36 @@ def test_unchanged_files_are_reported_as_unchanged(world, tmp_path):
     ev = str(tmp_path / "e2.jsonl")
     assert run("--events", ev) == 0
     assert {e["rel"] for e in _events(ev) if e["type"] == "unchanged"} == {"/Guide.md", "/Note.md"}
+
+
+def test_a_room_folder_remembers_results_of_any_quality_so_a_stopped_run_carries_on(world, monkeypatch, tmp_path):
+    import requests
+    src, store, run = world
+    monkeypatch.setattr(SY, "_BACKOFF", (0, 0, 0))
+    room = str(tmp_path / "room")
+    real = src.download
+
+    def broken(rel, entry, lp):
+        if rel == "/Guide.md":
+            raise requests.exceptions.ConnectionError("connection reset")
+        real(rel, entry, lp)
+    src.download = broken
+    ev1 = str(tmp_path / "e1.jsonl")
+    assert run("--dry-run", "--room-dir", room, "--events", ev1) == 0
+    assert {e["rel"] for e in _events(ev1) if e["type"] == "file" and e["outcome"] == "result"} == {"/Note.md"}
+    src.download = real                                    # the connection is back
+    ev2 = str(tmp_path / "e2.jsonl")
+    assert run("--dry-run", "--room-dir", room, "--events", ev2) == 0
+    evs = _events(ev2)
+    assert {e["rel"] for e in evs if e["type"] == "unchanged"} == {"/Note.md"}      # done before: not redone
+    assert {e["rel"] for e in evs if e["type"] == "file" and e["outcome"] == "result"} == {"/Guide.md"}
+    assert store.files == {}                               # distill-only: nothing was published
+
+
+def test_force_redoes_everything_in_a_room(world, tmp_path):
+    _, _, run = world
+    room = str(tmp_path / "room")
+    assert run("--dry-run", "--room-dir", room) == 0
+    ev = str(tmp_path / "e.jsonl")
+    assert run("--dry-run", "--room-dir", room, "--force", "--events", ev) == 0
+    assert {e["rel"] for e in _events(ev) if e["type"] == "file"} == {"/Guide.md", "/Note.md"}

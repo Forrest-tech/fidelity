@@ -8,7 +8,8 @@ import subprocess
 import time
 import sys
 
-from .. import config
+from .. import config, db
+from .queue import Interrupted
 
 BACKEND = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 LOG_DIR = os.path.join(config.DATA_DIR, "work", "sync-logs")
@@ -31,6 +32,14 @@ def events_path(jid):
     return os.path.join(LOG_DIR, f"{jid}.events.jsonl")
 
 
+def exit_path(jid):
+    return os.path.join(LOG_DIR, f"{jid}.exit")
+
+
+def room_dir(room_id):
+    return os.path.join(config.DATA_DIR, "work", "rooms", room_id)
+
+
 def command(p: dict, events: str | None = None) -> list:
     """The exact command line this job runs (also shown to the user)."""
     cmd = [sys.executable, "-m", "app.distill.sync", "--source-link", p["source_link"]]
@@ -38,6 +47,8 @@ def command(p: dict, events: str | None = None) -> list:
         cmd += ["--dest-link", p["dest_link"]]
     if events:
         cmd += ["--events", events]
+    if p.get("room_id"):
+        cmd += ["--room-dir", room_dir(p["room_id"])]
     if p.get("rollback"):
         return cmd + ["--rollback", p["rollback"]]
     if p.get("dry_run"):
@@ -158,9 +169,54 @@ class Live:
             os.replace(tmp, live_path(self.jid))
 
 
-# ------------------------------------------------------------------ cancelling
+# ------------------------------------------------------------------ running, supervising, cancelling
+# The sync runs as its own process, detached from the web server: it writes its log to a file and its exit code to
+# another, so restarting the web server does not stop a run that may take hours. The server notes the process id and
+# a heartbeat in the job row; after a restart it takes a still-running process back (adopt) or, when the process is
+# gone, marks the run "interrupted" so the person can simply start it again and it carries on.
 _procs: dict = {}
 _cancelled: set = set()
+
+
+def pid_alive(pid) -> bool:
+    if not pid:
+        return False
+    try:
+        if os.name == "nt":
+            import ctypes
+            k = ctypes.windll.kernel32
+            h = k.OpenProcess(0x1000, False, int(pid))          # PROCESS_QUERY_LIMITED_INFORMATION
+            if not h:
+                return False
+            code = ctypes.c_ulong()
+            ok = k.GetExitCodeProcess(h, ctypes.byref(code))
+            k.CloseHandle(h)
+            return bool(ok) and code.value == 259               # STILL_ACTIVE
+        os.kill(int(pid), 0)
+        return True
+    except (OSError, ValueError):
+        return False
+
+
+def _read_exit(jid):
+    try:
+        with open(exit_path(jid), encoding="utf-8") as f:
+            return int(f.read().strip())
+    except (OSError, ValueError):
+        return None
+
+
+class _Adopted:
+    """A run started by an earlier web-server process that is still going (or has just ended)."""
+
+    def __init__(self, pid, jid):
+        self.pid, self.jid = pid, jid
+
+    def poll(self):
+        if pid_alive(self.pid):
+            return None
+        code = _read_exit(self.jid)
+        return code if code is not None else -1                 # -1: it ended without saying how
 
 
 def _kill_tree(proc):
@@ -184,49 +240,96 @@ def cancel(jid) -> bool:
     return True
 
 
-def handle_sync(job, report):
-    p = json.loads(job["rel"])
-    os.makedirs(LOG_DIR, exist_ok=True)
-    # backslashreplace: PyMuPDF prints warnings that can hold stray surrogate characters from a
-    # damaged PDF; with strict UTF-8 that print raised inside MuPDF and failed the whole file.
-    env = dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8:backslashreplace")
-    report(1, "starting")
-    lines = []
-    live = Live(job["id"])
-    live.write(force=True)
-    group = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt" else {"start_new_session": True}
-    reader = None
-    if p.get("room_id"):                          # a room's run: keep one row per file while it goes
-        from . import rooms
-        reader = rooms.EventReader(p["room_id"], job["id"], events_path(job["id"]))
-    with open(log_path(job["id"]), "w", encoding="utf-8") as log:
-        proc = subprocess.Popen(command(p, events_path(job["id"])) if reader else command(p), cwd=BACKEND, env=env, stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace", **group)
-        _procs[job["id"]] = proc
-        last_poll = 0.0
+def _spawn(cmd, env, log_fh):
+    kw = dict(cwd=BACKEND, env=env, stdin=subprocess.DEVNULL, stdout=log_fh, stderr=subprocess.STDOUT)
+    if os.name == "nt":
+        flags = subprocess.CREATE_NEW_PROCESS_GROUP | getattr(subprocess, "DETACHED_PROCESS", 0x8)
+        try:                                                   # also leave a job object that would end it with the server
+            return subprocess.Popen(cmd, creationflags=flags | 0x01000000, **kw)     # CREATE_BREAKAWAY_FROM_JOB
+        except OSError:
+            return subprocess.Popen(cmd, creationflags=flags, **kw)
+    return subprocess.Popen(cmd, start_new_session=True, **kw)
+
+
+def _db_note(sql, args):
+    """Heartbeat and process id are bookkeeping: failing to write them must never stop a run."""
+    def _do():
+        con = db.trust_rw()
         try:
-            for line in proc.stdout:
-                log.write(line)
-                log.flush()
-                lines.append(line)
-                live.feed(line)
-                live.write()
-                if reader and time.time() - last_poll >= 1.0:
-                    reader.poll()
-                    last_poll = time.time()
-                if line.strip():
-                    report(live.percent(), line.strip()[:160])
-            code = proc.wait()
+            con.execute(sql, args)
+            con.commit()
         finally:
-            _procs.pop(job["id"], None)
-            if reader:
-                reader.poll()                       # the last events, also when the run ended early
+            con.close()
+    try:
+        db.trust_write(_do, retries=2)
+    except Exception:                                          # noqa: BLE001
+        pass
+
+
+def _supervise(job, proc, p, report):
+    """Follow the run until its process ends: feed the log to the live status, keep the room's file rows up to
+    date from the event file, write a heartbeat. Returns (exit code, log text)."""
+    jid = job["id"]
+    reader = None
+    if p.get("room_id"):
+        from . import rooms
+        reader = rooms.EventReader(p["room_id"], jid, events_path(jid))
+    live = Live(jid)
+    live.write(force=True)
+    lines, pos, last_poll, last_beat = [], 0, 0.0, 0.0
+
+    def feed(final=False):
+        nonlocal pos
+        try:
+            with open(log_path(jid), "rb") as f:
+                f.seek(pos)
+                data = f.read()
+        except OSError:
+            return
+        end = len(data) if final else data.rfind(b"\n") + 1
+        if end <= 0:
+            return
+        pos += end
+        for line in data[:end].decode("utf-8", "replace").splitlines(keepends=True):
+            lines.append(line)
+            live.feed(line)
+            live.write()
+            if line.strip():
+                report(live.percent(), line.strip()[:160])
+
+    try:
+        while True:
+            feed()
+            now = time.time()
+            if reader and now - last_poll >= 1.0:
+                reader.poll()
+                last_poll = now
+            if now - last_beat >= 5.0:
+                _db_note("UPDATE job SET heartbeat_at=? WHERE id=?", (now, jid))
+                last_beat = now
+            code = proc.poll()
+            if code is not None:
+                break
+            time.sleep(0.4)
+        feed(final=True)
+    finally:
+        _procs.pop(jid, None)
+        if reader:
+            reader.poll()                                      # the last events, also when the run ended early
     live.state["stage"] = "finished"
     live.write(force=True)
-    if job["id"] in _cancelled:
-        _cancelled.discard(job["id"])
+    return code, "".join(lines)
+
+
+def _finish(job, p, code, text, report):
+    """Turn the end of a run into the job's result (or its error)."""
+    jid = job["id"]
+    if jid in _cancelled:
+        _cancelled.discard(jid)
         raise RuntimeError("cancelled by the user")
-    text = "".join(lines)
+    if code == -1 and _read_exit(jid) is None and not text.rstrip().endswith("}"):
+        raise Interrupted("the run was stopped before it finished (the server or machine restarted); "
+                          "start it again and it carries on with the files not done yet")
     summary = {"params": {k: v for k, v in p.items()}, "exit_code": code}
     start = text.rfind("\n{")
     if start >= 0:
@@ -236,7 +339,7 @@ def handle_sync(job, report):
             pass
     if m := _RUN.search(text):
         summary["published_run"] = m.group(1)
-    with open(summary_path(job["id"]), "w", encoding="utf-8") as f:
+    with open(summary_path(jid), "w", encoding="utf-8") as f:
         json.dump(summary, f, ensure_ascii=False, indent=1)
     if code == 2:
         raise RuntimeError("source folder changed during the run — stopped (see log)")
@@ -244,3 +347,54 @@ def handle_sync(job, report):
         raise RuntimeError(failure_message(text, code))
     report(99, "rolled back" if p.get("rollback") else ("dry run complete" if p.get("dry_run") else "published"))
     return summary
+
+
+def handle_sync(job, report):
+    p = json.loads(job["rel"])
+    os.makedirs(LOG_DIR, exist_ok=True)
+    jid = job["id"]
+    # backslashreplace: PyMuPDF prints warnings that can hold stray surrogate characters from a
+    # damaged PDF; with strict UTF-8 that print raised inside MuPDF and failed the whole file.
+    env = dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8:backslashreplace", FIDELITY_EXIT_FILE=exit_path(jid))
+    report(1, "starting")
+    try:
+        os.remove(exit_path(jid))
+    except OSError:
+        pass
+    cmd = command(p, events_path(jid)) if p.get("room_id") else command(p)
+    with open(log_path(jid), "wb") as log:
+        proc = _spawn(cmd, env, log)
+    _procs[jid] = proc
+    _db_note("UPDATE job SET pid=?, heartbeat_at=? WHERE id=?", (proc.pid, time.time(), jid))
+    code, text = _supervise(job, proc, p, report)
+    return _finish(job, p, code, text, report)
+
+
+def adopt(job, update) -> bool:
+    """After a web-server restart: take back a run whose process is still going, or finish the job from what the
+    process left behind. False means nothing can be recovered (the caller marks the job interrupted)."""
+    jid, pid = job["id"], job.get("pid")
+    try:
+        p = json.loads(job.get("rel") or "{}")
+    except ValueError:
+        return False
+    if not p.get("source_link"):
+        return False
+    proc = _Adopted(pid, jid)
+    if not pid or (proc.poll() is not None and _read_exit(jid) is None):
+        return False
+
+    def run():
+        _procs[jid] = proc
+        report = lambda pr, m="": update(jid, progress=pr, message=m)       # noqa: E731
+        try:
+            code, text = _supervise(job, proc, p, report)
+            _finish(job, p, code, text, report)
+            update(jid, status="done", progress=100.0, message="完成")
+        except Interrupted as e:
+            update(jid, status="interrupted", message=str(e)[:500])
+        except Exception as e:                                              # noqa: BLE001
+            update(jid, status="error", message=str(e)[:500])
+    import threading
+    threading.Thread(target=run, daemon=True, name=f"adopt-{jid}").start()
+    return True

@@ -10,6 +10,11 @@ from . import capacity
 _MAX_WORKERS = 2  # 并发 worker（本地单用户，避免多开 PaddleOCR 抢内存）
 
 
+class Interrupted(RuntimeError):
+    """A run's process ended without finishing (killed, the machine restarted). Work already done is kept,
+    so the run can simply be started again and carries on."""
+
+
 class JobQueue:
     def __init__(self):
         self._handlers = {}
@@ -121,6 +126,8 @@ class JobQueue:
                 # handler(job_dict, report)  report(progress:0-100, message:str)
                 fn(job, lambda p, m="": self._update(job["id"], progress=p, message=m))
                 self._update(job["id"], status="done", progress=100.0, message="完成")
+            except Interrupted as e:
+                self._update(job["id"], status="interrupted", message=str(e)[:500])
             except Exception as e:
                 self._update(job["id"], status="error", message=str(e)[:500])
                 traceback.print_exc()

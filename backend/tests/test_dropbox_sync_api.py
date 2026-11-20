@@ -103,19 +103,32 @@ def test_status_never_returns_secrets(login, tmp_path, monkeypatch):
     assert (j["reader"], j["writer"]) == (True, False) and "SECRET" not in r.text
 
 
+def _fake_spawn(lines, code, seen=None):
+    """Stands in for starting the sync process: the "process" has already written `lines` to the log and ended with `code`."""
+    class P:
+        pid = 4242
+
+        def poll(self):
+            return code
+
+    def spawn(cmd, env, log):
+        if seen is not None:
+            seen.setdefault("cmd", cmd)
+        log.write("".join(lines).encode("utf-8"))
+        log.flush()
+        return P()
+    return spawn
+
+
 def test_job_runs_the_command_line_sync_and_keeps_log_and_summary(tmp_path, monkeypatch):
     monkeypatch.setattr(S, "LOG_DIR", str(tmp_path))
 
-    class P:
-        stdout = iter(["source /2025 (read-only)  ->  output /out\n", "files to check: 2\n", "\n", "[1] a.pdf\n",
-                       "  verification: PASS  files=1\n", "[2] b.pdf\n",
-                       "promoted 2 document(s); undo with: python -m app.distill.sync --rollback 20261119-101500\n",
-                       "{\n", ' "source": "/2025",\n', ' "documents": []\n', "}\n"])
-
-        def wait(self):
-            return 0
     seen = {}
-    monkeypatch.setattr(S.subprocess, "Popen", lambda cmd, **kw: seen.setdefault("cmd", cmd) and P())
+    monkeypatch.setattr(S, "_spawn", _fake_spawn(
+        ["source /2025 (read-only)  ->  output /out\n", "files to check: 2\n", "\n", "[1] a.pdf\n",
+         "  verification: PASS  files=1\n", "[2] b.pdf\n",
+         "promoted 2 document(s); undo with: python -m app.distill.sync --rollback 20261119-101500\n",
+         "{\n", ' "source": "/2025",\n', ' "documents": []\n', "}\n"], 0, seen))
     progress = []
     job = {"id": "j9", "rel": json.dumps({"source_link": SRC, "dest_link": DST, "dry_run": False})}
     out = S.handle_sync(job, lambda p, m="": progress.append((p, m)))
@@ -127,12 +140,7 @@ def test_job_runs_the_command_line_sync_and_keeps_log_and_summary(tmp_path, monk
 def test_job_reports_a_changed_source_as_an_error(tmp_path, monkeypatch):
     monkeypatch.setattr(S, "LOG_DIR", str(tmp_path))
 
-    class P:
-        stdout = iter(["SOURCE CHANGED during the run: a.pdf\n"])
-
-        def wait(self):
-            return 2
-    monkeypatch.setattr(S.subprocess, "Popen", lambda cmd, **kw: P())
+    monkeypatch.setattr(S, "_spawn", _fake_spawn(["SOURCE CHANGED during the run: a.pdf\n"], 2))
     with pytest.raises(RuntimeError, match="source folder changed"):
         S.handle_sync({"id": "j8", "rel": json.dumps({"source_link": SRC, "dest_link": DST})}, lambda *a: None)
 
@@ -140,12 +148,8 @@ def test_job_reports_a_changed_source_as_an_error(tmp_path, monkeypatch):
 def test_common_dropbox_errors_get_plain_messages(tmp_path, monkeypatch):
     monkeypatch.setattr(S, "LOG_DIR", str(tmp_path))
 
-    class P:
-        stdout = iter(["Traceback ...\n", "dropbox.exceptions.ApiError: ApiError('x', SharedLinkMetadataError('shared_link_not_found', None))\n"])
-
-        def wait(self):
-            return 1
-    monkeypatch.setattr(S.subprocess, "Popen", lambda cmd, **kw: P())
+    monkeypatch.setattr(S, "_spawn", _fake_spawn(
+        ["Traceback ...\n", "dropbox.exceptions.ApiError: ApiError('x', SharedLinkMetadataError('shared_link_not_found', None))\n"], 1))
     with pytest.raises(RuntimeError, match="Dropbox cannot find one of the shared links"):
         S.handle_sync({"id": "j7", "rel": json.dumps({"source_link": SRC, "dest_link": DST})}, lambda *a: None)
     assert S.explain("random failure") is None

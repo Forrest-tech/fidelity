@@ -102,6 +102,20 @@ def _check_space(work, size):
                          f"about {need / 1e9:.1f} GB needed for the next file — stopped before downloading")
 
 
+def _skip(a, ledger, rledger, rel, content_hash) -> bool:
+    """Is this file already done for this content and pipeline version?
+    With a room folder: a stored result of any quality counts; a file that was published (PASS) must also be in the
+    publishing ledger when this run publishes. Without one: the publishing ledger decides, as before."""
+    if a.force:
+        return False
+    if rledger is None:
+        return ledger.up_to_date(rel, content_hash, R.PIPELINE_VERSION)
+    e = rledger.docs.get(rel)
+    if not (e and e["content_hash"] == content_hash and e["pipeline"] == R.PIPELINE_VERSION):
+        return False
+    return a.dry_run or e["verdict"] not in ("PASS", "METADATA") or ledger.up_to_date(rel, content_hash, R.PIPELINE_VERSION)
+
+
 def _err(e) -> str:
     return f"{type(e).__name__}: {e}"[:300]
 
@@ -110,6 +124,8 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--source-link", required=True)
     ap.add_argument("--dest-link", default=None, help="output folder; may be left out with --dry-run (results stay local)")
+    ap.add_argument("--room-dir", default=None, help="a room's own folder: its results and its ledger of what was distilled "
+                                                      "persist there, so a stopped run can carry on")
     ap.add_argument("--events", default=None, help="write one JSON line per file event to this path (used by the web interface)")
     ap.add_argument("--work", default=os.path.join(D.DATA_DIR, "work"))
     ap.add_argument("--dry-run", action="store_true", help="distill and verify, upload nothing")
@@ -133,7 +149,11 @@ def main(argv=None):
           + (f"output {dst.provider}:{dest_root}" if dst else "no output folder (results stay on this machine)"), flush=True)
 
     stamp = _dt.datetime.now().strftime("%Y%m%d-%H%M%S")
-    out = os.path.join(a.work, "runs", stamp)
+    out = os.path.join(a.room_dir, "out") if a.room_dir else os.path.join(a.work, "runs", stamp)
+    rledger = None
+    if a.room_dir:
+        os.makedirs(a.room_dir, exist_ok=True)
+        rledger = Ledger(os.path.join(a.room_dir, "ledger.json"), src.label)
     cache = os.path.join(a.work, "cache")
     os.makedirs(cache, exist_ok=True)
     if a.rollback:
@@ -176,7 +196,7 @@ def main(argv=None):
             ev.emit("file", rel=rel, kind=kind_of(rel), outcome="skipped", reason="duplicate", detail=f"same content as {first}")
             continue
         seen_hash[f["content_hash"]] = rel
-        if not a.force and ledger.up_to_date(rel, f["content_hash"], R.PIPELINE_VERSION):
+        if _skip(a, ledger, rledger, rel, f["content_hash"]):
             print(f"unchanged since last run, skipped: {rel}", flush=True)
             report.setdefault("unchanged", []).append(rel)
             ev.emit("unchanged", rel=rel)
@@ -209,6 +229,8 @@ def main(argv=None):
             failed(e, "reading the file")
             continue
         results.append(r)
+        if rledger is not None:                     # a result of any quality is remembered, so a resumed run skips it
+            rledger.record(rel, f["content_hash"], R.PIPELINE_VERSION, r["verdict"])
         _c = SC.classify(r)
         ev.emit("file", rel=rel, kind=kind_of(rel), pages=r.get("pages"), scan=_c.get("basis") == "ocr_agreement", **_c)
         if r["verdict"] == "SKIP":                  # triaged out: listed with its class, never silently dropped
@@ -289,5 +311,30 @@ def main(argv=None):
     return 0 if not diffs else 2
 
 
+def _entry():
+    """Run main(); when the web interface supervises this process it names a file (FIDELITY_EXIT_FILE) where the
+    exit code is written, so a supervisor that was restarted meanwhile can still tell finished from killed."""
+    code = 1
+    try:
+        code = main() or 0
+    except SystemExit as e:
+        code = e.code if isinstance(e.code, int) else (0 if e.code is None else 1)
+        if isinstance(e.code, str):
+            print(e.code, flush=True)
+    except BaseException:                                  # noqa: BLE001 - the supervisor needs the exit code in every case
+        import traceback
+        traceback.print_exc()
+        code = 1
+    finally:
+        path = os.environ.get("FIDELITY_EXIT_FILE")
+        if path:
+            try:
+                with open(path, "w", encoding="utf-8") as f:
+                    f.write(str(code))
+            except OSError:
+                pass
+    return code
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(_entry())

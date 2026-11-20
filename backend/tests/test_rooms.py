@@ -307,3 +307,16 @@ def test_api_viewer_can_read_but_not_change(login):
     c = login("viewer")
     assert c.get("/api/v1/rooms").status_code == 200
     assert c.post("/api/v1/rooms", json={}).status_code == 403
+
+
+def test_an_interrupted_run_can_simply_be_started_again():
+    r = _room(source=SRC)
+    jid = R.submit_run(r["id"])
+    con = db.trust_rw()
+    con.execute("UPDATE job SET status='interrupted' WHERE id=?", (jid,))
+    con.commit()
+    con.close()
+    s = R.summary(R.get_room(r["id"]))
+    assert s["job"]["status"] == "interrupted"
+    assert R.archive_blockers(R.get_room(r["id"])) == ["nothing has been distilled yet"]      # interrupted is not "running"
+    assert R.submit_run(r["id"]) != jid
