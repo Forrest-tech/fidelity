@@ -200,7 +200,9 @@ test.describe("accessibility (axe-core)", () => {
     await page.goto("/login");
     await expect(page.getByRole("form", { name: "Sign in" })).toBeVisible();
     await scan(page);
-    await page.evaluate(() => (document.documentElement.dataset.theme = "dark"));
+    await page.evaluate(() => localStorage.setItem("fidelity.theme", "dark")); // the app's own setting, read on load
+    await page.reload();
+    await expect(page.getByRole("form", { name: "Sign in" })).toBeVisible();
     await scan(page);
   });
 

@@ -82,6 +82,7 @@ export function ThemeProvider({ children, force }: { children: ReactNode; force?
                   colorTextTertiary: "rgba(255,255,255,0.72)",
                   colorTextDescription: "rgba(255,255,255,0.72)",
                   colorError: "#ff7875",
+                  colorInfo: "#69b1ff", // "running" tags and info alerts
                 }
               : {
                   colorTextSecondary: "#595959",
@@ -97,6 +98,9 @@ export function ThemeProvider({ children, force }: { children: ReactNode; force?
                   colorWarning: "#ad6800",
                   colorWarningBg: "#fffbe6",
                   colorWarningBorder: "#ffe58f",
+                  colorInfo: "#0958d9",
+                  colorInfoBg: "#e6f4ff",
+                  colorInfoBorder: "#91caff",
                 }),
           },
           components: dark
