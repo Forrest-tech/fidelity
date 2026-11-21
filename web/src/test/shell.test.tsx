@@ -19,7 +19,7 @@ describe("auth guard", () => {
     renderApp("/");
     const nav = await screen.findByRole("navigation", { name: /main navigation/i });
     expect(nav).toHaveTextContent("Overview");
-    expect(nav).toHaveTextContent("Sources");
+    expect(nav).toHaveTextContent("Distill");
     expect(nav).not.toHaveTextContent("Users"); // admin only
     await userEvent.setup().click(screen.getByRole("button", { name: "Account" }));
     expect(await screen.findByRole("link", { name: "Settings" })).toBeInTheDocument();
@@ -84,7 +84,7 @@ describe("language and page states", () => {
     const user = userEvent.setup();
     await screen.findByRole("navigation", { name: /main navigation/i });
     await user.click(within(screen.getByRole("radiogroup", { name: "Language" })).getByText("中文"));
-    expect(await screen.findByRole("link", { name: "数据源" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "蒸馏" })).toBeInTheDocument();
     expect(localStorage.getItem("fidelity.lang")).toBe("zh");
     await i18n.changeLanguage("en");
   });

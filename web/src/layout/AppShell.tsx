@@ -5,9 +5,9 @@ import { Avatar, Button, Drawer, Dropdown, Grid, Layout, Menu, Segmented } from 
 import type { MenuProps } from "antd";
 import {
   AuditOutlined,
-  CloudSyncOutlined,
   DashboardOutlined,
   DownOutlined,
+  ExperimentOutlined,
   FileTextOutlined,
   LogoutOutlined,
   MenuOutlined,
@@ -23,7 +23,7 @@ import { useTheme } from "./ThemeProvider";
 
 const NAV = [
   { to: "/", key: "overview", icon: <DashboardOutlined />, end: true },
-  { to: "/sources", key: "sources", icon: <CloudSyncOutlined /> },
+  { to: "/distill", key: "distill", icon: <ExperimentOutlined /> },
   { to: "/jobs", key: "jobs", icon: <UnorderedListOutlined /> },
   { to: "/documents", key: "documents", icon: <FileTextOutlined /> },
   { to: "/review", key: "review", icon: <AuditOutlined /> },
