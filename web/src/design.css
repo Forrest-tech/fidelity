@@ -249,3 +249,6 @@ table.fx-t tr:last-child td { border-bottom: 0; }
 .fx-fixgrid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; min-height: 100%; }
 .fx-fixside { border-left: 1px solid var(--line); padding: 14px; background: var(--sunken); display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 @media (max-width: 900px) { .fx-fixgrid { grid-template-columns: 1fr; } .fx-fixside { border-left: 0; border-top: 1px solid var(--line); } }
+
+/* a collapse header never makes the page wider than the screen */
+.ant-collapse-header-text, .ant-collapse-title { min-width: 0; overflow-wrap: anywhere; }

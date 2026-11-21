@@ -334,7 +334,7 @@ export function DropboxSync({ canEdit, isAdmin }: { canEdit: boolean; isAdmin: b
               items={list.slice(0, 10).map((r) => ({
                 key: r.id,
                 label: (
-                  <Space wrap size={8} style={{ width: "100%" }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, minWidth: 0 }}>
                     <Tag color={TAG[r.status] ?? "default"} style={{ marginInlineEnd: 0 }}>
                       {t(`pages.sources.dropbox.status.${r.status}`, { defaultValue: r.status })}
                     </Tag>
@@ -343,12 +343,13 @@ export function DropboxSync({ canEdit, isAdmin }: { canEdit: boolean; isAdmin: b
                     {active(r.status) && (
                       <Progress percent={Math.round(r.progress)} size="small" status="active" style={{ width: 120, margin: 0 }} aria-label={t("pages.sources.dropbox.progress")} />
                     )}
-                    {r.status === "error" && (
-                      <Typography.Text type="secondary" ellipsis style={{ maxWidth: 480 }}>
+                    {r.status === "error" && r.message && (
+                      <span className="fx-tiny fx-muted" title={r.message}
+                        style={{ flexBasis: "100%", minWidth: 0, maxWidth: 480, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {r.message}
-                      </Typography.Text>
+                      </span>
                     )}
-                  </Space>
+                  </div>
                 ),
                 children: <RunView id={r.id} isAdmin={isAdmin} canEdit={canEdit} />,
               }))}

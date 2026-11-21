@@ -249,9 +249,9 @@ export function FixDrawer({ roomId, rel, canEdit, onClose, threshold }: { roomId
       </label>
     </div>
   );
-  const actions = (p?: Place) => (
+  const actions = (p?: Place, noSave = false) => (
     <div className="fx-row fx-wrap">
-      <button className="fx-btn pri" disabled={!preview || save.isPending} onClick={() => save.mutate()}>{t("pages.distill.fix2.save")}</button>
+      {!noSave && <button className="fx-btn pri" disabled={!preview || save.isPending} onClick={() => save.mutate()}>{t("pages.distill.fix2.save")}</button>}
       {p && <button className="fx-btn" disabled={known.isPending} onClick={() => known.mutate({ item: p.i, known: !p.known })}>{p.known ? t("pages.distill.fix2.notKnown") : t("pages.distill.fix2.markKnown")}</button>}
     </div>
   );
@@ -332,7 +332,7 @@ export function FixDrawer({ roomId, rel, canEdit, onClose, threshold }: { roomId
             {actions(p)}
           </>
         )}
-        {canEdit && p.kind === "formula" && actions(p)}
+        {canEdit && p.kind === "formula" && actions(p, true)}
       </>
     );
   } else if (canEdit && v) {
