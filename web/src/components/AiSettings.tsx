@@ -44,9 +44,58 @@ export interface AiSettingsData {
   kinds: Record<string, { label: string; models: string[]; custom: boolean }>;
   stats: { skills: Record<Skill, SkillStats>; memory: { cache: number; examples: number; rules: number } };
   examples: Record<Skill, number>;
+  level3?: Level3;
+  demotions?: { at: number; from: number; to: number; reason: string }[];
+}
+interface Level3 {
+  eligible: boolean;
+  decided: number;
+  adoption: number | null;
+  missing: { code: "decided" | "adoption" | "wrong" | "glossary"; have?: number | null; need?: number; at?: number }[];
+  auto: { total: number; right: number; wrong: number };
+  pending: number;
+}
+
+/** Why automatic adoption (level 3) cannot be switched on yet, or how it is doing. */
+function Level3Info({ data, level }: { data: AiSettingsData; level: number }) {
+  const { t } = useTranslation();
+  const l3 = data.level3;
+  const last = data.demotions?.[data.demotions.length - 1];
+  if (!l3) return null;
+  const why = (m: Level3["missing"][number]) =>
+    m.code === "decided"
+      ? t("pages.ai.l3.decided", { have: m.have ?? 0, need: m.need })
+      : m.code === "adoption"
+        ? t("pages.ai.l3.adoption", { have: m.have ?? 0, need: m.need })
+        : m.code === "wrong"
+          ? t("pages.ai.l3.wrong", { date: m.at ? new Date(m.at * 1000).toLocaleDateString() : "" })
+          : t("pages.ai.l3.glossary");
+  return (
+    <div className="fx-stack" style={{ gap: 6 }}>
+      <div className="fx-tiny fx-muted" role="status">
+        {level === 3
+          ? t("pages.ai.l3.on", { total: l3.auto.total, right: l3.auto.right, wrong: l3.auto.wrong, pending: l3.pending })
+          : l3.eligible
+            ? t("pages.ai.l3.earned")
+            : `${t("pages.ai.l3.notYet")} ${l3.missing.map(why).join(" · ")}`}
+      </div>
+      {last && <Demoted last={last} />}
+    </div>
+  );
+}
+
+/** The skill went back a level by itself (an automatic adoption was found wrong). */
+function Demoted({ last }: { last: { at: number; from: number; to: number; reason: string } }) {
+  const { t } = useTranslation();
+  return (
+    <div className="fx-note" role="alert" style={{ borderLeftColor: "var(--warn)", background: "var(--warn-soft)" }}>
+      <b>{t("pages.ai.l3.demoted", { from: last.from, to: last.to, date: new Date(last.at * 1000).toLocaleString() })}</b>
+      {last.reason && <div className="fx-muted">{last.reason}</div>}
+    </div>
+  );
 }
 const SKILLS: Skill[] = ["arbitrate", "explain", "transcribe", "suggest"];
-const MAX_LEVEL: Record<Skill, number> = { arbitrate: 2, explain: 1, transcribe: 1, suggest: 1 };
+const MAX_LEVEL: Record<Skill, number> = { arbitrate: 3, explain: 1, transcribe: 1, suggest: 1 };
 
 // ------------------------------------------------------------------ one skill, edited in a dialog
 function SkillEdit({ name, data, onSaved, onClose }: { name: Skill; data: AiSettingsData; onSaved: (d: AiSettingsData) => void; onClose: () => void }) {
@@ -72,6 +121,10 @@ function SkillEdit({ name, data, onSaved, onClose }: { name: Skill; data: AiSett
     { value: 0, label: t("pages.ai.level0") },
     { value: 1, label: t("pages.ai.level1") },
     ...(MAX_LEVEL[name] >= 2 ? [{ value: 2, label: t("pages.ai.level2") }] : []),
+    // level 3 is earned: it can be chosen only once the record allows it (or to keep it when it is already on)
+    ...(MAX_LEVEL[name] >= 3
+      ? [{ value: 3, label: t("pages.ai.level3"), disabled: cfg.level !== 3 && !data.level3?.eligible, title: cfg.level !== 3 && !data.level3?.eligible ? t("pages.ai.levelLocked") : undefined }]
+      : []),
   ];
   return (
     <Modal open onCancel={onClose} title={t(`pages.ai.skill.${name}`)} width={520}
@@ -96,7 +149,10 @@ function SkillEdit({ name, data, onSaved, onClose }: { name: Skill; data: AiSett
         </div>
         <div>
           <span className="fx-lab">{t("pages.ai.level")}</span>
-          <Seg label={t("pages.ai.level")} value={v.level} onChange={(x) => setV({ ...v, level: x })} options={levels} />
+          <div style={{ overflowX: "auto", maxWidth: "100%" }}>
+            <Seg label={t("pages.ai.level")} value={v.level} onChange={(x) => setV({ ...v, level: x })} options={levels} />
+          </div>
+          {name === "arbitrate" && <div style={{ marginTop: 6 }}><Level3Info data={data} level={v.level} /></div>}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <label>
@@ -315,6 +371,7 @@ export function AiSettings() {
           </table>
         </div>
         <div className="fx-tiny fx-muted" style={{ marginTop: 6 }}>{t("pages.ai.levelsNote")}</div>
+        {d.demotions?.length ? <div style={{ marginTop: 8 }}><Demoted last={d.demotions[d.demotions.length - 1]} /></div> : null}
       </div>
       <Scope data={d} onSaved={set} />
       <div className="fx-danger">

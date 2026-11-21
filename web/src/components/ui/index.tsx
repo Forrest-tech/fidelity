@@ -135,13 +135,13 @@ export function Bar({ pct, width = 90, ok = false, label }: { pct: number; width
 
 /** Segmented choice. */
 export function Seg<T extends string | number>({ value, options, onChange, label, tiny, disabled }: {
-  value: T; options: { value: T; label: ReactNode }[]; onChange: (v: T) => void; label: string; tiny?: boolean; disabled?: boolean;
+  value: T; options: { value: T; label: ReactNode; disabled?: boolean; title?: string }[]; onChange: (v: T) => void; label: string; tiny?: boolean; disabled?: boolean;
 }) {
   return (
     <div className={`fx-seg${tiny ? " tiny" : ""}`} role="radiogroup" aria-label={label}>
       {options.map((o) => (
         <button key={String(o.value)} type="button" role="radio" aria-checked={o.value === value} className={o.value === value ? "on" : undefined}
-          disabled={disabled} onClick={() => onChange(o.value)}>
+          disabled={disabled || o.disabled} title={o.title} onClick={() => onChange(o.value)}>
           {o.label}
         </button>
       ))}

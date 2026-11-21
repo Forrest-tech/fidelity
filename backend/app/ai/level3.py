@@ -145,6 +145,7 @@ def adopt(room: dict, rel: str, item: dict, ask_out: dict) -> dict | None:
         con.commit()
     finally:
         con.close()
+    CO.reapply(room["id"], rel)                              # so the file's marks say it was the AI
     return {**rule, "sampled": sampled}
 
 

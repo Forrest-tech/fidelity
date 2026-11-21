@@ -512,7 +512,8 @@
         "appliedOthers": "Applied. {{count}} other documents changed.",
         "result": "Result",
         "library": "Correction library",
-        "cut": "The rest of the text is not shown."
+        "cut": "The rest of the text is not shown.",
+        "auto": "AI (automatic)"
       },
       "places": {
         "title": "Uncertain places",
@@ -780,7 +781,15 @@
       "fromSuggestion": "suggestion",
       "rerunTitle": "Apply the changed rule",
       "places_one": "1 place",
-      "places_other": "{{count}} places"
+      "places_other": "{{count}} places",
+      "auto": {
+        "title": "Adopted automatically — please check",
+        "summary": "{{total}} adopted by the AI on its own; {{right}} checked right, {{wrong}} wrong.",
+        "none": "Nothing waiting for a check.",
+        "right": "Right",
+        "wrong": "Wrong",
+        "wrongNote": "\"Wrong\" undoes the fix in that document and puts reading arbitration back to level 2."
+      }
     },
     "ai": {
       "intro": "Connect a model to help with places the system is unsure about. AI only suggests: every change still goes through a person or an exact correction rule.",
@@ -870,9 +879,22 @@
       "spent": "${{n}} used",
       "edit": "Edit",
       "editSkill": "Edit {{name}}",
-      "levelsNote": "Every skill only suggests. Numbers, formulas and tables always need a person.",
+      "levelsNote": "Skills only suggest. Only reading arbitration at level 3 adopts plain text by itself, and a person checks a sample. Numbers, formulas and tables always need a person.",
       "onlyFrom": "Only send content from",
-      "pausedShort": "paused"
+      "pausedShort": "paused",
+      "level3": "Automatic (text only)",
+      "l3": {
+        "notYet": "Automatic adoption is not earned yet:",
+        "decided": "{{have}} of {{need}} suggestions decided by people",
+        "adoption": "people took {{have}}% (needs {{need}}%)",
+        "wrong": "an automatic adoption was found wrong on {{date}}",
+        "glossary": "no word list from verified documents yet",
+        "earned": "Automatic adoption is earned: plain-text readings the word list agrees with can be adopted without asking. Numbers, formulas and tables never are.",
+        "on": "Adopted automatically so far: {{total}} ({{right}} checked right, {{wrong}} wrong, {{pending}} waiting for a check).",
+        "demoted": "Went back from level {{from}} to {{to}} by itself on {{date}}"
+      },
+      "mode3": "Adopts plain text by itself",
+      "levelLocked": "Automatic is not earned yet."
     }
   },
   "shell": {
