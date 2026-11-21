@@ -225,7 +225,16 @@ def derive_state(row, room: dict) -> str:
         return "unprocessable"
     if row["confirmed"]:
         return "published"
-    return SC.decide(row["accuracy"], row["number_diffs"] or 0, room["threshold"], room["number_guard"])
+    # a number fixed by a correction rule and picked for checking counts as a number difference until checked
+    nd = (row["number_diffs"] or 0) + (_get(row, "rule_checks") or 0)
+    return SC.decide(row["accuracy"], nd, room["threshold"], room["number_guard"])
+
+
+def _get(row, key):
+    try:
+        return row[key]
+    except (IndexError, KeyError):
+        return None
 
 
 def _files(room_id: str) -> list:
@@ -233,7 +242,7 @@ def _files(room_id: str) -> list:
     try:
         return con.execute("SELECT rel, kind, size, activity, outcome, reason, detail, accuracy, parts, diffs, number_diffs, "
                            "confirmed, confirmed_by, confirmed_at, pages, run_id, out_dir, content_hash, single_file, n_files, "
-                           "verdict, updated_at FROM room_file WHERE room_id=?", (room_id,)).fetchall()
+                           "verdict, corrections, rule_checks, updated_at FROM room_file WHERE room_id=?", (room_id,)).fetchall()
     finally:
         con.close()
 
@@ -265,7 +274,9 @@ def _file_out(r, room) -> dict:
     return {"rel": r["rel"], "name": r["rel"].rsplit("/", 1)[-1], "kind": r["kind"], "size": r["size"],
             "state": derive_state(r, room), "accuracy": r["accuracy"], "diffs": r["diffs"] or 0,
             "number_diffs": r["number_diffs"] or 0, "reason": r["reason"], "detail": r["detail"], "pages": r["pages"],
-            "parts": json.loads(r["parts"]) if r["parts"] else None}
+            "parts": json.loads(r["parts"]) if r["parts"] else None,
+            "corrected": sum(i.get("count", 0) for i in json.loads(r["corrections"])) if r["corrections"] else 0,
+            "checks": r["rule_checks"] or 0}
 
 
 def children(room: dict, path: str = "", state: str | None = None, q: str | None = None) -> dict:
@@ -493,21 +504,35 @@ class EventReader:
         chunk, self.offset = data[:end + 1], self.offset + end + 1
         n = 0
 
+        fresh = []
+
         def _do():
+            fresh.clear()
             con = db.trust_rw()
             try:
                 for line in chunk.decode("utf-8", "replace").splitlines():
                     if not line.strip():
                         continue
                     try:
-                        apply_event(con, self.room_id, self.job_id, json.loads(line))
+                        ev = json.loads(line)
+                        apply_event(con, self.room_id, self.job_id, ev)
                     except (ValueError, KeyError):
                         continue
+                    if ev.get("type") == "file" and ev.get("outcome") == "result" and ev.get("out_dir"):
+                        fresh.append(ev["rel"])
                 con.commit()
             finally:
                 con.close()
 
         db.trust_write(_do)
+        # a new result: keep the distiller's own copy and apply the correction rules to it
+        from . import corrections as C
+        for rel in fresh:
+            try:
+                C.on_new_result(self.room_id, rel)
+            except Exception:                        # noqa: BLE001 - a rule problem must never stop the run
+                import traceback
+                traceback.print_exc()
         n = chunk.count(b"\n")
         return n
 

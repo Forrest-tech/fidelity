@@ -101,6 +101,7 @@ test.describe("pages have content or a clear state", () => {
   for (const [path, heading] of [
     ["/", "Overview"],
     ["/distill", "Distill"],
+    ["/corrections", "Correction library"],
     ["/sources", "Sources"],
     ["/jobs", "Jobs"],
     ["/documents", "Documents"],
@@ -167,7 +168,7 @@ test.describe("bilingual", () => {
 test.describe("responsive", () => {
   test("no horizontal scrolling on any main page", async ({ page }) => {
     await login(page, "admin");
-    for (const p of ["/", "/distill", "/sources", "/jobs", "/documents", "/settings", "/users"]) {
+    for (const p of ["/", "/distill", "/corrections", "/sources", "/jobs", "/documents", "/settings", "/users"]) {
       await page.goto(p);
       await page.waitForLoadState("networkidle");
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -211,7 +212,7 @@ test.describe("accessibility (axe-core)", () => {
     test(`main pages, ${theme} theme`, async ({ page }) => {
       await login(page, "admin");
       await page.evaluate((t) => localStorage.setItem("fidelity.theme", t), theme); // read on the next page load
-      for (const p of ["/", "/distill", "/sources", "/jobs", "/documents", "/settings", "/users", "/review"]) {
+      for (const p of ["/", "/distill", "/corrections", "/sources", "/jobs", "/documents", "/settings", "/users", "/review"]) {
         await page.goto(p);
         await page.waitForLoadState("networkidle");
         await openNav(page);

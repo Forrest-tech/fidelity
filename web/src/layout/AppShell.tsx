@@ -5,6 +5,7 @@ import { Avatar, Button, Drawer, Dropdown, Grid, Layout, Menu, Segmented } from 
 import type { MenuProps } from "antd";
 import {
   AuditOutlined,
+  BookOutlined,
   DashboardOutlined,
   DownOutlined,
   ExperimentOutlined,
@@ -24,6 +25,7 @@ import { useTheme } from "./ThemeProvider";
 const NAV = [
   { to: "/", key: "overview", icon: <DashboardOutlined />, end: true },
   { to: "/distill", key: "distill", icon: <ExperimentOutlined /> },
+  { to: "/corrections", key: "corrections", icon: <BookOutlined /> },
   { to: "/jobs", key: "jobs", icon: <UnorderedListOutlined /> },
   { to: "/documents", key: "documents", icon: <FileTextOutlined /> },
   { to: "/review", key: "review", icon: <AuditOutlined /> },

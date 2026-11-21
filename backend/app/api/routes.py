@@ -3,10 +3,10 @@
 from fastapi import APIRouter
 
 from . import (sources, files, decisions, reviewers, tree, align, preview,
-               review, stats, ingest, distill, overview, dropbox_sync, storage, rooms)
+               review, stats, ingest, distill, overview, dropbox_sync, storage, rooms, corrections)
 from .align import ALIGN_MAX_LINES, MAX_SEG_CHARS  # noqa: F401  (re-export, used by scripts)
 
 router = APIRouter()
 for _m in (sources, files, decisions, reviewers, tree, align, preview, review, stats, ingest, distill, overview,
-           dropbox_sync, storage, rooms):
+           dropbox_sync, storage, rooms, corrections):
     router.include_router(_m.router)

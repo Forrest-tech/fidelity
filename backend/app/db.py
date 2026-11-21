@@ -190,12 +190,36 @@ CREATE TABLE IF NOT EXISTS room_file (
   PRIMARY KEY (room_id, rel)
 );
 CREATE INDEX IF NOT EXISTS idx_room_file_room ON room_file(room_id, outcome);
+-- A correction a person confirmed, applied again wherever the same reading appears (see distill/rules.py).
+CREATE TABLE IF NOT EXISTS correction_rule (
+  id TEXT PRIMARY KEY,
+  num INTEGER,                -- shown as #num
+  find TEXT, replace_with TEXT,
+  before_ctx TEXT, after_ctx TEXT,   -- number rules only: the exact text around the place
+  kind TEXT,                  -- text / number
+  scope TEXT,                 -- document / series / all
+  series TEXT, doc TEXT,
+  enabled INTEGER DEFAULT 1,
+  reverts INTEGER DEFAULT 0,  -- how often a person undid it in a document
+  source_room TEXT, source_rel TEXT,
+  created_by TEXT, created_at REAL, updated_at REAL
+);
+-- A person undid a rule in one document: it is not applied there again.
+CREATE TABLE IF NOT EXISTS correction_exempt (
+  rule_id TEXT, room_id TEXT, rel TEXT, by_user TEXT, at REAL,
+  PRIMARY KEY (rule_id, room_id, rel)
+);
+-- A person checked a number rule's change in one document and found it right.
+CREATE TABLE IF NOT EXISTS correction_check (
+  rule_id TEXT, room_id TEXT, rel TEXT, by_user TEXT, at REAL,
+  PRIMARY KEY (rule_id, room_id, rel)
+);
 """
 
 # Columns added to `job` after its first version (a worker/process id and heartbeat for run supervision,
 # and what the scheduler needs: owning room, priority, capacity points, output folder key).
 _ROOM_FILE_COLUMNS = (("out_dir", "TEXT"), ("content_hash", "TEXT"), ("single_file", "INTEGER"), ("n_files", "INTEGER"),
-                      ("verdict", "TEXT"))
+                      ("verdict", "TEXT"), ("corrections", "TEXT"), ("rule_checks", "INTEGER DEFAULT 0"))
 _JOB_COLUMNS = (("pid", "INTEGER"), ("heartbeat_at", "REAL"), ("room_id", "TEXT"),
                 ("priority", "INTEGER DEFAULT 1"), ("points", "INTEGER DEFAULT 0"), ("dest_key", "TEXT"))
 
