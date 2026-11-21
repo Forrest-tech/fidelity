@@ -41,7 +41,7 @@ class Fake:
     def __init__(self, answer=None, error=None):
         self.answer, self.error, self.calls = answer, error, []
 
-    def __call__(self, p, key, model, system, user, schema, timeout=P.TIMEOUT):
+    def __call__(self, p, key, model, system, user, schema, timeout=P.TIMEOUT, image=None):
         self.calls.append({"key": key, "model": model, "system": system, "user": user})
         if self.error:
             raise self.error
@@ -51,7 +51,7 @@ class Fake:
 
 def _setup(level=1, prefixes=("/as 3500",), budget=20.0, cap=500):
     p = CF.add_provider("anthropic", "sk-ant-test-1234567890abcd")
-    CF.update({"enabled": True, "skills": {s: {"provider": p["id"], "model": "claude-opus-5-5", "level": level,
+    CF.update({"enabled": True, "skills": {s: {"provider": p["id"], "model": "claude-opus-5-5", "level": min(level, CF.MAX_LEVEL[s]),
                                                "budget_usd": budget, "monthly_cap": cap} for s in CF.SKILLS},
                "scope": {"allowed_prefixes": list(prefixes), "block_licensed": True}})
     return p

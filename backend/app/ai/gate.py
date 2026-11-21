@@ -119,7 +119,8 @@ def allowed(s: dict, source_link: str | None, doc_text: str | None) -> str | Non
 
 
 def ask(skill: str, p: dict, *, user: str, source_link: str | None = None, doc_text: str | None = None,
-        room_id: str | None = None, rel: str | None = None, auto: bool = False, settings: dict | None = None) -> dict:
+        room_id: str | None = None, rel: str | None = None, auto: bool = False, settings: dict | None = None,
+        image: bytes | None = None) -> dict:
     """Ask one skill one question. Returns {call, status, result, message, cached}. Never raises for a refusal of any
     kind: the status says what happened (blocked / error / invalid / ok / cached)."""
     from ..distill.run import scan_instructions
@@ -127,8 +128,9 @@ def ask(skill: str, p: dict, *, user: str, source_link: str | None = None, doc_t
     s = settings or CF.load()
     sk = s["skills"][skill]
     prov = CF.provider(s, sk["provider"])
+    logged = {k: v for k, v in p.items() if k != "ocr_text"}          # the local OCR text is only used for checking
     base = {"skill": skill, "version": mod.VERSION, "provider": prov["kind"] if prov else None, "model": sk["model"],
-            "room_id": room_id, "rel": rel, "input": json.dumps(p, ensure_ascii=False), "created_by": user}
+            "room_id": room_id, "rel": rel, "input": json.dumps(logged, ensure_ascii=False), "created_by": user}
 
     def blocked(msg):
         return {"call": _log(**base, status="blocked", message=msg), "status": "blocked", "result": None, "message": msg,
@@ -173,7 +175,7 @@ def ask(skill: str, p: dict, *, user: str, source_link: str | None = None, doc_t
     out, err = None, None
     for attempt in range(2):
         try:
-            out = P.call(prov, key, sk["model"], mod.SYSTEM, user_msg, mod.SCHEMA)
+            out = P.call(prov, key, sk["model"], mod.SYSTEM, user_msg, mod.SCHEMA, image=image)
             break
         except P.ProviderError as e:
             err = e

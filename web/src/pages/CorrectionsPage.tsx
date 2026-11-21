@@ -6,6 +6,7 @@ import { DownloadOutlined } from "@ant-design/icons";
 import { api, json } from "../net/client";
 import { useAuth } from "../auth/AuthProvider";
 import { EmptyState, ErrorState, Loading, PageHeader } from "../components/ui";
+import { RuleSuggestions } from "../components/RuleSuggestions";
 
 interface Rule {
   id: string;
@@ -14,7 +15,7 @@ interface Rule {
   replace: string;
   before: string;
   after: string;
-  kind: "text" | "number";
+  kind: "text" | "number" | "pattern";
   scope: "document" | "series" | "all";
   series: string | null;
   doc: string | null;
@@ -99,6 +100,13 @@ export function CorrectionsPage() {
         </Button>
       </div>
       <Typography.Text type="secondary">{t("pages.corrections.intro")}</Typography.Text>
+      <RuleSuggestions
+        canEdit={canEdit}
+        onApproved={(a) => {
+          refresh();
+          if (a.affected.length) setChanged({ rule: a.rule as unknown as Rule, docs: a.affected });
+        }}
+      />
       {err && <Alert type="error" showIcon title={err.message} />}
       {done && <Alert type="success" showIcon closable onClose={() => setDone(null)} title={done} />}
       {lib.isLoading && <Loading />}
@@ -132,6 +140,7 @@ export function CorrectionsPage() {
                       <span>
                         <Tag>#{r.num}</Tag>
                         <code>{r.find}</code> → <code>{r.replace}</code>
+                        {r.kind === "pattern" && <Tag color="processing" style={{ marginInlineStart: 6 }}>{t("pages.corrections.pattern")}</Tag>}
                       </span>
                       {r.kind === "number" && (
                         <Typography.Text type="secondary" style={{ fontSize: 12 }}>

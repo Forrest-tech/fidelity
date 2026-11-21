@@ -5,7 +5,7 @@ import { Alert, AutoComplete, Button, Card, Input, InputNumber, Popconfirm, Segm
 import { api, json } from "../net/client";
 import { ErrorState, Loading } from "./ui";
 
-type Skill = "arbitrate" | "explain";
+type Skill = "arbitrate" | "explain" | "transcribe" | "suggest";
 interface Provider {
   id: string;
   kind: string;
@@ -45,7 +45,7 @@ export interface AiSettingsData {
   stats: { skills: Record<Skill, SkillStats>; memory: { cache: number; examples: number; rules: number } };
   examples: Record<Skill, number>;
 }
-const SKILLS: Skill[] = ["arbitrate", "explain"];
+const SKILLS: Skill[] = ["arbitrate", "explain", "transcribe", "suggest"];
 
 function SkillRow({ name, data, onSaved }: { name: Skill; data: AiSettingsData; onSaved: (d: AiSettingsData) => void }) {
   const { t } = useTranslation();
@@ -275,7 +275,7 @@ export function AiSettings() {
         {toggle.error && <Alert type="error" showIcon title={(toggle.error as Error).message} style={{ marginTop: 10 }} />}
       </Card>
       <Providers data={d} onSaved={set} />
-      {SKILLS.map((s) => (
+      {SKILLS.filter((s) => d.skills[s] && d.stats.skills[s]).map((s) => (
         <SkillRow key={s} name={s} data={d} onSaved={set} />
       ))}
       <Scope data={d} onSaved={set} />

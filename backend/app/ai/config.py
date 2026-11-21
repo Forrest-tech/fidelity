@@ -32,7 +32,8 @@ KINDS = {
     "custom": {"label": "Custom (OpenAI-compatible)", "models": []},
 }
 
-SKILLS = ("arbitrate", "explain")
+SKILLS = ("arbitrate", "explain", "transcribe", "suggest")
+MAX_LEVEL = {"arbitrate": 2, "explain": 1, "transcribe": 1, "suggest": 1}   # only arbitration may run by default
 LEVELS = (0, 1, 2)         # 0 off, 1 when a person asks, 2 asked by default (still only a suggestion)
 
 DEFAULTS = {
@@ -236,8 +237,8 @@ def update(changes: dict, eval_examples: int = 0) -> dict:
                 raise ConfigError(422, "choose one of the connected providers")
             if not new["model"]:
                 raise ConfigError(422, "choose a model")
-        if int(new["level"]) not in LEVELS:
-            raise ConfigError(422, "level must be 0, 1 or 2")
+        if int(new["level"]) not in LEVELS or int(new["level"]) > MAX_LEVEL[name]:
+            raise ConfigError(422, f"this skill's level must be 0 to {MAX_LEVEL[name]}")
         new["level"] = int(new["level"])
         new["budget_usd"] = max(0.0, float(new["budget_usd"] or 0))
         new["monthly_cap"] = max(0, int(new["monthly_cap"] or 0))

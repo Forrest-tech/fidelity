@@ -2,7 +2,7 @@
 """AI: settings (administrators only), and suggestions on a file's uncertain places (reviewers ask, everyone reads).
 
 Keys never leave the server: the page sees only their last four characters."""
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel
 
 from ..auth.models import Role
@@ -10,7 +10,9 @@ from ..auth.users import current_user, require_role
 from ..ai import config as CF
 from ..ai import gate as G
 from ..ai import providers as P
+from ..ai import formulas as FX
 from ..ai import review as RV
+from ..ai import suggestions as SG
 from ..jobs import rooms as R
 
 router = APIRouter()
@@ -55,6 +57,15 @@ class EvalIn(BaseModel):
 class AskIn(BaseModel):
     rel: str
     item: int
+    k: int | None = None              # which formula on the page (formula places only)
+
+
+class FormulaIn(BaseModel):
+    rel: str
+    page: int
+    k: int
+    latex: str
+    call: str | None = None
 
 
 class FileIn(BaseModel):
@@ -156,7 +167,7 @@ def review(room_id: str, rel: str):
 @router.post("/rooms/{room_id}/ask", dependencies=[Depends(require_role(Role.reviewer))])
 def ask(room_id: str, body: AskIn, user=Depends(current_user)):
     room = _guard(R.get_room, room_id)
-    return _guard(RV.ask, room, body.rel, body.item, _who(user))
+    return _guard(RV.ask, room, body.rel, body.item, _who(user), False, body.k)
 
 
 @router.post("/rooms/{room_id}/ask-default", dependencies=[Depends(require_role(Role.reviewer))])
@@ -168,3 +179,66 @@ def ask_default(room_id: str, body: FileIn, user=Depends(current_user)):
 @router.post("/ai/calls/{call_id}/decision", dependencies=[Depends(require_role(Role.reviewer))])
 def decision(call_id: str, body: DecisionIn, user=Depends(current_user)):
     return _guard(G.decide, call_id, body.decision, _who(user), body.final)
+
+
+# ------------------------------------------------------------------ formulas
+def _file_row(room_id: str, rel: str):
+    room = _guard(R.get_room, room_id)
+    row = next((x for x in R._files(room["id"]) if x["rel"] == rel), None)
+    if row is None:
+        raise HTTPException(404, "no such file in this room")
+    return room, row
+
+
+@router.get("/rooms/{room_id}/formula.png")
+def formula_image(room_id: str, rel: str, page: int, k: int):
+    """The crop of the source page that holds one formula (what a person checks a transcription against)."""
+    _, row = _file_row(room_id, rel)
+    return Response(content=_guard(FX.image, row, page, k), media_type="image/png", headers={"Cache-Control": "private, max-age=3600"})
+
+
+@router.post("/rooms/{room_id}/formula/approve", dependencies=[Depends(require_role(Role.reviewer))])
+def formula_approve(room_id: str, body: FormulaIn, user=Depends(current_user)):
+    """A person approves a transcription (typed, or taken from a suggestion and perhaps changed)."""
+    room, row = _file_row(room_id, body.rel)
+    out = _guard(FX.approve, room["id"], row, body.page, body.k, body.latex, _who(user))
+    if body.call:                                     # it came from a suggestion: record whether it was changed
+        final = body.latex.strip().strip("$").strip()
+        _guard(G.decide, body.call, "adopted" if final == _suggested_latex(body.call) else "modified", _who(user), final)
+    return out
+
+
+def _suggested_latex(call_id: str) -> str:
+    import json as _json
+    from .. import db
+    con = db.trust_rw()
+    try:
+        r = con.execute("SELECT result FROM ai_call WHERE id=?", (call_id,)).fetchone()
+    finally:
+        con.close()
+    try:
+        return (_json.loads(r[0]) or {}).get("latex", "") if r and r[0] else ""
+    except ValueError:
+        return ""
+
+
+# ------------------------------------------------------------------ suggestions for the correction library
+@router.get("/corrections/suggestions")
+def suggestions():
+    return {"suggestions": SG.listing()}
+
+
+@router.post("/corrections/suggestions/scan", dependencies=[Depends(require_role(Role.reviewer))])
+def scan_suggestions(user=Depends(current_user)):
+    found = _guard(SG.scan, _who(user))
+    return {"found": found, "suggestions": SG.listing()}
+
+
+@router.post("/corrections/suggestions/{sid}/approve", dependencies=[Depends(require_role(Role.reviewer))])
+def approve_suggestion(sid: str, user=Depends(current_user)):
+    return _guard(SG.approve, sid, _who(user))
+
+
+@router.post("/corrections/suggestions/{sid}/dismiss", dependencies=[Depends(require_role(Role.reviewer))])
+def dismiss_suggestion(sid: str, user=Depends(current_user)):
+    return _guard(SG.dismiss, sid, _who(user))

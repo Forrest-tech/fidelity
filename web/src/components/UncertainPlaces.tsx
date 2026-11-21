@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import { Button, Space, Tag, Typography } from "antd";
 import { RobotOutlined } from "@ant-design/icons";
 import { api, json } from "../net/client";
+import { FormulaPlace } from "./FormulaPlace";
+import type { FormulaItem } from "./FormulaPlace";
 
 interface Suggestion {
   call: string;
@@ -23,10 +25,11 @@ interface Place {
   before?: string;
   after?: string;
   suggestion?: Suggestion | null;
+  formulas?: FormulaItem[] | null;
 }
 interface Review {
   items: Place[];
-  ai: { enabled: boolean; skills: { arbitrate: { level: number }; explain: { level: number } } };
+  ai: { enabled: boolean; skills: Record<string, { level: number }> };
 }
 const SHOW = 30;
 
@@ -37,11 +40,13 @@ export function UncertainPlaces({
   rel,
   canEdit,
   onUse,
+  onFormula,
 }: {
   roomId: string;
   rel: string;
   canEdit: boolean;
   onUse: (find: string, replace: string, call: string | null) => void;
+  onFormula?: () => void;
 }) {
   const { t } = useTranslation();
   const qc = useQueryClient();
@@ -62,7 +67,8 @@ export function UncertainPlaces({
   const items = q.data?.items ?? [];
   if (!items.length) return null;
   const shown = all ? items : items.slice(0, SHOW);
-  const level = (k: string) => (q.data?.ai?.enabled ? (k === "reading" ? q.data.ai.skills?.arbitrate?.level : q.data.ai.skills?.explain?.level) ?? 0 : 0);
+  const skillLevel = (name: string) => (q.data?.ai?.enabled ? q.data.ai.skills?.[name]?.level ?? 0 : 0);
+  const level = (k: string) => skillLevel(k === "reading" ? "arbitrate" : "explain");
   return (
     <section aria-label={t("pages.distill.places.title")}>
       <Typography.Title level={5} style={{ marginTop: 0 }}>
@@ -79,6 +85,17 @@ export function UncertainPlaces({
                 {p.page != null && <Typography.Text type="secondary" style={{ fontSize: 12 }}>{t("pages.distill.places.page", { n: p.page })}</Typography.Text>}
                 {p.kind !== "reading" && <span style={{ fontSize: 13 }}>{p.detail}</span>}
               </Space>
+              {p.kind === "formula" && p.formulas && p.page != null && (
+                <Space orientation="vertical" size={6} style={{ width: "100%" }}>
+                  {p.formulas.map((f) => (
+                    <FormulaPlace key={f.k} roomId={roomId} rel={rel} page={p.page!} item={p.i} f={f} canEdit={canEdit}
+                      canAsk={skillLevel("transcribe") >= 1} onChanged={() => { refetch(); onFormula?.(); }} />
+                  ))}
+                </Space>
+              )}
+              {p.kind === "formula" && p.formulas === null && (
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>{t("pages.distill.places.noSource")}</Typography.Text>
+              )}
               {p.kind === "reading" && (
                 <div style={{ fontSize: 13 }}>
                   {p.in_text ? (

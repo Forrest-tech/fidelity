@@ -15,7 +15,8 @@ from ..jobs import corrections as CO
 from ..jobs import rooms as R
 from . import config as CF
 from . import gate as G
-from .skills import arbitrate, explain
+from . import formulas as FX
+from .skills import arbitrate, explain, transcribe
 
 CONTEXT_WORDS = 8
 AUTO_LIMIT = 10             # places asked by default each time a file is opened (level 2)
@@ -54,6 +55,7 @@ def items(room: dict, rel: str) -> dict:
     r = _row(room, rel)
     findings = json.loads(r["findings"]) if r["findings"] else []
     text = _text(room["id"], rel)
+    fx = FX.summary(r) if any(f.get("kind") == "formula" for f in findings) else {"available": False, "pages": {}}
     out = []
     for i, f in enumerate(findings):
         it = {"i": i, "kind": f.get("kind"), "page": f.get("page"), "detail": f.get("detail")}
@@ -61,6 +63,8 @@ def items(room: dict, rel: str) -> dict:
             cands = [f.get("a") or "", f.get("b") or ""]
             in_text, before, after = _context(text, cands)
             it.update(candidates=cands, in_text=in_text, before=before, after=after)
+        elif f.get("kind") == "formula":
+            it["formulas"] = fx["pages"].get(f.get("page"), []) if fx["available"] else None
         out.append(it)
     # the latest suggestion for each place
     con = db.trust_rw()
@@ -70,20 +74,28 @@ def items(room: dict, rel: str) -> dict:
                            (room["id"], rel)).fetchall()
     finally:
         con.close()
-    latest = {}
+    latest, formula_latest = {}, {}
     for c in rows:
         try:
             inp = json.loads(c[2])
         except (TypeError, ValueError):
             continue
+        sug = {"call": c[0], "skill": c[1], "status": c[4], "message": c[5], "decision": c[6],
+               "result": json.loads(c[3]) if c[3] else None}
+        if c[1] == "transcribe":
+            formula_latest[(inp.get("page"), inp.get("k"))] = sug
+            continue
+        if c[1] not in ("arbitrate", "explain"):
+            continue
         k = (c[1], json.dumps(arbitrate.key(inp) if c[1] == "arbitrate" else explain.key(inp), sort_keys=True))
-        latest[k] = {"call": c[0], "skill": c[1], "status": c[4], "message": c[5], "decision": c[6],
-                     "result": json.loads(c[3]) if c[3] else None}
+        latest[k] = sug
     for it in out:
         p = _payload(it)
         sk = "arbitrate" if it["kind"] == "reading" else "explain"
         mod = arbitrate if sk == "arbitrate" else explain
         it["suggestion"] = latest.get((sk, json.dumps(mod.key(p), sort_keys=True)))
+        for fm in it.get("formulas") or []:
+            fm["suggestion"] = formula_latest.get((it["page"], fm["k"]))
     s = CF.load()
     return {"rel": rel, "items": out, "ai": status(s)}
 
@@ -94,11 +106,13 @@ def _payload(it: dict) -> dict:
     return explain.payload(it.get("kind") or "", it.get("page"), it.get("detail") or "")
 
 
-def ask(room: dict, rel: str, index: int, user: str, auto: bool = False) -> dict:
+def ask(room: dict, rel: str, index: int, user: str, auto: bool = False, k: int | None = None) -> dict:
     data = items(room, rel)
     it = next((x for x in data["items"] if x["i"] == index), None)
     if it is None:
         raise CF.ConfigError(404, "no such place in this file")
+    if it["kind"] == "formula" and k is not None:
+        return transcribe_one(room, rel, it["page"], k, user)
     skill = "arbitrate" if it["kind"] == "reading" else "explain"
     return G.ask(skill, _payload(it), user=user, source_link=(room["source"] or {}).get("link"),
                  doc_text=_text(room["id"], rel), room_id=room["id"], rel=rel, auto=auto)
@@ -130,3 +144,26 @@ def status(s: dict | None = None) -> dict:
     for name, sk in s["skills"].items():
         out["skills"][name] = {"level": sk["level"] if s["enabled"] and sk["provider"] and sk["model"] else 0}
     return out
+
+
+def transcribe_one(room: dict, rel: str, page: int, k: int, user: str) -> dict:
+    """Ask for a transcription of one formula: only its image crop is sent; the local OCR checks its numbers."""
+    r = _row(room, rel)
+    png = FX.image(r, page, k)
+    before, after = _around_marker(room["id"], rel, page, k)
+    p = transcribe.payload(page, k, FX.image_sha(png), FX.ocr_text(png), before, after)
+    return G.ask("transcribe", p, user=user, source_link=(room["source"] or {}).get("link"),
+                 doc_text=_text(room["id"], rel), room_id=room["id"], rel=rel, image=png)
+
+
+def _around_marker(room_id: str, rel: str, page: int, k: int) -> tuple[str, str]:
+    """The readable words just before and after the k-th unreadable-formula marker on a page of the result."""
+    import re as _re
+    from ..distill.structure import UNREADABLE_MARK
+    for m in _re.finditer(r"<!-- unit: p\d+ \| src: p\.(\d+) .*?-->(.*?)<!-- /unit -->", _text(room_id, rel), _re.S):
+        if int(m.group(1)) != page:
+            continue
+        parts = m.group(2).split(UNREADABLE_MARK)
+        if k < len(parts):
+            return " ".join(parts[k - 1].split()[-CONTEXT_WORDS:]), " ".join(parts[k].split()[:CONTEXT_WORDS])
+    return "", ""
