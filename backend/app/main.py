@@ -28,7 +28,8 @@ app.add_middleware(
 
 async def _authorize(request: Request, user=Depends(current_user)):
     """Every API route needs a login; mutating routes need reviewer or admin."""
-    if request.method not in ("GET", "HEAD", "OPTIONS"):
+    # a person's own bookkeeping (which notifications they have read) is not a change to the system
+    if request.method not in ("GET", "HEAD", "OPTIONS") and request.url.path not in ("/api/v1/notifications/read", "/api/v1/account/password"):
         if user.role not in (Role.reviewer, Role.admin):
             from fastapi import HTTPException
             raise HTTPException(status_code=403, detail="insufficient role")
@@ -120,6 +121,7 @@ def health():
 #      若在 API 路由之前挂载，会把 /api/* 也吃掉（FastAPI 按注册顺序匹配）。
 # 生产模式：前端 build 后由后端托管，实现"单端口启动"。
 # 注意 config.BASE_DIR 指向 backend/，前端在同级 web/ 下。
-WEB_DIST = os.path.join(os.path.dirname(config.BASE_DIR), "web", "dist")
+# FIDELITY_WEB_DIST serves another build (the browser tests use their own, so the running app is not touched)
+WEB_DIST = os.environ.get("FIDELITY_WEB_DIST") or os.path.join(os.path.dirname(config.BASE_DIR), "web", "dist")
 if os.path.isdir(WEB_DIST):
     app.mount("/", SPAStaticFiles(directory=WEB_DIST, html=True), name="web")

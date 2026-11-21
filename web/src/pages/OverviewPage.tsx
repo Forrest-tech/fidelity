@@ -1,72 +1,122 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Card, Col, Row, Statistic, Typography } from "antd";
+import { Link, useNavigate } from "react-router-dom";
 import { api } from "../net/client";
-import { EmptyState, ErrorState, Loading, PageHeader } from "../components/ui";
+import { useAuth } from "../auth/AuthProvider";
+import { Bar, EmptyState, ErrorState, Loading, PageHeader, Pill } from "../components/ui";
+import type { Room } from "./DistillPage";
+import type { Notice } from "../layout/AppShell";
 
-interface Overview {
-  sources: number;
-  jobs: Record<string, number>;
-  documents: Record<string, number>;
-  needs_attention: Array<{ rel: string; sid: string; verdict: string; instruction_like: number }>;
+interface Library {
+  rules: { hits: number; enabled: boolean }[];
+  total: number;
+  enabled: number;
 }
 
-function Stat({ label, value }: { label: string; value: number | string }) {
-  return (
-    <Card>
-      <Statistic title={label} value={value} formatter={(v) => <span data-testid={`stat-${label}`}>{v}</span>} />
-    </Card>
+function Stat({ label, value, sub, to, id }: { label: string; value: number | string; sub?: string; to?: string; id: string }) {
+  const body = (
+    <>
+      <div className="fx-muted fx-tiny">{label}</div>
+      <div className="fx-num" style={{ fontSize: 30, fontWeight: 600, lineHeight: 1.15, marginTop: 4 }} data-testid={`stat-${id}`}>{value}</div>
+      {sub && <div className="fx-muted fx-tiny" style={{ marginTop: 2 }}>{sub}</div>}
+    </>
+  );
+  return to ? (
+    <Link to={to} className="fx-card" style={{ padding: 14, color: "inherit", textDecoration: "none", display: "block" }}>{body}</Link>
+  ) : (
+    <div className="fx-card" style={{ padding: 14 }}>{body}</div>
   );
 }
 
+/** The overview: how all rooms stand, what needs a person, and whether the learning loop is working. */
 export function OverviewPage() {
   const { t } = useTranslation();
-  const q = useQuery({ queryKey: ["overview"], queryFn: () => api<Overview>("/overview"), refetchInterval: 10_000 });
-  const d = q.data && { ...q.data, documents: q.data.documents ?? {}, jobs: q.data.jobs ?? {}, needs_attention: q.data.needs_attention ?? [], sources: q.data.sources ?? 0 };
-  const docTotal = d ? Object.values(d.documents).reduce((a, b) => a + b, 0) : 0;
+  const { me } = useAuth();
+  const nav = useNavigate();
+  const rooms = useQuery({ queryKey: ["rooms", "active"], queryFn: () => api<{ rooms: Room[] }>("/rooms?archived=false"), refetchInterval: 15000 });
+  const archived = useQuery({ queryKey: ["rooms", "archived"], queryFn: () => api<{ rooms: Room[] }>("/rooms?archived=true") });
+  const notes = useQuery({ queryKey: ["notifications"], queryFn: () => api<{ items: Notice[]; unread: number }>("/notifications") });
+  const lib = useQuery({ queryKey: ["corrections"], queryFn: () => api<Library>("/corrections") });
+  if (rooms.isLoading) return <Loading />;
+  if (rooms.isError) return <ErrorState message={(rooms.error as Error).message} onRetry={() => void rooms.refetch()} />;
+  const list = rooms.data?.rooms ?? [];
+  const all = [...list, ...(archived.data?.rooms ?? [])];
+  const sum = (k: keyof Room["counts"]) => all.reduce((a, r) => a + (r.counts[k] as number), 0);
+  const total = sum("total");
+  const finished = sum("finished");
+  const running = list.filter((r) => r.job?.status === "running").length;
+  const queued = list.filter((r) => r.job?.status === "queued").length;
+  const hits = (lib.data?.rules ?? []).reduce((a, r) => a + r.hits, 0);
+  const attention = (notes.data?.items ?? []).filter((n) => n.type !== "done" && n.type !== "published").slice(0, 8);
+  const canEdit = me?.role === "reviewer" || me?.role === "admin";
   return (
-    <>
-      <PageHeader title={t("pages.overview.title")} />
-      {q.isLoading && <Loading />}
-      {q.isError && <ErrorState message={(q.error as Error).message} onRetry={() => void q.refetch()} />}
-      {d && docTotal === 0 && d.sources === 0 && <EmptyState title={t("pages.overview.empty")} hint={t("pages.overview.emptyHint")} />}
-      {d && (docTotal > 0 || d.sources > 0) && (
-        <div className="flex flex-col gap-6">
-          <Row gutter={[16, 16]}>
-            <Col xs={12} md={6}>
-              <Stat label={t("pages.overview.sources")} value={d.sources} />
-            </Col>
-            <Col xs={12} md={6}>
-              <Stat label={t("pages.overview.documents")} value={docTotal} />
-            </Col>
-            <Col xs={12} md={6}>
-              <Stat label={t("pages.overview.verified")} value={d.documents.PASS ?? 0} />
-            </Col>
-            <Col xs={12} md={6}>
-              <Stat label={t("pages.overview.running")} value={(d.jobs.running ?? 0) + (d.jobs.queued ?? 0)} />
-            </Col>
-          </Row>
-          <section aria-labelledby="attn">
-            <Typography.Title level={4} id="attn">
-              {t("pages.overview.attention")}
-            </Typography.Title>
-            {d.needs_attention.length === 0 ? (
-              <Typography.Text type="secondary">{t("pages.overview.attentionNone")}</Typography.Text>
+    <div className="fx-stack">
+      <PageHeader title={t("pages.overview.title")} desc={t("pages.overview.intro")}
+        extra={canEdit && <button className="fx-btn pri" onClick={() => nav("/distill?new=1")}>+ {t("pages.distill.newRoom")}</button>} />
+      {!all.length ? (
+        <EmptyState title={t("pages.overview.emptyRooms")} hint={t("pages.overview.emptyRoomsHint")} />
+      ) : (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
+            <Stat id="rooms" label={t("pages.overview.rooms")} value={list.length} sub={t("pages.overview.roomsSub", { running, queued, archived: archived.data?.rooms.length ?? 0 })} to="/distill" />
+            <Stat id="files" label={t("pages.overview.files")} value={total} sub={t("pages.overview.filesSub", { done: finished, pct: total ? Math.round((100 * finished) / total) : 0 })} />
+            <Stat id="review" label={t("pages.overview.toReview")} value={sum("below")} sub={t("pages.overview.toReviewSub")} />
+            <Stat id="cannot" label={t("pages.overview.cannot")} value={sum("unprocessable")} sub={t("pages.overview.cannotSub")} />
+            <Stat id="accepted" label={t("pages.overview.accepted")} value={sum("published")} sub={t("pages.overview.acceptedSub", { ok: sum("ok") })} />
+            <Stat id="rules" label={t("pages.overview.rules")} value={lib.data?.enabled ?? 0} sub={t("pages.overview.rulesSub", { hits })} to="/settings/corrections" />
+          </div>
+          <section aria-labelledby="attn" className="fx-stack" style={{ gap: 8 }}>
+            <h2 id="attn" style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>{t("pages.overview.attention")}</h2>
+            {!attention.length ? (
+              <div className="fx-muted">{t("pages.overview.attentionNone")}</div>
             ) : (
-              <Card size="small">
-                <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-                  {d.needs_attention.map((a) => (
-                    <li key={a.sid + a.rel} style={{ padding: "8px 4px", borderBottom: "1px solid var(--ant-color-split)" }}>
-                      <strong>{a.rel}</strong> · {t(`verdict.${a.verdict}`, { defaultValue: a.verdict })}
-                      {a.instruction_like > 0 && <Typography.Text type="warning"> · {t("pages.documents.instruction")}</Typography.Text>}
-                    </li>
-                  ))}
-                </ul>
-              </Card>
+              <div className="fx-tbox">
+                <table className="fx-t">
+                  <tbody>
+                    {attention.map((n) => (
+                      <tr key={n.key} style={{ cursor: "pointer" }} onClick={() => nav(n.to)}>
+                        <td style={{ width: 110 }}><Pill tone={n.tone === "warn" ? "warn" : n.tone}>{t(`shell.n.${n.type}.pill`)}</Pill></td>
+                        <td>
+                          <Link to={n.to} onClick={(e) => e.stopPropagation()} style={{ color: "inherit" }}>
+                            {t(`shell.n.${n.type}.title`, { room: n.room_name, n: n.n, pct: n.pct, num: n.num, reverts: n.reverts, skill: n.skill ? t(`pages.ai.skill.${n.skill}`) : "" })}
+                          </Link>
+                          <div className="fx-muted fx-tiny">{t(`shell.n.${n.type}.sub`, { room: n.room_name, message: n.message, skill: n.skill ? t(`pages.ai.skill.${n.skill}`) : "" })}</div>
+                        </td>
+                        <td className="fx-muted fx-tiny" style={{ textAlign: "right", whiteSpace: "nowrap" }}>{t(`shell.n.${n.type}.to`)} →</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </section>
-        </div>
+          <section aria-labelledby="rooms" className="fx-stack" style={{ gap: 8 }}>
+            <h2 id="rooms" style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>{t("pages.overview.roomsTitle")}</h2>
+            <div className="fx-tbox" style={{ overflowX: "auto" }}>
+              <table className="fx-t" style={{ minWidth: 640 }}>
+                <thead><tr><th>{t("pages.distill.colRoom")}</th><th>{t("pages.distill.colState")}</th><th>{t("pages.distill.files")}</th><th>{t("pages.distill.rate")}</th><th>{t("pages.distill.colAccuracyShort")}</th></tr></thead>
+                <tbody>
+                  {list.map((r) => (
+                    <tr key={r.id}>
+                      <td><Link to={`/distill?room=${r.id}`}><b>{r.name}</b></Link></td>
+                      <td>
+                        {r.job?.status === "running" ? <Pill tone="run">{t("pages.distill.runningPill")}</Pill>
+                          : r.job?.status === "queued" ? <Pill tone="idle">{t("pages.distill.room.queued", { n: r.job.position ?? 1 })}</Pill>
+                          : r.counts.below ? <Pill tone="warn">{t("pages.distill.room.review", { n: r.counts.below })}</Pill>
+                          : r.counts.total ? <Pill tone="ok">{t("pages.distill.room.done")}</Pill>
+                          : <Pill tone="idle">{t("pages.distill.room.notRun")}</Pill>}
+                      </td>
+                      <td className="fx-num">{r.counts.finished} / {r.counts.total}</td>
+                      <td><span className="fx-row" style={{ gap: 6 }}><Bar pct={r.counts.rate} width={90} label={t("pages.distill.rate")} /><span className="fx-num fx-tiny">{Math.round(r.counts.rate)}%</span></span></td>
+                      <td className="fx-num">{r.accuracy_avg != null ? `${r.accuracy_avg}%` : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </>
       )}
-    </>
+    </div>
   );
 }

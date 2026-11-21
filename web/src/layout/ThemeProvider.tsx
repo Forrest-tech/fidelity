@@ -68,49 +68,71 @@ export function ThemeProvider({ children, force }: { children: ReactNode; force?
         theme={{
           algorithm: dark ? antTheme.darkAlgorithm : antTheme.defaultAlgorithm,
           token: {
-            colorPrimary: "#1d4ed8",
+            // the tenth design's tokens (design.css), so antd widgets match the custom components
+            fontFamily: '"IBM Plex Sans", "Noto Sans SC", system-ui, -apple-system, "Segoe UI", sans-serif',
+            fontFamilyCode: '"IBM Plex Mono", ui-monospace, Consolas, monospace',
+            fontSize: 13,
+            controlHeight: 30,
             borderRadius: 6,
-            fontFamily: "inherit",
-            // Colours chosen to meet WCAG AA (4.5:1) on both surfaces; antd's defaults are too light for text and tags.
+            borderRadiusLG: 10,
+            borderRadiusSM: 4,
             ...(dark
               ? {
-                  // the dark algorithm darkens the blue; links and the selected menu item need a lighter one
-                  colorLink: "#8fb0ff",
-                  colorLinkHover: "#b3c8ff",
-                  colorLinkActive: "#8fb0ff",
-                  colorTextSecondary: "rgba(255,255,255,0.72)",
-                  colorTextTertiary: "rgba(255,255,255,0.72)",
-                  colorTextDescription: "rgba(255,255,255,0.72)",
-                  colorTextPlaceholder: "rgba(255,255,255,0.6)", // placeholders must reach 4.5:1 too
-                  colorError: "#ff7875",
-                  colorInfo: "#69b1ff", // "running" tags and info alerts
+                  colorPrimary: "#7aa2ff",
+                  colorTextLightSolid: "#0f1115", // text on the light dark-mode accent (7:1)
+                  colorBgLayout: "#0f1115",
+                  colorBgContainer: "#171a21",
+                  colorBgElevated: "#1d2129",
+                  colorFillAlter: "#12151b",
+                  colorBorder: "#2a2f3a",
+                  colorBorderSecondary: "#2a2f3a",
+                  colorSplit: "#2a2f3a",
+                  colorText: "#e8eaee",
+                  colorTextSecondary: "#9aa2b1",
+                  colorTextTertiary: "#9aa2b1",
+                  colorTextDescription: "#9aa2b1",
+                  colorTextPlaceholder: "#8a93a3",
+                  colorLink: "#7aa2ff",
+                  colorLinkHover: "#a6c0ff",
+                  colorLinkActive: "#7aa2ff",
+                  colorSuccess: "#5fd08a",
+                  colorWarning: "#f2b84b",
+                  colorError: "#ff8a80",
+                  colorInfo: "#6bb6ff",
                 }
               : {
-                  colorTextSecondary: "#595959",
-                  colorTextTertiary: "#595959",
-                  colorTextDescription: "#595959",
-                  colorTextPlaceholder: "#737373", // antd's #bfbfbf is 1.8:1 on white; this is 4.7:1
-                  // dark text colours, with the pale backgrounds pinned (antd would otherwise derive muddy ones from them)
-                  colorSuccess: "#237804",
-                  colorSuccessBg: "#f6ffed",
-                  colorSuccessBorder: "#b7eb8f",
-                  colorError: "#cf1322",
-                  colorErrorBg: "#fff2f0",
-                  colorErrorBorder: "#ffccc7",
-                  colorWarning: "#8a5300", // small tag text on the pale background needs this to reach 4.5:1
-                  colorWarningBg: "#fffbe6",
-                  colorWarningBorder: "#ffe58f",
-                  colorInfo: "#0958d9",
-                  colorInfoBg: "#e6f4ff",
-                  colorInfoBorder: "#91caff",
+                  colorPrimary: "#1d4ed8",
+                  colorBgLayout: "#f3f4f6",
+                  colorBgContainer: "#ffffff",
+                  colorFillAlter: "#f7f8fa",
+                  colorBorder: "#dfe2e8",
+                  colorBorderSecondary: "#dfe2e8",
+                  colorSplit: "#dfe2e8",
+                  colorText: "#16181d",
+                  colorTextSecondary: "#5b6270",
+                  colorTextTertiary: "#5b6270",
+                  colorTextDescription: "#5b6270",
+                  colorTextPlaceholder: "#6b7280", // 4.8:1 on white
+                  colorLink: "#1d4ed8",
+                  colorSuccess: "#13703a",
+                  colorSuccessBg: "#e3f5ea",
+                  colorSuccessBorder: "#a9dcbc",
+                  colorWarning: "#8a5300",
+                  colorWarningBg: "#fff2d6",
+                  colorWarningBorder: "#f1cf8a",
+                  colorError: "#b42318",
+                  colorErrorBg: "#fde8e6",
+                  colorErrorBorder: "#f4b9b2",
+                  colorInfo: "#0b5cad",
+                  colorInfoBg: "#e1f0fd",
+                  colorInfoBorder: "#a9cdf2",
                 }),
           },
-          components: dark
-            ? {
-                Menu: { itemSelectedColor: "#8fb0ff", horizontalItemSelectedColor: "#8fb0ff", itemHoverColor: "#b3c8ff", horizontalItemHoverColor: "#b3c8ff" },
-                Tabs: { itemSelectedColor: "#8fb0ff", itemActiveColor: "#8fb0ff", itemHoverColor: "#b3c8ff", inkBarColor: "#8fb0ff" },
-              }
-            : {},
+          components: {
+            Table: { headerBg: dark ? "#12151b" : "#f7f8fa", headerColor: dark ? "#9aa2b1" : "#5b6270", cellPaddingBlockSM: 8, headerSplitColor: "transparent" },
+            Modal: { borderRadiusLG: 12 },
+            Drawer: { colorBgElevated: dark ? "#171a21" : "#ffffff" },
+          },
         }}
       >
         {children}

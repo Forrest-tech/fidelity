@@ -242,3 +242,15 @@ def approve_suggestion(sid: str, user=Depends(current_user)):
 @router.post("/corrections/suggestions/{sid}/dismiss", dependencies=[Depends(require_role(Role.reviewer))])
 def dismiss_suggestion(sid: str, user=Depends(current_user)):
     return _guard(SG.dismiss, sid, _who(user))
+
+
+class KnownIn(BaseModel):
+    rel: str
+    item: int
+    known: bool = True
+
+
+@router.post("/rooms/{room_id}/places/known", dependencies=[Depends(require_role(Role.reviewer))])
+def mark_known(room_id: str, body: KnownIn, user=Depends(current_user)):
+    room = _guard(R.get_room, room_id)
+    return _guard(RV.mark_known, room, body.rel, body.item, body.known, _who(user))

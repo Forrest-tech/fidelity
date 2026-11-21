@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { mockApi, renderApp } from "./helpers";
@@ -45,30 +45,37 @@ describe("fixing a file", () => {
     const calls = api("reviewer");
     renderApp("/distill");
     const u = userEvent.setup({ pointerEventsCheck: 0 });
-    await u.click(await screen.findByLabelText("Fix AS 3500.1-2003.pdf"));
-    expect(await screen.findByText(/Watre pressure/)).toBeInTheDocument();
-    expect(screen.getByText("2 auto-fixed")).toBeInTheDocument();                       // in the file list
-    await u.type(screen.getByLabelText("Wrong text"), "Watre");
-    await u.type(screen.getByLabelText("Correct text"), "Water");
-    await u.click(screen.getByText("Preview"));
-    expect(await screen.findByText("Appears once in this document.")).toBeInTheDocument();
-    expect(screen.getByText("2 more places in 1 other documents.")).toBeInTheDocument();
-    await u.click(screen.getByText("Save and fix"));
+    expect(await screen.findByText("2 auto-fixed")).toBeInTheDocument();                  // in the file list
+    await u.click(screen.getByLabelText("Fix AS 3500.1-2003.pdf"));
+    const side = await screen.findByRole("complementary", { name: "The chosen place" });
+    expect(await within(side).findByText("Rule #1")).toBeInTheDocument();                  // the rule applied here opens first
+    await u.click(screen.getByRole("button", { name: "+ Fix a misread" }));
+    expect(await screen.findByText(/Watre pressure/)).toBeInTheDocument();                // the whole text shows
+    await u.type(within(side).getByLabelText("Wrong text"), "Watre");
+    await u.type(within(side).getByLabelText("Correct text"), "Water");
+    expect(await screen.findByText(/Appears once here\./)).toBeInTheDocument();          // the preview follows the typing
+    expect(screen.getByText(/2 more places in 1 other documents\./)).toBeInTheDocument();
+    await u.click(screen.getByRole("button", { name: "Confirm and save" }));
     await waitFor(() => {
       const c = calls.find((x) => x.url.endsWith("/corrections") && x.init?.method === "POST");
       expect(JSON.parse(String(c?.init?.body))).toEqual({ room_id: "r1", rel: FILE.rel, find: "Watre", replace: "Water", scope: "series" });
     });
-    expect(await screen.findByText("Saved as rule #9 and applied to this document.")).toBeInTheDocument();
+    expect(await screen.findByText(/Saved as rule #9/)).toBeInTheDocument();
     await u.click(screen.getByText("Fix them too (1)"));
-    expect(await screen.findByText("Applied. 1 other documents changed.")).toBeInTheDocument();
-    expect(calls.some((c) => c.url.endsWith("/corrections/k9/apply"))).toBe(true);
-    // a second rule starts fresh: it offers to fix the other documents again
-    await u.type(screen.getByLabelText("Wrong text"), "Watre");
-    await u.type(screen.getByLabelText("Correct text"), "Water");
-    await u.click(screen.getByText("Preview"));
-    await screen.findByText("Appears once in this document.");
-    await u.click(screen.getByText("Save and fix"));
-    expect(await screen.findByText("Fix them too (1)")).toBeInTheDocument();
+    await waitFor(() => expect(calls.some((c) => c.url.endsWith("/corrections/k9/apply"))).toBe(true));
+  });
+
+  it("will not save until there is a change", async () => {
+    api("reviewer");
+    renderApp("/distill");
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    await u.click(await screen.findByLabelText("Fix AS 3500.1-2003.pdf"));
+    await u.click(await screen.findByRole("button", { name: "+ Fix a misread" }));
+    const side = screen.getByRole("complementary", { name: "The chosen place" });
+    expect(within(side).getByRole("button", { name: "Confirm and save" })).toBeDisabled();
+    await u.type(within(side).getByLabelText("Wrong text"), "same");
+    await u.type(within(side).getByLabelText("Correct text"), "same");
+    expect(within(side).getByRole("button", { name: "Confirm and save" })).toBeDisabled();
   });
 
   it("undoes a rule in this document", async () => {
@@ -88,9 +95,35 @@ describe("fixing a file", () => {
     renderApp("/distill");
     const u = userEvent.setup({ pointerEventsCheck: 0 });
     await u.click(await screen.findByLabelText("Fix AS 3500.1-2003.pdf"));
+    expect((await screen.findAllByText("Rule #1")).length).toBeGreaterThan(0);
+    await u.click(screen.getByRole("button", { name: "Show the whole result" }));
     expect(await screen.findByText(/Watre pressure/)).toBeInTheDocument();
     expect(screen.queryByText("Undo here")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "+ Fix a misread" })).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Wrong text")).not.toBeInTheDocument();
+  });
+});
+
+describe("a file below the threshold with no flagged place", () => {
+  it("says why and can be accepted on its own after a confirmation", async () => {
+    const below = { ...FILE, state: "below", accuracy: 98.4, corrected: 0 };
+    const calls = api("reviewer", (url) =>
+      url.includes("/files") ? { body: { total: 1, files: [below] } }
+        : url.includes("/result?rel=") ? { body: { ...RESULT, corrections: [] } }
+        : url.includes("/review?rel=") ? { body: { items: [], ai: { enabled: false, skills: {} } } }
+        : undefined);
+    renderApp("/distill");
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    await u.click(await screen.findByRole("button", { name: "Review AS 3500.1-2003.pdf" }));
+    expect(await screen.findByText(/Accuracy 98.4% is below the accept threshold of 99%/)).toBeInTheDocument();
+    expect(screen.queryByText("Nothing in this file needs a look.")).not.toBeInTheDocument();
+    await u.click(screen.getByRole("button", { name: "It is right: accept this file" }));
+    expect(calls.some((c) => c.url.endsWith("/rooms/r1/accept"))).toBe(false);                 // asks first
+    await u.click(await screen.findByRole("button", { name: "Accept" }));
+    await waitFor(() => {
+      const c = calls.find((x) => x.url.endsWith("/rooms/r1/accept"));
+      expect(JSON.parse(String(c?.init?.body))).toEqual({ rels: [FILE.rel], force: true });
+    });
   });
 });
 

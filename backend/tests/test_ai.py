@@ -285,3 +285,18 @@ def test_only_administrators_see_the_ai_settings_and_keys_never_leave_the_server
     assert login("reviewer").get("/api/v1/ai/settings").status_code == 403
     assert login("viewer").get("/api/v1/ai/status").status_code == 200
     assert login("viewer").post("/api/v1/rooms/x/ask", json={"rel": "/a", "item": 0}).status_code == 403
+
+
+def test_a_place_can_be_marked_as_a_known_issue_and_back(ai, login):
+    room = _room_with_reading(ai)
+    assert [x["known"] for x in RV.items(room, "/a.pdf")["items"]] == [False, False]
+    r, v = login("reviewer"), login("viewer")
+    url = f"/api/v1/rooms/{room['id']}/places/known"
+    got = r.post(url, json={"rel": "/a.pdf", "item": 1, "known": True})
+    assert got.status_code == 200 and [x["known"] for x in got.json()["items"]] == [False, True]
+    assert r.post(url, json={"rel": "/a.pdf", "item": 1, "known": True}).json()["items"][1]["known"] is True   # twice is fine
+    assert r.post(url, json={"rel": "/a.pdf", "item": 1, "known": False}).json()["items"][1]["known"] is False
+    assert r.post(url, json={"rel": "/a.pdf", "item": 2, "known": True}).status_code == 404       # no such place
+    assert r.post(url, json={"rel": "/a.pdf", "item": -1, "known": True}).status_code == 404
+    assert r.post(url, json={"rel": "/nope.pdf", "item": 0, "known": True}).status_code == 404
+    assert v.post(url, json={"rel": "/a.pdf", "item": 0, "known": True}).status_code == 403        # viewers only look

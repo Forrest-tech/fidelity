@@ -241,6 +241,11 @@ CREATE TABLE IF NOT EXISTS rule_suggestion (
   call_id TEXT,
   created_at REAL, decided_by TEXT, decided_at REAL
 );
+-- Which notifications a person has read (notifications themselves are worked out from the current state).
+CREATE TABLE IF NOT EXISTS notification_read (
+  user_email TEXT, nkey TEXT, at REAL,
+  PRIMARY KEY (user_email, nkey)
+);
 -- A person checked a number rule's change in one document and found it right.
 CREATE TABLE IF NOT EXISTS correction_check (
   rule_id TEXT, room_id TEXT, rel TEXT, by_user TEXT, at REAL,
@@ -251,7 +256,8 @@ CREATE TABLE IF NOT EXISTS correction_check (
 # Columns added to `job` after its first version (a worker/process id and heartbeat for run supervision,
 # and what the scheduler needs: owning room, priority, capacity points, output folder key).
 _ROOM_FILE_COLUMNS = (("out_dir", "TEXT"), ("content_hash", "TEXT"), ("single_file", "INTEGER"), ("n_files", "INTEGER"),
-                      ("verdict", "TEXT"), ("corrections", "TEXT"), ("rule_checks", "INTEGER DEFAULT 0"))
+                      ("verdict", "TEXT"), ("corrections", "TEXT"), ("rule_checks", "INTEGER DEFAULT 0"),
+                      ("known", "TEXT"))
 _JOB_COLUMNS = (("pid", "INTEGER"), ("heartbeat_at", "REAL"), ("room_id", "TEXT"),
                 ("priority", "INTEGER DEFAULT 1"), ("points", "INTEGER DEFAULT 0"), ("dest_key", "TEXT"))
 

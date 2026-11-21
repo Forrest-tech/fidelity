@@ -22,7 +22,7 @@ export default defineConfig({
     url: `http://127.0.0.1:${PORT}/api/v1/health`,
     reuseExistingServer: false,
     timeout: 120_000,
-    env: { FIDELITY_DB_URL: DB, FIDELITY_SECRET: "e2e-secret-e2e-secret-e2e-secret-1234", QA_SERVER_PORT: String(PORT), PYTHONUTF8: "1" },
+    env: { FIDELITY_DB_URL: DB, FIDELITY_WEB_DIST: process.env.FIDELITY_WEB_DIST ?? "", FIDELITY_SECRET: "e2e-secret-e2e-secret-e2e-secret-1234", QA_SERVER_PORT: String(PORT), PYTHONUTF8: "1" },
   },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } } },

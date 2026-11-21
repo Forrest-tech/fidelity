@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert, Button, Card, Col, Form, Input, Row, Select, Table } from "antd";
+import { Alert, Button, Col, Form, Input, Row, Select, Table } from "antd";
 import { api, json } from "../net/client";
-import { EmptyState, ErrorState, Loading, PageHeader } from "../components/ui";
+import { EmptyState, ErrorState, Loading, PageHeader, TableBox } from "../components/ui";
 
 interface UserRow {
   id: string;
@@ -39,6 +39,7 @@ export function UsersPage() {
           {q.isError && <ErrorState message={(q.error as Error).message} onRetry={() => void q.refetch()} />}
           {q.data && q.data.length === 0 && <EmptyState title={t("pages.users.empty")} />}
           {q.data && q.data.length > 0 && (
+            <TableBox label={t("pages.users.title")}>
             <Table<UserRow>
               rowKey="id"
               dataSource={q.data}
@@ -48,10 +49,12 @@ export function UsersPage() {
                 { title: t("pages.users.role"), dataIndex: "role", render: (r: string) => t(`roles.${r}`, { defaultValue: r }) },
               ]}
             />
+            </TableBox>
           )}
         </Col>
         <Col xs={24} lg={8}>
-          <Card title={t("pages.users.add")}>
+          <section className="fx-card" aria-labelledby="add-user">
+            <h3 id="add-user">{t("pages.users.add")}</h3>
             <Form layout="vertical" aria-label={t("pages.users.add")} onFinish={() => create.mutate()}>
               <Form.Item label={t("login.email")} htmlFor="new-user-email">
                 <Input id="new-user-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -76,7 +79,7 @@ export function UsersPage() {
                 {t("pages.users.create")}
               </Button>
             </Form>
-          </Card>
+          </section>
         </Col>
       </Row>
     </>

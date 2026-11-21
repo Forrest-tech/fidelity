@@ -72,11 +72,11 @@ describe("distill page", () => {
     api("reviewer", [room(), room({ id: "r2", name: "NCC 2025", counts: counts({ total: 5, ok: 5, finished: 5, rate: 100 }) })]);
     renderApp("/distill");
     expect(await screen.findByRole("heading", { name: "Distill" })).toBeInTheDocument();
-    const first = (await screen.findByText("AS 3500")).closest(".ant-card") as HTMLElement;
+    const first = (await screen.findByText("AS 3500")).closest(".fx-room") as HTMLElement;
     expect(within(first).getByText("1 to review")).toBeInTheDocument();
-    expect(within(first).getByText("75%")).toBeInTheDocument();
+    expect(within(first).getByRole("img", { name: /Meets threshold 1/ })).toBeInTheDocument();          // open: the state bar of its files
     expect(await within(first).findByLabelText(/^Input/)).toBeInTheDocument();           // open: its settings are shown
-    const second = screen.getByText("NCC 2025").closest(".ant-card") as HTMLElement;
+    const second = screen.getByText("NCC 2025").closest(".fx-room") as HTMLElement;
     expect(within(second).queryByLabelText(/^Input/)).not.toBeInTheDocument();           // folded: only the summary
     expect(within(second).getByText("100%")).toBeInTheDocument();
     expect(within(second).getByText(/\/as 3500|No input yet/)).toBeInTheDocument();
@@ -87,7 +87,7 @@ describe("distill page", () => {
     renderApp("/distill");
     await screen.findByText("NCC 2025");
     await userEvent.setup().click(screen.getByRole("button", { name: "Open NCC 2025" }));
-    const second = screen.getByText("NCC 2025").closest(".ant-card") as HTMLElement;
+    const second = screen.getByText("NCC 2025").closest(".fx-room") as HTMLElement;
     expect(await within(second).findByLabelText(/^Input/)).toBeInTheDocument();
   });
 
@@ -121,7 +121,7 @@ describe("distill page", () => {
     await u.click(await screen.findByRole("button", { name: "Save" }));
     await waitFor(() => {
       const patch = calls.find((c) => c.init?.method === "PATCH");
-      expect(JSON.parse(String(patch?.init?.body))).toMatchObject({ source: "/as 3500/2018", threshold: 99 });
+      expect(JSON.parse(String(patch?.init?.body))).toEqual({ source: "/as 3500/2018", dest: "/Transfer_Md" });
     });
   });
 
@@ -133,10 +133,18 @@ describe("distill page", () => {
   });
 
   it("a queued room shows its place and can be moved to the front", async () => {
-    const calls = api("reviewer", [room({ job: { id: "j", status: "queued", progress: 0, message: "queued", position: 2 } })]);
+    const calls = api("reviewer", [room({ job: { id: "j", status: "queued", progress: 0, message: "queued", position: 2 } })], (url) =>
+      url.includes("/queue")
+        ? { body: { capacity: 2, used: 2, running: [{ job: "a", room: "r0", name: "NCC", points: 2 }],
+            queued: [{ job: "b", room: "r9", name: "Other", position: 1, points: 1, priority: 1 }, { job: "j", room: "r1", name: "AS 3500", position: 2, points: 1, priority: 1 }] } }
+        : undefined);
     renderApp("/distill");
-    expect(await screen.findByText("Waiting, no. 2")).toBeInTheDocument();
-    await userEvent.setup().click(await screen.findByRole("button", { name: "Run next" }));
+    expect((await screen.findAllByText("Waiting, no. 2")).length).toBeGreaterThan(0);
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    await u.click(screen.getByRole("button", { name: "Manage the queue and priority" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getAllByRole("button", { name: "Run next" })).toHaveLength(1);   // only the one that is not first
+    await u.click(within(dialog).getByRole("button", { name: "Run next" }));
     await waitFor(() => expect(calls.some((c) => c.url.endsWith("/rooms/r1/front") && c.init?.method === "POST")).toBe(true));
   });
 
@@ -144,10 +152,11 @@ describe("distill page", () => {
     const calls = api("reviewer", [room()]);
     renderApp("/distill");
     const u = userEvent.setup({ pointerEventsCheck: 0 });
-    await u.click(await screen.findByText("Accept 1 that qualify"));
-    expect(await screen.findByText(/sent to \/Transfer_Md/)).toBeInTheDocument();
-    expect(await screen.findByText("1 new, 0 replace the copy in the output folder.")).toBeInTheDocument();
-    await u.click(screen.getByText("Accept", { selector: ".ant-popover button span" }));
+    await u.click(await screen.findByRole("button", { name: "Accept 1 that qualify" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(/published to \/Transfer_Md/)).toBeInTheDocument();
+    await waitFor(() => expect(dialog).toHaveTextContent(/New\s*1\s*Replace\s*0/));
+    await u.click(within(dialog).getByRole("button", { name: "Accept" }));
     await waitFor(() => {
       const c = calls.find((x) => x.url.endsWith("/rooms/r1/accept"));
       expect(JSON.parse(String(c?.init?.body))).toEqual({ all_ok: true });
@@ -162,8 +171,8 @@ describe("distill page", () => {
           ? { status: 409, body: { detail: "cannot archive yet: 1 file(s) below the threshold" } }
           : undefined);
     renderApp("/distill");
-    expect(await screen.findByText("Capacity 2 of 2 points")).toBeInTheDocument();
-    expect(screen.getByText("1 waiting")).toBeInTheDocument();
+    expect(await screen.findByRole("img", { name: "Capacity 2 of 2 points" })).toBeInTheDocument();
+    expect(screen.getByText("Queue").parentElement).toHaveTextContent(/running\s*1\s*·\s*waiting\s*1/);
     const u = userEvent.setup();
     await u.click(await screen.findByRole("button", { name: "More" }));
     await u.click(await screen.findByText("Archive"));
@@ -174,7 +183,7 @@ describe("distill page", () => {
     api("reviewer", [room()]);
     renderApp("/distill");
     const u = userEvent.setup({ pointerEventsCheck: 0 });
-    await u.click(await screen.findByRole("button", { name: "Choose the input folder" }));
+    await u.click(await screen.findByRole("button", { name: "Choose a folder for Input (read only)" }));
     const dialog = (await screen.findByText("Use this folder")).closest(".ant-modal") as HTMLElement;
     await u.click(await within(dialog).findByText("2018"));                              // opened at the typed folder
     expect(await within(dialog).findByText("No folders inside.")).toBeInTheDocument();
@@ -203,5 +212,22 @@ describe("distill page", () => {
     expect(await screen.findByText("Compared with the output folder: 1 lines added, 1 removed.")).toBeInTheDocument();
     expect(screen.getByText("Pipe size 12 mm.")).toBeInTheDocument();
     expect(screen.getByText("Pipe size 15 mm.")).toBeInTheDocument();
+  });
+
+  it("deletes a room only after asking", async () => {
+    const calls = api("reviewer", [room()]);
+    renderApp("/distill");
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    await u.click(await screen.findByRole("button", { name: "More" }));
+    await u.click(await screen.findByRole("menuitem", { name: "Delete" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent("Delete the room “AS 3500”?");
+    expect(calls.some((c) => c.init?.method === "DELETE")).toBe(false);
+    await u.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    expect(calls.some((c) => c.init?.method === "DELETE")).toBe(false);
+    await u.click(screen.getByRole("button", { name: "More" }));
+    await u.click(await screen.findByRole("menuitem", { name: "Delete" }));
+    await u.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Delete" }));
+    await waitFor(() => expect(calls.some((c) => c.url.endsWith("/rooms/r1") && c.init?.method === "DELETE")).toBe(true));
   });
 });

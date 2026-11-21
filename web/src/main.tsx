@@ -7,7 +7,8 @@ import { AuthProvider } from "./auth/AuthProvider";
 import { ThemeProvider } from "./layout/ThemeProvider";
 import "./locales";
 import "./styles.css"; // legacy review screen styles
-import "./index.css"; // design tokens last so they win
+import "./index.css";
+import "./design.css"; // design tokens last so they win
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } });
 

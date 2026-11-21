@@ -34,30 +34,36 @@ function flat(o: unknown, p = ""): Record<string, string> {
 
 describe("overview", () => {
   it("shows counts and what needs attention", async () => {
+    const counts = { total: 10, finished: 7, below: 3, unprocessable: 1, published: 2, ok: 1, rate: 70 };
     mockApi((url) =>
       url.endsWith("/me")
         ? { body: ME("viewer") }
-        : {
-            body: {
-              sources: 2,
-              jobs: { running: 1, queued: 2 },
-              documents: { PASS: 4, FAIL: 1 },
-              needs_attention: [{ rel: "b.pdf", sid: "n2", verdict: "FAIL", instruction_like: 0 }],
-            },
-          },
+        : url.includes("/rooms?archived=false")
+          ? { body: { rooms: [{ id: 1, name: "Room A", counts, job: { status: "running" }, accuracy_avg: 97 }] } }
+          : url.includes("/rooms?archived=true")
+            ? { body: { rooms: [] } }
+            : url.includes("/notifications")
+              ? { body: { unread: 1, items: [{ key: "r1", type: "review", tone: "warn", to: "/distill?room=1", at: 0, read: false, room_name: "Room A", n: 3 }] } }
+              : { body: { rules: [{ hits: 5, enabled: true }], total: 1, enabled: 1 } },
     );
     renderApp("/");
-    expect(await screen.findByTestId("stat-Verified")).toHaveTextContent("4");
-    expect(screen.getByTestId("stat-In progress")).toHaveTextContent("3");
-    expect(screen.getByText("b.pdf")).toBeInTheDocument();
+    expect(await screen.findByTestId("stat-files")).toHaveTextContent("10");
+    expect(screen.getByTestId("stat-review")).toHaveTextContent("3");
+    expect(screen.getAllByText("Room A").length).toBeGreaterThan(0);
   });
 
   it("empty state when nothing exists", async () => {
     mockApi((url) =>
-      url.endsWith("/me") ? { body: ME("viewer") } : { body: { sources: 0, jobs: {}, documents: {}, needs_attention: [] } },
+      url.endsWith("/me")
+        ? { body: ME("viewer") }
+        : url.includes("/rooms")
+          ? { body: { rooms: [] } }
+          : url.includes("/notifications")
+            ? { body: { items: [], unread: 0 } }
+            : { body: { rules: [], total: 0, enabled: 0 } },
     );
     renderApp("/");
-    expect(await screen.findByTestId("empty-state")).toHaveTextContent("No documents have been distilled yet");
+    expect(await screen.findByTestId("empty-state")).toHaveTextContent("No rooms yet");
   });
 });
 
@@ -80,18 +86,44 @@ describe("jobs and documents", () => {
     expect(await screen.findByTestId("empty-state")).toHaveTextContent("No jobs have run yet");
   });
 
-  it("documents: shows results and filters by verdict via the API", async () => {
+  it("results: lists every room's files, filters by state and searches, and opens a file in its room", async () => {
+    const counts = { total: 3, pending: 0, processing: 0, ok: 1, below: 1, unprocessable: 1, publishing: 0, published: 0, finished: 3, rate: 100 };
+    const F = (rel: string, state: string, accuracy: number | null) => ({ rel, name: rel.split("/").pop(), kind: "pdf", size: 1, state, accuracy, diffs: 0, number_diffs: 0, reason: null, detail: null, pages: 4 });
+    mockApi((url) =>
+      url.endsWith("/me") ? { body: ME("viewer") }
+        : url.includes("/rooms?archived=false") ? { body: { rooms: [{ id: "r1", name: "AS 3500", counts }] } }
+        : url.includes("/rooms?archived=true") ? { body: { rooms: [{ id: "r2", name: "Old", counts: { ...counts, total: 0 } }] } }
+        : url.includes("/rooms/r1/files") ? { body: { total: 3, files: [F("/2003/a.pdf", "ok", 99.5), F("/2003/b.pdf", "below", 96), F("/c.pdf", "unprocessable", null)] } }
+        : { body: [] },
+    );
+    renderApp("/documents");
+    expect(await screen.findByText("2003/a.pdf")).toBeInTheDocument();
+    expect(screen.getByText("99.5%")).toBeInTheDocument();
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    await u.click(screen.getByRole("button", { name: "Below threshold 1" }));
+    expect(screen.queryByText("2003/a.pdf")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open b.pdf" })).toHaveAttribute("href", "/distill?room=r1&file=%2F2003%2Fb.pdf");
+    await u.click(screen.getByRole("button", { name: "All 3" }));
+    await u.type(screen.getByLabelText("Search file or room"), "c.pdf");
+    expect(screen.getByText("c.pdf")).toBeInTheDocument();
+    expect(screen.queryByText("2003/b.pdf")).not.toBeInTheDocument();
+    await u.clear(screen.getByLabelText("Search file or room"));
+    await u.type(screen.getByLabelText("Search file or room"), "zzz");
+    expect(screen.getByText("No file matches.")).toBeInTheDocument();
+  });
+
+  it("results: says what to do when nothing has been distilled, and shows the earlier pipeline's documents", async () => {
     const calls = mockApi((url) =>
-      url.endsWith("/me")
-        ? { body: ME("viewer") }
+      url.endsWith("/me") ? { body: ME("viewer") }
+        : url.includes("/rooms") ? { body: { rooms: [] } }
         : { body: [{ sid: "n2", rel: "a.pdf", verdict: "FAIL", files: 3, pages: 9, checks: { tables: false, chars: true } }] },
     );
     renderApp("/documents");
+    expect(await screen.findByTestId("empty-state")).toHaveTextContent("Nothing distilled yet.");
     expect(await screen.findByText("a.pdf")).toBeInTheDocument();
     expect(screen.getByText(/tables/)).toBeInTheDocument();
-    await userEvent.setup({ pointerEventsCheck: 0 }).click(screen.getByRole("radio", { name: "Failed" })); // the input is visually hidden; its label takes the click
-    await screen.findByText("a.pdf");
-    expect(calls.some((c) => c.url.includes("verdict=FAIL"))).toBe(true);
+    await userEvent.setup({ pointerEventsCheck: 0 }).click(screen.getByRole("radio", { name: "Failed" }));
+    await waitFor(() => expect(calls.some((c) => c.url.includes("verdict=FAIL"))).toBe(true));
   });
 });
 
@@ -271,7 +303,7 @@ describe("first-run setup and cloud storage", () => {
       return { body: {} };
     });
     renderApp("/settings/storage");
-    expect(await screen.findByText("Cloud storage")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "Cloud storage" })).toBeInTheDocument();
     expect(await screen.findByText("Connected as Forrest (f@example.com)")).toBeInTheDocument();
     const u = userEvent.setup({ pointerEventsCheck: 0 });
     const writer = screen.getByText("Write access (output folders)").closest("section")!;
@@ -286,8 +318,9 @@ describe("first-run setup and cloud storage", () => {
   it("reviewers do not see cloud storage", async () => {
     mockApi((url) => (url.endsWith("/me") ? { body: ME("reviewer") } : { body: {} }));
     renderApp("/settings");
-    await screen.findByRole("heading", { name: "Settings" });
+    await screen.findByRole("heading", { level: 1, name: "Account" });
     expect(screen.queryByText("Cloud storage")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Users and roles" })).not.toBeInTheDocument();
   });
 });
 

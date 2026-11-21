@@ -17,20 +17,20 @@ describe("auth guard", () => {
   it("shows the shell with navigation once signed in", async () => {
     mockApi((url) => (url.endsWith("/me") ? { body: ME("reviewer") } : { body: [] }));
     renderApp("/");
-    const nav = await screen.findByRole("navigation", { name: /main navigation/i });
+    const nav = await screen.findByRole("navigation", { name: "Main navigation" });
     expect(nav).toHaveTextContent("Overview");
     expect(nav).toHaveTextContent("Distill");
     expect(nav).not.toHaveTextContent("Users"); // admin only
-    await userEvent.setup().click(screen.getByRole("button", { name: "Account" }));
-    expect(await screen.findByRole("link", { name: "Settings" })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Users" })).not.toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole("button", { name: "Account menu" }));
+    expect(await screen.findByRole("menuitem", { name: "Settings" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Users" })).not.toBeInTheDocument();
   });
 
   it("shows the Users link to admins", async () => {
     mockApi((url) => (url.endsWith("/me") ? { body: ME("admin") } : { body: [] }));
     renderApp("/");
-    await userEvent.setup().click(await screen.findByRole("button", { name: "Account" }));
-    expect(await screen.findByRole("link", { name: "Users" })).toBeInTheDocument();
+    await userEvent.setup().click(await screen.findByRole("button", { name: "Account menu" }));
+    expect(await screen.findByRole("menuitem", { name: "Users" })).toBeInTheDocument();
   });
 
   it("blocks a non-admin from /users", async () => {
@@ -63,7 +63,7 @@ describe("login", () => {
     await user.clear(screen.getByLabelText("Password"));
     await user.type(screen.getByLabelText("Password"), "good-password");
     await user.click(screen.getByRole("button", { name: "Sign in" }));
-    await waitFor(() => expect(screen.getByRole("navigation", { name: /main navigation/i })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("navigation", { name: "Main navigation" })).toBeInTheDocument());
   });
 
   it("tells the user when too many attempts were made", async () => {
@@ -82,9 +82,9 @@ describe("language and page states", () => {
     mockApi((url) => (url.endsWith("/me") ? { body: ME("admin") } : { body: [] }));
     renderApp("/");
     const user = userEvent.setup();
-    await screen.findByRole("navigation", { name: /main navigation/i });
-    await user.click(within(screen.getByRole("radiogroup", { name: "Language" })).getByText("中文"));
-    expect(await screen.findByRole("link", { name: "蒸馏" })).toBeInTheDocument();
+    await screen.findByRole("navigation", { name: "Main navigation" });
+    await user.click(within(screen.getByRole("group", { name: "Language" })).getByRole("button", { name: "中文" }));
+    expect(await within(screen.getByRole("navigation", { name: "主导航" })).findByRole("link", { name: "蒸馏" })).toBeInTheDocument();
     expect(localStorage.getItem("fidelity.lang")).toBe("zh");
     await i18n.changeLanguage("en");
   });
