@@ -326,11 +326,15 @@ export function DropboxSync({ canEdit, isAdmin }: { canEdit: boolean; isAdmin: b
         {list.length > 0 && (
           <div>
             <Typography.Title level={5}>{t("pages.sources.dropbox.recent")}</Typography.Title>
+            {/* one run open at a time, kept here: antd's `accordion` marks the list as a tablist with the open
+                panel inside it, which screen readers (and axe: aria-required-children) reject */}
             <Collapse
-              accordion
               destroyOnHidden
               activeKey={open ? [open] : []}
-              onChange={(k) => setOpen((Array.isArray(k) ? k[0] : k) ?? null)}
+              onChange={(k) => {
+                const keys = (Array.isArray(k) ? k : [k]).map(String);
+                setOpen(keys.find((x) => x !== open) ?? null);
+              }}
               items={list.slice(0, 10).map((r) => ({
                 key: r.id,
                 label: (
