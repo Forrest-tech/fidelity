@@ -41,7 +41,15 @@ def _rule(r) -> dict:
     return {"id": r["id"], "num": r["num"], "find": r["find"], "replace": r["replace_with"], "before": r["before_ctx"] or "",
             "after": r["after_ctx"] or "", "kind": r["kind"], "scope": r["scope"], "series": r["series"], "doc": r["doc"],
             "enabled": bool(r["enabled"]), "reverts": r["reverts"] or 0, "source_room": r["source_room"],
-            "source_rel": r["source_rel"], "created_by": r["created_by"], "created_at": r["created_at"]}
+            "source_rel": r["source_rel"], "created_by": r["created_by"], "created_at": r["created_at"],
+            "auto": bool(_col(r, "auto")), "sampled": bool(_col(r, "sampled")), "check_result": _col(r, "check_result")}
+
+
+def _col(r, k):
+    try:
+        return r[k]
+    except (IndexError, KeyError):
+        return None
 
 
 def all_rules(enabled_only: bool = False) -> list:
@@ -196,7 +204,7 @@ def reapply(room_id: str, rel: str, rules: list | None = None) -> dict:
         need = (x["kind"] == "number" and (x["id"], room_id, rel) not in checked
                 and _sampled(x["id"], room_id, rel, checked_docs.get(x["id"], 0)))
         items.append({"rule": x["id"], "num": x["num"], "find": x["find"], "replace": x["replace"], "kind": x["kind"],
-                      "count": per_rule[x["id"]], "check": need})
+                      "count": per_rule[x["id"]], "check": need, "auto": bool(x.get("auto"))})
     checks = sum(1 for i in items if i["check"])
     old = json.loads(r["corrections"]) if r["corrections"] else []
     con = db.trust_rw()
@@ -340,7 +348,7 @@ def set_enabled(rule_id: str, enabled: bool) -> dict:
 
 def undo(rule_id: str, room_id: str, rel: str, user: str) -> dict:
     """A person undid a rule in one document: restore the original text there and do not apply it there again."""
-    get_rule(rule_id)
+    rule = get_rule(rule_id)
     _row(room_id, rel)
     con = db.trust_rw()
     try:
@@ -353,7 +361,11 @@ def undo(rule_id: str, room_id: str, rel: str, user: str) -> dict:
         con.commit()
     finally:
         con.close()
-    return reapply(room_id, rel)
+    out = reapply(room_id, rel)
+    if rule["auto"]:                                        # an automatic adoption a person undid was wrong
+        from ..ai import level3
+        level3.on_undone(rule, rel, user)
+    return out
 
 
 def confirm(rule_id: str, room_id: str, rel: str, user: str) -> dict:

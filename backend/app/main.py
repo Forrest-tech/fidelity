@@ -92,6 +92,8 @@ def _startup():
     handlers.register()
     from .jobs import rooms as _rooms
     _rooms.install_hooks()
+    from .ai import level3 as _level3
+    _level3.install_hooks()
     queue.start()
     print("[startup] trust.db ready, job workers started (owner pid=%s)" % os.getpid())
 
