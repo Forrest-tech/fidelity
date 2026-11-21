@@ -20,6 +20,8 @@ export interface FileRow {
   reason: string | null;
   detail: string | null;
   pages: number | null;
+  corrected?: number;
+  checks?: number;
 }
 
 type Counts = Record<FileState, number> & { total: number };
@@ -136,7 +138,7 @@ async function loadFiles(room: string, state: string, q: string): Promise<FileRo
 
 const COMPARABLE: FileState[] = ["ok", "below", "published"];
 
-export function RoomFiles({ roomId, live, onCompare }: { roomId: string; live: boolean; onCompare?: (rel: string) => void }) {
+export function RoomFiles({ roomId, live, onCompare, onFix }: { roomId: string; live: boolean; onCompare?: (rel: string) => void; onFix?: (rel: string) => void }) {
   const { t } = useTranslation();
   const [state, setState] = useState<string>("");
   const [q, setQ] = useState("");
@@ -230,7 +232,7 @@ export function RoomFiles({ roomId, live, onCompare }: { roomId: string; live: b
           rowKey="key"
           loading={files.isLoading}
           dataSource={rows}
-          scroll={{ x: onCompare ? 870 : 760, y: 340 }}
+          scroll={{ x: onCompare || onFix ? 900 : 760, y: 340 }}
           aria-label={t("pages.distill.files")}
           columns={[
             {
@@ -267,7 +269,13 @@ export function RoomFiles({ roomId, live, onCompare }: { roomId: string; live: b
                 n.folder ? (
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>{rollupText(n.counts!, t)}</Typography.Text>
                 ) : (
-                  <StateTag state={n.file!.state} detail={n.file!.state === "unprocessable" && n.file!.reason ? t(`pages.distill.reason.${n.file!.reason}`, { defaultValue: n.file!.reason }) : n.file!.state === "below" && n.file!.diffs ? t("pages.distill.diffs", { count: n.file!.diffs }) : undefined} />
+                  <Space size={4} wrap>
+                    <StateTag state={n.file!.state} detail={n.file!.state === "unprocessable" && n.file!.reason ? t(`pages.distill.reason.${n.file!.reason}`, { defaultValue: n.file!.reason }) : n.file!.state === "below" && n.file!.diffs ? t("pages.distill.diffs", { count: n.file!.diffs }) : undefined} />
+                    {!!n.file!.checks && <Tag color="warning" style={{ marginInlineEnd: 0 }}>{t("pages.distill.ruleChecks", { count: n.file!.checks })}</Tag>}
+                    {!n.file!.checks && !!n.file!.corrected && (
+                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>{t("pages.distill.autoFixed", { count: n.file!.corrected })}</Typography.Text>
+                    )}
+                  </Space>
                 ),
             },
             {
@@ -282,16 +290,25 @@ export function RoomFiles({ roomId, live, onCompare }: { roomId: string; live: b
                 return n.file!.accuracy == null ? "—" : <strong>{n.file!.accuracy}%</strong>;
               },
             },
-            ...(onCompare
+            ...(onCompare || onFix
               ? [
                   {
-                    title: t("pages.distill.colCompare"),
-                    width: 110,
+                    title: t("pages.distill.colActions"),
+                    width: 140,
                     render: (_: unknown, n: Node) =>
                       !n.folder && COMPARABLE.includes(n.file!.state) ? (
-                        <Button size="small" type="link" style={{ padding: 0 }} aria-label={t("pages.distill.compareFile", { name: n.name })} onClick={() => onCompare(n.file!.rel)}>
-                          {t("pages.distill.compare")}
-                        </Button>
+                        <Space size={10}>
+                          {onFix && (
+                            <Button size="small" type="link" style={{ padding: 0 }} aria-label={t("pages.distill.fixFile", { name: n.name })} onClick={() => onFix(n.file!.rel)}>
+                              {t("pages.distill.fixShort")}
+                            </Button>
+                          )}
+                          {onCompare && (
+                            <Button size="small" type="link" style={{ padding: 0 }} aria-label={t("pages.distill.compareFile", { name: n.name })} onClick={() => onCompare(n.file!.rel)}>
+                              {t("pages.distill.compare")}
+                            </Button>
+                          )}
+                        </Space>
                       ) : null,
                   },
                 ]

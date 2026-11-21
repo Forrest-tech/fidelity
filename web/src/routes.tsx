@@ -8,6 +8,7 @@ import { AppShell } from "./layout/AppShell";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { LoginPage } from "./pages/LoginPage";
 import { DistillPage } from "./pages/DistillPage";
+import { CorrectionsPage } from "./pages/CorrectionsPage";
 import { DocumentsPage } from "./pages/DocumentsPage";
 import { JobsPage } from "./pages/JobsPage";
 import { OverviewPage } from "./pages/OverviewPage";
@@ -43,6 +44,7 @@ export function AppRoutes() {
       >
         <Route index element={<OverviewPage />} />
         <Route path="distill" element={<DistillPage />} />
+        <Route path="corrections" element={<CorrectionsPage />} />
         <Route path="sources" element={<SourcesPage />} />
         <Route path="jobs" element={<JobsPage />} />
         <Route path="documents" element={<DocumentsPage />} />

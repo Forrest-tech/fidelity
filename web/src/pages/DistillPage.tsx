@@ -9,6 +9,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { EmptyState, ErrorState, Loading, PageHeader } from "../components/ui";
 import { RoomFiles } from "../components/RoomFiles";
 import { CompareDrawer } from "../components/CompareDrawer";
+import { FixDrawer } from "../components/FixDrawer";
 import { DropboxFolderPicker, isUnder } from "../components/DropboxFolderPicker";
 
 interface Loc {
@@ -96,6 +97,7 @@ function RoomBody({ room, canEdit }: { room: Room; canEdit: boolean }) {
   const [guard, setGuard] = useState(room.number_guard);
   const [picking, setPicking] = useState<"source" | "dest" | null>(null);
   const [comparing, setComparing] = useState<string | null>(null);
+  const [fixing, setFixing] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   useEffect(() => {
     setSource(loc(room.source));
@@ -243,8 +245,9 @@ function RoomBody({ room, canEdit }: { room: Room; canEdit: boolean }) {
       {room.job?.status === "running" && room.job.message && (
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>{room.job.message}</Typography.Text>
       )}
-      <RoomFiles roomId={room.id} live={active || (preview.data?.publishing ?? 0) > 0} onCompare={room.dest ? setComparing : undefined} />
+      <RoomFiles roomId={room.id} live={active || (preview.data?.publishing ?? 0) > 0} onCompare={room.dest ? setComparing : undefined} onFix={setFixing} />
       <CompareDrawer roomId={room.id} rel={comparing} onClose={() => setComparing(null)} />
+      <FixDrawer roomId={room.id} rel={fixing} canEdit={canEdit} onClose={() => setFixing(null)} />
       <DropboxFolderPicker
         open={picking !== null}
         title={t(picking === "dest" ? "pages.distill.chooseOutput" : "pages.distill.chooseInput")}
