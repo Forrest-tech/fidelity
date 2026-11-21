@@ -356,7 +356,7 @@ def test_a_file_that_cannot_be_read_is_an_outcome_with_a_reason_not_a_percentage
     ev = str(tmp_path / "e.jsonl")
     assert run("--events", ev) == 0
     bad = next(e for e in _events(ev) if e["type"] == "file" and e["rel"] == "/Guide.md")
-    assert bad["outcome"] == "unprocessable" and bad["reason"] == "download" and bad["accuracy"] is None
+    assert bad["outcome"] == "unprocessable" and bad["reason"] == "network" and bad["accuracy"] is None   # tried again next run
 
 
 def test_unchanged_files_are_reported_as_unchanged(world, tmp_path):

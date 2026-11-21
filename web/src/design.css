@@ -285,3 +285,7 @@ table.fx-t tr:last-child td { border-bottom: 0; }
   .fx-live-dot::after, .fx-bar-run i, .fx-steps li.now i, .fx-pill-live::before { animation: none !important; }
   .fx-bar-run.indet i { transform: none; }
 }
+
+/* a state with a long detail (a file name) is cut with "..." inside its column; the whole text is in its tooltip */
+.fx-files .fx-pill { max-width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: middle; }
+.fx-files .fx-pill::before { display: inline-block; margin-right: 5px; vertical-align: middle; }

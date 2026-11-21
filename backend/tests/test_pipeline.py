@@ -244,3 +244,17 @@ def test_the_start_of_a_run_rides_out_a_dropped_connection(world, monkeypatch):
     src.snapshot = flaky
     assert run("--workers", "1") == 0
     assert calls["n"] >= 3 and "/out/src/Doc0.md.md" in store.files
+
+
+def test_little_free_memory_means_one_file_at_a_time(monkeypatch):
+    """On the live 4 GB machine other programs left under 1 GB free; two readers then swapped and OCR went from about
+    15 s to over 70 s a page. Capacity follows the memory free when a run starts, not only the machine's size."""
+    monkeypatch.delenv("FIDELITY_CAPACITY_POINTS", raising=False)
+    monkeypatch.setattr(capacity, "auto_points", lambda: 4)
+    gb = 1024 ** 3
+    assert capacity.points(avail=int(0.9 * gb)) == 1
+    assert capacity.points(avail=3 * gb) == 2
+    assert capacity.points(avail=16 * gb) == 4                 # never more than the machine's size
+    assert capacity.points(avail=None) == 4                    # cannot tell: the machine's size
+    monkeypatch.setenv("FIDELITY_CAPACITY_POINTS", "3")
+    assert capacity.points(avail=int(0.5 * gb)) == 3           # an administrator's setting wins

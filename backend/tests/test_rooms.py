@@ -346,3 +346,27 @@ def test_api_creates_a_room_with_its_folders_in_one_step(login):
     bad = c.post("/api/v1/rooms", json={"prefix": "Room", "source": "/same", "dest": "/same/out"})
     assert bad.status_code == 422, bad.text
     assert len(c.get("/api/v1/rooms?archived=false").json()["rooms"]) == n0 + 1
+
+
+def test_duplicates_and_protected_files_with_an_unlocked_copy_are_skipped_not_failures():
+    """Seen live: a copy of a file elsewhere in the input folder showed as "cannot be processed", and so did a
+    copy-protected PDF kept beside its unlocked copy ("...-已解锁.pdf") that was distilled fine. Nothing is missing in
+    either case; they are "skipped", and a protected file without an unlocked copy still needs a person."""
+    r = _room(source=SRC)
+    _load(r["id"], [{"t": 1, "type": "listing", "files": [{"rel": x, "size": 1, "kind": "pdf"} for x in (
+        "/2018/3500.2-2018_V3  Plumbing.pdf", "/2018/3500.2-2018_V3  Plumbing-已解锁.pdf", "/2018/3500.3-2018 Stormwater.pdf",
+        "/AS 3500.0 Glossary.pdf", "/2018/AS 3500.0 Glossary.pdf")]},
+        {"t": 2, "type": "file", "rel": "/2018/3500.2-2018_V3  Plumbing.pdf", "outcome": "unprocessable", "reason": "protected"},
+        _file_event("/2018/3500.2-2018_V3  Plumbing-已解锁.pdf", 99.9),
+        {"t": 2, "type": "file", "rel": "/2018/3500.3-2018 Stormwater.pdf", "outcome": "unprocessable", "reason": "protected"},
+        _file_event("/2018/AS 3500.0 Glossary.pdf", 100.0),
+        {"t": 2, "type": "file", "rel": "/AS 3500.0 Glossary.pdf", "outcome": "skipped", "reason": "duplicate",
+         "detail": "same content as /2018/AS 3500.0 Glossary.pdf"}])
+    room = R.get_room(r["id"])
+    files = {f["rel"]: f for f in R.find_files(room)["files"]}
+    assert files["/AS 3500.0 Glossary.pdf"]["state"] == "skipped"
+    assert files["/2018/3500.2-2018_V3  Plumbing.pdf"]["state"] == "skipped"
+    assert files["/2018/3500.2-2018_V3  Plumbing.pdf"]["covered_by"] == "/2018/3500.2-2018_V3  Plumbing-已解锁.pdf"
+    assert files["/2018/3500.3-2018 Stormwater.pdf"]["state"] == "unprocessable"      # no unlocked copy: a person acts
+    c = R.counts(room)
+    assert (c["skipped"], c["unprocessable"], c["ok"]) == (2, 1, 2) and c["finished"] == 5

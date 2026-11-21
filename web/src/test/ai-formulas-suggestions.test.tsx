@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { mockApi, renderApp } from "./helpers";
 
 const ME = (role: string) => ({ id: "1", email: "a@example.com", role });
-const counts = { total: 1, pending: 0, processing: 0, ok: 0, below: 1, unprocessable: 0, publishing: 0, published: 0, finished: 1, rate: 100 };
+const counts = { total: 1, pending: 0, processing: 0, ok: 0, below: 1, unprocessable: 0, skipped: 0, publishing: 0, published: 0, finished: 1, rate: 100 };
 const ROOM = { id: "r1", name: "Plumbing", source: { kind: "dropbox", link: "/as 3500" }, dest: null, mode: "distill", threshold: 99, number_guard: true,
   priority: 1, points: 1, archived: false, updated_at: 1, counts, job: null };
 const FILE = { rel: "/AS 3500.1.pdf", name: "AS 3500.1.pdf", kind: "pdf", size: 1, state: "below", accuracy: 97.0, diffs: 1, number_diffs: 0, reason: null, detail: null, pages: 9 };
