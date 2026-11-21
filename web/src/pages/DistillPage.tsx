@@ -3,11 +3,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { Alert, Button, Card, Dropdown, Input, InputNumber, Popconfirm, Progress, Segmented, Space, Switch, Tabs, Tag, Typography } from "antd";
-import { CaretDownOutlined, CaretRightOutlined, EditOutlined, EllipsisOutlined, PlusOutlined } from "@ant-design/icons";
+import { CaretDownOutlined, CaretRightOutlined, EditOutlined, EllipsisOutlined, FolderOpenOutlined, PlusOutlined } from "@ant-design/icons";
 import { api, json } from "../net/client";
 import { useAuth } from "../auth/AuthProvider";
 import { EmptyState, ErrorState, Loading, PageHeader } from "../components/ui";
 import { RoomFiles } from "../components/RoomFiles";
+import { CompareDrawer } from "../components/CompareDrawer";
+import { DropboxFolderPicker, isUnder } from "../components/DropboxFolderPicker";
 
 interface Loc {
   kind: string;
@@ -61,6 +63,10 @@ interface Preview {
   has_dest: boolean;
   dest: string | null;
 }
+interface Impact {
+  new: number;
+  replaces: number;
+}
 
 const isActive = (r: Room) => r.job?.status === "queued" || r.job?.status === "running";
 const loc = (l: Loc | null) => l?.link ?? "";
@@ -88,6 +94,9 @@ function RoomBody({ room, canEdit }: { room: Room; canEdit: boolean }) {
   const [mode, setMode] = useState(room.mode);
   const [threshold, setThreshold] = useState<number>(room.threshold);
   const [guard, setGuard] = useState(room.number_guard);
+  const [picking, setPicking] = useState<"source" | "dest" | null>(null);
+  const [comparing, setComparing] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
   useEffect(() => {
     setSource(loc(room.source));
     setDest(loc(room.dest));
@@ -113,20 +122,44 @@ function RoomBody({ room, canEdit }: { room: Room; canEdit: boolean }) {
   const cancel = useMutation({ mutationFn: () => api(`/rooms/${room.id}/cancel`, { method: "POST" }), onSuccess: refresh });
   const front = useMutation({ mutationFn: () => api(`/rooms/${room.id}/front`, { method: "POST" }), onSuccess: refresh });
   const preview = useQuery({ queryKey: ["accept-preview", room.id], queryFn: () => api<Preview>(`/rooms/${room.id}/accept-preview`), refetchInterval: active ? 4000 : false });
+  const impact = useQuery({
+    queryKey: ["accept-impact", room.id],
+    queryFn: () => api<Impact>(`/rooms/${room.id}/accept-impact`),
+    enabled: confirming,
+    retry: false,
+    staleTime: 30000,
+  });
   const accept = useMutation({ mutationFn: () => api(`/rooms/${room.id}/accept`, json({ all_ok: true })), onSuccess: refresh });
   const err = (save.error || run.error || cancel.error || front.error || accept.error) as Error | null;
   const okCount = preview.data?.ok ?? 0;
+  const isPath = (v: string) => v.trim().startsWith("/");
+  const overlap = isPath(source) && isPath(dest) && (isUnder(dest, source) || isUnder(source, dest));
+  const browse = (which: "source" | "dest") => (
+    <Button
+      icon={<FolderOpenOutlined />}
+      disabled={!canEdit || active}
+      aria-label={t(which === "source" ? "pages.distill.chooseInput" : "pages.distill.chooseOutput")}
+      title={t("pages.distill.browse")}
+      onClick={() => setPicking(which)}
+    />
+  );
 
   return (
     <Space orientation="vertical" size={14} style={{ width: "100%" }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
         <label style={{ display: "grid", gap: 4 }}>
           <span style={{ fontWeight: 500 }}>{t("pages.distill.input")} <Typography.Text type="secondary" style={{ fontSize: 12 }}>({t("pages.distill.readOnly")})</Typography.Text></span>
-          <Input value={source} onChange={(e) => setSource(e.target.value)} disabled={!canEdit || active} placeholder="/as 3500" autoComplete="off" spellCheck={false} />
+          <Space.Compact style={{ width: "100%" }}>
+            <Input value={source} onChange={(e) => setSource(e.target.value)} disabled={!canEdit || active} placeholder="/as 3500" autoComplete="off" spellCheck={false} />
+            {canEdit && browse("source")}
+          </Space.Compact>
         </label>
         <label style={{ display: "grid", gap: 4 }}>
           <span style={{ fontWeight: 500 }}>{t("pages.distill.output")}</span>
-          <Input value={dest} onChange={(e) => setDest(e.target.value)} disabled={!canEdit || active} placeholder="/Transfer_Md/as 3500" autoComplete="off" spellCheck={false} />
+          <Space.Compact style={{ width: "100%" }}>
+            <Input value={dest} onChange={(e) => setDest(e.target.value)} disabled={!canEdit || active} placeholder="/Transfer_Md/as 3500" autoComplete="off" spellCheck={false} status={overlap ? "error" : undefined} />
+            {canEdit && browse("dest")}
+          </Space.Compact>
         </label>
         <div style={{ display: "grid", gap: 4 }}>
           <span style={{ fontWeight: 500 }}>{t("pages.distill.afterDistill")}</span>
@@ -161,6 +194,7 @@ function RoomBody({ room, canEdit }: { room: Room; canEdit: boolean }) {
         </div>
       </div>
 
+      {overlap && <Alert type="error" showIcon title={t("pages.distill.overlap")} />}
       {err && <Alert type="error" showIcon title={err.message} />}
       {room.job?.status === "interrupted" && <Alert type="warning" showIcon title={t("pages.distill.interruptedNote")} />}
       {room.job?.status === "error" && room.job.message && <Alert type="error" showIcon title={room.job.message} />}
@@ -168,7 +202,7 @@ function RoomBody({ room, canEdit }: { room: Room; canEdit: boolean }) {
       {canEdit && (
         <Space wrap>
           {dirty && (
-            <Button type="primary" loading={save.isPending} onClick={() => save.mutate()}>
+            <Button type="primary" disabled={overlap} loading={save.isPending} onClick={() => save.mutate()}>
               {t("pages.distill.save")}
             </Button>
           )}
@@ -181,7 +215,19 @@ function RoomBody({ room, canEdit }: { room: Room; canEdit: boolean }) {
           {room.job?.status === "queued" && <Button loading={front.isPending} onClick={() => front.mutate()}>{t("pages.distill.front")}</Button>}
           <Popconfirm
             title={t("pages.distill.acceptTitle", { count: okCount })}
-            description={t("pages.distill.acceptBody", { dest: preview.data?.dest ?? "" })}
+            description={
+              <Space orientation="vertical" size={4} style={{ maxWidth: 360 }}>
+                <span>{t("pages.distill.acceptBody", { dest: preview.data?.dest ?? "" })}</span>
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  {impact.data
+                    ? t("pages.distill.impact", { new: impact.data.new, replaces: impact.data.replaces })
+                    : impact.isError
+                      ? t("pages.distill.impactUnknown")
+                      : t("pages.distill.impactLoading")}
+                </Typography.Text>
+              </Space>
+            }
+            onOpenChange={setConfirming}
             okText={t("pages.distill.acceptOk")}
             cancelText={t("pages.distill.cancel")}
             onConfirm={() => accept.mutate()}
@@ -197,7 +243,23 @@ function RoomBody({ room, canEdit }: { room: Room; canEdit: boolean }) {
       {room.job?.status === "running" && room.job.message && (
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>{room.job.message}</Typography.Text>
       )}
-      <RoomFiles roomId={room.id} live={active || (preview.data?.publishing ?? 0) > 0} />
+      <RoomFiles roomId={room.id} live={active || (preview.data?.publishing ?? 0) > 0} onCompare={room.dest ? setComparing : undefined} />
+      <CompareDrawer roomId={room.id} rel={comparing} onClose={() => setComparing(null)} />
+      <DropboxFolderPicker
+        open={picking !== null}
+        title={t(picking === "dest" ? "pages.distill.chooseOutput" : "pages.distill.chooseInput")}
+        value={picking === "dest" ? dest : source}
+        warn={(p) => {
+          const other = picking === "dest" ? source : dest;
+          return isPath(other) && (isUnder(p, other) || isUnder(other, p)) ? t("pages.distill.overlap") : null;
+        }}
+        onPick={(p) => {
+          if (picking === "dest") setDest(p);
+          else setSource(p);
+          setPicking(null);
+        }}
+        onClose={() => setPicking(null)}
+      />
     </Space>
   );
 }
@@ -310,7 +372,7 @@ export function DistillPage() {
   });
   const queue = useQuery({ queryKey: ["queue"], queryFn: () => api<QueueView>("/queue"), refetchInterval: 5000 });
   const create = useMutation({
-    mutationFn: () => api<Room>("/rooms", json({})),
+    mutationFn: () => api<Room>("/rooms", json({ prefix: t("pages.distill.defaultName") })),
     onSuccess: (r) => {
       setOpen((p) => new Set([...(p ?? []), r.id]));
       void qc.invalidateQueries({ queryKey: ["rooms"] });

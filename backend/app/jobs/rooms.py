@@ -95,7 +95,11 @@ def list_rooms(archived: bool = False) -> list:
     return [_row(r) for r in rows]
 
 
-def create_room(name: str | None, user: str) -> dict:
+DEFAULT_PREFIX = "蒸馏室"
+
+
+def create_room(name: str | None, user: str, prefix: str | None = None) -> dict:
+    """A new room. Without a name it is called "<prefix> N" (the page sends the word in the person's language)."""
     rid = uuid.uuid4().hex[:10]
     now = db.now()
     con = db.trust_rw()
@@ -104,10 +108,11 @@ def create_room(name: str | None, user: str) -> dict:
         used = {r[0] for r in con.execute("SELECT name FROM room").fetchall()}
         name = (name or "").strip()[:80]
         if not name:
+            base = re.sub(r"\s+", " ", (prefix or "").strip())[:40] or DEFAULT_PREFIX
             k = n + 1
-            while f"蒸馏室 {k}" in used:
+            while f"{base} {k}" in used:
                 k += 1
-            name = f"蒸馏室 {k}"
+            name = f"{base} {k}"
         pos = con.execute("SELECT COALESCE(MAX(position),0)+1 FROM room").fetchone()[0]
         con.execute("INSERT INTO room(id,name,position,mode,threshold,number_guard,priority,points,archived,"
                     "created_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
@@ -153,6 +158,7 @@ def update_room(room_id: str, fields: dict) -> dict:
         vals.append(v)
     if not sets:
         return room
+    _check_overlap(fields, room)
     sets.append("updated_at=?")
     vals.append(db.now())
     con = db.trust_rw()
@@ -165,6 +171,19 @@ def update_room(room_id: str, fields: dict) -> dict:
     finally:
         con.close()
     return get_room(room_id)
+
+
+def _check_overlap(fields: dict, room: dict):
+    """The output folder must lie outside the input folder and the other way round (the iron rule; the run checks
+    it again, but saying so when the room is set up is kinder)."""
+    from ..distill import dropbox_io as D
+    src = fields["source"] if "source" in fields else (room["source"] or {}).get("link")
+    dst = fields["dest"] if "dest" in fields else (room["dest"] or {}).get("link")
+    src = src if isinstance(src, str) else (src or {}).get("link")
+    dst = dst if isinstance(dst, str) else (dst or {}).get("link")
+    if src and dst and src.strip().startswith("/") and dst.strip().startswith("/"):
+        if D.is_under(dst, src) or D.is_under(src, dst):
+            raise RoomError(422, "the output folder must be outside the input folder")
 
 
 def active_job(room_id: str) -> dict | None:
@@ -587,3 +606,41 @@ def install_hooks():
     from .queue import queue
     if after_run not in queue.after_done:
         queue.after_done.append(after_run)
+
+
+# ------------------------------------------------------------------ comparing with the live copy
+def _result_row(room: dict, rel: str):
+    r = next((x for x in _files(room["id"]) if x["rel"] == rel), None)
+    if r is None:
+        raise RoomError(404, f"no such file in this room: {rel}")
+    if derive_state(r, room) not in ("ok", "below", "published", "publishing") or not r["out_dir"]:
+        raise RoomError(409, "this file has no result to compare")
+    return r
+
+
+def compare_file(room: dict, rel: str) -> dict:
+    """The new result of one file against the copy now in the output folder."""
+    from ..distill import accept as AC
+    from ..distill import live as L
+    if not room["dest"]:
+        raise RoomError(422, "choose the output folder first")
+    r = _result_row(room, rel)
+    try:
+        live = L.open_live(room["dest"]["link"])
+        out = L.compare(os.path.join(S.room_dir(room["id"]), "out", r["out_dir"]), AC.live_key(r["out_dir"]), live)
+    except L.LiveError as e:
+        raise RoomError(e.status, e.message)
+    return {"rel": rel, "dest": room["dest"]["link"], "accuracy": r["accuracy"], "state": derive_state(r, room), **out}
+
+
+def accept_impact(room: dict) -> dict:
+    """Of the files that would be accepted now, how many are new to the output folder and how many replace one."""
+    from ..distill import accept as AC
+    from ..distill import live as L
+    if not room["dest"]:
+        raise RoomError(422, "choose the output folder first")
+    keys = [AC.live_key(r["out_dir"]) for r in _files(room["id"]) if derive_state(r, room) == "ok" and r["out_dir"]]
+    try:
+        return L.impact(keys, L.open_live(room["dest"]["link"]))
+    except L.LiveError as e:
+        raise RoomError(e.status, e.message)

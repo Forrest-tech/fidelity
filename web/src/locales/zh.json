@@ -336,7 +336,39 @@
       "diffs": "{{count}} 处待查",
       "notStarted": "未开始",
       "expand": "展开 {{name}}",
-      "collapse": "折叠 {{name}}"
+      "collapse": "折叠 {{name}}",
+      "defaultName": "蒸馏室",
+      "browse": "选择文件夹",
+      "chooseInput": "选择输入文件夹",
+      "chooseOutput": "选择输出文件夹",
+      "pickThis": "使用这个文件夹",
+      "noSubfolders": "里面没有文件夹。",
+      "overlap": "输出文件夹必须在输入文件夹之外。",
+      "compare": "对比",
+      "compareFile": "把 {{name}} 与输出文件夹中的版本对比",
+      "colCompare": "输出文件夹",
+      "impact": "其中 {{new}} 个是新增,{{replaces}} 个会替换输出文件夹里的旧版本。",
+      "impactLoading": "正在检查输出文件夹…",
+      "impactUnknown": "无法检查输出文件夹。",
+      "cmp": {
+        "title": "{{name}} 与输出文件夹对比",
+        "lines": "差异",
+        "new": "输出文件夹里还没有这个文件,入库会新增它。",
+        "same": "与输出文件夹中的版本相同(只有入库信息不同)。",
+        "changed": "与输出文件夹中的版本相比:新增 {{added}} 行,删除 {{removed}} 行。",
+        "added": "新增",
+        "removedLine": "删除",
+        "truncated": "只显示了差异的前面部分。",
+        "binary": "不是文本文件,只比较了大小。",
+        "sameFiles": "另有 {{count}} 个文件相同。",
+        "moreFiles": "还有 {{count}} 个文件没有对比。",
+        "file": {
+          "new": "新增",
+          "removed": "将被移除",
+          "same": "相同",
+          "changed": "有改动"
+        }
+      }
     }
   }
 }
