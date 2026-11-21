@@ -234,7 +234,7 @@ describe("Dropbox sync on the sources page", () => {
     api("reviewer");
     renderApp("/sources");
     const u = userEvent.setup();
-    await u.click(await screen.findByRole("tab", { name: /Finished/ }));
+    await u.click(await screen.findByRole("button", { name: /Finished/ }));   // a disclosure button, not an ARIA tab
     expect(await screen.findByText("Source folder verified unchanged.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Roll back this run" })).not.toBeInTheDocument();
   });
