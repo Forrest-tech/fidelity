@@ -194,6 +194,8 @@ CREATE INDEX IF NOT EXISTS idx_room_file_room ON room_file(room_id, outcome);
 
 # Columns added to `job` after its first version (a worker/process id and heartbeat for run supervision,
 # and what the scheduler needs: owning room, priority, capacity points, output folder key).
+_ROOM_FILE_COLUMNS = (("out_dir", "TEXT"), ("content_hash", "TEXT"), ("single_file", "INTEGER"), ("n_files", "INTEGER"),
+                      ("verdict", "TEXT"))
 _JOB_COLUMNS = (("pid", "INTEGER"), ("heartbeat_at", "REAL"), ("room_id", "TEXT"),
                 ("priority", "INTEGER DEFAULT 1"), ("points", "INTEGER DEFAULT 0"), ("dest_key", "TEXT"))
 
@@ -214,6 +216,8 @@ def init_trust():
             con.execute(f"ALTER TABLE file_eval ADD COLUMN IF NOT EXISTS {col} {typ}")
         for col, typ in _JOB_COLUMNS:
             con.execute(f"ALTER TABLE job ADD COLUMN IF NOT EXISTS {col} {typ}")
+        for col, typ in _ROOM_FILE_COLUMNS:
+            con.execute(f"ALTER TABLE room_file ADD COLUMN IF NOT EXISTS {col} {typ}")
         con.commit()
         con.close()
         return
@@ -228,6 +232,11 @@ def init_trust():
     for col, typ in _JOB_COLUMNS:
         try:
             con.execute(f"ALTER TABLE job ADD COLUMN {col} {typ}")
+        except Exception:
+            pass
+    for col, typ in _ROOM_FILE_COLUMNS:
+        try:
+            con.execute(f"ALTER TABLE room_file ADD COLUMN {col} {typ}")
         except Exception:
             pass
     con.commit()

@@ -49,6 +49,8 @@ def command(p: dict, events: str | None = None) -> list:
         cmd += ["--events", events]
     if p.get("room_id"):
         cmd += ["--room-dir", room_dir(p["room_id"])]
+    if p.get("publish_from"):
+        return cmd + ["--publish-from", p["publish_from"]]
     if p.get("rollback"):
         return cmd + ["--rollback", p["rollback"]]
     if p.get("dry_run"):

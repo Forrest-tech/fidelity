@@ -12,7 +12,8 @@ File state seen by people (derived, never stored, so changing a room's threshold
     ok              has a result and meets the room's threshold
     below           has a result but is below the threshold, or has a number difference while the guard is on
     unprocessable   no result could be produced (reason says why); there is no percentage
-    published       a person accepted it (it goes to the output folder)
+    publishing      accepted, being sent to the output folder
+    published       accepted and in the output folder
 """
 from __future__ import annotations
 
@@ -27,7 +28,7 @@ from ..distill import scoring as SC
 from . import capacity, sync_job as S
 
 MODES = ("distill", "upload")
-STATES = ("pending", "processing", "ok", "below", "unprocessable", "published")
+STATES = ("pending", "processing", "ok", "below", "unprocessable", "publishing", "published")
 
 
 class RoomError(Exception):
@@ -196,6 +197,8 @@ def derive_state(row, room: dict) -> str:
     """The state a person sees for one file (see the module docstring)."""
     if row["activity"] == "processing":
         return "processing"
+    if row["activity"] == "publishing":
+        return "publishing"
     outcome = row["outcome"]
     if not outcome:
         return "pending"
@@ -210,7 +213,8 @@ def _files(room_id: str) -> list:
     con = db.trust_rw()
     try:
         return con.execute("SELECT rel, kind, size, activity, outcome, reason, detail, accuracy, parts, diffs, number_diffs, "
-                           "confirmed, pages, run_id, updated_at FROM room_file WHERE room_id=?", (room_id,)).fetchall()
+                           "confirmed, confirmed_by, confirmed_at, pages, run_id, out_dir, content_hash, single_file, n_files, "
+                           "verdict, updated_at FROM room_file WHERE room_id=?", (room_id,)).fetchall()
     finally:
         con.close()
 
@@ -325,12 +329,11 @@ def submit_run(room_id: str, force: bool = False) -> str:
         raise RoomError(422, "choose the output folder, or switch to \"distill only\"")
     if active_job(room_id):
         raise RoomError(409, "this room is already queued or running")
-    upload = room["mode"] == "upload"
-    p = {"source_link": room["source"]["link"], "dry_run": not upload, "force": bool(force), "room_id": room_id}
-    if room["dest"]:
-        p["dest_link"] = room["dest"]["link"]
+    # A room's run only distills (results stay on this machine). Sending results to the output folder is a separate
+    # step, accept(), so a result is never published without having been judged, and nothing is distilled twice.
+    p = {"source_link": room["source"]["link"], "dry_run": True, "force": bool(force), "room_id": room_id}
     jid = queue.submit("dropbox_sync", json.dumps(p), "queued", room_id=room_id, priority=room["priority"],
-                       points=room["points"] or 1, dest_key=dest_key(room["dest"]) if upload else None)
+                       points=room["points"] or 1, dest_key=None)
     con = db.trust_rw()
     try:
         con.execute("UPDATE room SET last_job_id=?, updated_at=? WHERE id=?", (jid, db.now(), room_id))
@@ -407,12 +410,14 @@ def summary(room: dict) -> dict:
 
 # ------------------------------------------------------------------ events -> rows
 _UPSERT_FILE = ("INSERT INTO room_file(room_id, rel, kind, size, activity, outcome, reason, detail, accuracy, parts, diffs, "
-                "number_diffs, findings, pages, run_id, confirmed, updated_at) "
-                "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,?) "
+                "number_diffs, findings, pages, run_id, out_dir, content_hash, single_file, n_files, verdict, confirmed, updated_at) "
+                "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,?) "
                 "ON CONFLICT(room_id, rel) DO UPDATE SET kind=excluded.kind, size=COALESCE(excluded.size, room_file.size), "
                 "activity=excluded.activity, outcome=excluded.outcome, reason=excluded.reason, detail=excluded.detail, "
                 "accuracy=excluded.accuracy, parts=excluded.parts, diffs=excluded.diffs, number_diffs=excluded.number_diffs, "
-                "findings=excluded.findings, pages=excluded.pages, run_id=excluded.run_id, confirmed=0, "
+                "findings=excluded.findings, pages=excluded.pages, run_id=excluded.run_id, "
+                "out_dir=excluded.out_dir, content_hash=excluded.content_hash, single_file=excluded.single_file, "
+                "n_files=excluded.n_files, verdict=excluded.verdict, confirmed=0, confirmed_by=NULL, confirmed_at=NULL, "
                 "updated_at=excluded.updated_at")
 
 
@@ -433,12 +438,19 @@ def apply_event(con, room_id: str, job_id: str, ev: dict):
                     (now, room_id, ev["rel"]))
     elif t == "unchanged":
         con.execute("UPDATE room_file SET activity=NULL WHERE room_id=? AND rel=?", (room_id, ev["rel"]))
+    elif t == "published":
+        con.execute("UPDATE room_file SET activity=NULL, confirmed=1, confirmed_at=COALESCE(confirmed_at, ?), updated_at=? "
+                    "WHERE room_id=? AND rel=?", (now, now, room_id, ev["rel"]))
+    elif t == "publish_failed":
+        con.execute("UPDATE room_file SET activity=NULL, detail=?, updated_at=? WHERE room_id=? AND rel=?",
+                    ("could not be sent to the output folder: " + str(ev.get("error") or "")[:300], now, room_id, ev["rel"]))
     elif t == "file":
         findings = json.dumps((ev.get("findings") or [])[:200], ensure_ascii=False)
         con.execute(_UPSERT_FILE, (room_id, ev["rel"], ev.get("kind"), None, None, ev.get("outcome"), ev.get("reason") or "",
                                    ev.get("detail") or "", ev.get("accuracy"),
                                    json.dumps(ev.get("parts") or {}), ev.get("diffs") or 0, ev.get("number_diffs") or 0,
-                                   findings, ev.get("pages"), job_id, now))
+                                   findings, ev.get("pages"), job_id, ev.get("out_dir"), ev.get("content_hash"),
+                                   1 if ev.get("single_file") else 0, ev.get("n_files"), ev.get("verdict"), now))
         if ev.get("scan"):                           # a scanned file needed OCR: later runs of this room take 2 points
             con.execute("UPDATE room SET points=2 WHERE id=? AND COALESCE(points,1) < 2", (room_id,))
 
@@ -479,3 +491,99 @@ class EventReader:
         db.trust_write(_do)
         n = chunk.count(b"\n")
         return n
+
+
+# ------------------------------------------------------------------ accepting into the knowledge base
+def accept_preview(room: dict) -> dict:
+    """What "accept all that qualify" would do now."""
+    rows = _files(room["id"])
+    c = {"ok": 0, "below": 0, "published": 0, "publishing": 0}
+    for r in rows:
+        st = derive_state(r, room)
+        if st in c:
+            c[st] += 1
+    return {**c, "has_dest": bool(room["dest"]), "dest": (room["dest"] or {}).get("link"), "threshold": room["threshold"],
+            "number_guard": room["number_guard"]}
+
+
+def accept(room_id: str, user: str, rels=None, all_ok: bool = False, force: bool = False) -> dict:
+    """Send accepted results to the output folder.
+
+    all_ok: every file that meets the threshold. rels: these files; one below the threshold needs force=True (a person
+    decides it is good enough, and the published copy says so). Returns {job, count}."""
+    from .queue import queue
+    room = get_room(room_id)
+    if not room["dest"]:
+        raise RoomError(422, "choose the output folder first")
+    if active_job(room_id):
+        raise RoomError(409, "this room is queued or running; wait for it to finish")
+    rows = {r["rel"]: r for r in _files(room_id)}
+    chosen = []
+    if all_ok:
+        chosen = [r for r in rows.values() if derive_state(r, room) == "ok"]
+    for rel in rels or []:
+        r = rows.get(rel)
+        if r is None:
+            raise RoomError(404, f"no such file in this room: {rel}")
+        st = derive_state(r, room)
+        if st == "ok" or (st == "below" and force):
+            chosen.append(r)
+        elif st == "below":
+            raise RoomError(409, f"{rel} is below the threshold; confirm it to accept it anyway")
+        elif st in ("published", "publishing"):
+            continue
+        else:
+            raise RoomError(409, f"{rel} has no result to accept ({st})")
+    seen, items = set(), []
+    for r in chosen:
+        if r["rel"] in seen:
+            continue
+        seen.add(r["rel"])
+        if not r["out_dir"]:
+            raise RoomError(409, f"{r['rel']}: its result is missing; run the room again")
+        items.append({"rel": r["rel"], "out_dir": r["out_dir"], "content_hash": r["content_hash"], "accuracy": r["accuracy"],
+                      "forced": derive_state(r, room) == "below", "by": user})
+    if not items:
+        raise RoomError(409, "nothing to accept")
+    plan = os.path.join(S.room_dir(room_id), f"publish-{uuid.uuid4().hex[:8]}.json")
+    os.makedirs(os.path.dirname(plan), exist_ok=True)
+    with open(plan, "w", encoding="utf-8") as f:
+        json.dump({"items": items}, f, ensure_ascii=False)
+    p = {"source_link": room["source"]["link"], "dest_link": room["dest"]["link"], "publish_from": plan, "room_id": room_id}
+    jid = queue.submit("dropbox_sync", json.dumps(p), "queued", room_id=room_id, priority=room["priority"], points=1,
+                       dest_key=dest_key(room["dest"]))
+    now = db.now()
+    con = db.trust_rw()
+    try:
+        for it in items:
+            con.execute("UPDATE room_file SET activity='publishing', confirmed_by=?, confirmed_at=?, updated_at=? "
+                        "WHERE room_id=? AND rel=?", (user, now, now, room_id, it["rel"]))
+        con.execute("UPDATE room SET last_job_id=?, updated_at=? WHERE id=?", (jid, now, room_id))
+        con.commit()
+    finally:
+        con.close()
+    return {"job": jid, "count": len(items)}
+
+
+def after_run(job: dict | None):
+    """A room that is set to "upload" accepts what qualifies by itself once its distilling run has finished well."""
+    if not job or not job.get("room_id"):
+        return
+    try:
+        p = json.loads(job.get("rel") or "{}")
+    except ValueError:
+        return
+    if p.get("publish_from"):
+        return                                              # that was a publishing job
+    room = get_room(job["room_id"])
+    if room["mode"] == "upload" and room["dest"] and not room["archived"]:
+        try:
+            accept(room["id"], "automatic (room is set to upload)", all_ok=True)
+        except RoomError:
+            pass                                            # nothing qualified, or something is already queued
+
+
+def install_hooks():
+    from .queue import queue
+    if after_run not in queue.after_done:
+        queue.after_done.append(after_run)
