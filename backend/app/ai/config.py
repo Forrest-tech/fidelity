@@ -33,8 +33,8 @@ KINDS = {
 }
 
 SKILLS = ("arbitrate", "explain", "transcribe", "suggest")
-MAX_LEVEL = {"arbitrate": 2, "explain": 1, "transcribe": 1, "suggest": 1}   # only arbitration may run by default
-LEVELS = (0, 1, 2)         # 0 off, 1 when a person asks, 2 asked by default (still only a suggestion)
+MAX_LEVEL = {"arbitrate": 3, "explain": 1, "transcribe": 1, "suggest": 1}   # only arbitration may run by default
+LEVELS = (0, 1, 2, 3)      # 0 off, 1 when a person asks, 2 asked by default, 3 adopted for plain text (see level3.py)
 
 DEFAULTS = {
     "enabled": False,
@@ -42,6 +42,7 @@ DEFAULTS = {
     "skills": {s: {"provider": None, "model": None, "level": 1, "budget_usd": 20.0, "monthly_cap": 500} for s in SKILLS},
     "scope": {"allowed_prefixes": [], "block_licensed": True},
     "evals": {},            # "skill|provider|model" -> {score, n, at}
+    "demotions": [],        # [{at, from, to, reason}] when a skill fell back a level by itself
 }
 
 
@@ -218,7 +219,7 @@ def eval_key(skill: str, pid: str | None, model: str | None) -> str:
     return f"{skill}|{pid}|{model}"
 
 
-def update(changes: dict, eval_examples: int = 0) -> dict:
+def update(changes: dict, eval_examples: int = 0, user: str | None = None) -> dict:
     """Master switch, skills (provider, model, level, budget, cap) and send scope.
 
     Iron rule 10: a skill's model changes only after the new model was tested on the confirmed examples and scored
@@ -250,6 +251,12 @@ def update(changes: dict, eval_examples: int = 0) -> dict:
                 raise ConfigError(409, "test the new model on the confirmed examples first")
             if now and cand["score"] < now["score"]:
                 raise ConfigError(409, f"the new model scored {cand['score']}% against {now['score']}% for the current one")
+        if new["level"] == 3 and cur["level"] < 3:            # level 3 is earned, and an administrator switches it on
+            from . import level3
+            el = level3.eligibility()
+            if not el["eligible"]:
+                raise ConfigError(409, "automatic adoption is not earned yet: " + ", ".join(m["code"] for m in el["missing"]))
+            new["promoted_by"], new["promoted_at"] = user, __import__("time").time()
         s["skills"][name] = new
     if "scope" in changes:
         sc = changes["scope"] or {}

@@ -512,7 +512,8 @@
         "appliedOthers": "已完成,另外 {{count}} 份文档有改动。",
         "result": "结果",
         "library": "纠正库",
-        "cut": "后面的内容没有显示。"
+        "cut": "后面的内容没有显示。",
+        "auto": "AI 自动"
       },
       "places": {
         "title": "拿不准的地方",
@@ -780,7 +781,15 @@
       "fromSuggestion": "建议",
       "rerunTitle": "用新规则重跑",
       "places_one": "{{count}} 处",
-      "places_other": "{{count}} 处"
+      "places_other": "{{count}} 处",
+      "auto": {
+        "title": "AI 自动采用的修正 — 请抽查",
+        "summary": "AI 自行采用了 {{total}} 处;抽查对 {{right}}、错 {{wrong}}。",
+        "none": "没有等待抽查的。",
+        "right": "对",
+        "wrong": "不对",
+        "wrongNote": "点\"不对\"会在该文档里撤销这处修正,并把读数仲裁退回第 2 级。"
+      }
     },
     "ai": {
       "intro": "接入模型,处理系统拿不准的地方。AI 只提建议:任何改动都要经过人或精确的纠正规则。",
@@ -870,9 +879,26 @@
       "spent": "已用 ${{n}}",
       "edit": "修改",
       "editSkill": "修改{{name}}",
-      "levelsNote": "所有技能都只提建议。数字、公式和表格永远需要人确认。",
+      "levelsNote": "技能只提建议。只有读法仲裁在第 3 级时会自己采用纯文字，并由人抽查。数字、公式和表格永远需要人确认。",
       "onlyFrom": "只允许发送这些文件夹的内容:",
-      "pausedShort": "已暂停"
+      "pausedShort": "已暂停",
+      "level3": "自动采用(仅文字)",
+      "l3": {
+        "notYet": "还不能自动采用:",
+        "decided": "人已决定 {{have}} / {{need}} 条建议",
+        "adoption": "人采纳率 {{have}}%(需要 {{need}}%)",
+        "wrong": "{{date}} 抽查发现自动采用有错",
+        "glossary": "还没有从已验证文档生成的词表",
+        "earned": "已达到自动采用的条件:与词表一致的纯文字读法可以不问人直接采用。数字、公式、表格永远不会。",
+        "on": "至今自动采用 {{total}} 处(抽查对 {{right}}、错 {{wrong}},{{pending}} 处等待抽查)。",
+        "demoted": "{{date}} 自动从第 {{from}} 级退回第 {{to}} 级",
+        "why": {
+          "found_wrong": "{{who}} 抽查发现 {{file}} 里的自动采用有错(规则 #{{num}})。",
+          "low_adoption": "最近 {{window}} 条建议里,人采纳的不到 {{floor}}%。"
+        }
+      },
+      "mode3": "纯文字自动采用",
+      "levelLocked": "还没有达到自动采用的条件。"
     }
   },
   "shell": {

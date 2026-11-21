@@ -370,7 +370,7 @@ export function FixDrawer({ roomId, rel, canEdit, onClose, threshold }: { roomId
                       <tr key={c.rule} className={current?.type === "rule" && current.c.rule === c.rule ? "sel" : undefined} style={{ cursor: "pointer" }} onClick={() => choose({ type: "rule", c })}>
                         <td><Pill tone="idle">{c.kind === "number" ? t("pages.distill.places.kind.numbers") : t("pages.distill.fix2.chars")}</Pill></td>
                         <td className="fx-num fx-muted">—</td>
-                        <td><Pill tone={c.auto ? "ai" : "ok"}>{t("pages.distill.fix2.rule", { num: c.num })}</Pill> <code>{c.find}</code> → <code>{c.replace}</code>{c.check && <> <Pill tone="warn">{t("pages.distill.fix.needsCheck")}</Pill></>}</td>
+                        <td><Pill tone={c.auto ? "ai" : "ok"}>{t("pages.distill.fix2.rule", { num: c.num })}{c.auto ? ` · ${t("pages.distill.fix2.byAi")}` : ""}</Pill> <code>{c.find}</code> → <code>{c.replace}</code>{c.check && <> <Pill tone="warn">{t("pages.distill.fix.needsCheck")}</Pill></>}</td>
                         <td className="fx-muted fx-tiny">{t("pages.distill.fix2.autoFixed")} · <button className="fx-a" onClick={(e) => { e.stopPropagation(); rulePlace.mutate({ what: "undo", rule: c.rule }); }} disabled={!canEdit}>{t("pages.distill.fix2.undoShort")}</button></td>
                       </tr>
                     ))}

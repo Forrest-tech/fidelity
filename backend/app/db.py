@@ -258,6 +258,9 @@ CREATE TABLE IF NOT EXISTS correction_check (
 _ROOM_FILE_COLUMNS = (("out_dir", "TEXT"), ("content_hash", "TEXT"), ("single_file", "INTEGER"), ("n_files", "INTEGER"),
                       ("verdict", "TEXT"), ("corrections", "TEXT"), ("rule_checks", "INTEGER DEFAULT 0"),
                       ("known", "TEXT"))
+# A rule the AI adopted on its own (level 3), whether it was picked for a person to check, and what the check found.
+_RULE_COLUMNS = (("auto", "INTEGER DEFAULT 0"), ("call_id", "TEXT"), ("sampled", "INTEGER DEFAULT 0"), ("check_result", "TEXT"),
+                 ("checked_by", "TEXT"), ("checked_at", "REAL"))
 _JOB_COLUMNS = (("pid", "INTEGER"), ("heartbeat_at", "REAL"), ("room_id", "TEXT"),
                 ("priority", "INTEGER DEFAULT 1"), ("points", "INTEGER DEFAULT 0"), ("dest_key", "TEXT"))
 
@@ -280,6 +283,8 @@ def init_trust():
             con.execute(f"ALTER TABLE job ADD COLUMN IF NOT EXISTS {col} {typ}")
         for col, typ in _ROOM_FILE_COLUMNS:
             con.execute(f"ALTER TABLE room_file ADD COLUMN IF NOT EXISTS {col} {typ}")
+        for col, typ in _RULE_COLUMNS:
+            con.execute(f"ALTER TABLE correction_rule ADD COLUMN IF NOT EXISTS {col} {typ}")
         con.commit()
         con.close()
         return
@@ -299,6 +304,11 @@ def init_trust():
     for col, typ in _ROOM_FILE_COLUMNS:
         try:
             con.execute(f"ALTER TABLE room_file ADD COLUMN {col} {typ}")
+        except Exception:
+            pass
+    for col, typ in _RULE_COLUMNS:
+        try:
+            con.execute(f"ALTER TABLE correction_rule ADD COLUMN {col} {typ}")
         except Exception:
             pass
     con.commit()

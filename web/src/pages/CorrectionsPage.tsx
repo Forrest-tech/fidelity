@@ -7,6 +7,7 @@ import { api, json } from "../net/client";
 import { useAuth } from "../auth/AuthProvider";
 import { EmptyState, ErrorState, Loading, PageHeader, Pill } from "../components/ui";
 import { RuleSuggestions } from "../components/RuleSuggestions";
+import { AutoChecks } from "../components/AutoChecks";
 
 interface Rule {
   id: string;
@@ -101,6 +102,7 @@ export function CorrectionsPage() {
         extra={<button className="fx-btn" disabled={!d?.total} onClick={exportRules}>{t("pages.corrections.export")}</button>} />
       {err && <div className="fx-errnote" role="alert">{err.message}</div>}
       {done && <div className="fx-note" role="status">{done} <button className="fx-a" onClick={() => setDone(null)}>{t("pages.distill.dismiss")}</button></div>}
+      <AutoChecks canEdit={canEdit} />
       <RuleSuggestions canEdit={canEdit} onApproved={(a) => { refresh(); if (a.affected.length) setChanged({ rule: a.rule as unknown as Rule, docs: a.affected }); }} />
       {lib.isLoading && <Loading />}
       {lib.isError && <ErrorState message={(lib.error as Error).message} onRetry={() => void lib.refetch()} />}

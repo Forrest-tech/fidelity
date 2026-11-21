@@ -11,6 +11,7 @@ from ..ai import config as CF
 from ..ai import gate as G
 from ..ai import providers as P
 from ..ai import formulas as FX
+from ..ai import level3 as L3
 from ..ai import review as RV
 from ..ai import suggestions as SG
 from ..jobs import rooms as R
@@ -79,7 +80,9 @@ class DecisionIn(BaseModel):
 
 # ------------------------------------------------------------------ settings (administrators)
 def _settings():
-    return {**CF.public(), "stats": G.stats(), "examples": {s: G.example_count(s) for s in CF.SKILLS}}
+    c = L3.checks()
+    return {**CF.public(), "stats": G.stats(), "examples": {s: G.example_count(s) for s in CF.SKILLS},
+            "level3": {**L3.eligibility(), "auto": {k: c[k] for k in ("total", "right", "wrong")}, "pending": len(c["pending"])}}
 
 
 @router.get("/ai/settings", dependencies=admin)
@@ -88,9 +91,9 @@ def get_settings():
 
 
 @router.put("/ai/settings", dependencies=admin)
-def put_settings(body: dict):
+def put_settings(body: dict, user=Depends(current_user)):
     examples = max(G.example_count(s) for s in CF.SKILLS)
-    _guard(CF.update, body, examples)
+    _guard(CF.update, body, examples, _who(user))
     return _settings()
 
 
@@ -254,3 +257,21 @@ class KnownIn(BaseModel):
 def mark_known(room_id: str, body: KnownIn, user=Depends(current_user)):
     room = _guard(R.get_room, room_id)
     return _guard(RV.mark_known, room, body.rel, body.item, body.known, _who(user))
+
+
+# ------------------------------------------------------------------ automatic adoptions (level 3)
+class CheckIn(BaseModel):
+    right: bool
+
+
+@router.get("/ai/auto-checks")
+def auto_checks():
+    """Automatic adoptions picked for a person to check, and the totals."""
+    return L3.checks()
+
+
+@router.post("/ai/auto-checks/{rule_id}", dependencies=[Depends(require_role(Role.reviewer))])
+def auto_check(rule_id: str, body: CheckIn, user=Depends(current_user)):
+    """Right: it stays. Wrong: it is undone in that document and the skill goes back to level 2."""
+    _guard(L3.check, rule_id, body.right, _who(user))
+    return L3.checks()
