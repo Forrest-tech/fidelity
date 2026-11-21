@@ -716,7 +716,18 @@
         "acceptOneConfirm": "这个文件低于阈值，确定要入库吗？它会发布到输出文件夹。"
       },
       "deleteTitle": "删除蒸馏室「{{name}}」？",
-      "deleteBody": "会删除这个蒸馏室、它的文件清单和运行记录。输入和输出文件夹里的文件不会被动。删除后无法恢复。"
+      "deleteBody": "会删除这个蒸馏室、它的文件清单和运行记录。输入和输出文件夹里的文件不会被动。删除后无法恢复。",
+      "draftNeedsInput": "选好输入文件夹后才能保存这个房间。",
+      "draftTitle": "新房间(未保存)",
+      "draftNamePh": "房间名称(可不填)",
+      "roomName": "房间名称",
+      "draftPill": "未保存",
+      "draftHint": "保存之前不会创建任何东西。",
+      "draftRestored": "刚才没保存的新房间已恢复,可以保存或放弃。",
+      "discard": "放弃",
+      "saveRoom": "保存房间",
+      "eg": "例如 {{p}}",
+      "egOut": "例如 {{p}}(可不填)"
     },
     "corrections": {
       "title": "纠正库",
@@ -993,5 +1004,43 @@
       "close": "关闭窗口或菜单"
     },
     "scrollTable": "表格（可左右滚动）"
+  },
+  "leave": {
+    "title": "有未保存的更改,要离开吗?",
+    "body": "这个页面上还有没保存的更改。可以保存、放弃,或者留在这页。",
+    "stay": "留在这页",
+    "discard": "放弃",
+    "save": "保存",
+    "saving": "正在保存…",
+    "saveFailed": "保存失败。"
+  },
+  "run": {
+    "title": "运行进度",
+    "listing": "正在查看输入文件夹…",
+    "running": "正在蒸馏",
+    "publishing": "正在发送到输出文件夹",
+    "doneOf": "已完成 {{done}} / {{of}}",
+    "skipped_one": "{{count}} 个没变,已跳过",
+    "skipped_other": "{{count}} 个没变,已跳过",
+    "workers": "正在同时读取 {{n}} 个文件",
+    "elapsed": "已运行 {{t}}",
+    "activeTitle_one": "正在处理 {{count}} 个文件",
+    "activeTitle_other": "正在处理 {{count}} 个文件",
+    "queued_one": "{{count}} 个文件排队中",
+    "queued_other": "{{count}} 个文件排队中",
+    "queuedAt": "排队中 · 第 {{n}} 个",
+    "inStep": "这一步已用时间",
+    "stepsOf": "这个文件的步骤",
+    "bytes": "{{got}} / {{size}} MB",
+    "ocrPage": "第 {{page}} / {{pages}} 页",
+    "step": {
+      "downloading": "下载",
+      "reading": "读取",
+      "ocr": "文字识别",
+      "checking": "校验",
+      "uploading": "上传",
+      "ready": "已下载 · 等待读取"
+    },
+    "waitRead": "等待读取"
   }
 }

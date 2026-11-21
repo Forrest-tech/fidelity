@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { AuthProvider } from "../auth/AuthProvider";
 import { ThemeProvider } from "../layout/ThemeProvider";
 import { AppRoutes } from "../routes";
@@ -24,13 +24,13 @@ export function renderApp(path = "/") {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={[path]}>
+      <RouterProvider router={createMemoryRouter([{ path: "*", element: (
         <ThemeProvider>
           <AuthProvider>
             <AppRoutes />
           </AuthProvider>
         </ThemeProvider>
-      </MemoryRouter>
+      ) }], { initialEntries: [path] })} />
     </QueryClientProvider>,
   );
 }

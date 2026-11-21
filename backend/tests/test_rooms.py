@@ -126,6 +126,18 @@ def test_pending_processing_and_unchanged_files():
     assert R.counts(R.get_room(r["id"]))["ok"] == 1
 
 
+def test_files_in_hand_when_a_run_ends_early_go_back_to_waiting():
+    """A cancelled or killed run never leaves files showing as "being processed"; finished ones keep their result."""
+    r = _room(source=SRC)
+    _load(r["id"], [{"t": 1, "type": "listing", "files": [{"rel": f"/{x}.pdf", "size": 5, "kind": "pdf"} for x in "abc"]},
+                    {"t": 2, "type": "start", "rel": "/a.pdf"}, {"t": 2, "type": "start", "rel": "/b.pdf"},
+                    _file_event("/a.pdf", 100.0)])
+    assert R.counts(R.get_room(r["id"]))["processing"] == 1
+    R.end_activity(r["id"])
+    c = R.counts(R.get_room(r["id"]))
+    assert (c["processing"], c["pending"], c["ok"]) == (0, 2, 1)
+
+
 def test_a_file_removed_from_the_source_before_it_was_distilled_disappears_but_results_stay():
     r = _room(source=SRC)
     _load(r["id"], [{"t": 1, "type": "listing", "files": [{"rel": "/a.pdf", "size": 1, "kind": "pdf"}, {"rel": "/b.pdf", "size": 1, "kind": "pdf"}]},
@@ -320,3 +332,17 @@ def test_an_interrupted_run_can_simply_be_started_again():
     assert s["job"]["status"] == "interrupted"
     assert R.archive_blockers(R.get_room(r["id"])) == ["nothing has been distilled yet"]      # interrupted is not "running"
     assert R.submit_run(r["id"]) != jid
+
+
+
+def test_api_creates_a_room_with_its_folders_in_one_step(login):
+    """The page keeps a new room as a draft until Save, then makes it with its folders at once; a refused folder
+    leaves no half-made room behind."""
+    c = login("reviewer")
+    n0 = len(c.get("/api/v1/rooms?archived=false").json()["rooms"])
+    r = c.post("/api/v1/rooms", json={"prefix": "Room", "source": "/draft in", "dest": "/draft out", "mode": "distill"})
+    assert r.status_code == 200, r.text
+    assert r.json()["source"]["link"] == "/draft in" and r.json()["dest"]["link"] == "/draft out"
+    bad = c.post("/api/v1/rooms", json={"prefix": "Room", "source": "/same", "dest": "/same/out"})
+    assert bad.status_code == 422, bad.text
+    assert len(c.get("/api/v1/rooms?archived=false").json()["rooms"]) == n0 + 1

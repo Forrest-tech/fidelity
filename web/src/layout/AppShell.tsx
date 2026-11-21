@@ -322,6 +322,9 @@ export function AppShell() {
     if (!el) return;
     let raf = 0;
     const mark = () => {
+      // antd's hidden row that measures column widths copies the headings, a select-all checkbox included: keep
+      // that copy out of the keyboard order at once (not on the next frame), so it is never a hidden focus stop
+      el.querySelectorAll(".ant-table-measure-row:not([inert])").forEach((r) => r.setAttribute("inert", ""));
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
         el.querySelectorAll<HTMLElement>(".fx-tbox").forEach((b) => {

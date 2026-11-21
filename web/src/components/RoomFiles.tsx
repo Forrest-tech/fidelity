@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { StageCell, type RunLive } from "./RunProgress";
 import { Empty, Modal, Table } from "antd";
 import { api, json } from "../net/client";
 import { Bar, Seg } from "./ui";
@@ -138,10 +139,12 @@ export async function loadFiles(room: string, state: string, q: string): Promise
 const LEGEND: FileState[] = ["ok", "published", "below", "processing", "publishing", "unprocessable", "pending"];
 
 export function RoomFiles({
-  roomId, live, counts, filter, onFilter, focusFile, onCompare, onFix, onRetry, canEdit = false,
+  roomId, live, counts, filter, onFilter, focusFile, onCompare, onFix, onRetry, canEdit = false, progress,
 }: {
   roomId: string;
   live: boolean;
+  /** the room's run as it goes: which files are in which step, which wait */
+  progress?: RunLive;
   counts?: Counts & { finished?: number; rate?: number };
   filter?: string;
   onFilter?: (s: string) => void;
@@ -436,6 +439,9 @@ export function RoomFiles({
                     return <span className="fx-tiny fx-muted">{parts.join(" · ") || t("pages.distill.notStarted")}</span>;
                   }
                   const f = n.file!;
+                  const act = progress?.active?.[f.rel];
+                  const qi = progress?.queued ? progress.queued.indexOf(f.rel) : -1;
+                  if (act || (qi >= 0 && (f.state === "pending" || f.state === "processing"))) return <StageCell a={act} queuedAt={act ? undefined : qi} />;
                   const detail = f.state === "unprocessable" && f.reason ? t(`pages.distill.reason.${f.reason}`, { defaultValue: f.reason })
                     : f.state === "below" && f.checks ? t("pages.distill.ruleChecks", { count: f.checks })
                     : f.state === "below" && f.diffs ? t("pages.distill.diffs", { count: f.diffs }) : undefined;

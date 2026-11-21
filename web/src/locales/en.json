@@ -716,7 +716,18 @@
         "acceptOneConfirm": "Accept this file although it is below the threshold? It is published to the output folder."
       },
       "deleteTitle": "Delete the room “{{name}}”?",
-      "deleteBody": "The room, its file list and its run history are removed. Files in the input and output folders are not touched. This cannot be undone."
+      "deleteBody": "The room, its file list and its run history are removed. Files in the input and output folders are not touched. This cannot be undone.",
+      "draftNeedsInput": "Choose the input folder to save the room.",
+      "draftTitle": "New room (not saved)",
+      "draftNamePh": "Room name (optional)",
+      "roomName": "Room name",
+      "draftPill": "Not saved",
+      "draftHint": "Nothing is created until you save.",
+      "draftRestored": "Your unsaved new room is back. Save it or discard it.",
+      "discard": "Discard",
+      "saveRoom": "Save room",
+      "eg": "e.g. {{p}}",
+      "egOut": "e.g. {{p}} (optional)"
     },
     "corrections": {
       "title": "Correction library",
@@ -993,5 +1004,43 @@
       "close": "Close a window or menu"
     },
     "scrollTable": "Table (scrolls sideways)"
+  },
+  "leave": {
+    "title": "Leave without saving?",
+    "body": "Some changes on this page are not saved yet. Save them, discard them, or stay on the page.",
+    "stay": "Stay",
+    "discard": "Discard",
+    "save": "Save",
+    "saving": "Saving…",
+    "saveFailed": "Could not save."
+  },
+  "run": {
+    "title": "Run progress",
+    "listing": "Looking at the input folder…",
+    "running": "Distilling",
+    "publishing": "Sending to the output folder",
+    "doneOf": "{{done}} of {{of}} done",
+    "skipped_one": "1 unchanged, skipped",
+    "skipped_other": "{{count}} unchanged, skipped",
+    "workers": "{{n}} files being read at once",
+    "elapsed": "running {{t}}",
+    "activeTitle_one": "1 file being worked on",
+    "activeTitle_other": "{{count}} files being worked on",
+    "queued_one": "1 file waiting",
+    "queued_other": "{{count}} files waiting",
+    "queuedAt": "Waiting · #{{n}}",
+    "inStep": "Time in this step",
+    "stepsOf": "Steps of this file",
+    "bytes": "{{got}} / {{size}} MB",
+    "ocrPage": "page {{page}} of {{pages}}",
+    "step": {
+      "downloading": "Download",
+      "reading": "Read",
+      "ocr": "OCR",
+      "checking": "Check",
+      "uploading": "Upload",
+      "ready": "Downloaded · waiting to read"
+    },
+    "waitRead": "Waiting to read"
   }
 }

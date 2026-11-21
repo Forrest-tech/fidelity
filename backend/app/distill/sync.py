@@ -28,6 +28,7 @@ from . import dropbox_io as D
 from . import run as R
 from . import accept as AC
 from . import scoring as SC
+from . import pipeline as P
 from .events import Events, kind_of
 from .ledger import Ledger
 from .publish import Publisher
@@ -56,7 +57,9 @@ def save_state(work, state):
 # A long run makes thousands of requests; one dropped connection (seen in testing: SSLEOFError
 # while downloading from Dropbox) must not end a 41-file run. Transient errors are retried with
 # backoff; a file that still fails is reported as FAIL with the reason and the run carries on.
-_BACKOFF = (2, 5, 15)
+# Seen on this machine for days in a row: the TLS connection to Dropbox drops now and then (SSLEOFError,
+# "UNEXPECTED_EOF_WHILE_READING"), sometimes for a minute or two. Wait up to about 3.5 minutes before giving up.
+_BACKOFF = (2, 5, 15, 30, 60, 90)
 
 
 def _transient(e) -> bool:
@@ -103,7 +106,18 @@ def _check_space(work, size):
                          f"about {need / 1e9:.1f} GB needed for the next file — stopped before downloading")
 
 
-def _skip(a, ledger, rledger, rel, content_hash) -> bool:
+def _known(room_dir):
+    """The files whose results the web side has (written by it before a run), or None when it did not say.
+    A room's own ledger can hold a result the web side never received (a run whose events were lost); such a file
+    is read again instead of being skipped while the page shows it as never distilled."""
+    try:
+        with open(os.path.join(room_dir, "known.json"), encoding="utf-8") as f:
+            return set(json.load(f))
+    except (OSError, ValueError, TypeError):
+        return None
+
+
+def _skip(a, ledger, rledger, rel, content_hash, known=None) -> bool:
     """Is this file already done for this content and pipeline version?
     With a room folder: a stored result of any quality counts; a file that was published (PASS) must also be in the
     publishing ledger when this run publishes. Without one: the publishing ledger decides, as before."""
@@ -114,10 +128,12 @@ def _skip(a, ledger, rledger, rel, content_hash) -> bool:
     e = rledger.docs.get(rel)
     if not (e and e["content_hash"] == content_hash and e["pipeline"] == R.PIPELINE_VERSION):
         return False
+    if known is not None and rel not in known:
+        return False
     return a.dry_run or e["verdict"] not in ("PASS", "METADATA") or ledger.up_to_date(rel, content_hash, R.PIPELINE_VERSION)
 
 
-def _publish_accepted(a, src, dst, ev, dest_root, stage_root, archive_root) -> int:
+def _publish_accepted(a, src, dst, ev, dest_root, stage_root, archive_root, live=None) -> int:
     """Send results that a person accepted. They are staged, checked and promoted together, like a normal run, and
     the previous versions go to the archive, so the same --rollback undoes it."""
     if not dst or not a.room_dir:
@@ -130,33 +146,48 @@ def _publish_accepted(a, src, dst, ev, dest_root, stage_root, archive_root) -> i
     ledger = Ledger(os.path.join(a.work, "ledger.json"), src.label)
     when = _dt.datetime.now().astimezone().isoformat(timespec="seconds")
     pending, failed = [], []
-    print(f"publishing {len(plan['items'])} accepted document(s)  ->  output {dst.provider}:{dest_root}", flush=True)
-    for it in plan["items"]:
+    items = plan["items"]
+    errors = []
+    print(f"publishing {len(items)} accepted document(s)  ->  output {dst.provider}:{dest_root}", flush=True)
+    live = live or P.LiveState(None)
+    live.set(stage="running", total=len(items), queued=[it["rel"] for it in items])
+
+    def send(it):
         rel, key = it["rel"], AC.live_key(it["out_dir"])
-        print(f"[{len(pending) + len(failed) + 1}] {rel}", flush=True)
-        try:
-            base = os.path.join(out, it["out_dir"])
-            files = {}
-            paths = [("", base)] if os.path.isfile(R.longpath(base)) else [
-                (os.path.relpath(os.path.join(r_, fn_), base).replace(os.sep, "/"), os.path.join(r_, fn_))
-                for r_, _, fns_ in os.walk(R.longpath(base)) for fn_ in sorted(fns_)]
-            if not paths:
-                raise FileNotFoundError("the distilled result is no longer on this machine; run the room again")
-            for relpath, lp_ in paths:
-                with open(R.longpath(lp_), "rb") as fh:
-                    data = fh.read()
-                if lp_.lower().endswith(".md"):
-                    data = AC.accept_markdown(data.decode("utf-8"), it.get("by") or "", when, it.get("accuracy"),
-                                              bool(it.get("forced"))).encode("utf-8")
-                files[relpath] = data
-            _retry(lambda: pub.stage(key, files), "upload")
-        except Exception as e:                     # noqa: BLE001 - one document failing must not stop the others
-            print(f"  NOT published: {_err(e)}", flush=True)
-            failed.append(rel)
-            ev.emit("publish_failed", rel=rel, error=_err(e))
-            continue
-        pending.append((rel, it, key, len(files)))
-        print(f"  staged {len(files)} file(s)", flush=True)
+        live.file(rel, stage="uploading")
+        # The walk and the relative paths both use the long (\\?\) form: mixing it with the plain form failed every
+        # multi-file document on Windows ("path is on mount '\\?\C:', start on mount 'C:'"), so nothing was sent.
+        files = {}
+        for relpath, data in _read_files(os.path.join(out, it["out_dir"])).items():
+            if (relpath or it["out_dir"]).lower().endswith(".md"):
+                data = AC.accept_markdown(data.decode("utf-8"), it.get("by") or "", when, it.get("accuracy"),
+                                          bool(it.get("forced"))).encode("utf-8")
+            files[relpath] = data
+        if not files:
+            raise FileNotFoundError("the distilled result is no longer on this machine; run the room again")
+        _retry(lambda: pub.stage(key, files), "upload")
+        return key, len(files)
+
+    # a few documents go up at once (network-bound); the live folder is only changed by promote(), all together
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(3, thread_name_prefix="upload") as ex:
+        futs = [(it, ex.submit(send, it)) for it in items]
+        for n, (it, fut) in enumerate(futs, 1):
+            rel = it["rel"]
+            print(f"[{n}] {rel}", flush=True)
+            try:
+                key, count = fut.result()
+            except Exception as e:                 # noqa: BLE001 - one document failing must not stop the others
+                print(f"  NOT published: {_err(e)}", flush=True)
+                failed.append(rel)
+                errors.append(_err(e))
+                ev.emit("publish_failed", rel=rel, error=_err(e))
+                live.done(rel, "FAIL")
+                continue
+            pending.append((rel, it, key, count))
+            print(f"  staged {count} file(s)", flush=True)
+            live.done(rel, "PASS")
+    live.set(stage="publishing")
     report = {"source": src.label, "dest": dest_root, "run": stamp, "mode": "publish accepted results",
               "published": [p[0] for p in pending], "failed": failed}
     if pending:
@@ -168,11 +199,243 @@ def _publish_accepted(a, src, dst, ev, dest_root, stage_root, archive_root) -> i
         report["published_run"] = stamp
         print(f"\npromoted {len(pending)} document(s); undo with: python -m app.distill.sync --rollback {stamp}", flush=True)
     print(json.dumps(report, indent=1), flush=True)
+    if failed:
+        # a publishing run where documents were not sent must not look done: the job fails and says why
+        raise SystemExit(f"{len(failed)} of {len(items)} document(s) could not be sent to the output folder"
+                         f"{' (the others were)' if pending else ''}: {errors[0]}")
     return 0
 
 
 def _err(e) -> str:
     return f"{type(e).__name__}: {e}"[:300]
+
+
+def _fetch(src, rel, f, lp, live):
+    """Download one file (unless the local copy is already this content) and check it. Runs on a download thread."""
+    if not src.local_matches(lp, f):
+        print(f"  download ({f['size'] / 1e6:.1f} MB)  [{rel.rsplit('/', 1)[-1]}]", flush=True)
+        stop = P.watch_download(live, rel, lp, f.get("size") or 0)
+        try:
+            _retry(lambda: src.download(rel, f, lp), "download")
+        finally:
+            stop()
+    if not src.verify_local(lp, f):
+        raise SystemExit(f"local copy of {rel} does not match the source file's checksum")
+
+
+def _cost(lp) -> int:
+    """Capacity points reading this file takes: a scan (OCR) 2, everything else 1. OCR holds a lot of memory and
+    every processor core on its own, so two scans side by side on a small machine are slower than one after the
+    other. The check is the same quick triage the reader starts with."""
+    low = lp.lower()
+    if low.endswith((".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp")):
+        return 2
+    if low.endswith(".pdf"):
+        try:
+            from .triage import triage_pdf
+            return 2 if triage_pdf(lp).get("class") == "scan" else 1
+        except Exception:                                  # noqa: BLE001 - the reader will report a broken file
+            return 1
+    return 1
+
+
+def _read_files(out_dir_base):
+    """The bytes of one distilled document, as the publisher stages them."""
+    files = {}
+    if os.path.isfile(R.longpath(out_dir_base)):
+        with open(R.longpath(out_dir_base), "rb") as fh:
+            files[""] = fh.read()
+        return files
+    for root_, _, fns_ in os.walk(R.longpath(out_dir_base)):
+        for fn_ in sorted(fns_):
+            lp_ = os.path.join(root_, fn_)
+            with open(lp_, "rb") as fh:
+                files[os.path.relpath(lp_, R.longpath(out_dir_base)).replace(os.sep, "/")] = fh.read()
+    return files
+
+
+def _pipeline(a, plan, src, src_name, out, cache, rledger, ledger, ev, live, workers, downloads, results, report,
+              pending, pub, dest_root, stage_root, stamp):
+    """Read the planned files, several at once.
+
+    Downloads run ahead of the readers on their own threads, but never more than `workers + 1` files are downloaded
+    and not yet read (bounded, so a fast network cannot fill the disk while the readers are busy). The disk check
+    counts every file that is downloading or waiting to be read. Everything that decides a file's fate — recording
+    it, re-checking the source, staging its upload — happens here, on one thread, in the order the readers finish,
+    so the ledgers and the report are written by one hand. A source that changed during the run still stops it all."""
+    from collections import deque
+    from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+    from concurrent.futures.process import BrokenProcessPool
+
+    todo = deque(plan)
+    budget = workers                   # capacity points this run holds: a text file takes 1, a scan 2 (see _cost)
+    used = 0                           # points taken by the files being read now
+    ready = deque()                    # downloaded, waiting for points to be free: (rel, f, lp, cost)
+    readers = P.Readers(workers)
+    P.drain(readers.q, live)
+    dl = ThreadPoolExecutor(downloads, thread_name_prefix="download")
+    up = ThreadPoolExecutor(2, thread_name_prefix="upload")
+    inflight = {}                      # future -> (step, rel, f, extra)
+    reserved = 0                       # bytes of files downloading or waiting to be read
+    window = workers + 1               # files downloaded ahead of the readers, at most
+    retried = set()
+    started = 0
+
+    def failed(rel, e, step):
+        err = _err(e)
+        print(f"  verification: FAIL  (error while {step}: {err})  [{rel}]", flush=True)
+        ev.emit("file", rel=rel, kind=kind_of(rel), **SC.classify(None, error=f"{step}: {err}"))
+        results.append({"verdict": "FAIL"})
+        report["documents"].append({"source": rel, "verdict": "FAIL", "files": 0, "uploaded": 0, "error": f"{step}: {err}"})
+        live.done(rel, "FAIL")
+
+    def ahead():
+        return len(ready) + sum(1 for s, *_ in inflight.values() if s in ("download", "read"))
+
+    passed = {}                        # rel -> how often a later file was started ahead of it
+
+    def dispatch():
+        """Start reading the first waiting files whose points fit. A text file may pass a scan that has to wait for
+        its two points, but only twice: after that nothing new starts until the scan has its points, so a long row
+        of text files cannot keep a scan waiting until the end of the run."""
+        nonlocal used
+        while ready:
+            fits = lambda x: used == 0 or used + x[3] <= budget          # noqa: E731
+            head = ready[0]
+            if fits(head):
+                pick = head
+            elif passed.get(head[0], 0) >= 2:
+                return                                                    # hold the points free for the waiting file
+            else:
+                pick = next((x for x in ready if fits(x)), None)
+                if pick is None:
+                    return
+                passed[head[0]] = passed.get(head[0], 0) + 1
+            ready.remove(pick)
+            used += pick[3]
+            start_read(*pick)
+
+    def start_download(rel, f):
+        nonlocal reserved
+        os.makedirs(a.work, exist_ok=True)
+        _check_space(a.work, (f.get("size") or 0) + reserved)       # SystemExit: stop cleanly before the disk fills
+        reserved += f.get("size") or 0
+        lp = os.path.join(a.work, "src", src_name, *rel.strip("/").split("/"))
+        ev.emit("start", rel=rel)
+        live.file(rel, stage="downloading", bytes=0, size=f.get("size") or 0)
+        inflight[dl.submit(_fetch, src, rel, f, lp, live)] = ("download", rel, f, lp)
+
+    def start_read(rel, f, lp, cost):
+        nonlocal started
+        started += 1
+        print(f"\n[{started}] {rel}", flush=True)
+        rel_local = os.path.join(src_name, *rel.strip("/").split("/"))
+        inflight[readers.submit(lp, rel_local, out, cache, a.publish_protected_metadata, rel)] = ("read", rel, f, (lp, cost))
+
+    def after_read(rel, f, r):
+        results.append(r)
+        if rledger is not None:                     # a result of any quality is remembered, so a resumed run skips it
+            rledger.record(rel, f["content_hash"], R.PIPELINE_VERSION, r["verdict"])
+        _c = SC.classify(r)
+        ev.emit("file", rel=rel, kind=kind_of(rel), pages=r.get("pages"), scan=_c.get("basis") == "ocr_agreement",
+                out_dir=r.get("out_dir"), content_hash=r.get("content_hash"), single_file=bool(r.get("single_file")),
+                n_files=r.get("files"), verdict=r.get("verdict"), **_c)
+        if r["verdict"] == "SKIP":                  # triaged out: listed with its class, never silently dropped
+            report.setdefault("triaged_out", []).append({"source": rel, **r["triage"]})
+            if not a.dry_run:
+                ledger.record(rel, f["content_hash"], R.PIPELINE_VERSION, "SKIP")
+            live.done(rel, "SKIP")
+            return
+        print(f"  verification: {r['verdict']}  files={r['files']}  [{rel}]", flush=True)
+        live.file(rel, stage="checking")
+        try:
+            now = _retry(lambda: src.identity(rel, f), "re-check")
+        except Exception as e:                      # noqa: BLE001
+            results.pop()
+            failed(rel, e, "re-checking the source")
+            return
+        if (now["id"], now["rev"], now["size"]) != (f["id"], f["rev"], f["size"]):
+            raise SystemExit(f"SOURCE CHANGED during the run: {rel} — stopping, nothing more uploaded")
+        doc = {"source": rel, "verdict": r["verdict"], "files": r["files"], "uploaded": 0,
+               "dest": f"{dest_root}/{r['out_dir'].replace(os.sep, '/')}"}
+        if r["verdict"] not in ("PASS", "METADATA"):
+            # a document that fails verification is never published; it stays local
+            print(f"  NOT uploaded (failed verification) — local copy: {os.path.join(out, r['out_dir'])}", flush=True)
+        elif not a.dry_run:
+            key = r["out_dir"].replace(os.sep, "/")
+            files = _read_files(os.path.join(out, r["out_dir"]))
+            live.file(rel, stage="uploading")
+            # live folder is not touched until promote
+            inflight[up.submit(_retry, lambda k=key, fs=files: pub.stage(k, fs), "upload")] = ("upload", rel, f, (doc, key, files, r))
+            return
+        report["documents"].append(doc)
+        live.done(rel, r["verdict"])
+
+    try:
+        while todo or inflight or ready:
+            dispatch()
+            while todo and ahead() < window:
+                start_download(*todo.popleft())
+            if not inflight:
+                continue
+            finished, _ = wait(list(inflight), return_when=FIRST_COMPLETED)
+            for fut in finished:
+                step, rel, f, extra = inflight.pop(fut)
+                if step == "download":
+                    try:
+                        fut.result()
+                    except Exception as e:          # noqa: BLE001 - SystemExit (safety stops) is not caught
+                        reserved -= f.get("size") or 0
+                        failed(rel, e, "reading the file")
+                        continue
+                    cost = min(_cost(extra), budget)
+                    live.file(rel, stage="ready", bytes=f.get("size") or 0, scan=cost > 1)   # "reading" once a reader takes it
+                    ready.append((rel, f, extra, cost))
+                elif step == "read":
+                    lp, cost = extra
+                    used -= cost
+                    reserved -= f.get("size") or 0
+                    try:
+                        r = fut.result()
+                    except BrokenProcessPool as e:
+                        # a reader process died (most often: out of memory). Every file it held fails with it; try each
+                        # once more in a fresh pool, and give up on a file that breaks it twice.
+                        if not readers.processes or rel in retried:
+                            failed(rel, e, "reading the file (the reader stopped, likely out of memory)")
+                            continue
+                        retried.add(rel)
+                        if readers.broken():                # once per broken pool, not once per file it held
+                            readers.renew()
+                            P.drain(readers.q, live)
+                        reserved += f.get("size") or 0
+                        ready.appendleft((rel, f, lp, cost))
+                        continue
+                    except Exception as e:          # noqa: BLE001
+                        failed(rel, e, "reading the file")
+                        continue
+                    after_read(rel, f, r)
+                else:                               # upload
+                    doc, key, files, r = extra
+                    try:
+                        fut.result()
+                    except Exception as e:          # noqa: BLE001
+                        if r in results:
+                            results.remove(r)
+                        failed(rel, e, "uploading")
+                        continue
+                    doc["uploaded"], doc["key"] = len(files), key
+                    pending.append((rel, f["content_hash"], doc))
+                    report["documents"].append(doc)
+                    print(f"  staged {len(files)} file(s) -> {stage_root}/{stamp}/{key}", flush=True)
+                    live.done(rel, r["verdict"])
+    except BaseException:
+        readers.stop()                              # a safety stop ends the readers at once, mid-file
+        dl.shutdown(wait=False, cancel_futures=True)
+        up.shutdown(wait=False, cancel_futures=True)
+        raise
+    readers.close()
+    dl.shutdown()
+    up.shutdown()
 
 
 def main(argv=None):
@@ -191,6 +454,9 @@ def main(argv=None):
     ap.add_argument("--publish-protected-metadata", action="store_true",
                     help="publish a metadata-only entry for protected files (they are always listed in the report)")
     ap.add_argument("--rollback", default=None, metavar="RUN", help="undo a published run: restore the previous versions from the archive")
+    ap.add_argument("--workers", type=int, default=1, help="capacity points for reading: a text file takes 1, a scanned "
+                                                            "file (OCR) 2; files are read at once while their points fit")
+    ap.add_argument("--live", default=None, help="keep every file's step in this JSON file while the run goes (web interface)")
     a = ap.parse_args(argv)
     if not a.dest_link and not a.dry_run:
         ap.error("--dest-link is required unless --dry-run")
@@ -225,9 +491,25 @@ def main(argv=None):
         ledger.save()
         print(f"rolled back run {a.rollback}: {len(keys)} document(s) restored to their previous version", flush=True)
         return 0
+    workers = max(1, a.workers)
+    # Dropbox takes several downloads at once; the Google Drive client is not safe to share between threads
+    downloads = min(3, workers + 1) if src.provider == "dropbox" else 1
+    live = P.LiveState(a.live, workers)
     if a.publish_from:
-        return _publish_accepted(a, src, dst, ev, dest_root, stage_root, archive_root)
-    before = src.snapshot()
+        try:
+            return _publish_accepted(a, src, dst, ev, dest_root, stage_root, archive_root, live)
+        finally:
+            live.close()
+    try:
+        return _distill_run(a, src, dst, ev, live, workers, downloads, src_name, stamp, out, rledger, cache,
+                            dest_root, stage_root, archive_root)
+    finally:
+        live.close()
+
+
+def _distill_run(a, src, dst, ev, live, workers, downloads, src_name, stamp, out, rledger, cache,
+                 dest_root, stage_root, archive_root):
+    before = _retry(src.snapshot, "listing the input folder")   # also the first call: signing in to Dropbox
     print(f"files to check: {sum(1 for r in before if r.lower().endswith(SUPPORTED))}", flush=True)
     report = {"source": src.label, "source_provider": src.provider, "dest": dest_root,
               "dest_provider": dst.provider if dst else "", "run": stamp, "documents": []}
@@ -238,6 +520,9 @@ def main(argv=None):
     pending = []       # (rel, content_hash, doc) staged this run, promoted together at the end
     ledger = Ledger(os.path.join(a.work, "ledger.json"), src.label)
 
+    # ---- which files this run reads (cheap: decided from the listing alone)
+    known = _known(a.room_dir) if a.room_dir else None
+    plan = []
     for rel, f in sorted(before.items()):
         name = rel.rsplit("/", 1)[-1]
         if not rel.lower().endswith(SUPPORTED):
@@ -253,92 +538,20 @@ def main(argv=None):
             print(f"skip duplicate of {first}: {rel}", flush=True)
             report.setdefault("duplicates", []).append({"source": rel, "duplicate_of": first})
             ev.emit("file", rel=rel, kind=kind_of(rel), outcome="skipped", reason="duplicate", detail=f"same content as {first}")
+            live.skipped()
             continue
         seen_hash[f["content_hash"]] = rel
-        if _skip(a, ledger, rledger, rel, f["content_hash"]):
+        if _skip(a, ledger, rledger, rel, f["content_hash"], known):
             print(f"unchanged since last run, skipped: {rel}", flush=True)
             report.setdefault("unchanged", []).append(rel)
             ev.emit("unchanged", rel=rel)
+            live.skipped()
             continue
-        rel_local = os.path.join(src_name, *rel.strip("/").split("/"))
-        lp = os.path.join(a.work, "src", rel_local)
-        print(f"\n[{len(results) + 1}] {rel}", flush=True)
-
-        ev.emit("start", rel=rel)
-
-        def failed(e, step):
-            err = _err(e)
-            print(f"  verification: FAIL  (error while {step}: {err})", flush=True)
-            ev.emit("file", rel=rel, kind=kind_of(rel), **SC.classify(None, error=f"{step}: {err}"))
-            results.append({"verdict": "FAIL"})
-            report["documents"].append({"source": rel, "verdict": "FAIL", "files": 0, "uploaded": 0,
-                                        "error": f"{step}: {err}"})
-
-        try:
-            if not src.local_matches(lp, f):
-                os.makedirs(a.work, exist_ok=True)
-                _check_space(a.work, f["size"])
-                print(f"  download ({f['size'] / 1e6:.1f} MB)", flush=True)
-                _retry(lambda: src.download(rel, f, lp), "download")
-            if not src.verify_local(lp, f):
-                raise SystemExit(f"local copy of {rel} does not match the source file's checksum")
-            r = distill_any(lp, rel_local, out, "", cache, log=lambda m: print(m, flush=True),
-                            publish_protected=a.publish_protected_metadata)
-        except Exception as e:                      # SystemExit (safety stops) is not caught
-            failed(e, "reading the file")
-            continue
-        results.append(r)
-        if rledger is not None:                     # a result of any quality is remembered, so a resumed run skips it
-            rledger.record(rel, f["content_hash"], R.PIPELINE_VERSION, r["verdict"])
-        _c = SC.classify(r)
-        ev.emit("file", rel=rel, kind=kind_of(rel), pages=r.get("pages"), scan=_c.get("basis") == "ocr_agreement",
-                out_dir=r.get("out_dir"), content_hash=r.get("content_hash"), single_file=bool(r.get("single_file")),
-                n_files=r.get("files"), verdict=r.get("verdict"), **_c)
-        if r["verdict"] == "SKIP":                  # triaged out: listed with its class, never silently dropped
-            report.setdefault("triaged_out", []).append({"source": rel, **r["triage"]})
-            if not a.dry_run:
-                ledger.record(rel, f["content_hash"], R.PIPELINE_VERSION, "SKIP")
-            continue
-        print(f"  verification: {r['verdict']}  files={r['files']}", flush=True)
-
-        try:
-            now = _retry(lambda: src.identity(rel, f), "re-check")
-        except Exception as e:
-            results.pop()
-            failed(e, "re-checking the source")
-            continue
-        if (now["id"], now["rev"], now["size"]) != (f["id"], f["rev"], f["size"]):
-            raise SystemExit(f"SOURCE CHANGED during the run: {rel} — stopping, nothing more uploaded")
-
-        doc = {"source": rel, "verdict": r["verdict"], "files": r["files"], "uploaded": 0,
-               "dest": f"{dest_root}/{r['out_dir'].replace(os.sep, '/')}"}
-        if r["verdict"] not in ("PASS", "METADATA"):
-            # a document that fails verification is never published; it stays local
-            print(f"  NOT uploaded (failed verification) — local copy: {os.path.join(out, r['out_dir'])}", flush=True)
-        elif not a.dry_run:
-            key = r["out_dir"].replace(os.sep, "/")
-            files = {}
-            if r.get("single_file"):
-                with open(R.longpath(os.path.join(out, r["out_dir"])), "rb") as fh:
-                    files[""] = fh.read()
-            else:
-                base = os.path.join(out, r["out_dir"])
-                for root_, _, fns_ in os.walk(R.longpath(base)):
-                    for fn_ in sorted(fns_):
-                        lp_ = os.path.join(root_, fn_)
-                        with open(lp_, "rb") as fh:
-                            files[os.path.relpath(lp_, R.longpath(base)).replace(os.sep, "/")] = fh.read()
-            try:
-                _retry(lambda: pub.stage(key, files), "upload")   # live folder is not touched until promote
-            except Exception as e:
-                results.pop()
-                failed(e, "uploading")
-                continue
-            doc["uploaded"] = len(files)
-            doc["key"] = key
-            pending.append((rel, f["content_hash"], doc))
-            print(f"  staged {len(files)} file(s) -> {stage_root}/{stamp}/{key}", flush=True)
-        report["documents"].append(doc)
+        plan.append((rel, f))
+    live.set(stage="running", total=len(plan) + live.s["skipped"], queued=[r_ for r_, _ in plan])
+    print(f"to read: {len(plan)} file(s), {workers} at a time, {downloads} download(s) at a time", flush=True)
+    _pipeline(a, plan, src, src_name, out, cache, rledger, ledger, ev, live, workers, downloads, results, report,
+              pending, pub, dest_root, stage_root, stamp)
 
     if pending:
         # promote the whole run at once; a document that changed layout (single file <-> folder)

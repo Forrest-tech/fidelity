@@ -363,7 +363,9 @@ def submit_run(room_id: str, force: bool = False) -> str:
         raise RoomError(409, "this room is already queued or running")
     # A room's run only distills (results stay on this machine). Sending results to the output folder is a separate
     # step, accept(), so a result is never published without having been judged, and nothing is distilled twice.
-    p = {"source_link": room["source"]["link"], "dry_run": True, "force": bool(force), "room_id": room_id}
+    # "parallel": the queue may give the run several slots (files read at once); "unit_points" is one file's share
+    p = {"source_link": room["source"]["link"], "dry_run": True, "force": bool(force), "room_id": room_id,
+         "parallel": True, "unit_points": room["points"] or 1}
     jid = queue.submit("dropbox_sync", json.dumps(p), "queued", room_id=room_id, priority=room["priority"],
                        points=room["points"] or 1, dest_key=None)
     con = db.trust_rw()
@@ -441,7 +443,8 @@ def summary(room: dict) -> dict:
         try:                                                  # where the run is: file, stage, OCR page
             with open(S.live_path(job["id"]), encoding="utf-8") as f:
                 live = json.load(f)
-            job["live"] = {k: live.get(k) for k in ("file", "stage", "page", "pages", "index", "total", "started", "updated", "scan")}
+            job["live"] = {k: live.get(k) for k in ("file", "stage", "page", "pages", "index", "total", "started", "updated",
+                                                     "scan", "v", "workers", "done", "skipped", "active", "queued", "counts")}
         except (OSError, ValueError):
             pass
     rows = _files(room["id"])
@@ -495,6 +498,20 @@ def apply_event(con, room_id: str, job_id: str, ev: dict):
                                    1 if ev.get("single_file") else 0, ev.get("n_files"), ev.get("verdict"), now))
         if ev.get("scan"):                           # a scanned file needed OCR: later runs of this room take 2 points
             con.execute("UPDATE room SET points=2 WHERE id=? AND COALESCE(points,1) < 2", (room_id,))
+
+
+def end_activity(room_id: str):
+    """The room's run has ended (finished, failed, cancelled or killed): files it had in hand and never finished go
+    back to "not distilled yet" instead of showing as busy for ever. A room runs one job at a time, so every file
+    still marked as being processed belonged to that run."""
+    def _do():
+        con = db.trust_rw()
+        try:
+            con.execute("UPDATE room_file SET activity=NULL WHERE room_id=? AND activity='processing'", (room_id,))
+            con.commit()
+        finally:
+            con.close()
+    db.trust_write(_do)
 
 
 class EventReader:

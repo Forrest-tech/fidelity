@@ -10,6 +10,22 @@ from . import capacity
 _MAX_WORKERS = 2  # 并发 worker（本地单用户，避免多开 PaddleOCR 抢内存）
 
 
+def _max_parallel() -> int:
+    """At most this many files of one run are read at once (FIDELITY_MAX_PARALLEL, default 4)."""
+    import os
+    v = os.environ.get("FIDELITY_MAX_PARALLEL", "").strip()
+    return int(v) if v.isdigit() and int(v) > 0 else 4
+
+
+def _parallel(row) -> bool:
+    """Can this job read several files at once? (A room's distill run says so in its parameters.)"""
+    import json
+    try:
+        return bool(json.loads(row["rel"] or "{}").get("parallel"))
+    except (ValueError, TypeError, AttributeError):
+        return False
+
+
 class Interrupted(RuntimeError):
     """A run's process ended without finishing (killed, the machine restarted). Work already done is kept,
     so the run can simply be started again and carries on."""
@@ -102,12 +118,19 @@ class JobQueue:
                         break
                     if row is None:
                         return None
-                    cur = con.execute("UPDATE job SET status='running', updated_at=? WHERE id=? AND status='queued'",
-                                      (db.now(), row["id"]))
+                    pts = row["points"] or 0
+                    if pts and _parallel(row):
+                        # a run that can read several files at once takes as many slots as are free now (at least
+                        # one, at most FIDELITY_MAX_PARALLEL), and holds them, so the next run does not overload
+                        # the machine; it gets the machine to itself when it is alone
+                        free = max(0, cap - used)
+                        pts *= max(1, min(_max_parallel(), free // pts))
+                    cur = con.execute("UPDATE job SET status='running', points=?, updated_at=? WHERE id=? AND status='queued'",
+                                      (pts or row["points"], db.now(), row["id"]))
                     con.commit()
                     if cur.rowcount == 1:
                         job = dict(row)
-                        job["status"] = "running"
+                        job["status"], job["points"] = "running", pts or row["points"]
                         return job
                 return None                               # lost every race this round; try again on the next tick
             finally:

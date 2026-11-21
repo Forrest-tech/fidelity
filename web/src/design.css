@@ -252,3 +252,36 @@ table.fx-t tr:last-child td { border-bottom: 0; }
 
 /* a collapse header never makes the page wider than the screen */
 .ant-collapse-header-text, .ant-collapse-title { min-width: 0; overflow-wrap: anywhere; }
+
+/* ---------------------------------------------------------------- a run in progress (several files at once) */
+.fx-run { border: 1px solid var(--line); border-left: 3px solid var(--run); border-radius: 8px; padding: 10px 12px; background: var(--surface); }
+.fx-live-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--run); flex: none; position: relative; }
+.fx-live-dot::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid var(--run); opacity: 0; animation: fx-ping 1.6s ease-out infinite; }
+@keyframes fx-ping { 0% { transform: scale(.6); opacity: .7; } 100% { transform: scale(1.6); opacity: 0; } }
+.fx-bar-run i { background: var(--run); background-image: linear-gradient(45deg, rgba(255,255,255,.28) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.28) 50%, rgba(255,255,255,.28) 75%, transparent 75%);
+  background-size: 14px 14px; animation: fx-stripes .9s linear infinite; transition: width .6s ease; }
+@keyframes fx-stripes { from { background-position: 0 0; } to { background-position: 14px 0; } }
+.fx-bar-run.indet i { width: 35% !important; animation: fx-stripes .9s linear infinite, fx-sweep 1.4s ease-in-out infinite; }
+@keyframes fx-sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+.fx-active { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.fx-active li { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.6fr) auto; gap: 10px; align-items: center; padding: 6px 8px; border-radius: 6px; background: var(--sunken); min-width: 0; }
+.fx-active-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; font-weight: 500; }
+.fx-active-detail { display: inline-flex; align-items: center; gap: 8px; justify-content: flex-end; white-space: nowrap; }
+.fx-steps { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; gap: 4px; min-width: 0; font-size: 12px; }
+.fx-steps li { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); white-space: nowrap; min-width: 0; }
+.fx-steps li + li::before { content: ""; width: 14px; height: 1px; background: var(--line); margin-right: 2px; flex: none; }
+.fx-steps li i { font-style: normal; width: 16px; height: 16px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 10px; border: 1px solid var(--line); flex: none; }
+.fx-steps li.done { color: var(--ok); } .fx-steps li.done i { background: var(--ok-soft); border-color: transparent; }
+.fx-steps li.now { color: var(--run); font-weight: 600; } .fx-steps li.now i { background: var(--run); color: var(--surface); border-color: transparent; animation: fx-pulse 1.4s ease-in-out infinite; }
+@keyframes fx-pulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--run) 45%, transparent); } 50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--run) 0%, transparent); } }
+.fx-steps li.wait { color: var(--fg); } .fx-steps li.wait i { border-style: dashed; border-color: var(--run); }
+.fx-pill-live::before { animation: fx-blink 1.2s ease-in-out infinite; }
+@keyframes fx-blink { 50% { opacity: .25; } }
+@media (max-width: 700px) {
+  .fx-active li { grid-template-columns: minmax(0, 1fr) auto; }
+  .fx-active li .fx-steps { grid-column: 1 / -1; order: 3; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fx-live-dot::after, .fx-bar-run i, .fx-steps li.now i, .fx-pill-live::before { animation: none !important; }
+  .fx-bar-run.indet i { transform: none; }
+}

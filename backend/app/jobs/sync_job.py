@@ -49,6 +49,10 @@ def command(p: dict, events: str | None = None) -> list:
         cmd += ["--events", events]
     if p.get("room_id"):
         cmd += ["--room-dir", room_dir(p["room_id"])]
+    if p.get("live"):                           # the run keeps every file's step there itself
+        cmd += ["--live", p["live"]]
+    if (p.get("workers") or 1) > 1:
+        cmd += ["--workers", str(int(p["workers"]))]
     if p.get("publish_from"):
         return cmd + ["--publish-from", p["publish_from"]]
     if p.get("rollback"):
@@ -166,9 +170,14 @@ class Live:
         if force or key != getattr(self, "_last_key", None) or self.now() - self._written >= 1.0:
             self._written, self._last_key = self.now(), key
             tmp = live_path(self.jid) + ".tmp"
-            with open(tmp, "w", encoding="utf-8") as f:
-                json.dump(self.state, f)
-            os.replace(tmp, live_path(self.jid))
+            try:
+                with open(tmp, "w", encoding="utf-8") as f:
+                    json.dump(self.state, f)
+                os.replace(tmp, live_path(self.jid))
+            except OSError:
+                # Windows refuses to replace a file another process has open (the page reading it): that crashed the
+                # supervisor and left the run going unseen. The status is written again on the next change.
+                self._last_key = None
 
 
 # ------------------------------------------------------------------ running, supervising, cancelling
@@ -288,8 +297,15 @@ def _supervise(job, proc, p, report):
         from . import rooms
         reader = rooms.EventReader(p["room_id"], jid, events_path(jid))
     live = Live(jid)
-    live.write(force=True)
+    own = not p.get("room_id")                 # a room's run writes its own live status, file by file
+    if own:
+        live.write(force=True)
     lines, pos, last_poll, last_beat = [], 0, 0.0, 0.0
+
+    def percent():
+        if own:
+            return live.percent()
+        return run_percent(jid)
 
     def feed(final=False):
         nonlocal pos
@@ -306,16 +322,25 @@ def _supervise(job, proc, p, report):
         for line in data[:end].decode("utf-8", "replace").splitlines(keepends=True):
             lines.append(line)
             live.feed(line)
-            live.write()
+            if own:
+                live.write()
             if line.strip():
-                report(live.percent(), line.strip()[:160])
+                report(percent(), line.strip()[:160])
+
+    def guarded(fn, what):
+        """Bookkeeping (log, live status, file rows) must never end the supervision of a run that is still going:
+        an error here used to mark the job failed while its process went on, unseen, beside the next run."""
+        try:
+            fn()
+        except Exception as e:                                 # noqa: BLE001
+            print(f"[supervise {jid}] {what} failed, carrying on: {type(e).__name__}: {e}", flush=True)
 
     try:
         while True:
-            feed()
+            guarded(feed, "reading the log")
             now = time.time()
             if reader and now - last_poll >= 1.0:
-                reader.poll()
+                guarded(reader.poll, "reading the events")
                 last_poll = now
             if now - last_beat >= 5.0:
                 _db_note("UPDATE job SET heartbeat_at=? WHERE id=?", (now, jid))
@@ -329,9 +354,72 @@ def _supervise(job, proc, p, report):
         _procs.pop(jid, None)
         if reader:
             reader.poll()                                      # the last events, also when the run ended early
-    live.state["stage"] = "finished"
-    live.write(force=True)
+            try:
+                rooms.end_activity(p["room_id"])
+            except Exception:                                  # noqa: BLE001 - bookkeeping must never fail the job
+                pass
+    if own:
+        live.state["stage"] = "finished"
+        live.write(force=True)
+    else:
+        end_live(jid)                          # also when the run was stopped mid-file: nothing shows as busy
     return code, "".join(lines)
+
+
+def write_known(room_id):
+    """Tell the run which files of the room already have a result on the web side (see sync._known)."""
+    def _rows():
+        con = db.trust_rw()
+        try:
+            return [r[0] for r in con.execute("SELECT rel FROM room_file WHERE room_id=? AND outcome IS NOT NULL", (room_id,))]
+        finally:
+            con.close()
+    try:
+        d = room_dir(room_id)
+        os.makedirs(d, exist_ok=True)
+        tmp = os.path.join(d, "known.json.tmp")
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(_rows(), f, ensure_ascii=False)
+        os.replace(tmp, os.path.join(d, "known.json"))
+    except Exception:                                          # noqa: BLE001 - without it the run skips as before
+        pass
+
+
+def _read_live(jid):
+    try:
+        with open(live_path(jid), encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None
+
+
+def run_percent(jid) -> float:
+    """How far a room's run is, from its own live status: files done, plus the part of each file being read."""
+    st = _read_live(jid)
+    if not st or not st.get("total"):
+        return 3.0
+    part = 0.0
+    for a in (st.get("active") or {}).values():
+        if a.get("pages"):
+            part += min(1.0, (a.get("page") or 0) / a["pages"]) * 0.9
+        elif a.get("stage") == "checking":
+            part += 0.9
+    done = (st.get("done") or 0) + (st.get("skipped") or 0) + part
+    return round(min(5 + 90 * done / st["total"], 98), 1)
+
+
+def end_live(jid):
+    st = _read_live(jid)
+    if not st or st.get("stage") == "finished":
+        return
+    st.update(stage="finished", active={}, queued=[], updated=time.time())
+    tmp = live_path(jid) + ".tmp"
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(st, f)
+        os.replace(tmp, live_path(jid))
+    except OSError:
+        pass
 
 
 def _finish(job, p, code, text, report):
@@ -377,12 +465,23 @@ def handle_sync(job, report):
         os.remove(exit_path(jid))
     except OSError:
         pass
+    if p.get("room_id"):
+        p = dict(p, live=live_path(jid))
+        if not p.get("publish_from"):
+            write_known(p["room_id"])
+        if p.get("parallel"):                   # the capacity points the queue gave this run (text file 1, scan 2)
+            p["workers"] = max(1, int(job.get("points") or 1))
     cmd = command(p, events_path(jid)) if p.get("room_id") else command(p)
     with open(log_path(jid), "wb") as log:
         proc = _spawn(cmd, env, log)
     _procs[jid] = proc
     _db_note("UPDATE job SET pid=?, heartbeat_at=? WHERE id=?", (proc.pid, time.time(), jid))
-    code, text = _supervise(job, proc, p, report)
+    try:
+        code, text = _supervise(job, proc, p, report)
+    except BaseException:
+        # never leave a run going that nobody follows: the next run of the room would work beside it
+        _kill_tree(proc)
+        raise
     return _finish(job, p, code, text, report)
 
 

@@ -13,10 +13,14 @@ from __future__ import annotations
 
 import json
 import os
+import threading
 
 
 class PublishError(RuntimeError):
     pass
+
+
+_STAGE_LOCK = threading.Lock()
 
 
 class Publisher:
@@ -53,8 +57,9 @@ class Publisher:
             dest = self._staged(key) + (f"/{rel}" if rel else "")
             self.s.upload(dest, data)
             sizes[rel] = len(data)
-        self.docs[key] = {"files": sizes, "state": "staged", "archived": []}
-        self._save()
+        with _STAGE_LOCK:                      # documents are staged from several upload threads at once
+            self.docs[key] = {"files": sizes, "state": "staged", "archived": []}
+            self._save()
 
     # --- validate ---------------------------------------------------------------------
     def validate(self, key: str) -> list:
