@@ -81,6 +81,7 @@ export function ThemeProvider({ children, force }: { children: ReactNode; force?
                   colorTextSecondary: "rgba(255,255,255,0.72)",
                   colorTextTertiary: "rgba(255,255,255,0.72)",
                   colorTextDescription: "rgba(255,255,255,0.72)",
+                  colorTextPlaceholder: "rgba(255,255,255,0.6)", // placeholders must reach 4.5:1 too
                   colorError: "#ff7875",
                   colorInfo: "#69b1ff", // "running" tags and info alerts
                 }
@@ -88,6 +89,7 @@ export function ThemeProvider({ children, force }: { children: ReactNode; force?
                   colorTextSecondary: "#595959",
                   colorTextTertiary: "#595959",
                   colorTextDescription: "#595959",
+                  colorTextPlaceholder: "#737373", // antd's #bfbfbf is 1.8:1 on white; this is 4.7:1
                   // dark text colours, with the pale backgrounds pinned (antd would otherwise derive muddy ones from them)
                   colorSuccess: "#237804",
                   colorSuccessBg: "#f6ffed",

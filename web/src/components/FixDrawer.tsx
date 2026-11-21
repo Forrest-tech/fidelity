@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { Alert, Button, Drawer, Input, Segmented, Space, Spin, Tag, Typography, theme } from "antd";
 import { api, json } from "../net/client";
+import { UncertainPlaces } from "./UncertainPlaces";
 
 interface Applied {
   rule: string;
@@ -58,12 +59,14 @@ export function FixDrawer({ roomId, rel, canEdit, onClose }: { roomId: string; r
   const [preview, setPreview] = useState<Preview | null>(null);
   const [saved, setSaved] = useState<Saved | null>(null);
   const [applied, setApplied] = useState<number | null>(null);
+  const [aiCall, setAiCall] = useState<{ call: string; text: string } | null>(null);
   useEffect(() => {
     setFind("");
     setReplace("");
     setPreview(null);
     setSaved(null);
     setApplied(null);
+    setAiCall(null);
   }, [rel]);
   useEffect(() => setScope(view.data?.series ? "series" : "document"), [view.data?.series]);
   useEffect(() => setPreview(null), [find, replace, scope]);
@@ -78,8 +81,16 @@ export function FixDrawer({ roomId, rel, canEdit, onClose }: { roomId: string; r
   const draft = () => ({ room_id: roomId, rel, find, replace, scope });
   const check = useMutation({ mutationFn: () => api<Preview>("/corrections/preview", json(draft())), onSuccess: setPreview });
   const save = useMutation({
-    mutationFn: () => api<Saved>("/corrections", json(draft())),
+    mutationFn: async () => {
+      const d = draft();
+      const out = await api<Saved>("/corrections", json(d));
+      // a fix that came from an AI suggestion records what the person did with it
+      if (aiCall) await api(`/ai/calls/${aiCall.call}/decision`, json({ decision: d.replace === aiCall.text ? "adopted" : "modified", final: d.replace }));
+      return out;
+    },
     onSuccess: (s) => {
+      setAiCall(null);
+      void qc.invalidateQueries({ queryKey: ["review", roomId, rel] });
       setSaved(s);
       setApplied(null);
       setFind("");
@@ -147,8 +158,20 @@ export function FixDrawer({ roomId, rel, canEdit, onClose }: { roomId: string; r
             </section>
           )}
 
+          <UncertainPlaces
+            roomId={roomId}
+            rel={rel!}
+            canEdit={canEdit}
+            onUse={(f, r, call) => {
+              setFind(f);
+              setReplace(r);
+              setAiCall(call ? { call, text: r } : null);
+              setTimeout(() => document.getElementById("fix-form")?.scrollIntoView?.({ behavior: "smooth", block: "nearest" }), 0);
+            }}
+          />
+
           {canEdit && (
-            <section aria-label={t("pages.distill.fix.remember")}>
+            <section id="fix-form" aria-label={t("pages.distill.fix.remember")}>
               <Typography.Title level={5} style={{ marginTop: 0 }}>{t("pages.distill.fix.remember")}</Typography.Title>
               <Space orientation="vertical" size={10} style={{ width: "100%" }}>
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>{t("pages.distill.fix.hint")}</Typography.Text>

@@ -234,6 +234,12 @@
         "help2": "OAuth consent screen: choose Internal (Workspace) or External and add yourself as a test user.",
         "help3": "Credentials → Create credentials → OAuth client ID → type “Web application”; add the redirect URI shown above.",
         "help4": "Copy the client ID and secret into this page, save, then click Connect for each access."
+      },
+      "nav": {
+        "account": "Account",
+        "storage": "Storage",
+        "ai": "AI",
+        "sections": "Settings sections"
       }
     },
     "users": {
@@ -408,6 +414,39 @@
         "result": "Result",
         "library": "Correction library",
         "cut": "The rest of the text is not shown."
+      },
+      "places": {
+        "title": "Uncertain places",
+        "page": "p.{{n}}",
+        "kind": {
+          "reading": "reading",
+          "numbers": "numbers",
+          "text": "text",
+          "headings": "heading",
+          "tables": "table",
+          "formula": "formula"
+        },
+        "notInText": "This reading is not in the result as written.",
+        "readings": "Readings:",
+        "use": "Use “{{text}}”",
+        "aiSays": "AI suggests",
+        "aiUnsure": "AI is not sure.",
+        "checkYourself": "a number: check it yourself",
+        "useAi": "Use the suggestion",
+        "notRight": "Not right",
+        "askAi": "Ask AI",
+        "explain": "Explain",
+        "decision": {
+          "adopted": "taken",
+          "modified": "taken with changes",
+          "rejected": "not right"
+        },
+        "status": {
+          "blocked": "Not sent to AI.",
+          "error": "The AI did not answer.",
+          "invalid": "The answer broke the rules and was discarded."
+        },
+        "showAll": "Show all {{count}}"
       }
     },
     "corrections": {
@@ -445,6 +484,67 @@
       "later": "Later",
       "appliedDone_one": "Done: 1 document changed.",
       "appliedDone_other": "Done: {{count}} documents changed."
+    },
+    "ai": {
+      "intro": "Connect a model to help with places the system is unsure about. AI only suggests: every change still goes through a person or an exact correction rule.",
+      "master": "Use AI",
+      "on": "On",
+      "off": "Off — skills fall back to rules and people",
+      "providers": "Providers and keys",
+      "noProviders": "No provider yet. Add one below.",
+      "keyEnds": "key ••••{{last4}}",
+      "testConnection": "Test connection",
+      "testOk": "Works ({{s}} s)",
+      "testFailed": "Did not work",
+      "remove": "Remove",
+      "removeConfirm": "Remove this provider and its key? Skills using it fall back to rules and people.",
+      "models": "Models (type a name and press Enter)",
+      "modelsOf": "Models of {{name}}",
+      "addProvider": "Add a provider",
+      "provider": "Provider",
+      "apiKey": "API key",
+      "address": "Address (https only)",
+      "add": "Add",
+      "keyNote": "The key is stored encrypted on the server. Only its last four characters are ever shown.",
+      "skill": {
+        "arbitrate": "Reading arbitration",
+        "explain": "Difference explanation"
+      },
+      "skillHint": {
+        "arbitrate": "Picks between two OCR readings of one place",
+        "explain": "One sentence on why a place may differ (display only)"
+      },
+      "model": "Model",
+      "level": "Used",
+      "level0": "Off",
+      "level1": "When asked",
+      "level2": "By default",
+      "budget": "Monthly budget",
+      "cap": "Monthly calls at most",
+      "none": "None (rules and people)",
+      "thisMonth": "This month: {{calls}} calls, {{cached}} answered from memory, ${{spend}}",
+      "noDecisions": "no decisions yet",
+      "adoption": "people took {{pct}}% of {{n}} suggestions",
+      "blocked": "{{n}} held back",
+      "errors": "{{n}} errors",
+      "paused": "Paused after repeated errors; it tries again in {{min}} min.",
+      "save": "Save",
+      "test": "Test on confirmed examples ({{n}})",
+      "score": "{{score}}% right on {{n}} examples",
+      "scope": "What may be sent",
+      "scopeHint": "Only documents from these input folders are sent, and only the uncertain place with a few words around it — never a whole document.",
+      "allowed": "Folders allowed to be sent",
+      "allowedPlaceholder": "Type a folder such as /as 3500 and press Enter",
+      "blockLicensed": "Hold back documents with a licence watermark (\"Licensed to …\")",
+      "memory": "What the system remembers",
+      "memRules": "Correction rules (no AI needed)",
+      "memCache": "Answers kept (asked once, reused)",
+      "memExamples": "Places settled by people (shown to the AI as examples)",
+      "memoryHint": "The cheapest answer comes first: a rule, then a kept answer, then the AI with similar settled places.",
+      "danger": "Danger zone",
+      "wipeHint": "Delete every key. All skills fall back to rules and people.",
+      "wipe": "Delete all keys",
+      "wipeConfirm": "Delete every AI key now?"
     }
   }
 }
