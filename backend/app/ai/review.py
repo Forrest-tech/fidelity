@@ -54,11 +54,15 @@ def _row(room: dict, rel: str):
 def items(room: dict, rel: str) -> dict:
     r = _row(room, rel)
     findings = json.loads(r["findings"]) if r["findings"] else []
+    try:
+        known = set(json.loads(r["known"] or "[]"))
+    except (TypeError, ValueError, KeyError, IndexError):
+        known = set()
     text = _text(room["id"], rel)
     fx = FX.summary(r) if any(f.get("kind") == "formula" for f in findings) else {"available": False, "pages": {}}
     out = []
     for i, f in enumerate(findings):
-        it = {"i": i, "kind": f.get("kind"), "page": f.get("page"), "detail": f.get("detail")}
+        it = {"i": i, "kind": f.get("kind"), "page": f.get("page"), "detail": f.get("detail"), "known": i in known}
         if f.get("kind") == "reading":
             cands = [f.get("a") or "", f.get("b") or ""]
             in_text, before, after = _context(text, cands)
@@ -167,3 +171,23 @@ def _around_marker(room_id: str, rel: str, page: int, k: int) -> tuple[str, str]
         if k < len(parts):
             return " ".join(parts[k - 1].split()[-CONTEXT_WORDS:]), " ".join(parts[k].split()[:CONTEXT_WORDS])
     return "", ""
+
+
+def mark_known(room: dict, rel: str, index: int, known: bool, user: str) -> dict:
+    """A person says a place is a known issue (or not any more): it stays listed, marked, and is not asked about again."""
+    r = _row(room, rel)
+    findings = json.loads(r["findings"]) if r["findings"] else []
+    if not 0 <= index < len(findings):
+        raise CF.ConfigError(404, "no such place in this file")
+    try:
+        cur = set(json.loads(r["known"] or "[]"))
+    except (TypeError, ValueError):
+        cur = set()
+    (cur.add if known else cur.discard)(index)
+    con = db.trust_rw()
+    try:
+        con.execute("UPDATE room_file SET known=? WHERE room_id=? AND rel=?", (json.dumps(sorted(cur)), room["id"], rel))
+        con.commit()
+    finally:
+        con.close()
+    return items(room, rel)

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Button as AntButton, Card as AntCard, Empty, Result, Spin, Tag, Typography } from "antd";
@@ -86,25 +87,88 @@ export function ErrorState({ message, onRetry }: { message?: string; onRetry?: (
   );
 }
 
-export function PageHeader({ title }: { title: string }) {
+/** The page head of the design: a title, one line saying what the page is for, and the page's actions on the right. */
+export function PageHeader({ title, desc, extra }: { title: string; desc?: ReactNode; extra?: ReactNode }) {
   return (
-    <Typography.Title level={1} style={{ fontSize: 24, margin: "0 0 16px" }}>
-      {title}
-    </Typography.Title>
+    <div className="fx-head" style={{ marginBottom: 14 }}>
+      <div style={{ minWidth: 0 }}>
+        <h1>{title}</h1>
+        {desc && <p>{desc}</p>}
+      </div>
+      <span className="fx-sp" />
+      {extra}
+    </div>
   );
 }
 
 const TONE: Record<string, string> = {
-  done: "success",
-  PASS: "success",
-  error: "error",
-  FAIL: "error",
-  running: "processing",
-  REVIEW: "warning",
+  done: "ok",
+  PASS: "ok",
+  error: "bad",
+  FAIL: "bad",
+  running: "run",
+  queued: "idle",
+  REVIEW: "warn",
+  interrupted: "warn",
 };
 
-/** A status as a coloured tag (queued, running, done, error, or a verification verdict). */
+/** A status as the design's pill (queued, running, done, error, or a verification verdict). */
 export function StatusTag({ status }: { status: string }) {
   const { t } = useTranslation();
-  return <Tag color={TONE[status] ?? "default"}>{t(`status.${status}`, { defaultValue: status })}</Tag>;
+  return <span className={`fx-pill p-${TONE[status] ?? "idle"}`}>{t(`status.${status}`, { defaultValue: status })}</span>;
+}
+
+/** A status pill: tone is one of idle, run, ok, warn, bad, ai. */
+export function Pill({ tone, children, title }: { tone: "idle" | "run" | "ok" | "warn" | "bad" | "ai"; children: ReactNode; title?: string }) {
+  return <span className={`fx-pill p-${tone}`} title={title}>{children}</span>;
+}
+
+/** A thin progress bar. */
+export function Bar({ pct, width = 90, ok = false, label }: { pct: number; width?: number; ok?: boolean; label?: string }) {
+  const v = Math.max(0, Math.min(100, pct));
+  return (
+    <div className={`fx-bar${ok ? " ok" : ""}`} style={{ width }} role="progressbar" aria-valuenow={Math.round(v)} aria-valuemin={0} aria-valuemax={100} aria-label={label}>
+      <i style={{ width: `${v}%` }} />
+    </div>
+  );
+}
+
+/** Segmented choice. */
+export function Seg<T extends string | number>({ value, options, onChange, label, tiny, disabled }: {
+  value: T; options: { value: T; label: ReactNode }[]; onChange: (v: T) => void; label: string; tiny?: boolean; disabled?: boolean;
+}) {
+  return (
+    <div className={`fx-seg${tiny ? " tiny" : ""}`} role="radiogroup" aria-label={label}>
+      {options.map((o) => (
+        <button key={String(o.value)} type="button" role="radio" aria-checked={o.value === value} className={o.value === value ? "on" : undefined}
+          disabled={disabled} onClick={() => onChange(o.value)}>
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Wraps an antd Table whose content may scroll sideways on a narrow screen: the scrolling part becomes reachable with
+ * the keyboard and is named for screen readers (a scrollable region must be focusable). */
+export function TableBox({ label, children }: { label: string; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const mark = () => {
+      el.querySelectorAll<HTMLElement>(".ant-table-content, .ant-table-body").forEach((c) => {
+        if (c.getAttribute("tabindex") !== "0") {
+          c.setAttribute("tabindex", "0");
+          c.setAttribute("role", "region");
+          c.setAttribute("aria-label", label);
+        }
+      });
+    };
+    mark();
+    const obs = new MutationObserver(mark);
+    obs.observe(el, { childList: true, subtree: true });
+    return () => obs.disconnect();
+  }, [label]);
+  return <div ref={ref}>{children}</div>;
 }

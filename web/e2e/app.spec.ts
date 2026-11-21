@@ -10,30 +10,35 @@ async function login(page: Page, role: "admin" | "reviewer" | "viewer") {
   await page.getByLabel("Email").fill(`${role}@example.com`);
   await page.getByLabel("Password").fill(PW);
   await page.getByRole("button", { name: "Sign in" }).click();
-  // the account button is visible at every screen size (the navigation is behind a menu on phones)
-  await expect(page.getByRole("button", { name: "Account" })).toBeVisible({ timeout: 15_000 });
+  // the account button is in the top bar at every screen size
+  await expect(page.getByRole("button", { name: ACCOUNT })).toBeVisible({ timeout: 15_000 });
 }
+
+const ACCOUNT = /^(Account menu|账号菜单)$/;
 
 async function signOut(page: Page) {
-  await page.getByRole("button", { name: "Account" }).click();
-  await page.getByText("Sign out").click();
+  await page.getByRole("button", { name: ACCOUNT }).click();
+  await page.getByRole("menuitem", { name: /Sign out|退出/ }).click();
 }
 
-// The language switch is a segmented control (in the header, or in the menu drawer on phones).
+// The language switch is in the top bar on wide screens and in the account menu everywhere.
 async function setLanguage(page: Page, lang: "English" | "中文") {
-  const group = page.getByRole("radiogroup", { name: /Language|语言/ });
-  if (!(await group.first().isVisible())) await openNav(page);
-  await group.first().getByText(lang).click();
+  const bar = page.getByRole("group", { name: /^(Language|语言)$/ });
+  if (await bar.isVisible()) {
+    await bar.getByRole("button", { name: lang === "English" ? "EN" : "中文" }).click();
+    return;
+  }
+  await page.getByRole("button", { name: ACCOUNT }).click();
+  await page.getByRole("menuitem", { name: /^(Language|语言)/ }).click();
+  await page.getByRole("menuitemradio", { name: new RegExp(`^${lang}`) }).click();
 }
 
-// On a phone the navigation sits behind a Menu button.
+// The shell has rendered (also after a reload). The navigation is in the top bar, or at the bottom on phones.
 async function openNav(page: Page) {
-  await expect(page.locator("#main")).toBeVisible({ timeout: 15_000 }); // shell rendered (also after a reload)
-  const menu = page.locator('button[aria-controls="side-nav"]'); // label changes with the language; phones only
-  if (await menu.isVisible()) {
-    if ((await menu.getAttribute("aria-expanded")) !== "true") await menu.click();
-  }
+  await expect(page.locator("#main")).toBeVisible({ timeout: 15_000 });
 }
+
+const navLink = (page: Page, name: string) => page.getByRole("link", { name, exact: true }).filter({ visible: true }).first();
 
 test.describe("sign in and out", () => {
   test("anonymous visitors are sent to the login page", async ({ page }) => {
@@ -63,7 +68,9 @@ test.describe("roles", () => {
   test("a viewer cannot reach Users and sees no action buttons", async ({ page }) => {
     await login(page, "viewer");
     await openNav(page);
-    await expect(page.getByRole("link", { name: "Users" })).toHaveCount(0);
+    await page.getByRole("button", { name: ACCOUNT }).click();
+    await expect(page.getByRole("menuitem", { name: "Users" })).toHaveCount(0);
+    await page.keyboard.press("Escape");
     await page.goto("/users");
     await expect(page.getByText("You do not have access to this page.")).toBeVisible();
     await page.goto("/sources");
@@ -85,14 +92,14 @@ test.describe("roles", () => {
     await form.getByLabel("Email").fill(email);
     await form.getByLabel(/Password/).fill("another-long-password");
     await form.getByRole("button", { name: "Create user" }).click();
-    await expect(page.getByRole("cell", { name: email })).toBeVisible();
+    await expect(page.getByRole("cell", { name: email })).toBeVisible({ timeout: 15_000 }); // hashing a password is slow on a busy machine
     const ctx = await browser.newContext();
     const p2 = await ctx.newPage();
     await p2.goto(new URL("/login", page.url()).toString());
     await p2.getByLabel("Email").fill(email);
     await p2.getByLabel("Password").fill("another-long-password");
     await p2.getByRole("button", { name: "Sign in" }).click();
-    await expect(p2.getByRole("button", { name: "Account" })).toBeVisible({ timeout: 15_000 });
+    await expect(p2.getByRole("button", { name: ACCOUNT })).toBeVisible({ timeout: 15_000 });
     await ctx.close();
   });
 });
@@ -102,10 +109,11 @@ test.describe("pages have content or a clear state", () => {
     ["/", "Overview"],
     ["/distill", "Distill"],
     ["/corrections", "Correction library"],
+    ["/settings/corrections", "Correction library"],
     ["/sources", "Sources"],
     ["/jobs", "Jobs"],
-    ["/documents", "Documents"],
-    ["/settings", "Settings"],
+    ["/documents", "Results"],
+    ["/settings", "Account"],
   ] as const) {
     test(`${path} renders`, async ({ page }) => {
       await login(page, "reviewer");
@@ -119,7 +127,7 @@ test.describe("pages have content or a clear state", () => {
     await login(page, "reviewer");
     await page.goto("/documents");
     await page.reload();
-    await expect(page.getByRole("heading", { name: "Documents" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Results" })).toBeVisible();
     await page.goto("/no-such-page");
     await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
   });
@@ -141,7 +149,7 @@ test.describe("review screen", () => {
     await login(page, "reviewer");
     await page.goto("/review");
     await expect(page.locator(".legacy-review .header")).toBeVisible({ timeout: 15_000 });
-    await page.getByRole("button", { name: "Theme" }).click();
+    await page.getByRole("button", { name: "Switch to dark mode" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     const bg = await page.locator(".legacy-review").evaluate((el) => getComputedStyle(el).backgroundColor);
     expect(bg).toBe("rgb(2, 6, 23)");                                  // dark surface, not the light one
@@ -156,11 +164,11 @@ test.describe("bilingual", () => {
     await login(page, "admin");
     await setLanguage(page, "中文");
     await openNav(page);
-    await expect(page.getByRole("link", { name: "蒸馏" })).toBeVisible();
+    await expect(navLink(page, "蒸馏")).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
     await page.reload();
     await openNav(page);
-    await expect(page.getByRole("link", { name: "蒸馏" })).toBeVisible();
+    await expect(navLink(page, "蒸馏")).toBeVisible();
     await setLanguage(page, "English");
   });
 });
@@ -176,15 +184,24 @@ test.describe("responsive", () => {
     }
   });
 
-  test("on narrow screens the menu button toggles the navigation", async ({ page }) => {
+  test("the navigation is always reachable: in the top bar, or at the bottom on phones", async ({ page }, info) => {
     await login(page, "reviewer");
-    const menu = page.getByRole("button", { name: "Menu" });
-    test.skip(!(await menu.isVisible()), "wide layout shows the navigation permanently");
-    await expect(menu).toHaveAttribute("aria-expanded", "false");
-    await menu.click();
-    await expect(page.getByRole("link", { name: "Jobs" })).toBeVisible();
-    await page.getByRole("link", { name: "Jobs" }).click();
-    await expect(page.getByRole("heading", { name: "Jobs" })).toBeVisible();
+    const where = info.project.name === "phone" ? "Phone navigation" : "Main navigation";
+    const nav = page.getByRole("navigation", { name: where });
+    await expect(nav).toBeVisible();
+    await nav.getByRole("link", { name: "Distill" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Distill" })).toBeVisible();
+    await nav.getByRole("link", { name: "Results" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Results" })).toBeVisible();
+  });
+
+  test("the command palette opens with Ctrl K and goes to a page", async ({ page }, info) => {
+    test.skip(info.project.name === "phone", "no keyboard on a phone");
+    await login(page, "reviewer");
+    await page.keyboard.press("Control+k");
+    await page.getByLabel("Search files, pages and actions").fill("Distill");
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("heading", { level: 1, name: "Distill" })).toBeVisible();
   });
 });
 

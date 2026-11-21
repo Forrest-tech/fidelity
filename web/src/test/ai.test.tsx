@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { mockApi, renderApp } from "./helpers";
@@ -30,16 +30,32 @@ describe("AI settings", () => {
       return { body: {} };
     });
     renderApp("/settings/ai");
-    expect(await screen.findByText("Use AI")).toBeInTheDocument();
-    expect(screen.getByText(/This month: 12 calls, 4 answered from memory, \$0.31/)).toBeInTheDocument();
-    expect(screen.getByText(/people took 90% of 10 suggestions/)).toBeInTheDocument();
+    expect(await screen.findByRole("switch", { name: "Use AI" })).toHaveAttribute("aria-checked", "false");
+    expect(screen.getByText("AI calls this month").nextElementSibling).toHaveTextContent("12");
+    expect(screen.getByText("$0.31")).toBeInTheDocument();
+    expect(screen.getByText("90%")).toBeInTheDocument(); // taken by people
     const u = userEvent.setup({ pointerEventsCheck: 0 });
-    await u.type(screen.getByLabelText("API key"), "sk-ant-secret-key-abcd");
-    await u.click(screen.getByText("Add"));
-    expect(await screen.findByText("key ••••abcd")).toBeInTheDocument();
+    await u.click(screen.getByRole("button", { name: "+ Add" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent("Add a provider");
+    await u.type(within(dialog).getByLabelText("API key"), "sk-ant-secret-key-abcd");
+    expect(within(dialog).getByLabelText("API key")).toHaveAttribute("type", "password");
+    await u.click(within(dialog).getByRole("button", { name: "Add" }));
+    expect(await screen.findByText(/key ••••abcd/)).toBeInTheDocument();
     expect(screen.queryByText(/sk-ant-secret/)).not.toBeInTheDocument();
     const post = calls.find((c) => c.url.endsWith("/ai/providers"));
     expect(JSON.parse(String(post?.init?.body))).toEqual({ kind: "anthropic", key: "sk-ant-secret-key-abcd", base_url: null });
+  });
+
+  it("will not add a key that is too short", async () => {
+    mockApi((url) => (url.endsWith("/me") ? { body: ME("admin") } : url.endsWith("/ai/settings") ? { body: SETTINGS() } : { body: {} }));
+    renderApp("/settings/ai");
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    await u.click(await screen.findByRole("button", { name: "+ Add" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent("Add a provider");
+    await u.type(within(dialog).getByLabelText("API key"), "short");
+    expect(within(dialog).getByRole("button", { name: "Add" })).toBeDisabled();
   });
 
   it("switches AI on and saves a skill's level", async () => {
@@ -52,8 +68,10 @@ describe("AI settings", () => {
     const u = userEvent.setup({ pointerEventsCheck: 0 });
     await u.click(await screen.findByRole("switch", { name: "Use AI" }));
     await waitFor(() => expect(calls.some((c) => c.init?.method === "PUT" && JSON.parse(String(c.init.body)).enabled === true)).toBe(true));
-    await u.click(screen.getAllByText("By default")[0]);
-    await u.click(screen.getAllByText("Save")[0]);
+    await u.click(screen.getAllByRole("button", { name: /^Edit / })[0]);
+    const dialog = await screen.findByRole("dialog");
+    await u.click(within(dialog).getByRole("radio", { name: "By default" }));
+    await u.click(within(dialog).getByRole("button", { name: "Save" }));
     await waitFor(() => {
       const put = calls.filter((c) => c.init?.method === "PUT").pop();
       expect(JSON.parse(String(put?.init?.body)).skills.arbitrate.level).toBe(2);
@@ -63,9 +81,9 @@ describe("AI settings", () => {
   it("is not shown to people who may not change it", async () => {
     mockApi((url) => (url.endsWith("/me") ? { body: ME("reviewer") } : { body: {} }));
     renderApp("/settings/ai");
-    expect(await screen.findByRole("heading", { name: "Settings" })).toBeInTheDocument();
-    expect(screen.queryByText("Use AI")).not.toBeInTheDocument();
-    expect(screen.queryByText("AI", { selector: "a, li, span" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "Account" })).toBeInTheDocument();
+    expect(screen.queryByRole("switch", { name: "Use AI" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "AI" })).not.toBeInTheDocument();
   });
 });
 
@@ -92,16 +110,16 @@ function fileApi(suggestion: unknown, level = 1) {
 }
 
 describe("uncertain places", () => {
-  it("lists them with their context and takes a reading over into the fix form", async () => {
+  it("lists them, opens the first one and takes its other reading as the final text", async () => {
     fileApi(null);
     renderApp("/distill");
     const u = userEvent.setup({ pointerEventsCheck: 0 });
-    await u.click(await screen.findByLabelText("Fix scan.pdf"));
-    expect(await screen.findByText("Uncertain places")).toBeInTheDocument();
+    await u.click(await screen.findByRole("button", { name: "Review scan.pdf" }));
+    const side = await screen.findByRole("complementary", { name: "The chosen place" });
     expect(screen.getByText("missing: 20")).toBeInTheDocument();
-    await u.click(screen.getByText("Use “fitted”"));
-    expect(screen.getByLabelText("Wrong text")).toHaveValue("fittcd");
-    expect(screen.getByLabelText("Correct text")).toHaveValue("fitted");
+    expect(within(side).getByLabelText("Correct text")).toHaveValue("fitted");
+    await u.click(within(side).getByRole("button", { name: "fittcd" }));
+    expect(within(side).getByLabelText("Correct text")).toHaveValue("fittcd");
   });
 
   it("asks the AI, and a fix made from its suggestion records that the person took it", async () => {
@@ -109,13 +127,15 @@ describe("uncertain places", () => {
       result: { text: "fitted", choice: 1, confidence: 0.93, reason: "a real word here", needs_human: false } });
     renderApp("/distill");
     const u = userEvent.setup({ pointerEventsCheck: 0 });
-    await u.click(await screen.findByLabelText("Fix scan.pdf"));
-    expect(await screen.findByText(/93% · a real word here/)).toBeInTheDocument();
-    await u.click(screen.getByText("Explain"));                                     // the numbers place
+    await u.click(await screen.findByRole("button", { name: "Review scan.pdf" }));
+    expect(await screen.findByText(/a real word here/)).toBeInTheDocument();
+    await u.click(screen.getByRole("row", { name: "numbers 3" }));                     // the numbers place
+    await u.click(await screen.findByRole("button", { name: "Explain" }));
     await waitFor(() => expect(JSON.parse(String(calls.find((c) => c.url.endsWith("/rooms/r1/ask"))?.init?.body))).toEqual({ rel: "/scan.pdf", item: 1 }));
-    await u.click(screen.getByText("Use the suggestion"));
-    await u.click(screen.getByText("Preview"));
-    await u.click(await screen.findByText("Save and fix"));
+    await u.click(screen.getByRole("row", { name: "reading 2" }));
+    const save = await screen.findByRole("button", { name: "Confirm and save" });
+    await waitFor(() => expect(save).toBeEnabled(), { timeout: 3000 });            // after the preview
+    await u.click(save);
     await waitFor(() => {
       const d = calls.find((c) => c.url.endsWith("/ai/calls/c1/decision"));
       expect(JSON.parse(String(d?.init?.body))).toEqual({ decision: "adopted", final: "fitted" });
@@ -125,7 +145,7 @@ describe("uncertain places", () => {
   it("at level 2 asks about new places when the file is opened", async () => {
     const calls = fileApi(null, 2);
     renderApp("/distill");
-    await userEvent.setup({ pointerEventsCheck: 0 }).click(await screen.findByLabelText("Fix scan.pdf"));
+    await userEvent.setup({ pointerEventsCheck: 0 }).click(await screen.findByRole("button", { name: "Review scan.pdf" }));
     await waitFor(() => expect(calls.some((c) => c.url.endsWith("/rooms/r1/ask-default"))).toBe(true));
   });
 });

@@ -25,6 +25,9 @@ from app import config as _config  # noqa: E402
 _config.TRUST_DB = os.path.join(_TMP, "trust.db")
 _config.CACHE_DIR = os.path.join(_TMP, "cache")
 os.makedirs(_config.CACHE_DIR, exist_ok=True)
+# defaults for new rooms live in the data folder: keep the tests' own copy
+from app.api import appsettings as _appsettings  # noqa: E402
+_appsettings.PATH = os.path.join(_TMP, "app_settings.json")
 
 
 def _reset_postgres():

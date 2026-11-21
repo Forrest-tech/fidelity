@@ -4,30 +4,30 @@
 
 /* Design tokens (space-separated RGB so Tailwind can apply opacity). Contrast checked >= 4.5:1. */
 :root {
-  --fx-bg: 248 250 252;
+  --fx-bg: 243 244 246;
   --fx-surface: 255 255 255;
-  --fx-muted: 241 245 249;
-  --fx-fg: 15 23 42;
-  --fx-fg-muted: 71 85 105;
-  --fx-border: 203 213 225;
+  --fx-muted: 247 248 250;
+  --fx-fg: 22 24 29;
+  --fx-fg-muted: 91 98 112;
+  --fx-border: 223 226 232;
   --fx-primary: 29 78 216;
   --fx-primary-fg: 255 255 255;
-  --fx-danger: 185 28 28;
-  --fx-ok: 21 128 61;
-  --fx-warn: 161 98 7;
+  --fx-danger: 180 35 24;
+  --fx-ok: 19 112 58;
+  --fx-warn: 138 83 0;
 }
 :root[data-theme="dark"] {
-  --fx-bg: 2 6 23;
-  --fx-surface: 15 23 42;
-  --fx-muted: 30 41 59;
-  --fx-fg: 241 245 249;
-  --fx-fg-muted: 148 163 184;
-  --fx-border: 51 65 85;
-  --fx-primary: 96 165 250;
-  --fx-primary-fg: 2 6 23;
-  --fx-danger: 248 113 113;
-  --fx-ok: 74 222 128;
-  --fx-warn: 250 204 21;
+  --fx-bg: 15 17 21;
+  --fx-surface: 23 26 33;
+  --fx-muted: 18 21 27;
+  --fx-fg: 232 234 238;
+  --fx-fg-muted: 154 162 177;
+  --fx-border: 42 47 58;
+  --fx-primary: 122 162 255;
+  --fx-primary-fg: 15 17 21;
+  --fx-danger: 255 138 128;
+  --fx-ok: 95 208 138;
+  --fx-warn: 242 184 75;
 }
 html, body, #root { height: 100%; }
 body { @apply bg-bg text-fg antialiased; }

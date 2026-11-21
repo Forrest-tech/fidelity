@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Alert, AutoComplete, Button, Card, Input, InputNumber, Popconfirm, Segmented, Select, Space, Switch, Table, Tag, Typography } from "antd";
+import { AutoComplete, Modal, Popconfirm, Select } from "antd";
 import { api, json } from "../net/client";
-import { ErrorState, Loading } from "./ui";
+import { ErrorState, Loading, PageHeader, Pill, Seg } from "./ui";
 
 type Skill = "arbitrate" | "explain" | "transcribe" | "suggest";
 interface Provider {
@@ -18,7 +18,7 @@ interface Provider {
 interface SkillCfg {
   provider: string | null;
   model: string | null;
-  level: 0 | 1 | 2;
+  level: number;
   budget_usd: number;
   monthly_cap: number;
 }
@@ -46,262 +46,287 @@ export interface AiSettingsData {
   examples: Record<Skill, number>;
 }
 const SKILLS: Skill[] = ["arbitrate", "explain", "transcribe", "suggest"];
+const MAX_LEVEL: Record<Skill, number> = { arbitrate: 2, explain: 1, transcribe: 1, suggest: 1 };
 
-function SkillRow({ name, data, onSaved }: { name: Skill; data: AiSettingsData; onSaved: (d: AiSettingsData) => void }) {
+// ------------------------------------------------------------------ one skill, edited in a dialog
+function SkillEdit({ name, data, onSaved, onClose }: { name: Skill; data: AiSettingsData; onSaved: (d: AiSettingsData) => void; onClose: () => void }) {
   const { t } = useTranslation();
   const cfg = data.skills[name];
   const [v, setV] = useState<SkillCfg>(cfg);
-  useEffect(() => setV(cfg), [cfg]);
   const prov = data.providers.find((p) => p.id === v.provider);
-  const st = data.stats.skills[name];
   const dirty = JSON.stringify(v) !== JSON.stringify(cfg);
-  const save = useMutation({ mutationFn: () => api<AiSettingsData>("/ai/settings", { ...json({ skills: { [name]: v } }), method: "PUT" }), onSuccess: onSaved });
+  const save = useMutation({
+    mutationFn: () => api<AiSettingsData>("/ai/settings", { ...json({ skills: { [name]: v } }), method: "PUT" }),
+    onSuccess: (d) => {
+      onSaved(d);
+      onClose();
+    },
+  });
   const test = useMutation({
     mutationFn: () => api<{ score: number; n: number; settings: AiSettingsData }>(`/ai/skills/${name}/evaluate`, json({ provider: v.provider, model: v.model })),
     onSuccess: (r) => onSaved(r.settings),
   });
   const score = v.provider && v.model ? data.evals[`${name}|${v.provider}|${v.model}`] : undefined;
   const err = (save.error || test.error) as Error | null;
+  const levels = [
+    { value: 0, label: t("pages.ai.level0") },
+    { value: 1, label: t("pages.ai.level1") },
+    ...(MAX_LEVEL[name] >= 2 ? [{ value: 2, label: t("pages.ai.level2") }] : []),
+  ];
   return (
-    <Card size="small" title={t(`pages.ai.skill.${name}`)} extra={<Typography.Text type="secondary" style={{ fontSize: 12 }}>{t(`pages.ai.skillHint.${name}`)}</Typography.Text>}>
-      <Space orientation="vertical" size={10} style={{ width: "100%" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
-          <label style={{ display: "grid", gap: 4 }}>
-            <span>{t("pages.ai.provider")}</span>
-            <Select
-              value={v.provider ?? undefined}
-              placeholder={t("pages.ai.none")}
-              allowClear
+    <Modal open onCancel={onClose} title={t(`pages.ai.skill.${name}`)} width={520}
+      footer={[
+        <button key="c" className="fx-btn" onClick={onClose}>{t("pages.distill.cancel")}</button>,
+        <button key="s" className="fx-btn pri" style={{ marginLeft: 8 }} disabled={!dirty || save.isPending} onClick={() => save.mutate()}>{t("pages.ai.save")}</button>,
+      ]}>
+      <div className="fx-stack" style={{ gap: 12 }}>
+        <div className="fx-tiny fx-muted">{t(`pages.ai.skillHint.${name}`)}</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <label>
+            <span className="fx-lab">{t("pages.ai.provider")}</span>
+            <Select value={v.provider ?? undefined} placeholder={t("pages.ai.none")} allowClear style={{ width: "100%" }} aria-label={t("pages.ai.provider")}
               onChange={(x) => setV({ ...v, provider: x ?? null, model: x ? (data.providers.find((p) => p.id === x)?.models[0] ?? null) : null })}
-              options={data.providers.map((p) => ({ value: p.id, label: `${p.label} ••••${p.last4}` }))}
-            />
+              options={data.providers.map((p) => ({ value: p.id, label: `${p.label} ••••${p.last4}` }))} />
           </label>
-          <label style={{ display: "grid", gap: 4 }}>
-            <span>{t("pages.ai.model")}</span>
-            <AutoComplete
-              value={v.model ?? ""}
-              disabled={!v.provider}
-              onChange={(x) => setV({ ...v, model: x || null })}
-              options={(prov?.models ?? []).map((m) => ({ value: m }))}
-            />
-          </label>
-          <div style={{ display: "grid", gap: 4 }}>
-            <span>{t("pages.ai.level")}</span>
-            <Segmented
-              value={v.level}
-              onChange={(x) => setV({ ...v, level: x as SkillCfg["level"] })}
-              options={[
-                { value: 0, label: t("pages.ai.level0") },
-                { value: 1, label: t("pages.ai.level1") },
-                ...(name === "arbitrate" ? [{ value: 2, label: t("pages.ai.level2") }] : []),
-              ]}
-            />
-          </div>
-          <label style={{ display: "grid", gap: 4 }}>
-            <span>{t("pages.ai.budget")}</span>
-            <InputNumber min={0} step={5} prefix="$" value={v.budget_usd} onChange={(x) => setV({ ...v, budget_usd: x ?? 0 })} style={{ width: "100%" }} />
-          </label>
-          <label style={{ display: "grid", gap: 4 }}>
-            <span>{t("pages.ai.cap")}</span>
-            <InputNumber min={0} step={50} value={v.monthly_cap} onChange={(x) => setV({ ...v, monthly_cap: x ?? 0 })} style={{ width: "100%" }} />
+          <label>
+            <span className="fx-lab">{t("pages.ai.model")}</span>
+            <AutoComplete value={v.model ?? ""} disabled={!v.provider} style={{ width: "100%" }} aria-label={t("pages.ai.model")}
+              onChange={(x) => setV({ ...v, model: x || null })} options={(prov?.models ?? []).map((m) => ({ value: m }))} />
           </label>
         </div>
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {t("pages.ai.thisMonth", { calls: st.calls, cached: st.cached, spend: st.spend.toFixed(2) })}
-          {" · "}
-          {st.adoption == null ? t("pages.ai.noDecisions") : t("pages.ai.adoption", { pct: st.adoption, n: st.adopted + st.modified + st.rejected })}
-          {st.blocked ? ` · ${t("pages.ai.blocked", { n: st.blocked })}` : ""}
-          {st.errors ? ` · ${t("pages.ai.errors", { n: st.errors })}` : ""}
-        </Typography.Text>
-        {st.paused_s > 0 && <Alert type="warning" showIcon title={t("pages.ai.paused", { min: Math.ceil(st.paused_s / 60) })} />}
-        {err && <Alert type="error" showIcon title={err.message} />}
-        <Space wrap>
-          <Button type="primary" disabled={!dirty} loading={save.isPending} onClick={() => save.mutate()}>{t("pages.ai.save")}</Button>
-          {name === "arbitrate" && (
-            <Button disabled={!v.provider || !v.model || !data.examples[name]} loading={test.isPending} onClick={() => test.mutate()}>
+        <div>
+          <span className="fx-lab">{t("pages.ai.level")}</span>
+          <Seg label={t("pages.ai.level")} value={v.level} onChange={(x) => setV({ ...v, level: x })} options={levels} />
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <label>
+            <span className="fx-lab">{t("pages.ai.budget")}</span>
+            <span className="fx-field"><span className="fx-muted">$</span>
+              <input inputMode="decimal" value={String(v.budget_usd)} aria-label={t("pages.ai.budget")} onChange={(e) => setV({ ...v, budget_usd: Number(e.target.value.replace(/[^\d.]/g, "")) || 0 })} /></span>
+          </label>
+          <label>
+            <span className="fx-lab">{t("pages.ai.cap")}</span>
+            <span className="fx-field"><input inputMode="numeric" value={String(v.monthly_cap)} aria-label={t("pages.ai.cap")} onChange={(e) => setV({ ...v, monthly_cap: Number(e.target.value.replace(/\D/g, "")) || 0 })} /></span>
+          </label>
+        </div>
+        {name === "arbitrate" && (
+          <div className="fx-row fx-wrap">
+            <button className="fx-btn" disabled={!v.provider || !v.model || !data.examples[name] || test.isPending} onClick={() => test.mutate()}>
               {t("pages.ai.test", { n: data.examples[name] })}
-            </Button>
-          )}
-          {score && <Tag color={score.score >= 85 ? "success" : "warning"}>{t("pages.ai.score", { score: score.score, n: score.n })}</Tag>}
-        </Space>
-      </Space>
-    </Card>
+            </button>
+            {score && <Pill tone={score.score >= 85 ? "ok" : "warn"}>{t("pages.ai.score", { score: score.score, n: score.n })}</Pill>}
+          </div>
+        )}
+        {err && <div className="fx-errnote" role="alert">{err.message}</div>}
+      </div>
+    </Modal>
   );
 }
 
-function Providers({ data, onSaved }: { data: AiSettingsData; onSaved: (d: AiSettingsData) => void }) {
+// ------------------------------------------------------------------ providers
+function AddProvider({ data, onSaved, onClose }: { data: AiSettingsData; onSaved: (d: AiSettingsData) => void; onClose: () => void }) {
   const { t } = useTranslation();
   const [kind, setKind] = useState("anthropic");
   const [key, setKey] = useState("");
   const [url, setUrl] = useState("");
-  const [tested, setTested] = useState<Record<string, string>>({});
   const add = useMutation({
     mutationFn: () => api<AiSettingsData>("/ai/providers", json({ kind, key, base_url: data.kinds[kind]?.custom ? url : null })),
     onSuccess: (d) => {
-      setKey("");
-      setUrl("");
       onSaved(d);
+      onClose();
     },
   });
-  const remove = useMutation({ mutationFn: (id: string) => api<AiSettingsData>(`/ai/providers/${id}`, { method: "DELETE" }), onSuccess: onSaved });
-  const models = useMutation({
-    mutationFn: (p: { id: string; models: string[] }) => api<AiSettingsData>(`/ai/providers/${p.id}`, { ...json({ models: p.models }), method: "PATCH" }),
-    onSuccess: onSaved,
-  });
-  const test = useMutation({
-    mutationFn: (p: Provider) => api<{ ok: boolean; seconds?: number; message?: string }>(`/ai/providers/${p.id}/test`, json({ model: p.models[0] ?? "" })),
-    onSuccess: (r, p) => setTested({ ...tested, [p.id]: r.ok ? t("pages.ai.testOk", { s: r.seconds }) : r.message || t("pages.ai.testFailed") }),
-  });
-  const err = (add.error || remove.error || models.error || test.error) as Error | null;
   return (
-    <Card title={t("pages.ai.providers")}>
-      <Space orientation="vertical" size={12} style={{ width: "100%" }}>
-        {data.providers.length === 0 && <Typography.Text type="secondary">{t("pages.ai.noProviders")}</Typography.Text>}
-        {data.providers.map((p) => (
-          <div key={p.id} style={{ display: "grid", gap: 6, paddingBottom: 10, borderBottom: "1px solid var(--ant-color-border-secondary)" }}>
-            <Space wrap>
-              <strong>{p.label}</strong>
-              <Typography.Text type="secondary">{t("pages.ai.keyEnds", { last4: p.last4 })}</Typography.Text>
-              {p.base_url && <Typography.Text type="secondary" style={{ fontSize: 12 }}>{p.base_url}</Typography.Text>}
-              <Button size="small" disabled={!p.models.length} loading={test.isPending && test.variables?.id === p.id} onClick={() => test.mutate(p)}>
-                {t("pages.ai.testConnection")}
-              </Button>
-              <Popconfirm title={t("pages.ai.removeConfirm")} okText={t("pages.ai.remove")} cancelText={t("pages.distill.cancel")} onConfirm={() => remove.mutate(p.id)}>
-                <Button size="small" danger type="link">{t("pages.ai.remove")}</Button>
-              </Popconfirm>
-              {tested[p.id] && <Typography.Text style={{ fontSize: 12 }}>{tested[p.id]}</Typography.Text>}
-            </Space>
-            <label style={{ display: "grid", gap: 4 }}>
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>{t("pages.ai.models")}</Typography.Text>
-              <Select
-                mode="tags"
-                value={p.models}
-                aria-label={t("pages.ai.modelsOf", { name: p.label })}
-                onChange={(m) => models.mutate({ id: p.id, models: m })}
-                tokenSeparators={[",", " "]}
-                open={false}
-                style={{ width: "100%" }}
-              />
-            </label>
-          </div>
-        ))}
-        <Typography.Text strong>{t("pages.ai.addProvider")}</Typography.Text>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
-          <label style={{ display: "grid", gap: 4 }}>
-            <span>{t("pages.ai.provider")}</span>
-            <Select value={kind} onChange={setKind} options={Object.entries(data.kinds).map(([k, v]) => ({ value: k, label: v.label }))} />
+    <Modal open onCancel={onClose} title={t("pages.ai.addProvider")} width={460}
+      footer={[
+        <button key="c" className="fx-btn" onClick={onClose}>{t("pages.distill.cancel")}</button>,
+        <button key="a" className="fx-btn pri" style={{ marginLeft: 8 }} disabled={key.length < 8 || add.isPending} onClick={() => add.mutate()}>{t("pages.ai.add")}</button>,
+      ]}>
+      <div className="fx-stack" style={{ gap: 12 }}>
+        <label>
+          <span className="fx-lab">{t("pages.ai.provider")}</span>
+          <Select value={kind} onChange={setKind} style={{ width: "100%" }} aria-label={t("pages.ai.provider")} options={Object.entries(data.kinds).map(([k, v]) => ({ value: k, label: v.label }))} />
+        </label>
+        <label>
+          <span className="fx-lab">{t("pages.ai.apiKey")}</span>
+          <span className="fx-field"><input type="password" value={key} onChange={(e) => setKey(e.target.value)} autoComplete="off" aria-label={t("pages.ai.apiKey")} /></span>
+        </label>
+        {data.kinds[kind]?.custom && (
+          <label>
+            <span className="fx-lab">{t("pages.ai.address")}</span>
+            <span className="fx-field"><input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" autoComplete="off" aria-label={t("pages.ai.address")} /></span>
           </label>
-          <label style={{ display: "grid", gap: 4 }}>
-            <span>{t("pages.ai.apiKey")}</span>
-            <Input.Password value={key} onChange={(e) => setKey(e.target.value)} autoComplete="off" />
-          </label>
-          {data.kinds[kind]?.custom && (
-            <label style={{ display: "grid", gap: 4 }}>
-              <span>{t("pages.ai.address")}</span>
-              <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" autoComplete="off" />
-            </label>
-          )}
-        </div>
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>{t("pages.ai.keyNote")}</Typography.Text>
-        <div>
-          <Button type="primary" disabled={key.length < 8} loading={add.isPending} onClick={() => add.mutate()}>{t("pages.ai.add")}</Button>
-        </div>
-        {err && <Alert type="error" showIcon title={err.message} />}
-      </Space>
-    </Card>
+        )}
+        <div className="fx-tiny fx-muted">{t("pages.ai.keyNote")}</div>
+        {add.error && <div className="fx-errnote" role="alert">{(add.error as Error).message}</div>}
+      </div>
+    </Modal>
   );
 }
 
+function ProviderCard({ p, onSaved }: { p: Provider; onSaved: (d: AiSettingsData) => void }) {
+  const { t } = useTranslation();
+  const [tested, setTested] = useState<string | null>(null);
+  const [editing, setEditing] = useState<"key" | "models" | null>(null);
+  const [key, setKey] = useState("");
+  const [models, setModels] = useState<string[]>(p.models);
+  useEffect(() => setModels(p.models), [p.models]);
+  const test = useMutation({
+    mutationFn: () => api<{ ok: boolean; seconds?: number; message?: string }>(`/ai/providers/${p.id}/test`, json({ model: p.models[0] ?? "" })),
+    onSuccess: (r) => setTested(r.ok ? t("pages.ai.testOk", { s: r.seconds }) : r.message || t("pages.ai.testFailed")),
+  });
+  const patch = useMutation({
+    mutationFn: (b: Record<string, unknown>) => api<AiSettingsData>(`/ai/providers/${p.id}`, { ...json(b), method: "PATCH" }),
+    onSuccess: (d) => {
+      onSaved(d);
+      setEditing(null);
+      setKey("");
+    },
+  });
+  const remove = useMutation({ mutationFn: () => api<AiSettingsData>(`/ai/providers/${p.id}`, { method: "DELETE" }), onSuccess: onSaved });
+  return (
+    <div className="fx-prov">
+      <div className="fx-row"><b>{p.label}</b><Pill tone="ok">{t("pages.ai.connected")}</Pill></div>
+      <span className="fx-muted fx-tiny">{t("pages.ai.keyEnds", { last4: p.last4 })}{p.base_url ? ` · ${p.base_url}` : ""}</span>
+      <span className="fx-muted fx-tiny" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={p.models.join(", ")}>
+        {t("pages.ai.modelsList", { list: p.models.join(", ") || "—" })}
+      </span>
+      <div className="fx-row fx-wrap" style={{ gap: 10 }}>
+        <button className="fx-a" disabled={!p.models.length || test.isPending} onClick={() => test.mutate()}>{t("pages.ai.testConnection")}</button>
+        <button className="fx-a" onClick={() => setEditing("key")}>{t("pages.ai.changeKey")}</button>
+        <button className="fx-a" onClick={() => setEditing("models")}>{t("pages.ai.editModels")}</button>
+        <Popconfirm title={t("pages.ai.removeConfirm")} okText={t("pages.ai.remove")} cancelText={t("pages.distill.cancel")} onConfirm={() => remove.mutate()}>
+          <button className="fx-a" style={{ color: "var(--bad)" }}>{t("pages.ai.remove")}</button>
+        </Popconfirm>
+      </div>
+      {tested && <span className="fx-tiny" role="status">{tested}</span>}
+      {(patch.error || remove.error) && <span className="fx-tiny" style={{ color: "var(--bad)" }}>{((patch.error || remove.error) as Error).message}</span>}
+      <Modal open={editing === "key"} onCancel={() => setEditing(null)} title={t("pages.ai.changeKeyOf", { name: p.label })} width={420}
+        footer={[<button key="c" className="fx-btn" onClick={() => setEditing(null)}>{t("pages.distill.cancel")}</button>,
+          <button key="s" className="fx-btn pri" style={{ marginLeft: 8 }} disabled={key.length < 8} onClick={() => patch.mutate({ key })}>{t("pages.ai.save")}</button>]}>
+        <label><span className="fx-lab">{t("pages.ai.apiKey")}</span><span className="fx-field"><input type="password" value={key} onChange={(e) => setKey(e.target.value)} autoComplete="off" aria-label={t("pages.ai.apiKey")} /></span></label>
+      </Modal>
+      <Modal open={editing === "models"} onCancel={() => setEditing(null)} title={t("pages.ai.modelsOf", { name: p.label })} width={460}
+        footer={[<button key="c" className="fx-btn" onClick={() => setEditing(null)}>{t("pages.distill.cancel")}</button>,
+          <button key="s" className="fx-btn pri" style={{ marginLeft: 8 }} onClick={() => patch.mutate({ models })}>{t("pages.ai.save")}</button>]}>
+        <Select mode="tags" value={models} onChange={setModels} open={false} tokenSeparators={[",", " "]} style={{ width: "100%" }} aria-label={t("pages.ai.modelsOf", { name: p.label })} />
+        <div className="fx-tiny fx-muted" style={{ marginTop: 6 }}>{t("pages.ai.models")}</div>
+      </Modal>
+    </div>
+  );
+}
+
+// ------------------------------------------------------------------ send scope
 function Scope({ data, onSaved }: { data: AiSettingsData; onSaved: (d: AiSettingsData) => void }) {
   const { t } = useTranslation();
   const [prefixes, setPrefixes] = useState<string[]>(data.scope.allowed_prefixes);
-  const [licensed, setLicensed] = useState(data.scope.block_licensed);
-  useEffect(() => {
-    setPrefixes(data.scope.allowed_prefixes);
-    setLicensed(data.scope.block_licensed);
-  }, [data.scope]);
-  const dirty = JSON.stringify(prefixes) !== JSON.stringify(data.scope.allowed_prefixes) || licensed !== data.scope.block_licensed;
+  useEffect(() => setPrefixes(data.scope.allowed_prefixes), [data.scope]);
   const save = useMutation({
-    mutationFn: () => api<AiSettingsData>("/ai/settings", { ...json({ scope: { allowed_prefixes: prefixes, block_licensed: licensed } }), method: "PUT" }),
+    mutationFn: (b: { allowed_prefixes?: string[]; block_licensed?: boolean }) => api<AiSettingsData>("/ai/settings", { ...json({ scope: { ...data.scope, ...b } }), method: "PUT" }),
     onSuccess: onSaved,
   });
+  const dirty = JSON.stringify(prefixes) !== JSON.stringify(data.scope.allowed_prefixes);
   return (
-    <Card title={t("pages.ai.scope")}>
-      <Space orientation="vertical" size={10} style={{ width: "100%" }}>
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>{t("pages.ai.scopeHint")}</Typography.Text>
-        <Select
-          mode="tags"
-          value={prefixes}
-          onChange={setPrefixes}
-          open={false}
-          aria-label={t("pages.ai.allowed")}
-          placeholder={t("pages.ai.allowedPlaceholder")}
-          style={{ width: "100%" }}
-        />
-        <Space>
-          <Switch checked={licensed} onChange={setLicensed} aria-label={t("pages.ai.blockLicensed")} />
-          <span>{t("pages.ai.blockLicensed")}</span>
-        </Space>
-        {save.error && <Alert type="error" showIcon title={(save.error as Error).message} />}
-        <div>
-          <Button type="primary" disabled={!dirty} loading={save.isPending} onClick={() => save.mutate()}>{t("pages.ai.save")}</Button>
-        </div>
-      </Space>
-    </Card>
+    <div className="fx-card" style={{ padding: 14 }}>
+      <b>{t("pages.ai.scope")}</b>
+      <div className="fx-tiny fx-muted" style={{ marginTop: 2 }}>{t("pages.ai.scopeHint")}</div>
+      <label className="fx-row fx-tiny" style={{ marginTop: 8 }}>
+        <input type="checkbox" className="fx-cb" checked={data.scope.block_licensed} onChange={(e) => save.mutate({ block_licensed: e.target.checked })} />
+        {t("pages.ai.blockLicensed")}
+      </label>
+      <div className="fx-row fx-tiny fx-wrap" style={{ marginTop: 6 }}>
+        <span>{t("pages.ai.onlyFrom")}</span>
+        <Select mode="tags" size="small" value={prefixes} onChange={setPrefixes} open={false} style={{ minWidth: 240, flex: 1 }} aria-label={t("pages.ai.allowed")} placeholder={t("pages.ai.allowedPlaceholder")} />
+        <button className="fx-btn sm pri" disabled={!dirty || save.isPending} onClick={() => save.mutate({ allowed_prefixes: prefixes })}>{t("pages.ai.save")}</button>
+      </div>
+      {save.error && <div className="fx-errnote" style={{ marginTop: 6 }}>{(save.error as Error).message}</div>}
+    </div>
   );
 }
 
-/** Settings → AI (administrators only). AI only suggests; people and rules decide. */
+/** Settings → AI (administrators only), laid out as screen 4 of the design. AI only suggests; people and rules decide. */
 export function AiSettings() {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["ai-settings"], queryFn: () => api<AiSettingsData>("/ai/settings") });
   const set = (d: AiSettingsData) => qc.setQueryData(["ai-settings"], d);
+  const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<Skill | null>(null);
   const toggle = useMutation({ mutationFn: (on: boolean) => api<AiSettingsData>("/ai/settings", { ...json({ enabled: on }), method: "PUT" }), onSuccess: set });
   const wipe = useMutation({ mutationFn: () => api<AiSettingsData>("/ai/keys", { method: "DELETE" }), onSuccess: set });
   if (q.isLoading) return <Loading />;
   if (q.isError) return <ErrorState message={(q.error as Error).message} onRetry={() => void q.refetch()} />;
   const d = q.data!;
   const m = d.stats.memory;
+  const skills = SKILLS.filter((s) => d.skills[s] && d.stats.skills[s]);
+  const month = skills.reduce((a, s) => ({ calls: a.calls + d.stats.skills[s].calls, spend: a.spend + d.stats.skills[s].spend, cached: a.cached + d.stats.skills[s].cached }), { calls: 0, spend: 0, cached: 0 });
+  const prov = (id: string | null) => d.providers.find((p) => p.id === id);
+  const others = Object.entries(d.kinds).filter(([k]) => !d.providers.some((p) => p.kind === k)).map(([, v]) => v.label);
   return (
-    <Space orientation="vertical" size={16} style={{ width: "100%" }}>
-      <Typography.Text type="secondary">{t("pages.ai.intro")}</Typography.Text>
-      <Card>
-        <Space>
-          <Switch checked={d.enabled} loading={toggle.isPending} onChange={(on) => toggle.mutate(on)} aria-label={t("pages.ai.master")} />
-          <strong>{t("pages.ai.master")}</strong>
-          <Typography.Text type="secondary">{d.enabled ? t("pages.ai.on") : t("pages.ai.off")}</Typography.Text>
-        </Space>
-        {toggle.error && <Alert type="error" showIcon title={(toggle.error as Error).message} style={{ marginTop: 10 }} />}
-      </Card>
-      <Providers data={d} onSaved={set} />
-      {SKILLS.filter((s) => d.skills[s] && d.stats.skills[s]).map((s) => (
-        <SkillRow key={s} name={s} data={d} onSaved={set} />
-      ))}
+    <>
+      <PageHeader title={t("pages.settings.nav.ai")} desc={t("pages.ai.intro")}
+        extra={
+          <button role="switch" aria-checked={d.enabled} aria-label={t("pages.ai.master")} className="fx-btn sm" disabled={toggle.isPending} onClick={() => toggle.mutate(!d.enabled)}
+            style={{ borderRadius: 999, padding: "1px 10px", background: d.enabled ? "var(--ok-soft)" : "var(--idle-soft)", color: d.enabled ? "var(--ok)" : "var(--idle)", borderColor: "transparent", fontWeight: 500 }}>
+            <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor" }} />
+            {d.enabled ? t("pages.ai.masterOn") : t("pages.ai.masterOff")}
+          </button>
+        } />
+      {toggle.error && <div className="fx-errnote">{(toggle.error as Error).message}</div>}
+      <div className="fx-row fx-wrap" style={{ gap: 18 }}>
+        <span className="fx-tiny"><span className="fx-muted">{t("pages.ai.monthCalls")}</span> <b className="fx-num">{month.calls}</b></span>
+        <span className="fx-tiny"><span className="fx-muted">{t("pages.ai.monthSpend")}</span> <b className="fx-num">${month.spend.toFixed(2)}</b></span>
+        <span className="fx-tiny"><span className="fx-muted">{t("pages.ai.memCacheShort")}</span> <b className="fx-num">{m.cache}</b></span>
+        <span className="fx-tiny"><span className="fx-muted">{t("pages.ai.memExamplesShort")}</span> <b className="fx-num">{m.examples}</b></span>
+        <span className="fx-tiny"><span className="fx-muted">{t("pages.ai.memRulesShort")}</span> <b className="fx-num">{m.rules}</b></span>
+      </div>
+      <div className="fx-card" style={{ padding: 14 }}>
+        <div className="fx-row"><b>{t("pages.ai.providers")}</b><span className="fx-sp" /><button className="fx-btn pri sm" onClick={() => setAdding(true)}>+ {t("pages.ai.add")}</button></div>
+        <div className="fx-pv" style={{ marginTop: 10 }}>
+          {d.providers.map((p) => <ProviderCard key={p.id} p={p} onSaved={set} />)}
+          <div className="fx-prov">
+            <b>{others.join(" · ")}</b>
+            <span className="fx-muted fx-tiny">{d.providers.length ? t("pages.ai.pickWithAdd") : t("pages.ai.noProviders")}</span>
+          </div>
+        </div>
+      </div>
+      <div className="fx-card" style={{ padding: 14 }}>
+        <b>{t("pages.ai.skillsTitle")}</b>
+        <div className="fx-tbox" style={{ marginTop: 6 }}>
+          <table className="fx-t">
+            <thead><tr><th>{t("pages.ai.colSkill")}</th><th>{t("pages.ai.model")}</th><th>{t("pages.ai.colMode")}</th><th>{t("pages.ai.colBudget")}</th><th>{t("pages.ai.colAdoption")}</th><th><span className="sr-only">{t("pages.distill.colActions")}</span></th></tr></thead>
+            <tbody>
+              {skills.map((s) => {
+                const c = d.skills[s];
+                const st = d.stats.skills[s];
+                const p = prov(c.provider);
+                return (
+                  <tr key={s}>
+                    <td>{t(`pages.ai.skill.${s}`)}{st.paused_s > 0 && <> <Pill tone="warn">{t("pages.ai.pausedShort")}</Pill></>}</td>
+                    <td className="fx-tiny">{p && c.model ? `${p.label} · ${c.model}` : <span className="fx-muted">{t("pages.ai.none")}</span>}</td>
+                    <td className="fx-tiny">{p && c.model ? t(`pages.ai.mode${c.level}`) : <span className="fx-muted">—</span>}</td>
+                    <td className="fx-num">${c.budget_usd} <span className="fx-muted fx-tiny">({t("pages.ai.spent", { n: st.spend.toFixed(2) })})</span></td>
+                    <td className="fx-num">{st.adoption == null ? <span className="fx-muted">—</span> : `${st.adoption}%`}</td>
+                    <td><button className="fx-a" onClick={() => setEditing(s)} aria-label={t("pages.ai.editSkill", { name: t(`pages.ai.skill.${s}`) })}>{t("pages.ai.edit")}</button></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div className="fx-tiny fx-muted" style={{ marginTop: 6 }}>{t("pages.ai.levelsNote")}</div>
+      </div>
       <Scope data={d} onSaved={set} />
-      <Card title={t("pages.ai.memory")}>
-        <Table
-          size="small"
-          pagination={false}
-          rowKey="k"
-          showHeader={false}
-          dataSource={[
-            { k: "rules", label: t("pages.ai.memRules"), n: m.rules },
-            { k: "cache", label: t("pages.ai.memCache"), n: m.cache },
-            { k: "examples", label: t("pages.ai.memExamples"), n: m.examples },
-          ]}
-          columns={[{ dataIndex: "label" }, { dataIndex: "n", width: 80, align: "right" }]}
-        />
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>{t("pages.ai.memoryHint")}</Typography.Text>
-      </Card>
-      <Card title={t("pages.ai.danger")} style={{ borderColor: "var(--ant-color-error-border)" }}>
-        <Space orientation="vertical" size={8}>
-          <Typography.Text>{t("pages.ai.wipeHint")}</Typography.Text>
+      <div className="fx-danger">
+        <div className="fx-row"><b>{t("pages.ai.danger")}</b><span className="fx-sp" />
           <Popconfirm title={t("pages.ai.wipeConfirm")} okText={t("pages.ai.wipe")} okButtonProps={{ danger: true }} cancelText={t("pages.distill.cancel")} onConfirm={() => wipe.mutate()}>
-            <Button danger disabled={!d.providers.length} loading={wipe.isPending}>{t("pages.ai.wipe")}</Button>
+            <button className="fx-btn" disabled={!d.providers.length || wipe.isPending}>{t("pages.ai.wipe")}</button>
           </Popconfirm>
-        </Space>
-      </Card>
-    </Space>
+        </div>
+        <div className="fx-tiny fx-muted" style={{ marginTop: 4 }}>{t("pages.ai.wipeHint")}</div>
+      </div>
+      {adding && <AddProvider data={d} onSaved={set} onClose={() => setAdding(false)} />}
+      {editing && <SkillEdit name={editing} data={d} onSaved={set} onClose={() => setEditing(null)} />}
+    </>
   );
 }

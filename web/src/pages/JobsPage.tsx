@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Table, Typography } from "antd";
 import { api } from "../net/client";
-import { EmptyState, ErrorState, Loading, PageHeader, StatusTag } from "../components/ui";
+import { EmptyState, ErrorState, Loading, PageHeader, StatusTag, TableBox } from "../components/ui";
 
 export interface Job {
   id: string;
@@ -27,6 +27,7 @@ export function JobsPage() {
       {q.isError && <ErrorState message={(q.error as Error).message} onRetry={() => void q.refetch()} />}
       {q.data && q.data.length === 0 && <EmptyState title={t("pages.jobs.empty")} hint={t("pages.jobs.emptyHint")} />}
       {q.data && q.data.length > 0 && (
+        <TableBox label={t("pages.jobs.title")}>
         <Table<Job>
           rowKey="id"
           dataSource={q.data}
@@ -48,6 +49,7 @@ export function JobsPage() {
             { title: t("pages.jobs.message"), dataIndex: "message", render: (v: string) => <Typography.Text type="secondary">{v}</Typography.Text> },
           ]}
         />
+        </TableBox>
       )}
     </>
   );

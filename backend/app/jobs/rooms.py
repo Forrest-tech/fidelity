@@ -114,9 +114,11 @@ def create_room(name: str | None, user: str, prefix: str | None = None) -> dict:
                 k += 1
             name = f"{base} {k}"
         pos = con.execute("SELECT COALESCE(MAX(position),0)+1 FROM room").fetchone()[0]
+        from ..api.appsettings import defaults as _defaults
+        d = _defaults()
         con.execute("INSERT INTO room(id,name,position,mode,threshold,number_guard,priority,points,archived,"
                     "created_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
-                    (rid, name, pos, "distill", 99.0, 1, 1, 1, 0, user, now, now))
+                    (rid, name, pos, d["mode"], float(d["threshold"]), 1 if d["number_guard"] else 0, 1, 1, 0, user, now, now))
         con.commit()
     finally:
         con.close()
@@ -242,7 +244,7 @@ def _files(room_id: str) -> list:
     try:
         return con.execute("SELECT rel, kind, size, activity, outcome, reason, detail, accuracy, parts, diffs, number_diffs, "
                            "confirmed, confirmed_by, confirmed_at, pages, run_id, out_dir, content_hash, single_file, n_files, "
-                           "verdict, corrections, rule_checks, findings, updated_at FROM room_file WHERE room_id=?", (room_id,)).fetchall()
+                           "verdict, corrections, rule_checks, findings, known, updated_at FROM room_file WHERE room_id=?", (room_id,)).fetchall()
     finally:
         con.close()
 
@@ -435,7 +437,17 @@ def summary(room: dict) -> dict:
                 job["position"] = ahead + 1
     finally:
         con.close()
-    return {**room, "counts": counts(room), "job": job}
+    if job and job["status"] == "running":
+        try:                                                  # where the run is: file, stage, OCR page
+            with open(S.live_path(job["id"]), encoding="utf-8") as f:
+                live = json.load(f)
+            job["live"] = {k: live.get(k) for k in ("file", "stage", "page", "pages", "index", "total", "started", "updated", "scan")}
+        except (OSError, ValueError):
+            pass
+    rows = _files(room["id"])
+    accs = [r["accuracy"] for r in rows if r["outcome"] == "result" and r["accuracy"] is not None]
+    return {**room, "counts": counts(room, rows), "job": job,
+            "accuracy_avg": round(sum(accs) / len(accs), 1) if accs else None}
 
 
 # ------------------------------------------------------------------ events -> rows
