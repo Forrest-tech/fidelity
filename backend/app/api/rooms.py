@@ -6,7 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 from .. import db
-from ..auth.users import current_user
+from ..auth.models import Role
+from ..auth.users import current_user, require_role
+from ..distill import live as L
 from ..jobs import rooms as R
 from ..jobs import sync_job as S
 from ..jobs.queue import queue
@@ -23,6 +25,7 @@ def _guard(fn, *a, **kw):
 
 class RoomNew(BaseModel):
     name: str | None = None
+    prefix: str | None = None          # the word a room without a name is called, in the person's language
 
 
 class RoomPatch(BaseModel):
@@ -52,7 +55,7 @@ def rooms(archived: bool = False):
 
 @router.post("/rooms")
 def create(body: RoomNew, user=Depends(current_user)):
-    return R.summary(R.create_room(body.name, getattr(user, "email", "") or ""))
+    return R.summary(R.create_room(body.name, getattr(user, "email", "") or "", body.prefix))
 
 
 @router.get("/queue")
@@ -133,6 +136,27 @@ def accept_preview(room_id: str):
 def accept(room_id: str, body: AcceptIn, user=Depends(current_user)):
     """Accept results into the knowledge base: all that meet the threshold, or the files named (force = even below it)."""
     return _guard(R.accept, room_id, getattr(user, "email", "") or "", body.rels, body.all_ok, body.force)
+
+
+@router.get("/rooms/{room_id}/accept-impact")
+def accept_impact(room_id: str):
+    """How many of the files that qualify are new to the output folder, and how many replace a live copy."""
+    return _guard(R.accept_impact, _guard(R.get_room, room_id))
+
+
+@router.get("/rooms/{room_id}/compare")
+def compare(room_id: str, rel: str):
+    """One file's new result against the copy in the output folder, line by line."""
+    return _guard(R.compare_file, _guard(R.get_room, room_id), rel)
+
+
+@router.get("/folders", dependencies=[Depends(require_role(Role.reviewer))])
+def folders(path: str = ""):
+    """The folders directly inside a folder of the connected Dropbox account, for picking an input or output."""
+    try:
+        return L.subfolders(path)
+    except L.LiveError as e:
+        raise HTTPException(e.status, e.message)
 
 
 @router.get("/rooms/{room_id}/tree")

@@ -134,7 +134,9 @@ async function loadFiles(room: string, state: string, q: string): Promise<FileRo
   return out;
 }
 
-export function RoomFiles({ roomId, live }: { roomId: string; live: boolean }) {
+const COMPARABLE: FileState[] = ["ok", "below", "published"];
+
+export function RoomFiles({ roomId, live, onCompare }: { roomId: string; live: boolean; onCompare?: (rel: string) => void }) {
   const { t } = useTranslation();
   const [state, setState] = useState<string>("");
   const [q, setQ] = useState("");
@@ -228,7 +230,7 @@ export function RoomFiles({ roomId, live }: { roomId: string; live: boolean }) {
           rowKey="key"
           loading={files.isLoading}
           dataSource={rows}
-          scroll={{ x: 760, y: 340 }}
+          scroll={{ x: onCompare ? 870 : 760, y: 340 }}
           aria-label={t("pages.distill.files")}
           columns={[
             {
@@ -280,6 +282,20 @@ export function RoomFiles({ roomId, live }: { roomId: string; live: boolean }) {
                 return n.file!.accuracy == null ? "—" : <strong>{n.file!.accuracy}%</strong>;
               },
             },
+            ...(onCompare
+              ? [
+                  {
+                    title: t("pages.distill.colCompare"),
+                    width: 110,
+                    render: (_: unknown, n: Node) =>
+                      !n.folder && COMPARABLE.includes(n.file!.state) ? (
+                        <Button size="small" type="link" style={{ padding: 0 }} aria-label={t("pages.distill.compareFile", { name: n.name })} onClick={() => onCompare(n.file!.rel)}>
+                          {t("pages.distill.compare")}
+                        </Button>
+                      ) : null,
+                  },
+                ]
+              : []),
           ]}
         />
       )}

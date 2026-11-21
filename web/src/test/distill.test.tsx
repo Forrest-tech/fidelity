@@ -25,6 +25,12 @@ const FILES = [
   file("/2018/d.pdf", "pending"),
 ];
 
+const COMPARISON = {
+  rel: "/2003/a.pdf", dest: "/Transfer_Md", key: "as 3500/2003/a.pdf.md", status: "changed", accuracy: 99.5, added: 1, removed: 1, more_files: 0,
+  files: [{ path: "a.pdf.md", status: "changed", added: 1, removed: 1, truncated: false,
+    lines: [{ op: "@", text: "@@ -1 +1 @@" }, { op: "-", text: "Pipe size 12 mm." }, { op: "+", text: "Pipe size 15 mm." }, { op: " ", text: "Cover 30 mm." }] }],
+};
+
 function api(role: string, rooms: unknown[], extra?: (url: string, init?: RequestInit) => { body?: unknown; status?: number } | undefined) {
   return mockApi((url, init) => {
     const e = extra?.(url, init);
@@ -34,6 +40,11 @@ function api(role: string, rooms: unknown[], extra?: (url: string, init?: Reques
     if (/\/rooms\?archived/.test(url)) return { body: { rooms } };
     if (url.includes("/accept-preview")) return { body: { ok: 1, below: 1, published: 0, publishing: 0, has_dest: true, dest: "/Transfer_Md" } };
     if (url.includes("/files")) return { body: { total: FILES.length, files: FILES } };
+    if (url.includes("/accept-impact")) return { body: { new: 1, replaces: 0 } };
+    if (url.includes("/folders?path=%2Fas%203500%2F2018")) return { body: { path: "/as 3500/2018", folders: [] } };
+    if (url.includes("/folders?path=%2Fas%203500")) return { body: { path: "/as 3500", folders: [{ name: "2018", path: "/as 3500/2018" }] } };
+    if (url.includes("/folders")) return { body: { path: "/", folders: [{ name: "as 3500", path: "/as 3500" }, { name: "Transfer_Md", path: "/Transfer_Md" }] } };
+    if (url.includes("/compare")) return { body: COMPARISON };
     return { body: {} };
   });
 }
@@ -85,7 +96,10 @@ describe("distill page", () => {
     renderApp("/distill");
     expect(await screen.findByText("No rooms yet.")).toBeInTheDocument();
     await userEvent.setup().click(screen.getByRole("button", { name: /New room/ }));
-    await waitFor(() => expect(calls.some((c) => c.url.endsWith("/rooms") && c.init?.method === "POST")).toBe(true));
+    await waitFor(() => {
+      const c = calls.find((x) => x.url.endsWith("/rooms") && x.init?.method === "POST");
+      expect(JSON.parse(String(c?.init?.body))).toEqual({ prefix: "Room" });          // named in the page's language
+    });
   });
 
   it("a viewer can look but not change", async () => {
@@ -132,6 +146,7 @@ describe("distill page", () => {
     const u = userEvent.setup({ pointerEventsCheck: 0 });
     await u.click(await screen.findByText("Accept 1 that qualify"));
     expect(await screen.findByText(/sent to \/Transfer_Md/)).toBeInTheDocument();
+    expect(await screen.findByText("1 new, 0 replace the copy in the output folder.")).toBeInTheDocument();
     await u.click(screen.getByText("Accept", { selector: ".ant-popover button span" }));
     await waitFor(() => {
       const c = calls.find((x) => x.url.endsWith("/rooms/r1/accept"));
@@ -153,5 +168,40 @@ describe("distill page", () => {
     await u.click(await screen.findByRole("button", { name: "More" }));
     await u.click(await screen.findByText("Archive"));
     expect(await screen.findByText(/cannot archive yet/)).toBeInTheDocument();
+  });
+
+  it("picks the input folder by browsing Dropbox", async () => {
+    api("reviewer", [room()]);
+    renderApp("/distill");
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    await u.click(await screen.findByRole("button", { name: "Choose the input folder" }));
+    const dialog = (await screen.findByText("Use this folder")).closest(".ant-modal") as HTMLElement;
+    await u.click(await within(dialog).findByText("2018"));                              // opened at the typed folder
+    expect(await within(dialog).findByText("No folders inside.")).toBeInTheDocument();
+    await u.click(within(dialog).getByText("Use this folder"));
+    expect(await screen.findByDisplayValue("/as 3500/2018")).toBeInTheDocument();
+    expect(screen.getByText("Save")).toBeInTheDocument();
+  });
+
+  it("will not save an output folder inside the input folder", async () => {
+    api("reviewer", [room()]);
+    renderApp("/distill");
+    const u = userEvent.setup();
+    const out = await screen.findByDisplayValue("/Transfer_Md");
+    await u.clear(out);
+    await u.type(out, "/as 3500/out");
+    expect(await screen.findByText("The output folder must be outside the input folder.")).toBeInTheDocument();
+    expect(screen.getByText("Save").closest("button")).toBeDisabled();
+  });
+
+  it("compares a file with the copy in the output folder, line by line", async () => {
+    api("reviewer", [room()]);
+    renderApp("/distill");
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    await u.click(await screen.findByLabelText("Expand 2003"));
+    await u.click(await screen.findByLabelText("Compare a.pdf with the output folder"));
+    expect(await screen.findByText("Compared with the output folder: 1 lines added, 1 removed.")).toBeInTheDocument();
+    expect(screen.getByText("Pipe size 12 mm.")).toBeInTheDocument();
+    expect(screen.getByText("Pipe size 15 mm.")).toBeInTheDocument();
   });
 });

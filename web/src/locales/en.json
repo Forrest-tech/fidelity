@@ -336,7 +336,39 @@
       "diffs": "{{count}} to check",
       "notStarted": "not started",
       "expand": "Expand {{name}}",
-      "collapse": "Collapse {{name}}"
+      "collapse": "Collapse {{name}}",
+      "defaultName": "Room",
+      "browse": "Choose folder",
+      "chooseInput": "Choose the input folder",
+      "chooseOutput": "Choose the output folder",
+      "pickThis": "Use this folder",
+      "noSubfolders": "No folders inside.",
+      "overlap": "The output folder must be outside the input folder.",
+      "compare": "Compare",
+      "compareFile": "Compare {{name}} with the output folder",
+      "colCompare": "Output folder",
+      "impact": "{{new}} new, {{replaces}} replace the copy in the output folder.",
+      "impactLoading": "Checking the output folder…",
+      "impactUnknown": "Could not check the output folder.",
+      "cmp": {
+        "title": "{{name}} against the output folder",
+        "lines": "Differences",
+        "new": "Not in the output folder yet. Accepting adds it.",
+        "same": "Same as the copy in the output folder (only the acceptance details differ).",
+        "changed": "Compared with the output folder: {{added}} lines added, {{removed}} removed.",
+        "added": "added",
+        "removedLine": "removed",
+        "truncated": "Only the first part of the differences is shown.",
+        "binary": "Not a text file: compared by size only.",
+        "sameFiles": "{{count}} more files are the same.",
+        "moreFiles": "{{count}} more files were not compared.",
+        "file": {
+          "new": "new",
+          "removed": "will be removed",
+          "same": "same",
+          "changed": "changed"
+        }
+      }
     }
   }
 }
