@@ -230,6 +230,17 @@ CREATE TABLE IF NOT EXISTS ai_cache (
 CREATE TABLE IF NOT EXISTS ai_example (
   id TEXT PRIMARY KEY, skill TEXT, input TEXT, answer TEXT, room_id TEXT, rel TEXT, by_user TEXT, at REAL, call_id TEXT
 );
+-- A suggested change to the correction library (one wider rule, or a pattern), waiting for a person.
+CREATE TABLE IF NOT EXISTS rule_suggestion (
+  id TEXT PRIMARY KEY,
+  kind TEXT,                  -- widen / pattern
+  rule_ids TEXT,              -- JSON list of the rules it comes from
+  data TEXT,                  -- JSON: what would be saved
+  preview TEXT,               -- JSON: where it would apply
+  status TEXT,                -- open / approved / dismissed
+  call_id TEXT,
+  created_at REAL, decided_by TEXT, decided_at REAL
+);
 -- A person checked a number rule's change in one document and found it right.
 CREATE TABLE IF NOT EXISTS correction_check (
   rule_id TEXT, room_id TEXT, rel TEXT, by_user TEXT, at REAL,

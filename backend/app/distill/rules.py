@@ -84,6 +84,8 @@ def _pattern(rule: dict) -> re.Pattern:
 
 def count(rule: dict, text: str) -> int:
     _, body = split_front(text)
+    if rule["kind"] == "pattern":
+        return apply_pattern(body, rule)[1]
     if rule["find"] not in body:
         return 0
     return len(_pattern(rule).findall(body))
@@ -94,6 +96,11 @@ def apply(text: str, rules: list) -> tuple[str, dict]:
     front, body = split_front(text)
     done = {}
     for rule in rules:
+        if rule["kind"] == "pattern":
+            body, n = apply_pattern(body, rule)
+            if n:
+                done[rule["id"]] = n
+            continue
         if rule["find"] not in body:
             continue
         pat = _pattern(rule)
@@ -156,3 +163,51 @@ def context(texts: list, find: str) -> tuple[str, str]:
         raise RuleError("a number fix needs some text around it; include a few more characters so it can be "
                         "matched exactly elsewhere")
     return before, after
+
+
+# ------------------------------------------------------------------ pattern rules (text only)
+# A pattern rule generalises several confirmed text fixes of the same kind ("fittcd" -> "fitted", "connectcd" ->
+# "connected"). It is a regular expression and a replacement. Because numbers must only ever be fixed with their exact
+# context, a pattern never touches digits: it cannot contain them, and a match or replacement with a digit is skipped.
+MAX_PATTERN = 120
+_NESTED = re.compile(r"\((?:[^()\\]|\\.)*[+*}](?:[^()\\]|\\.)*\)\s*[+*{]")   # (a+)+ and the like: can take forever
+
+
+def check_pattern(pattern: str, replace: str):
+    if not pattern or len(pattern) > MAX_PATTERN:
+        raise RuleError(f"a pattern has 1 to {MAX_PATTERN} characters")
+    if len(replace) > MAX_LEN or "\n" in replace or "\n" in pattern:
+        raise RuleError("a pattern fixes text within one line")
+    if re.search(r"\\[1-9]", pattern) or "(?P=" in pattern:
+        raise RuleError("a pattern may not refer back to itself")
+    if re.search(r"\d|\\d|\[[^\]]*0-9", pattern) or any(c.isdigit() for c in re.sub(r"\\[1-9]", "", replace)):
+        raise RuleError("a pattern may not touch numbers; numbers are fixed only with their exact context")
+    if re.search(r"(?<!\\)\.[*+]", pattern):
+        raise RuleError("a pattern may not match any text of any length (.* or .+)")
+    if _NESTED.search(pattern):
+        raise RuleError("a pattern may not repeat a repeated part")
+    try:
+        rx = re.compile(pattern)
+    except re.error as e:
+        raise RuleError(f"not a valid pattern: {e}")
+    groups = {int(g) for g in re.findall(r"\\([1-9])", replace)}
+    if groups and max(groups) > rx.groups:
+        raise RuleError("the replacement refers to a part the pattern does not have")
+    if rx.match(""):
+        raise RuleError("a pattern must not match empty text")
+    return rx
+
+
+def apply_pattern(body: str, rule: dict) -> tuple[str, int]:
+    rx = re.compile(rule["find"])
+    n = 0
+
+    def sub(m):
+        nonlocal n
+        new = m.expand(rule["replace"])
+        if any(c.isdigit() for c in m.group(0) + new) or new == m.group(0):
+            return m.group(0)
+        n += 1
+        return new
+
+    return rx.sub(sub, body), n

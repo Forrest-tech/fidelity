@@ -162,6 +162,7 @@ export function FixDrawer({ roomId, rel, canEdit, onClose }: { roomId: string; r
             roomId={roomId}
             rel={rel!}
             canEdit={canEdit}
+            onFormula={refresh}
             onUse={(f, r, call) => {
               setFind(f);
               setReplace(r);

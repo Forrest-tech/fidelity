@@ -446,7 +446,20 @@
           "error": "AI 没有回答。",
           "invalid": "回答违反规则,已丢弃。"
         },
-        "showAll": "显示全部 {{count}} 处"
+        "showAll": "显示全部 {{count}} 处",
+        "formulaN": "公式 {{k}}",
+        "formulaApproved": "已确认",
+        "formulaImage": "原文第 {{page}} 页的公式 {{k}}",
+        "aiTranscribed": "AI 转写,把握 {{pct}}%",
+        "numbersChecked": "数字已在图片里找到",
+        "numbersUnchecked": "数字没有核对:请自己核对",
+        "aiUnsureShort": "AI 拿不准",
+        "latex": "公式 {{k}} 的 LaTeX",
+        "latexPlaceholder": "输入公式的 LaTeX,或请 AI 转写",
+        "transcribe": "转写",
+        "approveFormula": "确认",
+        "formulaNote": "请对照图片核对。确认后的公式立即写入结果,以后每次运行也会用上。",
+        "noSource": "本机已没有这个源文件;重新运行蒸馏室后才能查看公式。"
       }
     },
     "corrections": {
@@ -483,7 +496,29 @@
       "applyTo_other": "更新 {{count}} 份文档",
       "later": "以后再说",
       "appliedDone_one": "完成:{{count}} 份文档有改动。",
-      "appliedDone_other": "完成:{{count}} 份文档有改动。"
+      "appliedDone_other": "完成:{{count}} 份文档有改动。",
+      "pattern": "模式",
+      "sugTitle": "建议",
+      "sugScan": "查找建议",
+      "sugFound_one": "找到 {{count}} 条新建议。",
+      "sugFound_other": "找到 {{count}} 条新建议。",
+      "sugNeedsAi_one": "有 {{count}} 组同类修正,开启 AI 的规则建议后可以归纳成模式。",
+      "sugNeedsAi_other": "有 {{count}} 组同类修正,开启 AI 的规则建议后可以归纳成模式。",
+      "sugNotAllowed_one": "{{count}} 组来自不允许发送给 AI 的文件夹。",
+      "sugNotAllowed_other": "{{count}} 组来自不允许发送给 AI 的文件夹。",
+      "sugRejected_one": "{{count}} 条模式没有通过检查。",
+      "sugRejected_other": "{{count}} 条模式没有通过检查。",
+      "sugNone": "暂时没有建议。建议来自人确认过的修正。",
+      "sugWiden": "同一条修正存成了几条规则({{rules}}):",
+      "sugPattern": "规则 {{rules}} 修正的是同一类误读({{kind}})。",
+      "sugProposed": "建议的模式:",
+      "sugAccuracy": "已知样本上正确率 {{pct}}%",
+      "sugKeeps": "不会改动 {{words}}",
+      "sugScope": "合并成一条适用于{{scope}}的规则。",
+      "sugPreview_one": "还会改动 {{count}} 份文档中的 {{places}} 处。",
+      "sugPreview_other": "还会改动 {{count}} 份文档中的 {{places}} 处。",
+      "sugApprove": "批准",
+      "sugDismiss": "忽略"
     },
     "ai": {
       "intro": "接入模型,处理系统拿不准的地方。AI 只提建议:任何改动都要经过人或精确的纠正规则。",
@@ -508,11 +543,15 @@
       "keyNote": "密钥加密存放在服务器上,界面只显示末四位。",
       "skill": {
         "arbitrate": "读数仲裁",
-        "explain": "差异说明"
+        "explain": "差异说明",
+        "transcribe": "公式转写",
+        "suggest": "规则建议"
       },
       "skillHint": {
         "arbitrate": "两个 OCR 引擎读法不同时,帮着选一个",
-        "explain": "用一句话说明某处为什么可能有差异(只显示)"
+        "explain": "用一句话说明某处为什么可能有差异(只显示)",
+        "transcribe": "从页面截下的小图里读出文字层无法解码的公式(只发图片)",
+        "suggest": "把三条以上同类的文字修正归纳成一条模式(从不涉及数字)"
       },
       "model": "模型",
       "level": "调用方式",

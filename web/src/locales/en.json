@@ -446,7 +446,20 @@
           "error": "The AI did not answer.",
           "invalid": "The answer broke the rules and was discarded."
         },
-        "showAll": "Show all {{count}}"
+        "showAll": "Show all {{count}}",
+        "formulaN": "Formula {{k}}",
+        "formulaApproved": "approved",
+        "formulaImage": "Formula {{k}} on page {{page}} of the source",
+        "aiTranscribed": "AI transcription, {{pct}}% sure",
+        "numbersChecked": "numbers found in the image",
+        "numbersUnchecked": "numbers not checked: check them yourself",
+        "aiUnsureShort": "AI unsure",
+        "latex": "LaTeX of formula {{k}}",
+        "latexPlaceholder": "Type the formula as LaTeX, or ask the AI",
+        "transcribe": "Transcribe",
+        "approveFormula": "Approve",
+        "formulaNote": "Check it against the image. Approved formulas go into the result now and into every later run.",
+        "noSource": "The source file is no longer on this machine; run the room again to look at its formulas."
       }
     },
     "corrections": {
@@ -483,7 +496,29 @@
       "applyTo_other": "Update {{count}} documents",
       "later": "Later",
       "appliedDone_one": "Done: 1 document changed.",
-      "appliedDone_other": "Done: {{count}} documents changed."
+      "appliedDone_other": "Done: {{count}} documents changed.",
+      "pattern": "pattern",
+      "sugTitle": "Suggestions",
+      "sugScan": "Look for suggestions",
+      "sugFound_one": "Found 1 new suggestion.",
+      "sugFound_other": "Found {{count}} new suggestions.",
+      "sugNeedsAi_one": "1 group of similar fixes could become a pattern if AI is switched on for rule suggestions.",
+      "sugNeedsAi_other": "{{count}} groups of similar fixes could become patterns if AI is switched on for rule suggestions.",
+      "sugNotAllowed_one": "1 group comes from folders not allowed to be sent to AI.",
+      "sugNotAllowed_other": "{{count}} groups come from folders not allowed to be sent to AI.",
+      "sugRejected_one": "1 proposed pattern did not pass the checks.",
+      "sugRejected_other": "{{count}} proposed patterns did not pass the checks.",
+      "sugNone": "Nothing to suggest yet. Suggestions come from fixes people have confirmed.",
+      "sugWiden": "The same fix is saved as separate rules ({{rules}}):",
+      "sugPattern": "Rules {{rules}} fix the same kind of misread ({{kind}}).",
+      "sugProposed": "Proposed pattern:",
+      "sugAccuracy": "right on {{pct}}% of the known cases",
+      "sugKeeps": "leaves {{words}} alone",
+      "sugScope": "One rule for {{scope}}.",
+      "sugPreview_one": "It would change {{places}} more places in 1 document.",
+      "sugPreview_other": "It would change {{places}} more places in {{count}} documents.",
+      "sugApprove": "Approve",
+      "sugDismiss": "Dismiss"
     },
     "ai": {
       "intro": "Connect a model to help with places the system is unsure about. AI only suggests: every change still goes through a person or an exact correction rule.",
@@ -508,11 +543,15 @@
       "keyNote": "The key is stored encrypted on the server. Only its last four characters are ever shown.",
       "skill": {
         "arbitrate": "Reading arbitration",
-        "explain": "Difference explanation"
+        "explain": "Difference explanation",
+        "transcribe": "Formula transcription",
+        "suggest": "Rule suggestion"
       },
       "skillHint": {
         "arbitrate": "Picks between two OCR readings of one place",
-        "explain": "One sentence on why a place may differ (display only)"
+        "explain": "One sentence on why a place may differ (display only)",
+        "transcribe": "Reads a formula the text layer cannot decode from a crop of the page (image only)",
+        "suggest": "Turns three or more text fixes of the same kind into one pattern (never numbers)"
       },
       "model": "Model",
       "level": "Used",
