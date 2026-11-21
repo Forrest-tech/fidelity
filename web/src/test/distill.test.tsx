@@ -91,15 +91,121 @@ describe("distill page", () => {
     expect(await within(second).findByLabelText(/^Input/)).toBeInTheDocument();
   });
 
-  it("creates a room", async () => {
-    const calls = api("reviewer", []);
+  it("keeps a new room as a draft until Save, then makes it with its folders in one step", async () => {
+    sessionStorage.clear();
+    const calls = api("reviewer", [], (url, init) => (url.endsWith("/rooms") && init?.method === "POST" ? { body: room({ id: "r9", name: "Room 1" }) } : undefined));
     renderApp("/distill");
     expect(await screen.findByText("No rooms yet.")).toBeInTheDocument();
-    await userEvent.setup().click(screen.getByRole("button", { name: /New room/ }));
+    const u = userEvent.setup();
+    await u.click(screen.getByRole("button", { name: /New room/ }));
+    const draft = await screen.findByRole("region", { name: "New room (not saved)" });
+    expect(calls.some((x) => x.url.endsWith("/rooms") && x.init?.method === "POST")).toBe(false);   // nothing made yet
+    const save = within(draft).getByRole("button", { name: "Save room" });
+    expect(save).toBeDisabled();                                                                    // needs the input folder
+    await u.type(within(draft).getByLabelText(/^Input/), "/as 3500");
+    await u.type(within(draft).getByLabelText(/^Output/), "/Transfer_Md/as 3500");
+    expect(save).toBeEnabled();
+    await u.click(save);
     await waitFor(() => {
       const c = calls.find((x) => x.url.endsWith("/rooms") && x.init?.method === "POST");
-      expect(JSON.parse(String(c?.init?.body))).toEqual({ prefix: "Room" });          // named in the page's language
+      expect(JSON.parse(String(c?.init?.body))).toEqual({ prefix: "Room", source: "/as 3500", dest: "/Transfer_Md/as 3500", mode: "distill" });
     });
+    await waitFor(() => expect(screen.queryByRole("region", { name: "New room (not saved)" })).not.toBeInTheDocument());
+    expect(sessionStorage.getItem("fidelity.draftRoom")).toBeNull();
+  });
+
+  it("discards a draft without making anything", async () => {
+    sessionStorage.clear();
+    const calls = api("reviewer", []);
+    renderApp("/distill");
+    await screen.findByText("No rooms yet.");
+    const u = userEvent.setup();
+    await u.click(screen.getByRole("button", { name: /New room/ }));
+    const draft = await screen.findByRole("region", { name: "New room (not saved)" });
+    await u.type(within(draft).getByLabelText(/^Input/), "/as 3500");
+    await u.click(within(draft).getByRole("button", { name: "Discard" }));
+    expect(screen.queryByRole("region", { name: "New room (not saved)" })).not.toBeInTheDocument();
+    expect(calls.some((x) => x.url.endsWith("/rooms") && x.init?.method === "POST")).toBe(false);
+    expect(sessionStorage.getItem("fidelity.draftRoom")).toBeNull();
+  });
+
+  it("asks before leaving the page with an unsaved draft: stay, or discard and go", async () => {
+    sessionStorage.clear();
+    api("reviewer", [], (url) => (url.includes("/notifications") ? { body: { items: [], unread: 0 } } : undefined));
+    renderApp("/distill");
+    await screen.findByText("No rooms yet.");
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    await u.click(screen.getByRole("button", { name: /New room/ }));
+    const draft = await screen.findByRole("region", { name: "New room (not saved)" });
+    await u.type(within(draft).getByLabelText(/^Input/), "/as 3500");
+    const nav = screen.getByRole("navigation", { name: "Main navigation" });
+    await u.click(within(nav).getByRole("link", { name: "Overview" }));
+    const dlg = await screen.findByRole("dialog");
+    expect(within(dlg).getByText("Leave without saving?")).toBeInTheDocument();
+    await u.click(within(dlg).getByRole("button", { name: "Stay" }));
+    expect(screen.getByRole("region", { name: "New room (not saved)" })).toBeInTheDocument();      // still here, still typed
+    await u.click(within(nav).getByRole("link", { name: "Overview" }));
+    await u.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Discard" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Overview" })).toBeInTheDocument();
+  });
+
+  it("asks before leaving with a room's folders edited, and Save there saves them", async () => {
+    sessionStorage.clear();
+    const calls = api("reviewer", [room()], (url) => (url.includes("/notifications") ? { body: { items: [], unread: 0 } } : undefined));
+    renderApp("/distill");
+    const input = await screen.findByLabelText(/^Input/);
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    await u.clear(input);
+    await u.type(input, "/as 3500/2018");
+    await u.click(within(screen.getByRole("navigation", { name: "Main navigation" })).getByRole("link", { name: "Results" }));
+    const dlg = await screen.findByRole("dialog");
+    await u.click(within(dlg).getByRole("button", { name: "Save" }));
+    await waitFor(() => {
+      const p = calls.find((x) => x.url.endsWith("/rooms/r1") && x.init?.method === "PATCH");
+      expect(JSON.parse(String(p?.init?.body))).toMatchObject({ source: "/as 3500/2018" });
+    });
+    expect(await screen.findByRole("heading", { level: 1, name: "Results" })).toBeInTheDocument();
+  });
+
+  it("brings an unsaved draft back after a reload", async () => {
+    sessionStorage.setItem("fidelity.draftRoom", JSON.stringify({ name: "Plumbing", source: "/as 3500", dest: "", mode: "distill" }));
+    api("reviewer", []);
+    renderApp("/distill");
+    const draft = await screen.findByRole("region", { name: "New room (not saved)" });
+    expect(within(draft).getByText(/unsaved new room is back/)).toBeInTheDocument();
+    expect(within(draft).getByLabelText("Room name")).toHaveValue("Plumbing");
+    expect(within(draft).getByLabelText(/^Input/)).toHaveValue("/as 3500");
+    sessionStorage.clear();
+  });
+
+  it("shows every file a run works on, its step and how far it is, and which files wait", async () => {
+    const now = Date.now() / 1000;
+    const live = {
+      v: 2, stage: "running", started: now - 120, updated: now, total: 6, done: 1, skipped: 1, workers: 2,
+      active: {
+        "/2003/a.pdf": { stage: "ocr", page: 12, pages: 40, scan: true, since: now - 60, stage_since: now - 42 },
+        "/2003/amend/b.pdf": { stage: "downloading", bytes: 3_100_000, size: 9_400_000, since: now - 5 },
+        "/2003/amend/c.pdf": { stage: "checking", since: now - 90 },
+        "/2018/x.pdf": { stage: "ready", since: now - 3 },
+      },
+      queued: ["/2018/d.pdf", "/2018/e.pdf"], counts: { PASS: 1 },
+    };
+    api("reviewer", [room({ job: { id: "j1", status: "running", progress: 30, message: "", live } })]);
+    renderApp("/distill");
+    const panel = await screen.findByRole("region", { name: "Run progress" });
+    expect(within(panel).getByText("Distilling")).toBeInTheDocument();
+    expect(within(panel).getByText("1 of 5 done")).toBeInTheDocument();
+    expect(within(panel).getByText("2 files being read at once")).toBeInTheDocument();   // OCR + checking; not the download or the waiting one
+    expect(within(panel).getByText("a.pdf")).toBeInTheDocument();
+    expect(within(panel).getByText("page 12 of 40")).toBeInTheDocument();
+    expect(within(panel).getByText("3.1 / 9.4 MB")).toBeInTheDocument();
+    const steps = within(panel).getAllByRole("list", { name: "Steps of this file" });
+    expect(steps[0].querySelector('[aria-current="step"]')?.textContent).toContain("OCR");
+    expect(steps[1].querySelector('[aria-current="step"]')?.textContent).toContain("Download");
+    expect(steps[3].querySelector("li.wait")?.textContent).toContain("Waiting to read");   // downloaded, not read yet
+    expect(steps[3].querySelector('[aria-current="step"]')).toBeNull();
+    expect(within(panel).getByText(/2 files waiting/)).toBeInTheDocument();
+    expect(within(panel).getAllByRole("progressbar").length).toBeGreaterThanOrEqual(3);
   });
 
   it("a viewer can look but not change", async () => {

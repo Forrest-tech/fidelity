@@ -11,6 +11,8 @@ import type { FileRow } from "../components/RoomFiles";
 import { CompareDrawer } from "../components/CompareDrawer";
 import { FixDrawer } from "../components/FixDrawer";
 import { DropboxFolderPicker, isUnder } from "../components/DropboxFolderPicker";
+import { LeaveGuard, useUnsaved } from "../components/LeaveGuard";
+import { RunPanel, progressOf, type RunLive } from "../components/RunProgress";
 
 interface Loc {
   kind: string;
@@ -28,16 +30,7 @@ interface Counts {
   finished: number;
   rate: number;
 }
-interface Live {
-  file?: string;
-  stage?: string;
-  page?: number;
-  pages?: number;
-  index?: number;
-  total?: number;
-  started?: number;
-  updated?: number;
-}
+type Live = RunLive;
 interface Job {
   id: string;
   status: string;
@@ -105,12 +98,6 @@ export function shortLoc(l: Loc | null): string {
 }
 const lastPart = (l: Loc | null) => shortLoc(l).split("/").filter(Boolean).pop() ?? shortLoc(l);
 
-function duration(sec: number, t: (k: string, o?: Record<string, unknown>) => string) {
-  if (sec < 90) return t("pages.distill.etaMin", { n: 1 });
-  if (sec < 5400) return t("pages.distill.etaMin", { n: Math.round(sec / 60) });
-  return t("pages.distill.etaHour", { n: Math.round(sec / 3600) });
-}
-
 // ------------------------------------------------------------------ status of a room
 function RoomPills({ room }: { room: Room }) {
   const { t } = useTranslation();
@@ -118,6 +105,8 @@ function RoomPills({ room }: { room: Room }) {
   const c = room.counts;
   if (j?.status === "running") {
     const l = j.live;
+    // a run that reports file by file shows its count beside this (RunBadge); one number, not two
+    if (l?.v) return <Pill tone="run">{t("run.running")}</Pill>;
     return <Pill tone="run">{l?.total ? t("pages.distill.room.runningOf", { i: Math.max(0, (l.index ?? 1) - 1), n: l.total }) : t("pages.distill.room.running", { pct: Math.round(j.progress ?? 0) })}</Pill>;
   }
   if (j?.status === "queued") return <Pill tone="idle">{t("pages.distill.room.queued", { n: j.position ?? 1 })}</Pill>;
@@ -329,6 +318,23 @@ function AcceptPanel({ room, canEdit, onReview }: { room: Room; canEdit: boolean
 }
 
 // ------------------------------------------------------------------ one room
+/** On the room's title line while it runs: a moving dot, files done of all, and a striped bar. */
+function RunBadge({ live, fallback }: { live?: Live; fallback: number }) {
+  const { t } = useTranslation();
+  const p = live?.v ? progressOf(live) : null;
+  const pct = p ? p.pct : fallback;
+  return (
+    <span className="fx-row" style={{ gap: 6 }}>
+      <span className="fx-live-dot" aria-hidden />
+      {p && p.of > 0 && <span className="fx-tiny fx-num">{t("run.doneOf", { done: live?.done ?? 0, of: p.of })}</span>}
+      <span className="fx-bar fx-bar-run" style={{ width: 110 }} role="progressbar" aria-label={t("run.title")}
+        aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)}>
+        <i style={{ width: `${Math.max(3, pct)}%` }} />
+      </span>
+    </span>
+  );
+}
+
 function Field({ id, label, loc: l, value, onChange, onPick, disabled, placeholder, invalid }: {
   id: string; label: string; loc: Loc | null; value: string; onChange: (v: string) => void; onPick: () => void; disabled: boolean; placeholder: string; invalid?: boolean;
 }) {
@@ -367,18 +373,15 @@ function RoomBody({ room, canEdit, focusFile, focusState }: { room: Room; canEdi
   };
   const save = useMutation({ mutationFn: (f: Record<string, unknown>) => api(`/rooms/${room.id}`, { ...json(f), method: "PATCH" }), onSuccess: refresh });
   const run = useMutation({ mutationFn: () => api(`/rooms/${room.id}/run`, json({})), onSuccess: refresh });
+  // edited folders that are not saved yet: leaving the page asks first
+  useUnsaved(`room-${room.id}`, canEdit && (source !== loc(room.source) || dest !== loc(room.dest))
+    ? () => save.mutateAsync({ source, dest: dest || null }) : null);
   const cancel = useMutation({ mutationFn: () => api(`/rooms/${room.id}/cancel`, { method: "POST" }), onSuccess: refresh });
   const isPath = (v: string) => v.trim().startsWith("/");
   const overlap = isPath(source) && isPath(dest) && (isUnder(dest, source) || isUnder(source, dest));
   const err = (save.error || run.error || cancel.error) as Error | null;
   const j = room.job;
   const live = j?.status === "running" ? j.live : undefined;
-  let eta = "";
-  if (live?.started && live.total && (live.index ?? 0) > 1) {
-    const done = (live.index ?? 1) - 1 + (live.pages ? (live.page ?? 0) / live.pages : 0);
-    const per = (Date.now() / 1000 - live.started) / Math.max(done, 0.5);
-    eta = duration(per * Math.max(0, live.total - done), t);
-  }
   return (
     <div className="fx-room-b">
       <div className="fx-roomgrid">
@@ -409,17 +412,7 @@ function RoomBody({ room, canEdit, focusFile, focusState }: { room: Room; canEdi
       {err && <div className="fx-errnote" role="alert">{err.message}</div>}
       {j?.status === "interrupted" && <div className="fx-warnnote">{t("pages.distill.interruptedNote")}</div>}
       {j?.status === "error" && j.message && <div className="fx-errnote">{j.message}</div>}
-      {live?.file && (
-        <div className="fx-row fx-muted fx-tiny fx-wrap">
-          <span>
-            {t("pages.distill.current")}
-            {live.file.replace(/^\//, "").split("/").join(" / ")}
-            {live.stage === "ocr" && live.pages ? ` · ${t("pages.distill.ocrPages", { page: live.page, pages: live.pages })}` : live.stage ? ` · ${t(`pages.distill.stage.${live.stage}`, { defaultValue: live.stage })}` : ""}
-            {eta ? ` · ${t("pages.distill.eta", { d: eta })}` : ""}
-          </span>
-          {canEdit && <button className="fx-a" onClick={() => cancel.mutate()}>{t("pages.distill.cancelRun")}</button>}
-        </div>
-      )}
+      {live && <RunPanel live={live} canCancel={canEdit} onCancel={() => cancel.mutate()} />}
       {j?.status === "queued" && canEdit && (
         <div className="fx-row fx-muted fx-tiny">
           <span>{t("pages.distill.room.queued", { n: j.position ?? 1 })}</span>
@@ -427,6 +420,7 @@ function RoomBody({ room, canEdit, focusFile, focusState }: { room: Room; canEdi
         </div>
       )}
       <RoomFiles roomId={room.id} live={active || room.counts.publishing > 0} counts={room.counts} filter={filter} onFilter={setFilter}
+        progress={live}
         focusFile={focusFile} onCompare={room.dest ? setComparing : undefined} onFix={setFixing} canEdit={canEdit}
         onRetry={canEdit && !active ? () => run.mutate() : undefined} />
       <AcceptPanel room={room} canEdit={canEdit} onReview={() => setFilter("ok")} />
@@ -448,6 +442,106 @@ function RoomBody({ room, canEdit, focusFile, focusState }: { room: Room; canEdi
         onClose={() => setPicking(null)}
       />
     </div>
+  );
+}
+
+// ------------------------------------------------------------------ a new room, not saved yet
+interface Draft { name: string; source: string; dest: string; mode: "distill" | "upload" }
+const DRAFT_KEY = "fidelity.draftRoom";
+function readDraft(): Draft | null {
+  try {
+    const v = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || "null");
+    return v && typeof v === "object" ? { name: "", source: "", dest: "", mode: "distill", ...v } : null;
+  } catch {
+    return null;
+  }
+}
+function keepDraft(d: Draft | null) {
+  try {
+    if (d) sessionStorage.setItem(DRAFT_KEY, JSON.stringify(d));
+    else sessionStorage.removeItem(DRAFT_KEY);
+  } catch {
+    /* private window: the draft just is not kept over a reload */
+  }
+}
+
+/** A room that exists only on this page until Save: nothing is made on the server before that, so a reload or a
+ * closed tab never leaves a half-made "not set up" room behind. */
+function DraftRoom({ initial, restored, onSaved, onDiscard }: {
+  initial: Draft; restored: boolean; onSaved: (r: Room) => void; onDiscard: () => void;
+}) {
+  const { t } = useTranslation();
+  const [d, setD] = useState<Draft>(initial);
+  const [picking, setPicking] = useState<"source" | "dest" | null>(null);
+  const isPath = (v: string) => v.trim().startsWith("/");
+  const overlap = isPath(d.source) && isPath(d.dest) && (isUnder(d.dest, d.source) || isUnder(d.source, d.dest));
+  const touched = !!(d.name.trim() || d.source.trim() || d.dest.trim());
+  const create = useMutation({
+    mutationFn: () => api<Room>("/rooms", json({ name: d.name.trim() || undefined, prefix: t("pages.distill.defaultName"),
+      source: d.source.trim(), dest: d.dest.trim() || undefined, mode: d.mode })),
+    onSuccess: (r) => {
+      keepDraft(null);
+      onSaved(r);
+    },
+  });
+  const canSave = !!d.source.trim() && !overlap && !create.isPending;
+  useEffect(() => keepDraft(touched ? d : null), [d, touched]);
+  // leaving with something typed asks first; Save there needs the input folder like the button here
+  useUnsaved("draft-room", touched ? () => {
+    if (!d.source.trim()) return Promise.reject(new Error(t("pages.distill.draftNeedsInput")));
+    if (overlap) return Promise.reject(new Error(t("pages.distill.overlap")));
+    return create.mutateAsync();
+  } : null);
+  return (
+    <section className="fx-room open fx-draft" aria-label={t("pages.distill.draftTitle")}>
+      <div className="fx-room-h">
+        <div className="fx-row fx-wrap" style={{ rowGap: 6 }}>
+          <input autoFocus className="fx-field sm" style={{ width: 240 }} value={d.name} maxLength={80}
+            placeholder={t("pages.distill.draftNamePh")} aria-label={t("pages.distill.roomName")}
+            onChange={(e) => setD({ ...d, name: e.target.value })} />
+          <Pill tone="warn">{t("pages.distill.draftPill")}</Pill>
+          <span className="fx-sp" />
+          <span className="fx-muted fx-tiny">{t("pages.distill.draftHint")}</span>
+        </div>
+      </div>
+      <div className="fx-room-b">
+        {restored && <div className="fx-note" role="status">{t("pages.distill.draftRestored")}</div>}
+        <div className="fx-roomgrid">
+          <Field id="src-draft" label={t("pages.distill.inputRO")} loc={null} value={d.source} onChange={(v) => setD({ ...d, source: v })}
+            onPick={() => setPicking("source")} disabled={false} placeholder={t("pages.distill.eg", { p: "/as 3500" })} />
+          <div className="fx-muted fx-arrow" aria-hidden>→</div>
+          <Field id="dst-draft" label={t("pages.distill.outputPlace")} loc={null} value={d.dest} onChange={(v) => setD({ ...d, dest: v })}
+            onPick={() => setPicking("dest")} disabled={false} placeholder={t("pages.distill.egOut", { p: "/Transfer_Md/as 3500" })} invalid={overlap} />
+          <div />
+          <div>
+            <span className="fx-lab">{t("pages.distill.afterDistill")}</span>
+            <Seg label={t("pages.distill.afterDistill")} value={d.mode} onChange={(v) => setD({ ...d, mode: v })}
+              options={[{ value: "distill", label: t("pages.distill.modeDistill") }, { value: "upload", label: t("pages.distill.modeUpload") }]} />
+          </div>
+          <div className="fx-row">
+            <button className="fx-btn" onClick={() => { keepDraft(null); onDiscard(); }}>{t("pages.distill.discard")}</button>
+            <button className="fx-btn pri" disabled={!canSave} onClick={() => create.mutate()}>{create.isPending ? t("leave.saving") : t("pages.distill.saveRoom")}</button>
+          </div>
+        </div>
+        {!d.source.trim() && <div className="fx-tiny fx-muted">{t("pages.distill.draftNeedsInput")}</div>}
+        {overlap && <div className="fx-errnote" role="alert">{t("pages.distill.overlap")}</div>}
+        {create.error && <div className="fx-errnote" role="alert">{(create.error as Error).message}</div>}
+      </div>
+      <DropboxFolderPicker
+        open={picking !== null}
+        title={t(picking === "dest" ? "pages.distill.chooseOutput" : "pages.distill.chooseInput")}
+        value={picking === "dest" ? d.dest : d.source}
+        warn={(p) => {
+          const other = picking === "dest" ? d.source : d.dest;
+          return isPath(other) && (isUnder(p, other) || isUnder(other, p)) ? t("pages.distill.overlap") : null;
+        }}
+        onPick={(p) => {
+          setD(picking === "dest" ? { ...d, dest: p } : { ...d, source: p });
+          setPicking(null);
+        }}
+        onClose={() => setPicking(null)}
+      />
+    </section>
   );
 }
 
@@ -505,7 +599,7 @@ function RoomCard({ room, open, onToggle, canEdit, focusFile, focusState }: {
           {canEdit && !editing && <button className="fx-iconbtn" aria-label={t("pages.distill.rename")} onClick={() => setEditing(true)}>✎</button>}
           {open && room.source && <span className="fx-src">{lastPart(room.source)}</span>}
           <RoomPills room={room} />
-          {open && j?.status === "running" && <Bar pct={j.live?.total ? (100 * Math.max(0, (j.live.index ?? 1) - 1)) / j.live.total : j.progress ?? 0} width={120} label={t("pages.distill.rate")} />}
+          {j?.status === "running" && <RunBadge live={j.live} fallback={j.progress ?? 0} />}
           {open && room.source && <span className="fx-muted fx-tiny">{weight}</span>}
           <span className="fx-sp" />
           {!open && empty && <span className="fx-muted fx-tiny">{t("pages.distill.openToSetUp")}</span>}
@@ -611,13 +705,22 @@ export function DistillPage() {
   });
   const archived = useQuery({ queryKey: ["rooms", "archived"], queryFn: () => api<{ rooms: Room[] }>("/rooms?archived=true") });
   const queue = useQuery({ queryKey: ["queue"], queryFn: () => api<QueueView>("/queue"), refetchInterval: 5000 });
-  const create = useMutation({
-    mutationFn: () => api<Room>("/rooms", json({ prefix: t("pages.distill.defaultName") })),
-    onSuccess: (r) => {
-      setOpen((p) => new Set([...(p ?? []), r.id]));
-      void qc.invalidateQueries({ queryKey: ["rooms"] });
-    },
+  // a new room is a draft on this page until Save (kept in this tab, so a reload brings it back)
+  const [draft, setDraft] = useState<{ d: Draft; restored: boolean } | null>(() => {
+    const d = readDraft();
+    return d ? { d, restored: true } : null;
   });
+  const newDraft = () => {
+    setTab("active");
+    if (!draft) setDraft({ d: { name: "", source: "", dest: "", mode: "distill" }, restored: false });
+    setTimeout(() => document.querySelector<HTMLInputElement>(".fx-draft input")?.focus(), 50);
+  };
+  const onSaved = (r: Room) => {
+    setDraft(null);
+    setOpen((p) => new Set([...(p ?? []), r.id]));
+    void qc.invalidateQueries({ queryKey: ["rooms"] });
+    void qc.invalidateQueries({ queryKey: ["queue"] });
+  };
   const list = useMemo(() => active.data?.rooms ?? [], [active.data]);
   // a link to a room (a notification, the search) opens it and brings it into view
   useEffect(() => {
@@ -627,8 +730,8 @@ export function DistillPage() {
     setTimeout(() => document.getElementById(`room-${focusRoom}`)?.scrollIntoView?.({ behavior: "smooth", block: "start" }), 200);
   }, [focusRoom, list.length]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (params.get("new") === "1" && canEdit && !create.isPending) {
-      create.mutate();
+    if (params.get("new") === "1" && canEdit) {
+      newDraft();
       params.delete("new");
       setParams(params, { replace: true });
     }
@@ -645,12 +748,13 @@ export function DistillPage() {
   const q = queue.data;
   const archivedRooms = archived.data?.rooms ?? [];
   return (
+    <LeaveGuard>
     <div className="fx-stack">
       <PageHeader
         title={t("pages.distill.title")}
         desc={t("pages.distill.intro2")}
         extra={canEdit && tab === "active" && (
-          <button className="fx-btn pri" disabled={create.isPending} onClick={() => create.mutate()}>+ {t("pages.distill.newRoom")}</button>
+          <button className="fx-btn pri" onClick={newDraft}>+ {t("pages.distill.newRoom")}</button>
         )}
       />
       {q && <QueueCard q={q} canEdit={canEdit} rooms={list} />}
@@ -664,13 +768,13 @@ export function DistillPage() {
           </button>
         </div>
       </div>
-      {create.error && <div className="fx-errnote">{(create.error as Error).message}</div>}
       {tab === "active" && (
         <>
           {active.isLoading && <Loading />}
           {active.isError && <ErrorState message={(active.error as Error).message} onRetry={() => void active.refetch()} />}
-          {!active.isLoading && !active.isError && list.length === 0 && <EmptyState title={t("pages.distill.emptyTitle")} hint={t("pages.distill.emptyHint")} />}
+          {!active.isLoading && !active.isError && list.length === 0 && !draft && <EmptyState title={t("pages.distill.emptyTitle")} hint={t("pages.distill.emptyHint")} />}
           <div className="fx-stack" style={{ gap: 10 }}>
+            {draft && canEdit && <DraftRoom initial={draft.d} restored={draft.restored} onSaved={onSaved} onDiscard={() => setDraft(null)} />}
             {list.map((r) => (
               <RoomCard key={r.id} room={r} open={shown.has(r.id)} onToggle={() => toggle(r.id)} canEdit={canEdit}
                 focusFile={r.id === focusRoom ? focusFile : null} focusState={r.id === focusRoom ? focusState : null} />
@@ -683,5 +787,6 @@ export function DistillPage() {
         <Link to="/jobs">{t("pages.distill.runHistoryAll")}</Link> · <Link to="/sources">{t("pages.distill.oldPage")}</Link>
       </div>
     </div>
+    </LeaveGuard>
   );
 }

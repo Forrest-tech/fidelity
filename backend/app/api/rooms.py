@@ -26,6 +26,9 @@ def _guard(fn, *a, **kw):
 class RoomNew(BaseModel):
     name: str | None = None
     prefix: str | None = None          # the word a room without a name is called, in the person's language
+    source: str | None = None          # a room is made with its folders in one step (the page keeps a draft until Save)
+    dest: str | None = None
+    mode: str | None = None
 
 
 class RoomPatch(BaseModel):
@@ -55,7 +58,15 @@ def rooms(archived: bool = False):
 
 @router.post("/rooms")
 def create(body: RoomNew, user=Depends(current_user)):
-    return R.summary(R.create_room(body.name, getattr(user, "email", "") or "", body.prefix))
+    room = R.create_room(body.name, getattr(user, "email", "") or "", body.prefix)
+    extra = {k: v for k, v in body.model_dump(include={"source", "dest", "mode"}).items() if v not in (None, "")}
+    if extra:
+        try:
+            room = _guard(R.update_room, room["id"], extra)
+        except Exception:
+            R.delete_room(room["id"])          # all or nothing: a refused folder leaves no half-made room behind
+            raise
+    return R.summary(room)
 
 
 @router.get("/queue")
