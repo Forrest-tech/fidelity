@@ -117,9 +117,10 @@ describe("uncertain places", () => {
     await u.click(await screen.findByRole("button", { name: "Review scan.pdf" }));
     const side = await screen.findByRole("complementary", { name: "The chosen place" });
     expect(screen.getByText("missing: 20")).toBeInTheDocument();
-    expect(within(side).getByLabelText("Correct text")).toHaveValue("fitted");
+    // the field is filled once the place's review has loaded: wait for it (checking at once failed on a busy runner)
+    await waitFor(() => expect(within(side).getByLabelText("Correct text")).toHaveValue("fitted"));
     await u.click(within(side).getByRole("button", { name: "fittcd" }));
-    expect(within(side).getByLabelText("Correct text")).toHaveValue("fittcd");
+    await waitFor(() => expect(within(side).getByLabelText("Correct text")).toHaveValue("fittcd"));
   });
 
   it("asks the AI, and a fix made from its suggestion records that the person took it", async () => {
