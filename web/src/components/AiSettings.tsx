@@ -45,7 +45,7 @@ export interface AiSettingsData {
   stats: { skills: Record<Skill, SkillStats>; memory: { cache: number; examples: number; rules: number } };
   examples: Record<Skill, number>;
   level3?: Level3;
-  demotions?: { at: number; from: number; to: number; reason: string }[];
+  demotions?: Demotion[];
 }
 interface Level3 {
   eligible: boolean;
@@ -58,7 +58,7 @@ interface Level3 {
 
 /** Why automatic adoption (level 3) cannot be switched on yet, or how it is doing. */
 function Level3Info({ data, level }: { data: AiSettingsData; level: number }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const l3 = data.level3;
   const last = data.demotions?.[data.demotions.length - 1];
   if (!l3) return null;
@@ -68,7 +68,7 @@ function Level3Info({ data, level }: { data: AiSettingsData; level: number }) {
       : m.code === "adoption"
         ? t("pages.ai.l3.adoption", { have: m.have ?? 0, need: m.need })
         : m.code === "wrong"
-          ? t("pages.ai.l3.wrong", { date: m.at ? new Date(m.at * 1000).toLocaleDateString() : "" })
+          ? t("pages.ai.l3.wrong", { date: m.at ? new Date(m.at * 1000).toLocaleDateString(i18n.language) : "" })
           : t("pages.ai.l3.glossary");
   return (
     <div className="fx-stack" style={{ gap: 6 }}>
@@ -85,12 +85,15 @@ function Level3Info({ data, level }: { data: AiSettingsData; level: number }) {
 }
 
 /** The skill went back a level by itself (an automatic adoption was found wrong). */
-function Demoted({ last }: { last: { at: number; from: number; to: number; reason: string } }) {
-  const { t } = useTranslation();
+interface Demotion { at: number; from: number; to: number; reason: string; code?: string | null; args?: Record<string, string | null> }
+function Demoted({ last }: { last: Demotion }) {
+  const { t, i18n } = useTranslation();
+  // said in the reader's language when the server says what happened; the server's English sentence otherwise
+  const why = last.code && i18n.exists(`pages.ai.l3.why.${last.code}`) ? t(`pages.ai.l3.why.${last.code}`, last.args ?? {}) : last.reason;
   return (
     <div className="fx-note" role="alert" style={{ borderLeftColor: "var(--warn)", background: "var(--warn-soft)" }}>
-      <b>{t("pages.ai.l3.demoted", { from: last.from, to: last.to, date: new Date(last.at * 1000).toLocaleString() })}</b>
-      {last.reason && <div className="fx-muted">{last.reason}</div>}
+      <b>{t("pages.ai.l3.demoted", { from: last.from, to: last.to, date: new Date(last.at * 1000).toLocaleString(i18n.language) })}</b>
+      {why && <div className="fx-muted" style={{ overflowWrap: "anywhere" }}>{why}</div>}
     </div>
   );
 }
@@ -134,7 +137,7 @@ function SkillEdit({ name, data, onSaved, onClose }: { name: Skill; data: AiSett
       ]}>
       <div className="fx-stack" style={{ gap: 12 }}>
         <div className="fx-tiny fx-muted">{t(`pages.ai.skillHint.${name}`)}</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 10 }}>
           <label>
             <span className="fx-lab">{t("pages.ai.provider")}</span>
             <Select value={v.provider ?? undefined} placeholder={t("pages.ai.none")} allowClear style={{ width: "100%" }} aria-label={t("pages.ai.provider")}
@@ -154,7 +157,7 @@ function SkillEdit({ name, data, onSaved, onClose }: { name: Skill; data: AiSett
           </div>
           {name === "arbitrate" && <div style={{ marginTop: 6 }}><Level3Info data={data} level={v.level} /></div>}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 10 }}>
           <label>
             <span className="fx-lab">{t("pages.ai.budget")}</span>
             <span className="fx-field"><span className="fx-muted">$</span>

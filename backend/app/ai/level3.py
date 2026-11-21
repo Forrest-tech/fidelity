@@ -72,12 +72,14 @@ def eligibility() -> dict:
     return {**r, "eligible": not missing, "missing": missing}
 
 
-def demote(reason: str, to_level: int = 2):
+def demote(reason: str, to_level: int = 2, code: str | None = None, **args):
+    """Put arbitration back a level. `reason` is plain English; `code` and `args` let the screen say it in any language."""
     s = CF.load()
     sk = s["skills"]["arbitrate"]
     if sk["level"] <= to_level:
         return False
-    s.setdefault("demotions", []).append({"at": db.now(), "from": sk["level"], "to": to_level, "reason": reason[:240]})
+    s.setdefault("demotions", []).append({"at": db.now(), "from": sk["level"], "to": to_level, "reason": reason[:240],
+                                          "code": code, "args": {k: (str(v)[:200] if v is not None else None) for k, v in args.items()}})
     s["demotions"] = s["demotions"][-20:]
     sk["level"] = to_level
     CF.save(s)
@@ -96,7 +98,8 @@ def review_level2():
     finally:
         con.close()
     if len(rows) >= L2_WINDOW and 100 * sum(1 for (d,) in rows if d == "adopted") / len(rows) < L2_FLOOR:
-        demote(f"people took fewer than {L2_FLOOR:.0f}% of the last {L2_WINDOW} suggestions", to_level=1)
+        demote(f"people took fewer than {L2_FLOOR:.0f}% of the last {L2_WINDOW} suggestions", to_level=1,
+               code="low_adoption", floor=f"{L2_FLOOR:.0f}", window=L2_WINDOW)
 
 
 # ------------------------------------------------------------------ adopting
@@ -225,7 +228,9 @@ def on_undone(rule: dict, rel: str, user: str):
         con.commit()
     finally:
         con.close()
-    demote(f"{user} found an automatic adoption wrong in {rel.rsplit('/', 1)[-1]} (#{rule.get('num')})")
+    name = rel.rsplit('/', 1)[-1]
+    demote(f"{user} found an automatic adoption wrong in {name} (#{rule.get('num')})",
+           code="found_wrong", who=user, file=name, num=rule.get("num"))
 
 
 def check(rule_id: str, right: bool, user: str) -> dict:

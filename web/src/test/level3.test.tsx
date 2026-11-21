@@ -1,7 +1,8 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { mockApi, renderApp } from "./helpers";
+import i18n from "../locales";
 
 const ME = (role: string) => ({ id: "1", email: "a@example.com", role });
 const ZERO = { calls: 0, cached: 0, blocked: 0, errors: 0, invalid: 0, spend: 0, adopted: 0, modified: 0, rejected: 0, adoption: null, paused_s: 0 };
@@ -25,9 +26,12 @@ describe("automatic adoption in the AI settings", () => {
   it("cannot be chosen until it is earned, and says what is missing", async () => {
     mockApi((url) => (url.endsWith("/me") ? { body: ME("admin") } : url.endsWith("/ai/settings") ? { body: SETTINGS() } : { body: {} }));
     renderApp("/settings/ai");
-    expect(await screen.findByText(/Automatic adoption is not earned yet: 120 of 300 suggestions decided by people · people took 96.5% \(needs 98%\)/)).toBeInTheDocument();
-    const option = screen.getByText("Automatic (text only)").closest(".ant-segmented-item");
-    expect(option).toHaveClass("ant-segmented-item-disabled");
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    await u.click(await screen.findByRole("button", { name: "Edit Reading arbitration" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(/Automatic adoption is not earned yet: 120 of 300 suggestions decided by people · people took 96.5% \(needs 98%\)/)).toBeInTheDocument();
+    expect(within(dialog).getByRole("radio", { name: "Automatic (text only)" })).toBeDisabled();
+    expect(within(dialog).getByRole("radio", { name: "By default" })).toBeEnabled();
   });
 
   it("can be switched on once earned, and shows when it fell back by itself", async () => {
@@ -39,16 +43,37 @@ describe("automatic adoption in the AI settings", () => {
       return { body: {} };
     });
     renderApp("/settings/ai");
-    expect(await screen.findByText(/Automatic adoption is earned/)).toBeInTheDocument();
-    expect(screen.getByText(/Went back from level 3 to 2 by itself/)).toBeInTheDocument();
+    // the fall-back is shown on the page itself, not only inside the skill's dialog
+    expect(await screen.findByText(/Went back from level 3 to 2 by itself/)).toBeInTheDocument();
     expect(screen.getByText("wang found an automatic adoption wrong in a.pdf (#4)")).toBeInTheDocument();
+    expect(screen.getByText("Suggests by default")).toBeInTheDocument();
     const u = userEvent.setup({ pointerEventsCheck: 0 });
-    await u.click(screen.getByText("Automatic (text only)"));
-    await u.click(screen.getAllByText("Save")[0]);
+    await u.click(screen.getByRole("button", { name: "Edit Reading arbitration" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(/Automatic adoption is earned/)).toBeInTheDocument();
+    await u.click(within(dialog).getByRole("radio", { name: "Automatic (text only)" }));
+    await u.click(within(dialog).getByRole("button", { name: "Save" }));
     await waitFor(() => {
       const put = calls.filter((c) => c.init?.method === "PUT").pop();
       expect(JSON.parse(String(put?.init?.body)).skills.arbitrate.level).toBe(3);
     });
+  });
+  it("says why it fell back in the reader's language", async () => {
+    mockApi((url) => {
+      if (url.endsWith("/me")) return { body: ME("admin") };
+      if (url.endsWith("/ai/settings"))
+        return { body: SETTINGS({ demotions: [{ at: 1763600000, from: 3, to: 2, reason: "wang found an automatic adoption wrong in a.pdf (#4)",
+          code: "found_wrong", args: { who: "wang", file: "a.pdf", num: "4" } }] }) };
+      return { body: {} };
+    });
+    await i18n.changeLanguage("zh");
+    try {
+      renderApp("/settings/ai");
+      expect(await screen.findByText("wang 抽查发现 a.pdf 里的自动采用有错(规则 #4)。")).toBeInTheDocument();
+      expect(screen.queryByText(/found an automatic adoption wrong/)).not.toBeInTheDocument();
+    } finally {
+      await i18n.changeLanguage("en");
+    }
   });
 });
 
@@ -67,8 +92,9 @@ describe("checking automatic adoptions", () => {
     renderApp("/corrections");
     expect(await screen.findByText("Adopted automatically — please check")).toBeInTheDocument();
     expect(screen.getByText("fittcd")).toBeInTheDocument();
-    expect(screen.getByText("#4 · Scans · scan.pdf")).toBeInTheDocument();
-    await userEvent.setup().click(screen.getByText("Wrong"));
+    expect(screen.getByText("Rule #4")).toBeInTheDocument();
+    expect(screen.getByText(/Scans · scan\.pdf/)).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole("button", { name: "Wrong" }));
     await waitFor(() => expect(JSON.parse(String(calls.find((c) => c.url.endsWith("/ai/auto-checks/k4"))?.init?.body))).toEqual({ right: false }));
     expect(await screen.findByText("Nothing waiting for a check.")).toBeInTheDocument();
   });
@@ -104,7 +130,8 @@ describe("the Fix panel", () => {
       return { body: {} };
     });
     renderApp("/distill");
-    await userEvent.setup({ pointerEventsCheck: 0 }).click(await screen.findByLabelText("Fix scan.pdf"));
-    expect(await screen.findByText("AI (automatic)")).toBeInTheDocument();
+    await userEvent.setup({ pointerEventsCheck: 0 }).click(await screen.findByRole("button", { name: "Fix scan.pdf" }));
+    // in the list of fixes and in the detail of the chosen one
+    expect((await screen.findAllByText("Rule #4 · adopted by AI")).length).toBeGreaterThanOrEqual(1);
   });
 });

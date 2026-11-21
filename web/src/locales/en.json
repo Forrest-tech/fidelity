@@ -891,7 +891,11 @@
         "glossary": "no word list from verified documents yet",
         "earned": "Automatic adoption is earned: plain-text readings the word list agrees with can be adopted without asking. Numbers, formulas and tables never are.",
         "on": "Adopted automatically so far: {{total}} ({{right}} checked right, {{wrong}} wrong, {{pending}} waiting for a check).",
-        "demoted": "Went back from level {{from}} to {{to}} by itself on {{date}}"
+        "demoted": "Went back from level {{from}} to {{to}} by itself on {{date}}",
+        "why": {
+          "found_wrong": "{{who}} found an automatic adoption wrong in {{file}} (rule #{{num}}).",
+          "low_adoption": "People took fewer than {{floor}}% of the last {{window}} suggestions."
+        }
       },
       "mode3": "Adopts plain text by itself",
       "levelLocked": "Automatic is not earned yet."

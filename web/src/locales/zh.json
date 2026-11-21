@@ -891,7 +891,11 @@
         "glossary": "还没有从已验证文档生成的词表",
         "earned": "已达到自动采用的条件:与词表一致的纯文字读法可以不问人直接采用。数字、公式、表格永远不会。",
         "on": "至今自动采用 {{total}} 处(抽查对 {{right}}、错 {{wrong}},{{pending}} 处等待抽查)。",
-        "demoted": "{{date}} 自动从第 {{from}} 级退回第 {{to}} 级"
+        "demoted": "{{date}} 自动从第 {{from}} 级退回第 {{to}} 级",
+        "why": {
+          "found_wrong": "{{who}} 抽查发现 {{file}} 里的自动采用有错(规则 #{{num}})。",
+          "low_adoption": "最近 {{window}} 条建议里,人采纳的不到 {{floor}}%。"
+        }
       },
       "mode3": "纯文字自动采用",
       "levelLocked": "还没有达到自动采用的条件。"

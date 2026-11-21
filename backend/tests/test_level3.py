@@ -181,6 +181,7 @@ def test_a_sampled_check_found_wrong_undoes_it_and_falls_back_to_level_2(env, mo
     assert "fittcd" in open(p, encoding="utf-8").read()
     s = CF.load()
     assert s["skills"]["arbitrate"]["level"] == 2 and "found an automatic adoption wrong" in s["demotions"][-1]["reason"]
+    assert s["demotions"][-1]["code"] == "found_wrong" and s["demotions"][-1]["args"]["num"]      # so the screen can say it in Chinese too
     assert L3.checks()["wrong"] == 1 and not L3.eligibility()["eligible"]
 
 
@@ -196,6 +197,7 @@ def test_level_2_falls_back_to_1_when_people_rarely_take_its_suggestions(env):
     L3.review_level2()
     s = CF.load()
     assert s["skills"]["arbitrate"]["level"] == 1 and "fewer than 70%" in s["demotions"][-1]["reason"]
+    assert s["demotions"][-1]["code"] == "low_adoption" and s["demotions"][-1]["args"]["floor"] == "70"
 
 
 def test_sampling_checks_the_first_twenty_then_one_in_ten(env):
