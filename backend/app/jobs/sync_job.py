@@ -251,7 +251,12 @@ def cancel(jid) -> bool:
 def _spawn(cmd, env, log_fh):
     kw = dict(cwd=BACKEND, env=env, stdin=subprocess.DEVNULL, stdout=log_fh, stderr=subprocess.STDOUT)
     if os.name == "nt":
-        flags = subprocess.CREATE_NEW_PROCESS_GROUP | getattr(subprocess, "DETACHED_PROCESS", 0x8)
+        # A console without a window, not DETACHED_PROCESS: a venv's python.exe is a launcher that starts the real
+        # interpreter as a child, and a console program started from a process without a console gets a console WINDOW
+        # of its own. Closing that window (or logging off) ended runs with 0xC000013A. With CREATE_NO_WINDOW the run and
+        # its children share one hidden console that nobody can close, and the new process group keeps the server's
+        # Ctrl+C away from it.
+        flags = subprocess.CREATE_NEW_PROCESS_GROUP | getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
         try:                                                   # also leave a job object that would end it with the server
             return subprocess.Popen(cmd, creationflags=flags | 0x01000000, **kw)     # CREATE_BREAKAWAY_FROM_JOB
         except OSError:
@@ -337,6 +342,9 @@ def _finish(job, p, code, text, report):
         raise RuntimeError("cancelled by the user")
     if code == -1 and _read_exit(jid) is None and not text.rstrip().endswith("}"):
         raise Interrupted("the run was stopped before it finished (the server or machine restarted); "
+                          "start it again and it carries on with the files not done yet")
+    if code in (0xC000013A, -1073741510, -2, 130):           # Ctrl+C / its window closed / logged off (Windows); SIGINT
+        raise Interrupted("the run was stopped from outside before it finished (Ctrl+C, a closed window or a log-off); "
                           "start it again and it carries on with the files not done yet")
     summary = {"params": {k: v for k, v in p.items()}, "exit_code": code}
     start = text.rfind("\n{")
