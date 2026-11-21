@@ -209,6 +209,27 @@ CREATE TABLE IF NOT EXISTS correction_exempt (
   rule_id TEXT, room_id TEXT, rel TEXT, by_user TEXT, at REAL,
   PRIMARY KEY (rule_id, room_id, rel)
 );
+-- Every AI request, answered or not: what was asked, what came back, what it cost and what a person decided.
+CREATE TABLE IF NOT EXISTS ai_call (
+  id TEXT PRIMARY KEY,
+  skill TEXT, version TEXT, provider TEXT, model TEXT,
+  room_id TEXT, rel TEXT,
+  input TEXT, output TEXT, result TEXT,
+  status TEXT,                -- ok / cached / invalid / error / blocked
+  message TEXT,
+  tokens_in INTEGER DEFAULT 0, tokens_out INTEGER DEFAULT 0, cost REAL DEFAULT 0, seconds REAL DEFAULT 0,
+  decision TEXT, final TEXT, decided_by TEXT, decided_at REAL,
+  created_by TEXT, created_at REAL
+);
+CREATE INDEX IF NOT EXISTS idx_ai_call_skill ON ai_call(skill, created_at);
+-- An answer already given for the same question by the same skill version and model.
+CREATE TABLE IF NOT EXISTS ai_cache (
+  key TEXT PRIMARY KEY, skill TEXT, version TEXT, raw TEXT, result TEXT, created_at REAL
+);
+-- A place a person settled after an AI suggestion: shown to the AI as an example next time, and used to test models.
+CREATE TABLE IF NOT EXISTS ai_example (
+  id TEXT PRIMARY KEY, skill TEXT, input TEXT, answer TEXT, room_id TEXT, rel TEXT, by_user TEXT, at REAL, call_id TEXT
+);
 -- A person checked a number rule's change in one document and found it right.
 CREATE TABLE IF NOT EXISTS correction_check (
   rule_id TEXT, room_id TEXT, rel TEXT, by_user TEXT, at REAL,

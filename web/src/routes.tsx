@@ -64,6 +64,7 @@ export function AppRoutes() {
           }
         />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="settings/:section" element={<SettingsPage />} />
         <Route
           path="users"
           element={

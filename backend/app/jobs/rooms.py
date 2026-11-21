@@ -242,7 +242,7 @@ def _files(room_id: str) -> list:
     try:
         return con.execute("SELECT rel, kind, size, activity, outcome, reason, detail, accuracy, parts, diffs, number_diffs, "
                            "confirmed, confirmed_by, confirmed_at, pages, run_id, out_dir, content_hash, single_file, n_files, "
-                           "verdict, corrections, rule_checks, updated_at FROM room_file WHERE room_id=?", (room_id,)).fetchall()
+                           "verdict, corrections, rule_checks, findings, updated_at FROM room_file WHERE room_id=?", (room_id,)).fetchall()
     finally:
         con.close()
 

@@ -270,7 +270,7 @@ describe("first-run setup and cloud storage", () => {
                          writer: { connected: false, app_key: "", account: null } } };
       return { body: {} };
     });
-    renderApp("/settings");
+    renderApp("/settings/storage");
     expect(await screen.findByText("Cloud storage")).toBeInTheDocument();
     expect(await screen.findByText("Connected as Forrest (f@example.com)")).toBeInTheDocument();
     const u = userEvent.setup({ pointerEventsCheck: 0 });
@@ -302,7 +302,7 @@ describe("Google Drive", () => {
       if (url.endsWith("/storage/dropbox")) return { body: { reader: { connected: false, app_key: "", account: null }, writer: { connected: false, app_key: "", account: null } } };
       return { body: {} };
     });
-    renderApp("/settings");
+    renderApp("/settings/storage");
     expect(await screen.findByText("http://localhost:8000/api/v1/storage/google/callback")).toBeInTheDocument();
     const u = userEvent.setup();
     await u.click(screen.getByLabelText("OAuth client ID"));

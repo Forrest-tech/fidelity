@@ -234,6 +234,12 @@
         "help2": "OAuth 同意屏幕：选择 Internal（Workspace）或 External，并把自己加为测试用户。",
         "help3": "凭据 → 创建凭据 → OAuth 客户端 ID → 类型选“Web 应用”；添加上面显示的重定向 URI。",
         "help4": "把客户端 ID 和密钥复制到本页，保存，然后对每个权限点“连接”。"
+      },
+      "nav": {
+        "account": "账号",
+        "storage": "网盘",
+        "ai": "AI",
+        "sections": "设置分类"
       }
     },
     "users": {
@@ -408,6 +414,39 @@
         "result": "结果",
         "library": "纠正库",
         "cut": "后面的内容没有显示。"
+      },
+      "places": {
+        "title": "拿不准的地方",
+        "page": "第 {{n}} 页",
+        "kind": {
+          "reading": "读法不同",
+          "numbers": "数字",
+          "text": "文字",
+          "headings": "标题",
+          "tables": "表格",
+          "formula": "公式"
+        },
+        "notInText": "结果里找不到这个读法的原文。",
+        "readings": "读法:",
+        "use": "用“{{text}}”",
+        "aiSays": "AI 建议",
+        "aiUnsure": "AI 拿不准。",
+        "checkYourself": "含数字:请自己核对",
+        "useAi": "用这个建议",
+        "notRight": "不对",
+        "askAi": "问问 AI",
+        "explain": "解释一下",
+        "decision": {
+          "adopted": "已采用",
+          "modified": "改后采用",
+          "rejected": "不对"
+        },
+        "status": {
+          "blocked": "没有发给 AI。",
+          "error": "AI 没有回答。",
+          "invalid": "回答违反规则,已丢弃。"
+        },
+        "showAll": "显示全部 {{count}} 处"
       }
     },
     "corrections": {
@@ -445,6 +484,67 @@
       "later": "以后再说",
       "appliedDone_one": "完成:{{count}} 份文档有改动。",
       "appliedDone_other": "完成:{{count}} 份文档有改动。"
+    },
+    "ai": {
+      "intro": "接入模型,处理系统拿不准的地方。AI 只提建议:任何改动都要经过人或精确的纠正规则。",
+      "master": "使用 AI",
+      "on": "已开启",
+      "off": "已关闭 — 各技能回到“规则 + 人工”",
+      "providers": "提供商与密钥",
+      "noProviders": "还没有提供商,在下面添加。",
+      "keyEnds": "密钥 ••••{{last4}}",
+      "testConnection": "测试连接",
+      "testOk": "可用({{s}} 秒)",
+      "testFailed": "不可用",
+      "remove": "删除",
+      "removeConfirm": "删除这个提供商和它的密钥?用它的技能会回到“规则 + 人工”。",
+      "models": "模型(输入名称后回车)",
+      "modelsOf": "{{name}} 的模型",
+      "addProvider": "添加提供商",
+      "provider": "提供商",
+      "apiKey": "API 密钥",
+      "address": "接口地址(只能 https)",
+      "add": "添加",
+      "keyNote": "密钥加密存放在服务器上,界面只显示末四位。",
+      "skill": {
+        "arbitrate": "读数仲裁",
+        "explain": "差异说明"
+      },
+      "skillHint": {
+        "arbitrate": "两个 OCR 引擎读法不同时,帮着选一个",
+        "explain": "用一句话说明某处为什么可能有差异(只显示)"
+      },
+      "model": "模型",
+      "level": "调用方式",
+      "level0": "关闭",
+      "level1": "点了才问",
+      "level2": "默认调用",
+      "budget": "每月预算",
+      "cap": "每月最多调用次数",
+      "none": "不用(规则 + 人工)",
+      "thisMonth": "本月:调用 {{calls}} 次,{{cached}} 次直接用了记住的答案,花费 ${{spend}}",
+      "noDecisions": "还没有人做决定",
+      "adoption": "{{n}} 条建议里人采纳了 {{pct}}%",
+      "blocked": "{{n}} 次被拦下",
+      "errors": "{{n}} 次出错",
+      "paused": "连续出错,已暂停,{{min}} 分钟后再试。",
+      "save": "保存",
+      "test": "用人确认过的样本测试({{n}})",
+      "score": "{{n}} 个样本答对 {{score}}%",
+      "scope": "发送范围",
+      "scopeHint": "只有这些输入文件夹里的文档会发送,而且只发拿不准的那一小处和前后几个词,从不发整份文档。",
+      "allowed": "允许发送的文件夹",
+      "allowedPlaceholder": "输入文件夹,例如 /as 3500,然后回车",
+      "blockLicensed": "屏蔽带许可水印(“Licensed to …”)的文档",
+      "memory": "系统记住的东西",
+      "memRules": "纠正规则(不用问 AI)",
+      "memCache": "记住的答案(问过一次,直接复用)",
+      "memExamples": "人确认过的地方(作为示例发给 AI)",
+      "memoryHint": "先用最便宜的:规则,其次记住的答案,最后才带着相似案例问 AI。",
+      "danger": "危险操作",
+      "wipeHint": "删除全部密钥。所有技能回到“规则 + 人工”。",
+      "wipe": "删除全部密钥",
+      "wipeConfirm": "现在删除全部 AI 密钥?"
     }
   }
 }

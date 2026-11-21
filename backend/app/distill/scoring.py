@@ -115,8 +115,18 @@ def findings(rep: dict, limit: int = 200) -> list:
                     "detail": ex.get("detail") if isinstance(ex, dict) else str(ex)})
     for page in sorted(set(((rep.get("unreadable") or {}).get("pages") or []))):
         out.append({"kind": "formula", "page": page, "detail": "text layer cannot be decoded"})
+    # scanned pages: each place the two OCR engines read differently, with both readings (a person or the AI picks)
+    read_pages = set()
+    if rep.get("route") == "ocr":
+        for pg in rep.get("pages") or []:
+            for pair in (pg.get("disagreements") or [])[:10]:
+                if isinstance(pair, (list, tuple)) and len(pair) == 2 and (pair[0] or pair[1]):
+                    out.append({"kind": "reading", "page": pg.get("page"), "detail": f"{pair[0]} / {pair[1]}",
+                                "a": str(pair[0]), "b": str(pair[1])})
+                    read_pages.add(pg.get("page"))
     for page in (rep.get("review_pages") or []):
-        out.append({"kind": "text", "page": page, "detail": "the two OCR engines disagree"})
+        if page not in read_pages:
+            out.append({"kind": "text", "page": page, "detail": "the two OCR engines disagree"})
     return out[:limit]
 
 
