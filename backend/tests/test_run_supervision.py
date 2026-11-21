@@ -146,3 +146,30 @@ def test_startup_takes_back_running_syncs_and_marks_the_rest(tmp_path, monkeypat
 def test_a_sync_without_its_resume_state_is_an_interrupted_run_not_an_error(tmp_path):
     with pytest.raises(Interrupted):
         S._finish({"id": "x1"}, {"source_link": SRC}, -1, "[1] /x.pdf\n", lambda *a: None)
+
+
+# ------------------------------------------------------------------ a run cannot be ended by closing a window
+import sys as _sys  # noqa: E402
+
+import pytest as _pytest  # noqa: E402
+
+
+@_pytest.mark.skipif(_sys.platform != "win32", reason="console windows are a Windows matter")
+def test_a_run_gets_no_console_window_that_someone_could_close(tmp_path):
+    """Regression: a venv python.exe is a launcher; with DETACHED_PROCESS the real interpreter got a visible console
+    window, and closing it ended the run with 0xC000013A in the middle of OCR."""
+    import os
+    from app.jobs import sync_job as S
+    out = tmp_path / "w.txt"
+    code = "import ctypes; open(r'%s', 'w').write(str(ctypes.windll.kernel32.GetConsoleWindow()))" % out
+    with open(os.devnull, "w") as fh:
+        S._spawn([_sys.executable, "-c", code], dict(os.environ), fh).wait(timeout=60)
+    assert out.read_text() == "0"
+
+
+@_pytest.mark.parametrize("code", [0xC000013A, -1073741510])
+def test_a_run_stopped_from_outside_is_reported_as_interrupted(code, tmp_path, monkeypatch):
+    from app.jobs import sync_job as S
+    monkeypatch.setattr(S, "summary_path", lambda jid: str(tmp_path / f"{jid}.json"))
+    with _pytest.raises(S.Interrupted, match="start it again"):
+        S._finish({"id": "jx"}, {"source_link": "/x"}, code, "OCR page 5/80\n", {})
