@@ -210,3 +210,37 @@ def test_a_waiting_scan_is_passed_at_most_twice(world, monkeypatch):
     assert len(order) == 9
     i = order.index("/T2_scan.md")
     assert 3 <= i <= 5 < len(order) - 1      # it did wait, at most two files passed it, and it was not left to the end
+
+
+def test_a_file_the_web_side_has_no_result_for_is_read_again(world, tmp_path):
+    """A run whose events were lost (its supervisor died) left results in the room's own ledger that the page never
+    received; those files were then skipped as "unchanged" and showed as never distilled for good."""
+    src, store, run, live = world
+    room = tmp_path / "room"
+    ev = tmp_path / "e.jsonl"
+    assert run("--dry-run", "--room-dir", str(room), "--events", str(ev)) == 0
+    (room / "known.json").write_text(json.dumps(["/Doc0.md", "/Doc1.md"]), encoding="utf-8")   # the page has two
+    ev2 = tmp_path / "e2.jsonl"
+    assert run("--dry-run", "--room-dir", str(room), "--events", str(ev2)) == 0
+    evs = [json.loads(l) for l in ev2.read_text(encoding="utf-8").splitlines()]
+    assert {e["rel"] for e in evs if e["type"] == "unchanged"} == {"/Doc0.md", "/Doc1.md"}
+    assert {e["rel"] for e in evs if e["type"] == "file"} == {f"/Doc{i}.md" for i in range(2, 6)}
+
+
+def test_the_start_of_a_run_rides_out_a_dropped_connection(world, monkeypatch):
+    """Seen for days: the TLS connection to Dropbox drops (SSLEOFError) while signing in and listing; one drop
+    used to end the run at once."""
+    import ssl
+    src, store, run, live = world
+    monkeypatch.setattr(SY, "_BACKOFF", (0, 0, 0))
+    real, calls = src.snapshot, {"n": 0}
+
+    def flaky():
+        calls["n"] += 1
+        if calls["n"] < 3:
+            raise ssl.SSLEOFError(8, "EOF occurred in violation of protocol")
+        return real()
+
+    src.snapshot = flaky
+    assert run("--workers", "1") == 0
+    assert calls["n"] >= 3 and "/out/src/Doc0.md.md" in store.files

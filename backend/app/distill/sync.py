@@ -57,7 +57,9 @@ def save_state(work, state):
 # A long run makes thousands of requests; one dropped connection (seen in testing: SSLEOFError
 # while downloading from Dropbox) must not end a 41-file run. Transient errors are retried with
 # backoff; a file that still fails is reported as FAIL with the reason and the run carries on.
-_BACKOFF = (2, 5, 15)
+# Seen on this machine for days in a row: the TLS connection to Dropbox drops now and then (SSLEOFError,
+# "UNEXPECTED_EOF_WHILE_READING"), sometimes for a minute or two. Wait up to about 3.5 minutes before giving up.
+_BACKOFF = (2, 5, 15, 30, 60, 90)
 
 
 def _transient(e) -> bool:
@@ -104,7 +106,18 @@ def _check_space(work, size):
                          f"about {need / 1e9:.1f} GB needed for the next file — stopped before downloading")
 
 
-def _skip(a, ledger, rledger, rel, content_hash) -> bool:
+def _known(room_dir):
+    """The files whose results the web side has (written by it before a run), or None when it did not say.
+    A room's own ledger can hold a result the web side never received (a run whose events were lost); such a file
+    is read again instead of being skipped while the page shows it as never distilled."""
+    try:
+        with open(os.path.join(room_dir, "known.json"), encoding="utf-8") as f:
+            return set(json.load(f))
+    except (OSError, ValueError, TypeError):
+        return None
+
+
+def _skip(a, ledger, rledger, rel, content_hash, known=None) -> bool:
     """Is this file already done for this content and pipeline version?
     With a room folder: a stored result of any quality counts; a file that was published (PASS) must also be in the
     publishing ledger when this run publishes. Without one: the publishing ledger decides, as before."""
@@ -114,6 +127,8 @@ def _skip(a, ledger, rledger, rel, content_hash) -> bool:
         return ledger.up_to_date(rel, content_hash, R.PIPELINE_VERSION)
     e = rledger.docs.get(rel)
     if not (e and e["content_hash"] == content_hash and e["pipeline"] == R.PIPELINE_VERSION):
+        return False
+    if known is not None and rel not in known:
         return False
     return a.dry_run or e["verdict"] not in ("PASS", "METADATA") or ledger.up_to_date(rel, content_hash, R.PIPELINE_VERSION)
 
@@ -132,6 +147,7 @@ def _publish_accepted(a, src, dst, ev, dest_root, stage_root, archive_root, live
     when = _dt.datetime.now().astimezone().isoformat(timespec="seconds")
     pending, failed = [], []
     items = plan["items"]
+    errors = []
     print(f"publishing {len(items)} accepted document(s)  ->  output {dst.provider}:{dest_root}", flush=True)
     live = live or P.LiveState(None)
     live.set(stage="running", total=len(items), queued=[it["rel"] for it in items])
@@ -139,20 +155,16 @@ def _publish_accepted(a, src, dst, ev, dest_root, stage_root, archive_root, live
     def send(it):
         rel, key = it["rel"], AC.live_key(it["out_dir"])
         live.file(rel, stage="uploading")
-        base = os.path.join(out, it["out_dir"])
+        # The walk and the relative paths both use the long (\\?\) form: mixing it with the plain form failed every
+        # multi-file document on Windows ("path is on mount '\\?\C:', start on mount 'C:'"), so nothing was sent.
         files = {}
-        paths = [("", base)] if os.path.isfile(R.longpath(base)) else [
-            (os.path.relpath(os.path.join(r_, fn_), base).replace(os.sep, "/"), os.path.join(r_, fn_))
-            for r_, _, fns_ in os.walk(R.longpath(base)) for fn_ in sorted(fns_)]
-        if not paths:
-            raise FileNotFoundError("the distilled result is no longer on this machine; run the room again")
-        for relpath, lp_ in paths:
-            with open(R.longpath(lp_), "rb") as fh:
-                data = fh.read()
-            if lp_.lower().endswith(".md"):
+        for relpath, data in _read_files(os.path.join(out, it["out_dir"])).items():
+            if (relpath or it["out_dir"]).lower().endswith(".md"):
                 data = AC.accept_markdown(data.decode("utf-8"), it.get("by") or "", when, it.get("accuracy"),
                                           bool(it.get("forced"))).encode("utf-8")
             files[relpath] = data
+        if not files:
+            raise FileNotFoundError("the distilled result is no longer on this machine; run the room again")
         _retry(lambda: pub.stage(key, files), "upload")
         return key, len(files)
 
@@ -168,6 +180,7 @@ def _publish_accepted(a, src, dst, ev, dest_root, stage_root, archive_root, live
             except Exception as e:                 # noqa: BLE001 - one document failing must not stop the others
                 print(f"  NOT published: {_err(e)}", flush=True)
                 failed.append(rel)
+                errors.append(_err(e))
                 ev.emit("publish_failed", rel=rel, error=_err(e))
                 live.done(rel, "FAIL")
                 continue
@@ -186,6 +199,10 @@ def _publish_accepted(a, src, dst, ev, dest_root, stage_root, archive_root, live
         report["published_run"] = stamp
         print(f"\npromoted {len(pending)} document(s); undo with: python -m app.distill.sync --rollback {stamp}", flush=True)
     print(json.dumps(report, indent=1), flush=True)
+    if failed:
+        # a publishing run where documents were not sent must not look done: the job fails and says why
+        raise SystemExit(f"{len(failed)} of {len(items)} document(s) could not be sent to the output folder"
+                         f"{' (the others were)' if pending else ''}: {errors[0]}")
     return 0
 
 
@@ -492,7 +509,7 @@ def main(argv=None):
 
 def _distill_run(a, src, dst, ev, live, workers, downloads, src_name, stamp, out, rledger, cache,
                  dest_root, stage_root, archive_root):
-    before = src.snapshot()
+    before = _retry(src.snapshot, "listing the input folder")   # also the first call: signing in to Dropbox
     print(f"files to check: {sum(1 for r in before if r.lower().endswith(SUPPORTED))}", flush=True)
     report = {"source": src.label, "source_provider": src.provider, "dest": dest_root,
               "dest_provider": dst.provider if dst else "", "run": stamp, "documents": []}
@@ -504,6 +521,7 @@ def _distill_run(a, src, dst, ev, live, workers, downloads, src_name, stamp, out
     ledger = Ledger(os.path.join(a.work, "ledger.json"), src.label)
 
     # ---- which files this run reads (cheap: decided from the listing alone)
+    known = _known(a.room_dir) if a.room_dir else None
     plan = []
     for rel, f in sorted(before.items()):
         name = rel.rsplit("/", 1)[-1]
@@ -523,7 +541,7 @@ def _distill_run(a, src, dst, ev, live, workers, downloads, src_name, stamp, out
             live.skipped()
             continue
         seen_hash[f["content_hash"]] = rel
-        if _skip(a, ledger, rledger, rel, f["content_hash"]):
+        if _skip(a, ledger, rledger, rel, f["content_hash"], known):
             print(f"unchanged since last run, skipped: {rel}", flush=True)
             report.setdefault("unchanged", []).append(rel)
             ev.emit("unchanged", rel=rel)

@@ -105,10 +105,30 @@ def test_one_missing_result_does_not_stop_the_others(world, tmp_path):
     os.remove(os.path.join(room, "out", files["/Guide.md"]["out_dir"]))
     plan, _ = _plan(tmp_path, files)
     ev = str(tmp_path / "p.jsonl")
-    assert run("--room-dir", room, "--publish-from", plan, "--events", ev) == 0
+    with pytest.raises(SystemExit, match=r"1 of 2 document\(s\) could not be sent to the output folder \(the others were\)"):
+        run("--room-dir", room, "--publish-from", plan, "--events", ev)     # the job fails and says why, not "done"
     evs = _events(ev)
     assert [e["rel"] for e in evs if e["type"] == "publish_failed"] == ["/Guide.md"]
     assert "/out/src/Note.md.md" in store.files and "/out/src/Guide.md.md" not in store.files
+
+
+def test_a_result_that_is_a_folder_of_several_files_is_published(world, tmp_path):
+    r"""A long document is distilled into a folder of chapters. On Windows its files were read through the long
+    (\\?\) path but named against the plain one, which failed every such document: nothing reached the output."""
+    import os
+    _, store, run = world
+    room, files = _distill(run, tmp_path)
+    base = os.path.join(room, "out", files["/Guide.md"]["out_dir"])
+    os.remove(base)
+    os.makedirs(os.path.join(base, "chapters"))
+    for name, text in (("README.md", "# Guide\n"), ("chapters/01.md", "Step 1 uses 12 mm board.\n")):
+        with open(os.path.join(base, name), "w", encoding="utf-8") as fh:
+            fh.write(text)
+    plan, _ = _plan(tmp_path, {"/Guide.md": files["/Guide.md"]})
+    assert run("--room-dir", room, "--publish-from", plan) == 0
+    assert {k for k in store.files if k.startswith("/out/src/Guide.md.md/")} == {
+        "/out/src/Guide.md.md/README.md", "/out/src/Guide.md.md/chapters/01.md"}
+    assert store.files["/out/src/Guide.md.md/chapters/01.md"].startswith(b"Step 1 uses 12 mm")
 
 
 def test_publishing_needs_an_output_folder_and_a_room_folder(world, tmp_path, monkeypatch):

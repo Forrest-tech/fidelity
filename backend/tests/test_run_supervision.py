@@ -173,3 +173,22 @@ def test_a_run_stopped_from_outside_is_reported_as_interrupted(code, tmp_path, m
     monkeypatch.setattr(S, "summary_path", lambda jid: str(tmp_path / f"{jid}.json"))
     with _pytest.raises(S.Interrupted, match="start it again"):
         S._finish({"id": "jx"}, {"source_link": "/x"}, code, "OCR page 5/80\n", {})
+
+
+def test_the_live_status_survives_windows_refusing_to_replace_a_file_being_read(monkeypatch, tmp_path):
+    """Windows will not replace a file another process has open (the page reading the status). That error used to
+    end the supervision while the run went on unseen; now the status is simply written again on the next change."""
+    from app.jobs import sync_job as SJ
+    monkeypatch.setattr(SJ, "LOG_DIR", str(tmp_path))
+
+    def refuse(a, b):
+        raise PermissionError(5, "Access is denied")
+
+    monkeypatch.setattr(SJ.os, "replace", refuse)
+    live = SJ.Live("j-refused")
+    live.feed("[1] /a.pdf")
+    live.write(force=True)                     # no exception
+    monkeypatch.undo()
+    monkeypatch.setattr(SJ, "LOG_DIR", str(tmp_path))
+    live.write()                               # the next write goes through
+    assert (tmp_path / "j-refused.live.json").exists()

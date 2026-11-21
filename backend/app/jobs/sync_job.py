@@ -170,9 +170,14 @@ class Live:
         if force or key != getattr(self, "_last_key", None) or self.now() - self._written >= 1.0:
             self._written, self._last_key = self.now(), key
             tmp = live_path(self.jid) + ".tmp"
-            with open(tmp, "w", encoding="utf-8") as f:
-                json.dump(self.state, f)
-            os.replace(tmp, live_path(self.jid))
+            try:
+                with open(tmp, "w", encoding="utf-8") as f:
+                    json.dump(self.state, f)
+                os.replace(tmp, live_path(self.jid))
+            except OSError:
+                # Windows refuses to replace a file another process has open (the page reading it): that crashed the
+                # supervisor and left the run going unseen. The status is written again on the next change.
+                self._last_key = None
 
 
 # ------------------------------------------------------------------ running, supervising, cancelling
@@ -322,12 +327,20 @@ def _supervise(job, proc, p, report):
             if line.strip():
                 report(percent(), line.strip()[:160])
 
+    def guarded(fn, what):
+        """Bookkeeping (log, live status, file rows) must never end the supervision of a run that is still going:
+        an error here used to mark the job failed while its process went on, unseen, beside the next run."""
+        try:
+            fn()
+        except Exception as e:                                 # noqa: BLE001
+            print(f"[supervise {jid}] {what} failed, carrying on: {type(e).__name__}: {e}", flush=True)
+
     try:
         while True:
-            feed()
+            guarded(feed, "reading the log")
             now = time.time()
             if reader and now - last_poll >= 1.0:
-                reader.poll()
+                guarded(reader.poll, "reading the events")
                 last_poll = now
             if now - last_beat >= 5.0:
                 _db_note("UPDATE job SET heartbeat_at=? WHERE id=?", (now, jid))
@@ -351,6 +364,25 @@ def _supervise(job, proc, p, report):
     else:
         end_live(jid)                          # also when the run was stopped mid-file: nothing shows as busy
     return code, "".join(lines)
+
+
+def write_known(room_id):
+    """Tell the run which files of the room already have a result on the web side (see sync._known)."""
+    def _rows():
+        con = db.trust_rw()
+        try:
+            return [r[0] for r in con.execute("SELECT rel FROM room_file WHERE room_id=? AND outcome IS NOT NULL", (room_id,))]
+        finally:
+            con.close()
+    try:
+        d = room_dir(room_id)
+        os.makedirs(d, exist_ok=True)
+        tmp = os.path.join(d, "known.json.tmp")
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(_rows(), f, ensure_ascii=False)
+        os.replace(tmp, os.path.join(d, "known.json"))
+    except Exception:                                          # noqa: BLE001 - without it the run skips as before
+        pass
 
 
 def _read_live(jid):
@@ -435,6 +467,8 @@ def handle_sync(job, report):
         pass
     if p.get("room_id"):
         p = dict(p, live=live_path(jid))
+        if not p.get("publish_from"):
+            write_known(p["room_id"])
         if p.get("parallel"):                   # the capacity points the queue gave this run (text file 1, scan 2)
             p["workers"] = max(1, int(job.get("points") or 1))
     cmd = command(p, events_path(jid)) if p.get("room_id") else command(p)
@@ -442,7 +476,12 @@ def handle_sync(job, report):
         proc = _spawn(cmd, env, log)
     _procs[jid] = proc
     _db_note("UPDATE job SET pid=?, heartbeat_at=? WHERE id=?", (proc.pid, time.time(), jid))
-    code, text = _supervise(job, proc, p, report)
+    try:
+        code, text = _supervise(job, proc, p, report)
+    except BaseException:
+        # never leave a run going that nobody follows: the next run of the room would work beside it
+        _kill_tree(proc)
+        raise
     return _finish(job, p, code, text, report)
 
 
