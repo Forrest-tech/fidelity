@@ -202,9 +202,10 @@ def reapply(room_id: str, rel: str, rules: list | None = None) -> dict:
     con = db.trust_rw()
     try:
         # a result that changed after it was accepted has to be accepted again
-        con.execute("UPDATE room_file SET corrections=?, rule_checks=?, confirmed=CASE WHEN ? THEN 0 ELSE confirmed END, "
-                    "updated_at=? WHERE room_id=? AND rel=?",
-                    (json.dumps(items, ensure_ascii=False), checks, 1 if changed else 0, db.now(), room_id, rel))
+        con.execute("UPDATE room_file SET corrections=?, rule_checks=?, updated_at=? WHERE room_id=? AND rel=?",
+                    (json.dumps(items, ensure_ascii=False), checks, db.now(), room_id, rel))
+        if changed:
+            con.execute("UPDATE room_file SET confirmed=0 WHERE room_id=? AND rel=?", (room_id, rel))
         con.commit()
     finally:
         con.close()
