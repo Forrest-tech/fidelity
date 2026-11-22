@@ -147,6 +147,31 @@ def test_a_file_removed_from_the_source_before_it_was_distilled_disappears_but_r
     assert rels == {"/a.pdf"}
 
 
+def test_a_deleted_duplicate_or_unreadable_file_leaves_the_list_but_a_result_stays():
+    r = _room(source=SRC)
+    files = [{"rel": f"/{x}.pdf", "size": 1, "kind": "pdf"} for x in ("a", "dup", "bad")]
+    _load(r["id"], [{"t": 1, "type": "listing", "files": files}, _file_event("/a.pdf", 100.0),
+                    {"t": 2, "type": "file", "rel": "/dup.pdf", "kind": "pdf", "outcome": "skipped", "reason": "duplicate",
+                     "detail": "same content as /a.pdf"},
+                    {"t": 3, "type": "file", "rel": "/bad.pdf", "kind": "pdf", "outcome": "unprocessable", "reason": "network"}])
+    assert {f["rel"] for f in R.find_files(R.get_room(r["id"]))["files"]} == {"/a.pdf", "/dup.pdf", "/bad.pdf"}
+    _load(r["id"], [{"t": 5, "type": "listing", "files": []}])
+    assert {f["rel"] for f in R.find_files(R.get_room(r["id"]))["files"]} == {"/a.pdf"}
+
+
+def test_a_file_that_failed_on_the_network_is_read_again_by_the_next_run(tmp_path, monkeypatch):
+    from app.jobs import sync_job as SJ
+    r = _room(source=SRC)
+    files = [{"rel": f"/{x}.pdf", "size": 1, "kind": "pdf"} for x in ("a", "net", "dl", "prot")]
+    _load(r["id"], [{"t": 1, "type": "listing", "files": files}, _file_event("/a.pdf", 100.0),
+                    {"t": 2, "type": "file", "rel": "/net.pdf", "kind": "pdf", "outcome": "unprocessable", "reason": "network"},
+                    {"t": 3, "type": "file", "rel": "/dl.pdf", "kind": "pdf", "outcome": "unprocessable", "reason": "download"},
+                    {"t": 4, "type": "file", "rel": "/prot.pdf", "kind": "pdf", "outcome": "unprocessable", "reason": "protected"}])
+    monkeypatch.setattr(SJ, "room_dir", lambda rid: str(tmp_path))
+    SJ.write_known(r["id"])
+    assert set(json.load(open(tmp_path / "known.json", encoding="utf-8"))) == {"/a.pdf", "/prot.pdf"}
+
+
 def test_a_scanned_file_makes_later_runs_of_the_room_take_two_points():
     r = _room(source=SRC)
     assert r["points"] == 1
