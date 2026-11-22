@@ -91,9 +91,9 @@ test.describe("sign-in page", () => {
 
   test("LOGIN-08 Chinese: the page and its messages are in Chinese", async ({ page }) => {
     await page.goto("/login");
-    await page.getByRole("radio", { name: "中文" }).check({ force: true }).catch(() => page.getByText("中文").click());
+    await page.getByText("中文", { exact: true }).click();
     await expect(page.getByRole("heading", { level: 1, name: "登录 Fidelity" })).toBeVisible();
-    await page.getByRole("button", { name: "登录" }).click();
+    await page.getByRole("button", { name: "登录", exact: true }).click();
     await expect(page.getByText("请输入邮箱地址。")).toBeVisible();
     await page.getByText("English").click();
   });

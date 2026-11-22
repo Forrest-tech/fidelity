@@ -15,13 +15,13 @@ curl -fsS "$BASE/api/v1/health" >/dev/null
 echo "health ok"
 curl -fsS "$BASE/api/v1/setup" | grep -q '"needs_setup":true'
 curl -fsS -X POST "$BASE/api/v1/setup" -H 'Content-Type: application/json' \
-  -d '{"email":"smoke-admin@example.com","password":"smoke-test-password"}' >/dev/null
+  -d '{"email":"smoke-admin@example.com","password":"smoke-test-password","altcha":"'"$(solve)"'"}' >/dev/null
 curl -fsS "$BASE/api/v1/setup" | grep -q '"needs_setup":false'
 echo "first administrator created; setup locked"
 JAR="$(mktemp)"
 code=$(curl -sS -o /dev/null -w '%{http_code}' -X POST "$BASE/api/v1/auth/login" -d 'username=smoke-admin@example.com&password=smoke-test-password')
 [ "$code" = "400" ] || { echo "sign-in without the bot check was not refused ($code)"; exit 1; }
-curl -fsS -c "$JAR" -X POST "$BASE/api/v1/auth/login" --data-urlencode 'username=smoke-admin@example.com'   --data-urlencode 'password=smoke-test-password' --data-urlencode "altcha=$(solve)" >/dev/null
+curl -fsS -c "$JAR" -X POST "$BASE/api/v1/auth/login" --data-urlencode 'username=smoke-admin@example.com' --data-urlencode 'password=smoke-test-password' --data-urlencode "altcha=$(solve)" >/dev/null
 curl -fsS -b "$JAR" "$BASE/api/v1/me" | grep -q '"role":"admin"'
 curl -fsS -b "$JAR" "$BASE/api/v1/storage/dropbox" | grep -q '"connected":false'
 curl -fsS "$BASE/" | grep -qi '<div id="root"'

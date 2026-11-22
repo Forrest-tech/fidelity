@@ -190,10 +190,17 @@ def test_success_clears_the_failures():
         assert c.post("/api/v1/auth/login", data=creds(pw="wrong-wrong-wrong")).status_code == 400
 
 
-def test_other_sign_in_endpoints_are_throttled_at_60_a_minute():
+def test_other_sign_in_endpoints_are_throttled_per_minute(monkeypatch):
+    monkeypatch.setenv("FIDELITY_AUTH_CALLS_PER_MINUTE", "60")
     c = client("10.4.0.1")
     codes = [c.get("/api/v1/auth/challenge").status_code for _ in range(61)]
     assert codes[:60] == [200] * 60 and codes[60] == 429
+    assert c.get("/api/v1/auth/options").status_code == 200                  # the page still loads
+
+
+def test_default_limit_leaves_room_for_an_office_behind_one_address():
+    c = client("10.4.0.2")
+    assert all(c.get("/api/v1/auth/challenge").status_code == 200 for _ in range(120))
 
 
 def test_inactive_user_cannot_sign_in():

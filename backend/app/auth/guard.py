@@ -4,7 +4,9 @@ Rate limits use `limits` (MIT; the library behind slowapi and Flask-Limiter) wit
   * failed password sign-ins: 5 per client address per 5 minutes, and 10 per account per 15 minutes
     (stops both one machine guessing many accounts and many machines guessing one account);
   * the other sign-in endpoints (captcha challenge, first-run setup, Google/Microsoft/GitHub sign-in):
-    60 requests per client address per minute.
+    300 requests per client address per minute (FIDELITY_AUTH_CALLS_PER_MINUTE). Generous on purpose: a
+    whole office can reach the server through one proxy address, and the bot check already makes each
+    attempt cost work; this only stops floods.
 A blocked request gets HTTP 429 with a Retry-After header.
 """
 import math
@@ -27,7 +29,9 @@ MAX_FAILURES = 5
 WINDOW_SECONDS = 300
 FAILS_PER_IP = parse("%d/%d seconds" % (MAX_FAILURES, WINDOW_SECONDS))
 FAILS_PER_ACCOUNT = parse("10/15 minutes")
-AUTH_CALLS_PER_IP = parse("60/minute")
+def _auth_calls_per_ip():
+    import os
+    return parse("%d/minute" % max(1, int(os.environ.get("FIDELITY_AUTH_CALLS_PER_MINUTE", "300"))))
 
 _storage = MemoryStorage()
 _limiter = MovingWindowRateLimiter(_storage)
@@ -97,6 +101,8 @@ def _throttled_auth_path(path: str, method: str) -> bool:
         return False                                   # has its own failure-based limit
     if path == "/api/v1/setup":
         return method == "POST"
+    if path == "/api/v1/auth/options":
+        return False                                   # what the sign-in page offers: a cheap read
     return path.startswith("/api/v1/auth/") and method in ("GET", "POST")
 
 
@@ -105,9 +111,10 @@ class GuardMiddleware(BaseHTTPMiddleware):
         path, method = request.url.path, request.method
         if _throttled_auth_path(path, method):
             ip = client_ip(request)
-            if not _limiter.hit(AUTH_CALLS_PER_IP, "auth", ip):
+            limit = _auth_calls_per_ip()
+            if not _limiter.hit(limit, "auth", ip):
                 return JSONResponse({"detail": "too many requests; try again later"}, status_code=429,
-                                    headers={"Retry-After": str(_retry_after(AUTH_CALLS_PER_IP, "auth", ip))})
+                                    headers={"Retry-After": str(_retry_after(limit, "auth", ip))})
         resp = await call_next(request)
         # sign-in is audited by its own route (it knows who signed in); everything else that changes data here
         if path.startswith("/api/") and method not in ("GET", "HEAD", "OPTIONS") and path != LOGIN_PATH:
