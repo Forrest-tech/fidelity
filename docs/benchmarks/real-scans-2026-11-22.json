@@ -1,0 +1,190 @@
+{
+ "date": "2026-11-22",
+ "rows": [
+  {
+   "edition": "AS/NZS 3500.1:2018",
+   "copy": "3500.1-2018  Plumbing and drainage - Water services.pdf",
+   "read_by": "native text (another copy)",
+   "truth": "3500.1-2018  Plumbing and drainage - Water services-已解锁.pdf",
+   "pages": 123,
+   "test_pages": 129,
+   "truth_pages": 129,
+   "cer": 0.0,
+   "word_recall": 1.0,
+   "number_recall": 1.0,
+   "number_extra": 0,
+   "pages_cer_le_1pct": 123,
+   "pages_all_numbers": 123,
+   "worst_pages": [
+    [
+     2,
+     1.0
+    ],
+    [
+     4,
+     1.0
+    ],
+    [
+     5,
+     1.0
+    ],
+    [
+     6,
+     1.0
+    ],
+    [
+     7,
+     1.0
+    ]
+   ]
+  },
+  {
+   "edition": "AS/NZS 3500.1:2021",
+   "copy": "AS-NZS_3500.1-2021 Printed Converted to Searchable.pdf",
+   "read_by": "another program's OCR layer",
+   "truth": "AS NZS 3500.1-2021.pdf",
+   "pages": 119,
+   "test_pages": 136,
+   "truth_pages": 132,
+   "cer": 0.1519,
+   "word_recall": 0.9508,
+   "number_recall": 0.9321,
+   "number_extra": 830,
+   "pages_cer_le_1pct": 0,
+   "pages_all_numbers": 13,
+   "worst_pages": [
+    [
+     40,
+     0.9
+    ],
+    [
+     111,
+     0.991
+    ],
+    [
+     110,
+     0.991
+    ],
+    [
+     109,
+     0.998
+    ],
+    [
+     112,
+     0.991
+    ]
+   ]
+  },
+  {
+   "edition": "AS/NZS 3500.1:2021",
+   "copy": "AS-NZS_3500.1-2021 Printed.pdf",
+   "read_by": "our OCR (two engines)",
+   "truth": "AS NZS 3500.1-2021.pdf",
+   "pages": 108,
+   "test_pages": 136,
+   "truth_pages": 132,
+   "cer": 0.1826,
+   "word_recall": 0.9425,
+   "number_recall": 0.9286,
+   "number_extra": 473,
+   "pages_cer_le_1pct": 2,
+   "pages_all_numbers": 12,
+   "worst_pages": [
+    [
+     40,
+     0.9
+    ],
+    [
+     39,
+     0.444
+    ],
+    [
+     76,
+     0.978
+    ],
+    [
+     77,
+     0.994
+    ],
+    [
+     104,
+     0.968
+    ]
+   ]
+  },
+  {
+   "edition": "AS/NZS 3500.3:2021",
+   "copy": "AS-NZS_3500.3-2021 Printed Converted to Searchable.pdf",
+   "read_by": "another program's OCR layer",
+   "truth": "AS NZS 3500.3-2021.pdf",
+   "pages": 180,
+   "test_pages": 202,
+   "truth_pages": 202,
+   "cer": 0.1339,
+   "word_recall": 0.9587,
+   "number_recall": 0.9168,
+   "number_extra": 559,
+   "pages_cer_le_1pct": 0,
+   "pages_all_numbers": 47,
+   "worst_pages": [
+    [
+     180,
+     0.961
+    ],
+    [
+     55,
+     0.833
+    ],
+    [
+     30,
+     0.333
+    ],
+    [
+     176,
+     0.875
+    ],
+    [
+     54,
+     0.8
+    ]
+   ]
+  },
+  {
+   "edition": "AS/NZS 3500.3:2021",
+   "copy": "AS-NZS_3500.3-2021 Printed.pdf",
+   "read_by": "our OCR (two engines)",
+   "truth": "AS NZS 3500.3-2021.pdf",
+   "pages": 176,
+   "test_pages": 202,
+   "truth_pages": 202,
+   "cer": 0.1514,
+   "word_recall": 0.9474,
+   "number_recall": 0.8917,
+   "number_extra": 640,
+   "pages_cer_le_1pct": 2,
+   "pages_all_numbers": 56,
+   "worst_pages": [
+    [
+     178,
+     0.824
+    ],
+    [
+     151,
+     0.382
+    ],
+    [
+     159,
+     0.66
+    ],
+    [
+     149,
+     0.642
+    ],
+    [
+     154,
+     0.69
+    ]
+   ]
+  }
+ ]
+}

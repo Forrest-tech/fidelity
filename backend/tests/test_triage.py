@@ -36,6 +36,31 @@ def test_scan_pdf_is_detected(tmp_path):
     assert t["class"] == "scan", t
 
 
+def _ocr_layer_pdf(path, picture_rect):
+    """A scanned page (one picture) with invisible OCR text over it, as "Converted to Searchable" PDFs are made."""
+    doc = pymupdf.open()
+    pm = pymupdf.Pixmap(pymupdf.csRGB, pymupdf.IRect(0, 0, 200, 260), False)
+    pm.set_rect(pm.irect, (240, 240, 240))
+    for _ in range(4):
+        pg = doc.new_page()
+        pg.insert_image(picture_rect(pg.rect), pixmap=pm)
+        for i in range(12):
+            pg.insert_text((72, 90 + 18 * i), "Clause 3.2 The minimum grade is 1:100 for 90 mm pipes.", fontsize=11,
+                           render_mode=3)
+    doc.save(path)
+    return path
+
+
+def test_a_scan_with_another_programs_ocr_layer_is_read_again_as_a_scan(tmp_path):
+    t = triage_pdf(_ocr_layer_pdf(str(tmp_path / "searchable.pdf"), lambda r: r))
+    assert t["class"] == "scan" and t.get("ocr_layer") is True and "OCR text layer" in t["reason"]
+
+
+def test_a_text_page_with_a_small_figure_stays_a_text_pdf(tmp_path):
+    p = _ocr_layer_pdf(str(tmp_path / "figure.pdf"), lambda r: pymupdf.Rect(72, 400, 300, 600))
+    assert triage_pdf(p)["class"] == "text"
+
+
 def test_password_protected(tmp_path):
     p = text_pdf(str(tmp_path / "pw.pdf"), encryption=pymupdf.PDF_ENCRYPT_AES_256, user_pw="secret", owner_pw="owner")
     assert triage_pdf(p)["class"] == "protected"
