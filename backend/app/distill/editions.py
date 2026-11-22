@@ -90,7 +90,7 @@ def _rank(row: dict) -> tuple:
             -len(row["rel"]))
 
 
-def registry(rows: list[dict]) -> list[dict]:
+def registry(rows: list[dict], code: dict | None = None) -> list[dict]:
     """Each row gets `edition`: {…identity, key, status, superseded_by, copy_of, copies}.
 
     key       — one edition (or one amendment, or one consolidated text) of one standard;
@@ -131,6 +131,7 @@ def registry(rows: list[dict]) -> list[dict]:
         for r in members:
             r["edition"]["copy_of"] = None if r is best else best["rel"]
             r["edition"]["copies"] = len(members)
+    refs = code or {}
     for r in out:
         e = r["edition"]
         if not e.get("key"):
@@ -139,6 +140,25 @@ def registry(rows: list[dict]) -> list[dict]:
         newer = bool(top and e.get("year") and top["year"] > e["year"])
         e["status"] = "superseded" if newer else "current"
         e["superseded_by"] = top["designation"] if newer else ""
+        # what the building code calls up (references.py): the authority, not "newest in this library"
+        called = refs.get(e["number"], [])
+        e["called_up_by"] = ", ".join(c["clauses"][:6]) + (" …" if len(c["clauses"]) > 6 else "")             if (c := next((c for c in called if c["year"] == e.get("year")), None)) else ""
+        code_top = max(called, key=lambda c: c["year"]) if called else None
+        # only on the library's newest edition: older ones already point to it
+        e["newer_edition"] = (code_top["designation"]
+                              if code_top and not newer and e.get("year") and code_top["year"] > e["year"] else "")
+    return out
+
+
+def missing_editions(rows: list[dict], code: dict | None) -> list[dict]:
+    """Editions the building code calls up, of standards this room holds, that the room does not hold."""
+    held = {(r["edition"].get("number"), r["edition"].get("year")) for r in rows if r["edition"].get("key")}
+    numbers = {n for n, _ in held}
+    out = []
+    for n in sorted(numbers):
+        for c in (code or {}).get(n, []):
+            if (n, c["year"]) not in held:
+                out.append({"designation": c["designation"], "title": c.get("title", ""), "clauses": c["clauses"]})
     return out
 
 
@@ -158,7 +178,14 @@ def stamp_lines(edition: dict | None) -> list[str]:
         lines.append(f"edition_status: {'superseded' if edition['status'] == 'superseded' else 'published'}")
     if edition.get("superseded_by"):
         lines.append(f"superseded_by: {q(edition['superseded_by'])}")
+    if edition.get("called_up_by"):
+        lines.append(f"called_up_by: {q(CODE + ' ' + edition['called_up_by'])}")
+    if edition.get("newer_edition"):
+        lines.append(f"newer_edition: {q(edition['newer_edition'] + ' (called up by ' + CODE + '; not held in this library)')}")
     return lines
+
+
+CODE = "NCC 2025"
 
 
 BANNER_MARK = "<!-- fidelity:edition -->"
@@ -169,5 +196,8 @@ def banner(edition: dict | None) -> str:
     if not edition or edition.get("status") != "superseded" or not edition.get("superseded_by"):
         return ""
     what = edition["designation"] + (f" Amendment {edition['amendment']}" if edition.get("amendment") is not None else "")
+    if edition.get("called_up_by"):                     # replaced here, yet the code still relies on it
+        return (f"{BANNER_MARK}\n> ⚠️ **Older edition.** {what} has been replaced by {edition['superseded_by']} in this "
+                f"library, but {CODE} still calls up this edition for {edition['called_up_by']}.\n")
     return (f"{BANNER_MARK}\n> ⚠️ **Superseded edition.** {what} has been replaced by {edition['superseded_by']} "
             f"(the latest edition in this library). Use it only for work under the older edition.\n")

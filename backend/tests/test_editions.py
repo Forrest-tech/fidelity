@@ -106,3 +106,41 @@ def test_a_file_the_gate_held_but_a_person_accepted_no_longer_says_fail():
     # a file the gate passed keeps its status
     passed = GATE_HELD.replace("pending_review", "auto_verified").replace('"FAIL — not trusted"', '"PASS"')
     assert "audit_status: auto_verified" in AC.accept_markdown(passed, "wang", "t", 99.9, False, ed)
+
+
+from app.distill import references as RF  # noqa: E402
+
+TABLE = ("No.\nDate\nTitle\nVolume One\nVolume Two\nHousing Provisions\nVolume Three\n"
+         "AS/NZS 3500 Part \n0\n2021\nPlumbing and drainage — Glossary of terms\nA1G4\nA1G4\nN/A\nA1G4\n"
+         "Referenced documents\nNCC 2025 Volume Three - Plumbing Code of Australia\nPage 208 \n"
+         "AS/NZS 3500 Part \n1\n2018 \nPlumbing and drainage — Water services\nN/A\nN/A\nN/A\nB5D6\n"
+         "AS/NZS 3500 Part \n1\n2025\nPlumbing and drainage — Water services\nN/A\nN/A\nN/A\nB1D3, B1D5, \nB1D6, B3D3\n"
+         "AS 3600\n2018\nConcrete structures (incorporating amendment 1)\nB1D4\nN/A\nN/A\nN/A\n")
+
+
+def test_the_codes_referenced_documents_table_is_read_row_by_row():
+    rows = {r["designation"]: r for r in RF.parse_table(TABLE)}
+    assert set(rows) == {"AS/NZS 3500.0:2021", "AS/NZS 3500.1:2018", "AS/NZS 3500.1:2025", "AS 3600:2018"}
+    assert rows["AS/NZS 3500.1:2018"]["clauses"] == ["B5D6"]
+    assert rows["AS/NZS 3500.1:2025"]["clauses"] == ["B1D3", "B1D5", "B1D6", "B3D3"]
+    assert rows["AS/NZS 3500.1:2025"]["title"] == "Plumbing and drainage — Water services"
+
+
+def test_the_shipped_ncc_2025_table_calls_up_the_2025_plumbing_editions():
+    by = RF.by_number(RF.load())
+    assert {r["year"] for r in by["3500.1"]} == {"2018", "2025"}
+    assert any(r["year"] == "2025" for r in by["3500.4"])
+
+
+def test_editions_say_what_the_code_calls_up_and_what_is_missing():
+    code = RF.by_number({"rows": RF.parse_table(TABLE)})
+    rows = {r["rel"]: r for r in E.registry([{"rel": rel, "outcome": "result", "accuracy": 99.9, "confirmed": 1,
+                                              "edition": E.identify(rel)} for rel in
+                                             ("/2018/3500.1-2018 Water services.pdf", "/2021/AS NZS 3500.1-2021.pdf")], code)}
+    e18, e21 = rows["/2018/3500.1-2018 Water services.pdf"]["edition"], rows["/2021/AS NZS 3500.1-2021.pdf"]["edition"]
+    assert e18["called_up_by"] == "B5D6" and e18["status"] == "superseded" and e18["newer_edition"] == ""
+    assert e21["called_up_by"] == "" and e21["newer_edition"] == "AS/NZS 3500.1:2025"
+    assert "still calls up this edition for B5D6" in E.banner(e18)
+    lines = "\n".join(E.stamp_lines(e21))
+    assert 'newer_edition: "AS/NZS 3500.1:2025 (called up by NCC 2025; not held in this library)"' in lines
+    assert [m["designation"] for m in E.missing_editions(list(rows.values()), code)] == ["AS/NZS 3500.1:2025"]

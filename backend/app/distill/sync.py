@@ -179,7 +179,8 @@ def _publish_accepted(a, src, dst, ev, dest_root, stage_root, archive_root, live
     ledger = Ledger(os.path.join(a.work, "ledger.json"), src.label)
     when = _dt.datetime.now().astimezone().isoformat(timespec="seconds")
     pending, failed = [], []
-    items = plan["items"]
+    withdraw = [it for it in plan["items"] if it.get("withdraw")]
+    items = [it for it in plan["items"] if not it.get("withdraw")]
     errors = []
     print(f"publishing {len(items)} accepted document(s)  ->  output {dst.provider}:{dest_root}", flush=True)
     live = live or P.LiveState(None)
@@ -231,6 +232,20 @@ def _publish_accepted(a, src, dst, ev, dest_root, stage_root, archive_root, live
             ev.emit("published", rel=rel, files=n, run=stamp)
         report["published_run"] = stamp
         print(f"\npromoted {len(pending)} document(s); undo with: python -m app.distill.sync --rollback {stamp}", flush=True)
+    for it in withdraw:                            # second copies of an edition: out of the live folder, archived
+        key = AC.live_key(it["out_dir"], src.name)
+        alt = [key[:-len(".pdf.md")]] if key.endswith(".pdf.md") else [key + ".pdf.md"]
+        try:
+            moved = _retry(lambda: pub.withdraw(key, alt), "withdraw")
+        except Exception as e:                     # noqa: BLE001
+            failed.append(it["rel"])
+            errors.append(_err(e))
+            ev.emit("publish_failed", rel=it["rel"], error=_err(e))
+            continue
+        print(f"withdrawn from the output folder (archived): {it['rel']} ({len(moved)} item(s))", flush=True)
+        ev.emit("withdrawn", rel=it["rel"], run=stamp)
+        report.setdefault("withdrawn", []).append(it["rel"])
+        report["published_run"] = stamp
     print(json.dumps(report, indent=1), flush=True)
     if failed:
         # a publishing run where documents were not sent must not look done: the job fails and says why

@@ -186,7 +186,7 @@ function QueueCard({ q, canEdit, rooms }: { q: QueueView; canEdit: boolean; room
 }
 
 // ------------------------------------------------------------------ editions (requirements v2, D-1 to D-5)
-interface EditionsView { standards: number; current: number; superseded: number; amendments: number; extra_copies: number; published_twice: number }
+interface EditionsView { standards: number; current: number; superseded: number; amendments: number; extra_copies: number; published_twice: number; code?: string; code_note?: string; missing?: { designation: string; title: string; clauses: string[] }[] }
 
 function EditionsLine({ room, canEdit, published }: { room: Room; canEdit: boolean; published: number }) {
   const { t } = useTranslation();
@@ -204,6 +204,11 @@ function EditionsLine({ room, canEdit, published }: { room: Room; canEdit: boole
       <b>{t("pages.distill.edition.title")}</b>
       <span className="fx-muted">{t("pages.distill.edition.summary", { standards: v.data.standards, current: v.data.current, superseded: v.data.superseded, amendments: v.data.amendments, copies: v.data.extra_copies })}</span>
       {v.data.published_twice > 0 && <span className="fx-pill warn" title={t("pages.distill.edition.twiceHint")}>{t("pages.distill.edition.twice", { count: v.data.published_twice })}</span>}
+      {!!v.data.missing?.length && (
+        <span className="fx-pill warn" title={[...v.data.missing.map((m) => `${m.designation} ${m.title}`), v.data.code_note ?? ""].filter(Boolean).join("\n")}>
+          {t("pages.distill.edition.missing", { code: v.data.code, count: v.data.missing.length, list: v.data.missing.map((m) => m.designation).join(", ") })}
+        </span>
+      )}
       {canEdit && published > 0 && (
         <button className="fx-btn sm" title={t("pages.distill.edition.restampHint")} disabled={stamp.isPending || isActive(room)} onClick={() => stamp.mutate()}>
           {t("pages.distill.edition.restamp")}

@@ -40,7 +40,7 @@ def accept_markdown(text: str, who: str, when: str, accuracy, forced: bool, edit
     for ln in lines:
         key = ln.split(":", 1)[0].strip() if ":" in ln else ""
         if key in ("accepted_by", "accepted_at", "accuracy") or key in stamp_keys or \
-                (stamp and key in ("edition", "amends", "amendment", "superseded_by")):
+                (stamp and key in ("edition", "amends", "amendment", "superseded_by", "called_up_by", "newer_edition")):
             continue                                            # replaced below
         if forced and key == "audit_status":
             ln = "audit_status: human_accepted"

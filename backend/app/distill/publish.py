@@ -97,10 +97,28 @@ class Publisher:
             d["state"] = "promoted"
             self._save()
 
+    def withdraw(self, key: str, also: list | None = None):
+        """Take a document out of the live folder: it moves to the archive (nothing is deleted) and the same
+        rollback brings it back. Used for a second copy of an edition that is already published."""
+        d = self.docs.setdefault(key, {"state": "withdrawn", "archived": [], "files": {}})
+        d["state"] = "withdrawn"
+        for old in [key] + list(also or []):
+            if self.s.list(self._live(old)):
+                self.s.move(self._live(old), self._arch(old))
+                d["archived"].append(old)
+        self._save()
+        return d["archived"]
+
     # --- rollback ---------------------------------------------------------------------
     def rollback(self):
         """Undo this run: new versions are moved back to staging, previous versions restored."""
         for key, d in self.docs.items():
+            if d["state"] == "withdrawn":
+                for old in d["archived"]:
+                    self.s.move(self._arch(old), self._live(old))
+                d["state"] = "rolled_back"
+                self._save()
+                continue
             if d["state"] != "promoted":
                 continue
             if self.s.list(self._live(key)):

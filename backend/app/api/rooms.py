@@ -155,6 +155,16 @@ def restamp(room_id: str, user=Depends(current_user)):
     return _guard(R.restamp, room_id)
 
 
+class WithdrawIn(BaseModel):
+    rels: list[str]
+
+
+@router.post("/rooms/{room_id}/withdraw")
+def withdraw(room_id: str, body: WithdrawIn, user=Depends(current_user)):
+    """Take second copies of an already published edition out of the output folder (archived, undoable)."""
+    return _guard(R.withdraw, room_id, body.rels)
+
+
 @router.get("/rooms/{room_id}/editions")
 def editions(room_id: str):
     """The room's standards by edition: which copy represents each edition and whether it is current here."""
