@@ -193,8 +193,8 @@ def _publish_accepted(a, src, dst, ev, dest_root, stage_root, archive_root, live
         files = {}
         for relpath, data in _read_files(os.path.join(out, it["out_dir"])).items():
             if (relpath or it["out_dir"]).lower().endswith(".md"):
-                data = AC.accept_markdown(data.decode("utf-8"), it.get("by") or "", when, it.get("accuracy"),
-                                          bool(it.get("forced"))).encode("utf-8")
+                data = AC.accept_markdown(data.decode("utf-8"), it.get("by") or "", it.get("at") or when,
+                                          it.get("accuracy"), bool(it.get("forced")), it.get("edition")).encode("utf-8")
             files[relpath] = data
         if not files:
             raise FileNotFoundError("the distilled result is no longer on this machine; run the room again")

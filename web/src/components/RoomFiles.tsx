@@ -23,8 +23,34 @@ export interface FileRow {
   pages: number | null;
   corrected?: number;
   checks?: number;
-  /** a copy-protected file whose unlocked copy has a result: that copy */
+  /** another copy of the same edition that is the one published (an unlocked copy, a searchable copy…) */
   covered_by?: string | null;
+  /** which standard and edition the file is, and whether a newer edition in this room replaces it */
+  edition?: Edition | null;
+}
+
+export interface Edition {
+  designation: string;
+  amendment: number | null;
+  amendment_year?: string;
+  consolidated?: boolean;
+  status: "current" | "superseded" | "";
+  superseded_by: string;
+  copy_of: string | null;
+  copies: number;
+}
+
+export function EditionCell({ e }: { e?: Edition | null }) {
+  const { t } = useTranslation();
+  if (!e) return <span className="fx-muted">—</span>;
+  const what = e.designation + (e.amendment != null ? ` ${t("pages.distill.edition.amd", { n: e.amendment })}` : "") + (e.consolidated ? ` ${t("pages.distill.edition.consolidated")}` : "");
+  const tip = e.status === "superseded" ? t("pages.distill.edition.supersededBy", { by: e.superseded_by }) : e.status === "current" ? t("pages.distill.edition.currentLong") : "";
+  return (
+    <span className="fx-row" style={{ gap: 6, minWidth: 0, flexWrap: "nowrap" }} title={[what, tip].filter(Boolean).join("\n")}>
+      <span className="fx-tiny" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{what}</span>
+      {e.status === "superseded" && <span className="fx-pill warn fx-tiny" style={{ flex: "none" }}>{t("pages.distill.edition.old")}</span>}
+    </span>
+  );
 }
 
 type Counts = Record<FileState, number> & { total: number };
@@ -416,7 +442,7 @@ export function RoomFiles({
                 : []),
               {
                 title: t("pages.distill.colName"),
-                width: 380,
+                width: 340,
                 render: (_: unknown, n: Node) =>
                   n.folder ? (
                     <span style={{ paddingLeft: n.depth * 18, display: "inline-flex", alignItems: "center", gap: 2 }}>
@@ -430,6 +456,11 @@ export function RoomFiles({
                       {n.name}
                     </span>
                   ),
+              },
+              {
+                title: t("pages.distill.colEdition"),
+                width: 240,
+                render: (_: unknown, n: Node) => (n.folder ? null : <EditionCell e={n.file!.edition} />),
               },
               {
                 title: t("pages.distill.colSize"),
@@ -456,6 +487,7 @@ export function RoomFiles({
                   const base = (p?: string | null) => (p || "").split("/").pop() || "";
                   // a skipped file names the file that covers it: the original of a duplicate, or the unlocked copy
                   const detail = f.state === "skipped" && f.covered_by ? t("pages.distill.coveredBy", { name: base(f.covered_by) })
+                    : f.state === "published" && f.covered_by ? t("pages.distill.edition.alsoPublished", { name: base(f.covered_by) })
                     : f.state === "skipped" && f.reason === "duplicate" ? t("pages.distill.dupOf", { name: base((f.detail || "").replace(/^same content as /, "")) })
                     : f.state === "unprocessable" && f.reason ? t(`pages.distill.reason.${f.reason}`, { defaultValue: f.reason })
                     : f.state === "below" && f.checks ? t("pages.distill.ruleChecks", { count: f.checks })

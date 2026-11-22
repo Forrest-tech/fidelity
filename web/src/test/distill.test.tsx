@@ -225,7 +225,7 @@ describe("distill page", () => {
     const u = userEvent.setup({ pointerEventsCheck: 0 });
     await u.click(await screen.findByRole("radio", { name: "Flat" }));
     expect(await screen.findByText("Skipped · same as AS 3500.0 Glossary.pdf")).toHaveClass("p-idle");
-    expect(screen.getByText("Skipped · unlocked copy used: P-已解锁.pdf")).toHaveClass("p-idle");
+    expect(screen.getByText("Skipped · same edition used: P-已解锁.pdf")).toHaveClass("p-idle");
     const prot = screen.getByText("Cannot be processed · copying text not allowed");
     expect(prot).toHaveClass("p-bad");
     expect(prot.getAttribute("title")).toMatch(/forbid copying its text[\s\S]*unlocked copy of it in the same folder/);
@@ -235,6 +235,30 @@ describe("distill page", () => {
     expect(screen.queryByRole("button", { name: /^Fix .*P\.pdf$/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Retry .*S\.pdf$/ })).not.toBeInTheDocument();   // retrying cannot help
     expect(screen.getByRole("button", { name: /^Retry .*N\.pdf$/ })).toBeInTheDocument();          // a dropped connection: it can
+  });
+
+  it("shows each file's edition and marks an edition a newer one replaces", async () => {
+    const ed = (designation: string, status: "current" | "superseded", superseded_by = "", copy_of: string | null = null) =>
+      ({ designation, amendment: null, status, superseded_by, copy_of, copies: copy_of ? 2 : 1 });
+    const files = [
+      file("/2015/AS 3500.1-2015.pdf", "published", { accuracy: 99.9, edition: ed("AS/NZS 3500.1:2015", "superseded", "AS/NZS 3500.1:2021") }),
+      file("/2021/AS NZS 3500.1-2021.pdf", "published", { accuracy: 99.9, edition: ed("AS/NZS 3500.1:2021", "current") }),
+      file("/2021/SS/AS-NZS_3500.1-2021 Printed.pdf", "skipped", { accuracy: 86.2, covered_by: "/2021/AS NZS 3500.1-2021.pdf",
+        edition: ed("AS/NZS 3500.1:2021", "current", "", "/2021/AS NZS 3500.1-2021.pdf") }),
+      file("/notes/site.pdf", "ok", { accuracy: 99.9 }),
+    ];
+    api("reviewer", [room({ counts: counts({ total: 4, ok: 1, published: 2, skipped: 1, finished: 4, rate: 100 }) })],
+      (url) => (url.includes("/files") ? { body: { total: files.length, files } }
+        : url.includes("/editions") ? { body: { standards: 1, current: 1, superseded: 1, amendments: 0, extra_copies: 1, published_twice: 0, editions: [] } } : undefined));
+    renderApp("/distill");
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    await u.click(await screen.findByRole("radio", { name: "Flat" }));
+    const old = (await screen.findByText("AS/NZS 3500.1:2015")).parentElement as HTMLElement;
+    expect(within(old).getByText("old")).toBeInTheDocument();
+    expect(old.getAttribute("title")).toMatch(/Superseded by AS\/NZS 3500\.1:2021/);
+    expect(screen.getAllByText("AS/NZS 3500.1:2021")).toHaveLength(2);
+    expect(screen.getByText("Skipped · same edition used: AS NZS 3500.1-2021.pdf")).toBeInTheDocument();
+    expect(await screen.findByText(/1 standards · 1 current editions · 1 older editions · 0 amendments · 1 extra copies not published/)).toBeInTheDocument();
   });
 
   it("an empty room that was never set up can be set up or deleted from its card", async () => {

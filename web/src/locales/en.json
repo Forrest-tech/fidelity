@@ -730,13 +730,13 @@
       "saveRoom": "Save room",
       "eg": "e.g. {{p}}",
       "egOut": "e.g. {{p}} (optional)",
-      "coveredBy": "unlocked copy used: {{name}}",
+      "coveredBy": "same edition used: {{name}}",
       "dupOf": "same as {{name}}",
       "reasonLong": {
         "network": "The connection to the cloud storage dropped and did not come back within about 3.5 minutes. Nothing is wrong with the file; the next run tries it again.",
         "download": "The cloud storage refused the download (no access to this file).",
         "protected": "The PDF's own settings forbid copying its text (a permission set by its publisher, not a password to open it). Its text is not extracted. Keep an unlocked copy of it in the same folder, named like \"name-已解锁.pdf\", and that copy is distilled instead.",
-        "covered": "This PDF forbids copying its text, but its unlocked copy in the same folder was distilled, so nothing is missing.",
+        "covered": "This room holds several copies of the same edition (a printed scan and a searchable copy, a protected original and an unlocked copy); only the best one is published, so this one needs nothing more.",
         "duplicate": "The input folder holds this exact file twice (same content, another place). It is distilled once, from the other copy.",
         "unreadable": "The file is damaged or not a valid document.",
         "resources": "The machine ran out of memory or disk space while reading it.",
@@ -746,7 +746,23 @@
       "emptyRoomHint": "Empty: no input folder yet",
       "setUp": "Set up",
       "showOriginal": "Show the original",
-      "showOriginalOf": "Show the file that covers {{name}}"
+      "showOriginalOf": "Show the file that covers {{name}}",
+      "colEdition": "Edition",
+      "edition": {
+        "amd": "Amdt {{n}}",
+        "consolidated": "(amended)",
+        "old": "old",
+        "supersededBy": "Superseded by {{by}} (the latest edition in this library). The published files say so.",
+        "currentLong": "Latest edition in this library",
+        "title": "Editions",
+        "summary": "{{standards}} standards · {{current}} current editions · {{superseded}} older editions · {{amendments}} amendments · {{copies}} extra copies not published",
+        "restamp": "Update edition notes in published files",
+        "restampHint": "Sends the published files again with which edition they are and whether a newer one replaces them; nothing is distilled again.",
+        "restampDone": "Queued: {{count}} files",
+        "twice": "{{count}} edition published twice",
+        "twiceHint": "The same edition is in the output folder twice, so the AI sees it twice. Look for \"same edition also published\" in the file list.",
+        "alsoPublished": "same edition also published: {{name}}"
+      }
     },
     "corrections": {
       "title": "Correction library",

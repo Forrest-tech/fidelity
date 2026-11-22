@@ -185,6 +185,36 @@ function QueueCard({ q, canEdit, rooms }: { q: QueueView; canEdit: boolean; room
   );
 }
 
+// ------------------------------------------------------------------ editions (requirements v2, D-1 to D-5)
+interface EditionsView { standards: number; current: number; superseded: number; amendments: number; extra_copies: number; published_twice: number }
+
+function EditionsLine({ room, canEdit, published }: { room: Room; canEdit: boolean; published: number }) {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const v = useQuery({ queryKey: ["room-editions", room.id], queryFn: () => api<EditionsView>(`/rooms/${room.id}/editions`) });
+  const stamp = useMutation({
+    mutationFn: () => api<{ job: string; count: number }>(`/rooms/${room.id}/restamp`, { method: "POST" }),
+    onSuccess: () => {
+      for (const k of ["rooms", "queue", "room-files", "accept-preview", "room-editions"]) void qc.invalidateQueries({ queryKey: [k] });
+    },
+  });
+  if (!v.data || !v.data.standards) return null;
+  return (
+    <div className="fx-row fx-wrap fx-tiny" style={{ gap: 10 }}>
+      <b>{t("pages.distill.edition.title")}</b>
+      <span className="fx-muted">{t("pages.distill.edition.summary", { standards: v.data.standards, current: v.data.current, superseded: v.data.superseded, amendments: v.data.amendments, copies: v.data.extra_copies })}</span>
+      {v.data.published_twice > 0 && <span className="fx-pill warn" title={t("pages.distill.edition.twiceHint")}>{t("pages.distill.edition.twice", { count: v.data.published_twice })}</span>}
+      {canEdit && published > 0 && (
+        <button className="fx-btn sm" title={t("pages.distill.edition.restampHint")} disabled={stamp.isPending || isActive(room)} onClick={() => stamp.mutate()}>
+          {t("pages.distill.edition.restamp")}
+        </button>
+      )}
+      {stamp.data && <span role="status">{t("pages.distill.edition.restampDone", { count: stamp.data.count })}</span>}
+      {stamp.error && <span className="fx-errnote" role="alert">{(stamp.error as Error).message}</span>}
+    </div>
+  );
+}
+
 // ------------------------------------------------------------------ accept into the knowledge base (screen 1d)
 function AcceptPanel({ room, canEdit, onReview }: { room: Room; canEdit: boolean; onReview: () => void }) {
   const { t } = useTranslation();
@@ -267,6 +297,7 @@ function AcceptPanel({ room, canEdit, onReview }: { room: Room; canEdit: boolean
           <Pill tone="idle">{t("pages.distill.state.pending")} <b className="fx-num">{c.pending}</b></Pill>
           {c.published > 0 && <Pill tone="ok">{t("pages.distill.state.published")} <b className="fx-num">{c.published}</b></Pill>}
         </div>
+        <EditionsLine room={room} canEdit={canEdit} published={c.published} />
         <label className="fx-row fx-tiny">
           <input type="checkbox" className="fx-cb" checked={room.number_guard} disabled={!canEdit} onChange={(e) => save.mutate({ number_guard: e.target.checked })} />
           <span>{t("pages.distill.numberGuardLong")}</span>
