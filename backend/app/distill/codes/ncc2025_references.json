@@ -1,0 +1,1598 @@
+{
+ "code": "NCC 2025",
+ "source": "NCC 2025 Volume Three, Schedule 2 Referenced documents (pages 203-214)",
+ "licence": "The National Construction Code 2025 was provided by the Australian Building Codes Board under the CC BY 4.0 licence",
+ "adoption_note": "Adoption differs by state and date: NSW adopts NCC 2025 on 2027-05-01; NCC 2022 applies there until then.",
+ "rows": [
+  {
+   "prefix": "AS",
+   "number": "1397",
+   "year": "2021",
+   "designation": "AS 1397:2021",
+   "title": "Continuous hot-dip metallic coated steel sheet and strip — Coatings of zinc and zinc alloyed with aluminium and magnesium",
+   "clauses": [
+    "7.2.2"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1428.1",
+   "year": "2021",
+   "designation": "AS 1428.1:2021",
+   "title": "Design for access and mobility — General requirements for access — New building work",
+   "clauses": [
+    "D4D2",
+    "D4D3",
+    "D4D4",
+    "D4D7",
+    "E1D2",
+    "F4D5",
+    "G4D5",
+    "D3D11",
+    "D3D16",
+    "D3D22",
+    "D4D10",
+    "D4D11",
+    "D4D13",
+    "E3D10",
+    "Spec 16",
+    "Schedule 1"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1428.1",
+   "year": "2001",
+   "designation": "AS 1428.1:2001",
+   "title": "Design for access and mobility — General requirements for access — New building work",
+   "clauses": [
+    "E1D2",
+    "I2D2",
+    "I2D7",
+    "I2D8",
+    "I2D10",
+    "I2D15"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1428.2",
+   "year": "1992",
+   "designation": "AS 1428.2:1992",
+   "title": "Design for access and mobility — Enhanced and additional requirements — Buildings and facilities",
+   "clauses": [
+    "E1D2",
+    "I2D2",
+    "I2D3",
+    "I2D4",
+    "I2D5",
+    "I2D7",
+    "I2D10",
+    "I2D11",
+    "I2D12",
+    "I2D13",
+    "I2D14"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1428.4",
+   "year": "1992",
+   "designation": "AS 1428.4:1992",
+   "title": "Design for access and mobility — Tactile ground surface indicators for the orientation of people with vision impairment",
+   "clauses": [
+    "I2D11"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "1428.4.1",
+   "year": "2009",
+   "designation": "AS/NZS 1428.4.1:2009",
+   "title": "Design for access and mobility — Means to assist the orientation of people with vision impairment — Tactile ground surface indicators (incorporating amendments 1 and 2)",
+   "clauses": [
+    "D4D9"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1530.1",
+   "year": "2024",
+   "designation": "AS 1530.1:2024",
+   "title": "Methods for fire tests on building materials, components and structures — Combustibility test for materials (ISO 1182:2020, NEQ) (See Note 2)",
+   "clauses": [
+    "A5G6",
+    "Schedule 1",
+    "Schedule \n1"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1530.2",
+   "year": "1993",
+   "designation": "AS 1530.2:1993",
+   "title": "Methods for fire tests on building materials, components and structures — Test for flammability of materials (incorporating amendment 1)",
+   "clauses": [
+    "A5G6",
+    "Schedule 1",
+    "Schedule \n1"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "1530.3",
+   "year": "1999",
+   "designation": "AS/NZS 1530.3:1999",
+   "title": "Methods for fire tests on building materials, components and structures — Simultaneous determination of ignitability, flame propagation, heat release and smoke release",
+   "clauses": [
+    "A5G6",
+    "Spec 3",
+    "Schedule 1",
+    "Schedule \n1"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1530.4",
+   "year": "2014",
+   "designation": "AS 1530.4:2014",
+   "title": "Methods for fire tests on building materials, components and structures — Fire resistance tests for elements of construction",
+   "clauses": [
+    "9.3.2",
+    "C4D15",
+    "C4D16",
+    "Spec 3",
+    "Spec 9",
+    "Spec 10",
+    "Spec 13",
+    "Spec \n14",
+    "Schedule 1",
+    "Schedule \n1"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1530.8.1",
+   "year": "2018",
+   "designation": "AS 1530.8.1:2018",
+   "title": "Methods for fire tests on building materials, components and structures — Tests on elements of construction for buildings exposed to simulated bushfire attack — Radiant heat and small flaming sources (incorporating amendment 1) (See Note 3)",
+   "clauses": [
+    "Spec 43"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "1546.1",
+   "year": "2008",
+   "designation": "AS/NZS 1546.1:2008",
+   "title": "On-site domestic wastewater treatment units - Septic tanks",
+   "clauses": [
+    "C3D2"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "1546.2",
+   "year": "2008",
+   "designation": "AS/NZS 1546.2:2008",
+   "title": "On-site domestic wastewater treatment units - Waterless composting toilets",
+   "clauses": [
+    "C3D3"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1546.3",
+   "year": "2017",
+   "designation": "AS 1546.3:2017",
+   "title": "On-site domestic wastewater treatment units - Secondary treatment systems (incorporating amendment 1)",
+   "clauses": [
+    "C3D4"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1546.4",
+   "year": "2016",
+   "designation": "AS 1546.4:2016",
+   "title": "On-site domestic wastewater treatment units - Domestic greywater treatment systems",
+   "clauses": [
+    "C3D5"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "1547",
+   "year": "2012",
+   "designation": "AS/NZS 1547:2012",
+   "title": "On-site domestic wastewater management",
+   "clauses": [
+    "C3D6"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1562.1",
+   "year": "2018",
+   "designation": "AS 1562.1:2018",
+   "title": "Design and installation of sheet roof and wall cladding — Metal (See Note 4)",
+   "clauses": [
+    "B1D4",
+    "H1D7",
+    "F1D12",
+    "F1D15"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1657",
+   "year": "2018",
+   "designation": "AS 1657:2018",
+   "title": "Fixed platforms, walkways, stairways and ladders — Design, construction and installation",
+   "clauses": [
+    "I1D6",
+    "I3D5",
+    "D2D21",
+    "D2D22",
+    "D3D23",
+    "11.2.7",
+    "11.3.3",
+    "11.3.5"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "1664.1",
+   "year": "1997",
+   "designation": "AS/NZS 1664.1:1997",
+   "title": "Aluminium structures — Limit state design (incorporating amendment 1)",
+   "clauses": [
+    "B1D4",
+    "2.2.4"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "1664.2",
+   "year": "1997",
+   "designation": "AS/NZS 1664.2:1997",
+   "title": "Aluminium structures — Allowable stress design (incorporating amendment 1)",
+   "clauses": [
+    "B1D4",
+    "2.2.4"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1668.1",
+   "year": "2015",
+   "designation": "AS 1668.1:2015",
+   "title": "The use of ventilation and air conditioning in buildings — Fire and smoke control in buildings (incorporating amendment 1)",
+   "clauses": [
+    "E2D3",
+    "E2D4",
+    "E2D6",
+    "E2D7",
+    "E2D8",
+    "E2D9",
+    "C3D13",
+    "C4D15",
+    "D2D12",
+    "E2D11",
+    "E2D12",
+    "E2D13",
+    "E2D16",
+    "E2D17",
+    "E2D19",
+    "F6D12",
+    "Spec 11",
+    "Spec 19",
+    "Spec 21",
+    "Spec \n31"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1668.2",
+   "year": "2024",
+   "designation": "AS 1668.2:2024",
+   "title": "The use of ventilation and air conditioning in buildings — Mechanical ventilation in buildings",
+   "clauses": [
+    "F6D6",
+    "F6V1",
+    "F8D4",
+    "H4D7",
+    "H4V3",
+    "J6D4",
+    "E2D12",
+    "F6D11",
+    "F6D12",
+    "10.8.2"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1668.4",
+   "year": "2024",
+   "designation": "AS 1668.4:2024",
+   "title": "The use of ventilation and air conditioning in buildings — Natural ventilation of buildings",
+   "clauses": [
+    "F6D6",
+    "H4D7",
+    "F6D11"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1670.1",
+   "year": "2024",
+   "designation": "AS 1670.1:2024",
+   "title": "Fire detection, warning, control and intercom systems — System design, installation and commissioning — Fire (See Note 5)",
+   "clauses": [
+    "C4D6",
+    "C4D7",
+    "C4D8",
+    "C4D9",
+    "E2D3",
+    "G4D7",
+    "9.5.1",
+    "C4D12",
+    "D3D26",
+    "E2D10",
+    "Spec 12",
+    "Spec 20",
+    "Spec 31",
+    "Spec \n23"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1670.3",
+   "year": "2024",
+   "designation": "AS 1670.3:2024",
+   "title": "Fire detection, warning, control and intercom systems — System design, installation and commissioning — Fire alarm monitoring (See Note 5)",
+   "clauses": [
+    "Spec 20",
+    "Spec \n23"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1670.4",
+   "year": "2024",
+   "designation": "AS 1670.4:2024",
+   "title": "Fire detection, warning, control and intercom systems — System design, installation and commissioning — Emergency warning and intercom systems (See Note 5)",
+   "clauses": [
+    "E3V2",
+    "E4D9",
+    "Spec 31"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "1680.0",
+   "year": "2009",
+   "designation": "AS/NZS 1680.0:2009",
+   "title": "Interior lighting — Safe movement",
+   "clauses": [
+    "F6D5",
+    "10.5.2"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1684.2",
+   "year": "2021",
+   "designation": "AS 1684.2:2021",
+   "title": "Residential timber-framed construction — Non-cyclonic areas (incorporating amendment 1)",
+   "clauses": [
+    "B1D4",
+    "B1D5",
+    "H1D6",
+    "2.2.5",
+    "5.6.6",
+    "6.2.1",
+    "6.3.6",
+    "7.5.2",
+    "7.5.3",
+    "7.5.4",
+    "F1D11",
+    "4.2.13",
+    "10.2.19",
+    "10.2.20"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1684.3",
+   "year": "2021",
+   "designation": "AS 1684.3:2021",
+   "title": "Residential timber-framed construction — Cyclonic areas (incorporating amendment 1)",
+   "clauses": [
+    "B1D4",
+    "B1D5",
+    "H1D6",
+    "2.2.5",
+    "5.6.6",
+    "6.2.1",
+    "6.3.6",
+    "7.5.2",
+    "7.5.3",
+    "7.5.4",
+    "F1D11",
+    "4.2.13",
+    "10.2.19",
+    "10.2.20"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1684.4",
+   "year": "2024",
+   "designation": "AS 1684.4:2024",
+   "title": "Residential timber-framed construction — Simplified — Non-cyclonic areas",
+   "clauses": [
+    "B1D4",
+    "B1D5",
+    "F6D6",
+    "H1D6",
+    "2.2.5",
+    "5.6.6",
+    "6.2.1",
+    "7.5.2",
+    "7.5.3",
+    "7.5.4",
+    "F1D11",
+    "4.2.13",
+    "10.2.19",
+    "10.2.20"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1720.1",
+   "year": "2010",
+   "designation": "AS 1720.1:2010",
+   "title": "Timber structures — Design methods (incorporating amendments 1, 2 and 3)",
+   "clauses": [
+    "B1D4",
+    "B1V1",
+    "H1D6",
+    "5.3.3",
+    "4.2.13"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "1720.4",
+   "year": "2019",
+   "designation": "AS/NZS 1720.4:2019",
+   "title": "Timber structures — Fire resistance of timber elements",
+   "clauses": [
+    "Spec 1"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1720.5",
+   "year": "2015",
+   "designation": "AS 1720.5:2015",
+   "title": "Timber structures — Nailplated timber roof trusses (incorporating amendment 1)",
+   "clauses": [
+    "B1D4",
+    "H1D6"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1735.11",
+   "year": "1986",
+   "designation": "AS 1735.11:1986",
+   "title": "Lifts, escalators and moving walks — Fire rated landing doors",
+   "clauses": [
+    "C4D11"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1735.12",
+   "year": "1999",
+   "designation": "AS 1735.12:1999",
+   "title": "Lifts, escalators and moving walks — Facilities for persons with disabilities (incorporating amendment 1)",
+   "clauses": [
+    "E3D8",
+    "I2D6"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "1859.4",
+   "year": "2018",
+   "designation": "AS/NZS 1859.4:2018",
+   "title": "Reconstituted wood based panels — Specifications — Wet process fibreboard",
+   "clauses": [
+    "7.5.3",
+    "7.5.4"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1860.2",
+   "year": "2006",
+   "designation": "AS 1860.2:2006",
+   "title": "Particleboard flooring — Installation (incorporating amendment 1)",
+   "clauses": [
+    "B1D4",
+    "H1D6"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1905.1",
+   "year": "2015",
+   "designation": "AS 1905.1:2015",
+   "title": "Components for the protection of openings in fire-resistant walls — Fire-resistant doorsets (incorporating amendment 1)",
+   "clauses": [
+    "C4D7",
+    "Spec 12"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1905.2",
+   "year": "2005",
+   "designation": "AS 1905.2:2005",
+   "title": "Components for the protection of openings in fire-resistant walls — Fire-resistant roller shutters",
+   "clauses": [
+    "Spec 12"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1926.1",
+   "year": "2024",
+   "designation": "AS 1926.1:2024",
+   "title": "Swimming pool safety — Safety barriers for swimming pools",
+   "clauses": [
+    "G1D2",
+    "G1D4",
+    "H7D2"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1926.2",
+   "year": "2007",
+   "designation": "AS 1926.2:2007",
+   "title": "Swimming pool safety — Location of safety barriers for swimming pools (incorporating amendments 1 and 2)",
+   "clauses": [
+    "G1D2",
+    "H7D2"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "1926.3",
+   "year": "2010",
+   "designation": "AS 1926.3:2010",
+   "title": "Swimming pool safety — Water recirculation systems (incorporating amendment 1)",
+   "clauses": [
+    "G1D2",
+    "H7D2"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "2047",
+   "year": "2014",
+   "designation": "AS 2047:2014",
+   "title": "Windows and external glazed doors in buildings (incorporating amendments 1 and 2) (See Note 6)",
+   "clauses": [
+    "B1D4",
+    "F1V1",
+    "H1D8",
+    "H2V1",
+    "J5D5",
+    "F1D14",
+    "13.4.4"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "2049",
+   "year": "2002",
+   "designation": "AS 2049:2002",
+   "title": "Roof tiles (incorporating amendment 1)",
+   "clauses": [
+    "H1D7",
+    "F1D12"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "2050",
+   "year": "2018",
+   "designation": "AS 2050:2018",
+   "title": "Installation of roof tiles",
+   "clauses": [
+    "B1D4",
+    "H1D7",
+    "7.3.2",
+    "F1D12"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "2118.1",
+   "year": "2017",
+   "designation": "AS 2118.1:2017",
+   "title": "Automatic fire sprinkler systems — General systems (incorporating amendments 1 and 2)",
+   "clauses": [
+    "C1V3",
+    "Spec 17",
+    "Spec 18"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "2118.4",
+   "year": "2012",
+   "designation": "AS 2118.4:2012",
+   "title": "Automatic fire sprinkler systems — Sprinkler protection for accommodation buildings not exceeding four storeys in height",
+   "clauses": [
+    "B4D3",
+    "Spec 17",
+    "Spec \n18"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "2118.6",
+   "year": "2026",
+   "designation": "AS 2118.6:2026",
+   "title": "Automatic fire sprinkler systems — Combined sprinkler and hydrant systems in multistorey buildings",
+   "clauses": [
+    "B4D3",
+    "E1D2",
+    "Spec 17"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "2159",
+   "year": "2009",
+   "designation": "AS 2159:2009",
+   "title": "Piling — Design and installation (incorporating amendment 1)",
+   "clauses": [
+    "B1D4",
+    "H1D12"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "2179.1",
+   "year": "2014",
+   "designation": "AS/NZS 2179.1:2014",
+   "title": "Specifications for rainwater goods, accessories and fasteners — Metal shape or sheet rainwater goods, and metal accessories and fasteners",
+   "clauses": [
+    "7.4.2"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "2200",
+   "year": "2006",
+   "designation": "AS 2200:2006",
+   "title": "Design charts for water supply and sewerage (incorporating amendment 1)",
+   "clauses": [
+    "C2V4"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "2269.0",
+   "year": "2012",
+   "designation": "AS/NZS 2269.0:2012",
+   "title": "Plywood — Structural — Specifications (incorporating amendment 1)",
+   "clauses": [
+    "7.5.4"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "2293.1",
+   "year": "2018",
+   "designation": "AS/NZS 2293.1:2018",
+   "title": "Emergency lighting and exit signs for buildings — System design, installation and operation (incorporating amendment 1)",
+   "clauses": [
+    "E4D4",
+    "E4D8",
+    "I3D15",
+    "Spec 25"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "2312.1",
+   "year": "2014",
+   "designation": "AS 2312.1:2014",
+   "title": "Guide to the protection of structural steel against atmospheric corrosion by the use of protective coatings — Paint coatings",
+   "clauses": [
+    "6.3.9"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "2312.2",
+   "year": "2014",
+   "designation": "AS/NZS 2312.2:2014",
+   "title": "Guide to the protection of structural steel against atmospheric corrosion by the use of protective coatings — Hot dip galvanizing",
+   "clauses": [
+    "6.3.9"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "2327",
+   "year": "2017",
+   "designation": "AS/NZS 2327:2017",
+   "title": "Composite structures — Composite steel- concrete construction in buildings (incorporating amendment 1)",
+   "clauses": [
+    "B1D4",
+    "2.2.4",
+    "Spec 1"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "2419.1",
+   "year": "2021",
+   "designation": "AS 2419.1:2021",
+   "title": "Fire hydrant installations — System design, installation and commissioning",
+   "clauses": [
+    "B4D4",
+    "E1D2",
+    "I3D9",
+    "C3D13",
+    "Spec 18"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "2441",
+   "year": "2005",
+   "designation": "AS 2441:2005",
+   "title": "Installation of fire hose reels (incorporating amendment 1)",
+   "clauses": [
+    "B4D5",
+    "E1D3"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "2444",
+   "year": "2001",
+   "designation": "AS 2444:2001",
+   "title": "Portable fire extinguishers and fire blankets — Selection and location",
+   "clauses": [
+    "E1D3",
+    "E1D14",
+    "I3D11"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "2665",
+   "year": "2001",
+   "designation": "AS 2665:2001",
+   "title": "Smoke/heat venting systems — Design, installation and commissioning",
+   "clauses": [
+    "Spec 22",
+    "Spec \n31"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "2699.1",
+   "year": "2020",
+   "designation": "AS 2699.1:2020",
+   "title": "Built-in components for masonry construction — Wall ties",
+   "clauses": [
+    "5.6.5",
+    "C2D10"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "2699.3",
+   "year": "2020",
+   "designation": "AS 2699.3:2020",
+   "title": "Built-in components for masonry construction — Lintels and shelf angles (durability requirements)",
+   "clauses": [
+    "5.6.7",
+    "C2D10"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "2870",
+   "year": "2011",
+   "designation": "AS 2870:2011",
+   "title": "Residential slabs and footings",
+   "clauses": [
+    "F1D7",
+    "H1D4",
+    "H1D5",
+    "3.4.2",
+    "4.2.2",
+    "4.2.6",
+    "4.2.8",
+    "10.2.9",
+    "4.2.11",
+    "4.2.14",
+    "4.2.15"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "2890.6",
+   "year": "2009",
+   "designation": "AS/NZS 2890.6:2009",
+   "title": "Parking facilities — Offstreet parking for people with disabilities",
+   "clauses": [
+    "D4D6"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "2904",
+   "year": "1995",
+   "designation": "AS/NZS 2904:1995",
+   "title": "Damp-proof courses and flashings (incorporating amendments 1 and 2)",
+   "clauses": [
+    "F1D6",
+    "5.7.3",
+    "7.5.6",
+    "12.3.3"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "2908.1",
+   "year": "2000",
+   "designation": "AS/NZS 2908.1:2000",
+   "title": "Cellulose-cement products — Corrugated sheets",
+   "clauses": [
+    "B1D4"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "2908.2",
+   "year": "2000",
+   "designation": "AS/NZS 2908.2:2000",
+   "title": "Cellulose-cement products — Flat sheets",
+   "clauses": [
+    "F1D5",
+    "7.5.3",
+    "7.5.4",
+    "7.5.5",
+    "10.2.9",
+    "10.2.10",
+    "Schedule 1",
+    "Schedule \n1"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "2918",
+   "year": "2018",
+   "designation": "AS/NZS 2918:2018",
+   "title": "Domestic solid fuel burning appliances — Installation (See Note 9)",
+   "clauses": [
+    "G2D2",
+    "H7D5",
+    "12.4.4",
+    "12.4.5"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "3013",
+   "year": "2005",
+   "designation": "AS/NZS 3013:2005",
+   "title": "Electrical installations — Classification of the fire and mechanical performance of wiring system elements",
+   "clauses": [
+    "C3D14"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "3500.0",
+   "year": "2021",
+   "designation": "AS/NZS 3500.0:2021",
+   "title": "Plumbing and drainage — Glossary of terms",
+   "clauses": [
+    "A1G4"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "3500.1",
+   "year": "2018",
+   "designation": "AS/NZS 3500.1:2018",
+   "title": "Plumbing and drainage — Water services",
+   "clauses": [
+    "B5D6"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "3500.1",
+   "year": "2025",
+   "designation": "AS/NZS 3500.1:2025",
+   "title": "Plumbing and drainage — Water services",
+   "clauses": [
+    "B1D3",
+    "B1D5",
+    "B1D6",
+    "B3D3",
+    "B5D2",
+    "B5D3",
+    "B5D4",
+    "B5V1",
+    "B6D2",
+    "B6D3",
+    "B6D5",
+    "B6D6",
+    "B7D3",
+    "B7D6",
+    "B7D7"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "3500.2",
+   "year": "2025",
+   "designation": "AS/NZS 3500.2:2025",
+   "title": "Plumbing and drainage — Sanitary plumbing and drainage",
+   "clauses": [
+    "C1D3",
+    "C1V1",
+    "C1V2",
+    "C2D3",
+    "C2D4",
+    "C2V2",
+    "C2V4",
+    "C3D7",
+    "G1D5",
+    "H2D2"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "3500.3",
+   "year": "2025",
+   "designation": "AS/NZS 3500.3:2025",
+   "title": "Plumbing and drainage — Stormwater drainage",
+   "clauses": [
+    "B7D4",
+    "B7D5",
+    "F1D3",
+    "H2D2",
+    "H2D6",
+    "7.4.3"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "3500.4",
+   "year": "2025",
+   "designation": "AS/NZS 3500.4:2025",
+   "title": "Plumbing and drainage — Heated water services",
+   "clauses": [
+    "B2D2",
+    "B2D6",
+    "B2D7",
+    "B2D8",
+    "B2D9",
+    "B2D11"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "3600",
+   "year": "2018",
+   "designation": "AS 3600:2018",
+   "title": "Concrete structures (incorporating amendments 1 and 2)",
+   "clauses": [
+    "B1D4",
+    "F1D5",
+    "H1D4",
+    "3.4.2",
+    "4.2.6",
+    "5.3.3",
+    "10.2.9",
+    "4.2.10",
+    "4.2.13",
+    "Spec 1"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "3660.1",
+   "year": "2014",
+   "designation": "AS 3660.1:2014",
+   "title": "Termite management — New building work (incorporating amendment 1)",
+   "clauses": [
+    "B1D4",
+    "F1D6",
+    "3.4.1",
+    "3.4.2"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "3660.3",
+   "year": "2014",
+   "designation": "AS 3660.3:2014",
+   "title": "Termite management — Assessment criteria for termite management systems",
+   "clauses": [
+    "3.4.2"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "3666.1",
+   "year": "2011",
+   "designation": "AS/NZS 3666.1:2011",
+   "title": "Air-handling and water systems of buildings — Microbial control — Design, installation and commissioning",
+   "clauses": [
+    "F6D6",
+    "F4D10"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "3700",
+   "year": "2018",
+   "designation": "AS 3700:2018",
+   "title": "Masonry structures",
+   "clauses": [
+    "B1D4",
+    "H1D5",
+    "H2D4",
+    "5.3.3",
+    "5.4.2",
+    "5.6.3",
+    "6.3.6",
+    "F1D15",
+    "10.2.9",
+    "12.4.3",
+    "Spec 1",
+    "Spec 2",
+    "10.2.19",
+    "10.2.20"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "3740",
+   "year": "2021",
+   "designation": "AS 3740:2021",
+   "title": "Waterproofing of domestic wet areas",
+   "clauses": [
+    "F2D2",
+    "H4D2",
+    "H4D3",
+    "10.2.20"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "3786",
+   "year": "2023",
+   "designation": "AS 3786:2023",
+   "title": "Smoke alarms using scattered light, transmitted light or ionization (See Note 7)",
+   "clauses": [
+    "9.5.1",
+    "Spec 20"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "3959",
+   "year": "2018",
+   "designation": "AS 3959:2018",
+   "title": "Construction of buildings in bushfire-prone areas (incorporating amendments 1 and 2)",
+   "clauses": [
+    "B1D4",
+    "B3D4",
+    "B6D7",
+    "C1D4",
+    "C2D5",
+    "F8D5",
+    "F8D6",
+    "G5D2",
+    "G5D3",
+    "H7D4",
+    "B2D10",
+    "C2D14",
+    "10.8.3",
+    "10.8.4",
+    "Spec 43"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "4020",
+   "year": "2018",
+   "designation": "AS/NZS 4020:2018",
+   "title": "Testing of products for use in contact with drinking water (incorporating amendment 1)",
+   "clauses": [
+    "A5G4"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "4055",
+   "year": "2021",
+   "designation": "AS 4055:2021",
+   "title": "Wind loads for housing (incorporating amendment 1)",
+   "clauses": [
+    "H1D6",
+    "H1D8",
+    "2.2.3",
+    "Schedule 1"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "4072.1",
+   "year": "2005",
+   "designation": "AS 4072.1:2005",
+   "title": "Components for the protection of openings in fire-resistant separating elements — Service penetrations and control joints (incorporating amendment 1)",
+   "clauses": [
+    "9.3.2",
+    "C4D15",
+    "C4D16"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "4100",
+   "year": "2020",
+   "designation": "AS 4100:2020",
+   "title": "Steel structures",
+   "clauses": [
+    "B1D4",
+    "H1D6",
+    "5.6.7",
+    "4.2.13",
+    "Spec 1"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "4200.1",
+   "year": "2017",
+   "designation": "AS 4200.1:2017",
+   "title": "Pliable building membranes and underlays — Materials (incorporating amendment 1)",
+   "clauses": [
+    "F8D3",
+    "7.3.4",
+    "7.5.2",
+    "7.5.8",
+    "F1D13",
+    "10.8.1",
+    "Spec 36",
+    "Schedule 1"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "4200.2",
+   "year": "2017",
+   "designation": "AS 4200.2:2017",
+   "title": "Pliable building membranes and underlays — Installation requirements (incorporating amendments 1 and 2)",
+   "clauses": [
+    "F8D3",
+    "F1D13",
+    "10.8.1"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "4234",
+   "year": "2021",
+   "designation": "AS/NZS 4234:2021",
+   "title": "Heated water systems — Calculation of energy consumption",
+   "clauses": [
+    "B2D2",
+    "Spec 45"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "4254.1",
+   "year": "2021",
+   "designation": "AS 4254.1:2021",
+   "title": "Ductwork for air-handling systems in buildings — Flexible duct",
+   "clauses": [
+    "H3D2",
+    "J6D7",
+    "13.7.4",
+    "Spec 7"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "4254.2",
+   "year": "2012",
+   "designation": "AS 4254.2:2012",
+   "title": "Ductwork for air-handling systems in buildings — Rigid duct",
+   "clauses": [
+    "J6D5",
+    "J6D7",
+    "13.7.4",
+    "Spec 7"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "4284",
+   "year": "2008",
+   "designation": "AS/NZS 4284:2008",
+   "title": "Testing of building facades",
+   "clauses": [
+    "F1V1",
+    "H2V1"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "4505",
+   "year": "2012",
+   "designation": "AS/NZS 4505:2012",
+   "title": "Garage doors and other large access doors (incorporating amendment 1)",
+   "clauses": [
+    "B1D4",
+    "2.2.4"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "4552",
+   "year": "2005",
+   "designation": "AS 4552:2005",
+   "title": "Gas fired water heaters for hot water supply and/or central heating",
+   "clauses": [
+    "B2D2"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "4586",
+   "year": "2013",
+   "designation": "AS 4586:2013",
+   "title": "Slip resistance classification of new pedestrian surface materials (incorporating amendment 1) (See Note 8)",
+   "clauses": [
+    "D3D11",
+    "D3D14",
+    "D3D15",
+    "11.2.4",
+    "Spec 27"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "4597",
+   "year": "1999",
+   "designation": "AS 4597:1999",
+   "title": "Installation of roof slates and shingles (Non- interlocking type)",
+   "clauses": [
+    "B1D4",
+    "H1D7",
+    "F1D12"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "4600",
+   "year": "2018",
+   "designation": "AS/NZS 4600:2018",
+   "title": "Cold-formed steel structures",
+   "clauses": [
+    "B1D4",
+    "H1D6",
+    "5.3.3",
+    "6.3.6",
+    "Spec 1"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "4654.1",
+   "year": "2012",
+   "designation": "AS 4654.1:2012",
+   "title": "Waterproofing membranes for external above-ground use — Materials",
+   "clauses": [
+    "F1D7",
+    "H2D8"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "4654.2",
+   "year": "2012",
+   "designation": "AS 4654.2:2012",
+   "title": "Waterproofing membranes for external above-ground use — Design and installation",
+   "clauses": [
+    "F1D5",
+    "F1D6",
+    "H2D8",
+    "C2D14"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "4678",
+   "year": "2002",
+   "designation": "AS 4678:2002",
+   "title": "Earth-retaining structures",
+   "clauses": [
+    "H1D3"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "4773.1",
+   "year": "2015",
+   "designation": "AS 4773.1:2015",
+   "title": "Masonry in small buildings — Design (incorporating amendment 1)",
+   "clauses": [
+    "H1D5",
+    "H2D4",
+    "5.6.3",
+    "12.4.3"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "4773.2",
+   "year": "2015",
+   "designation": "AS 4773.2:2015",
+   "title": "Masonry in small buildings — Construction (incorporating amendment 1)",
+   "clauses": [
+    "H1D5",
+    "H2D4",
+    "5.6.3",
+    "12.4.3"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "4858",
+   "year": "2004",
+   "designation": "AS/NZS 4858:2004",
+   "title": "Wet area membranes",
+   "clauses": [
+    "10.2.8"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "4859.1",
+   "year": "2018",
+   "designation": "AS/NZS 4859.1:2018",
+   "title": "Thermal insulation materials for buildings — General criteria and technical provisions (incorporating amendment 1)",
+   "clauses": [
+    "J4D3",
+    "J6D6",
+    "J6D9",
+    "13.2.2",
+    "13.7.2",
+    "13.7.4"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "4859.2",
+   "year": "2018",
+   "designation": "AS/NZS 4859.2:2018",
+   "title": "Thermal insulation materials for buildings — Design",
+   "clauses": [
+    "J3D8",
+    "J4D3",
+    "13.2.5",
+    "13.2.6",
+    "Spec 36",
+    "Spec \n37"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "5113",
+   "year": "2016",
+   "designation": "AS 5113:2016",
+   "title": "Classification of external walls of buildings based on reaction-to-fire performance (incorporating amendment 1)",
+   "clauses": [
+    "C1V3"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "5146.1",
+   "year": "2015",
+   "designation": "AS 5146.1:2015",
+   "title": "Reinforced autoclaved aerated concrete — Structures (incorporating amendment 1)",
+   "clauses": [
+    "B1D4",
+    "H1D7"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "5146.3",
+   "year": "2018",
+   "designation": "AS 5146.3:2018",
+   "title": "Reinforced autoclaved aerated concrete — Construction",
+   "clauses": [
+    "B1D4",
+    "F1D15"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "5216",
+   "year": "2021",
+   "designation": "AS 5216:2021",
+   "title": "Design of post-installed and cast-in fastenings in concrete",
+   "clauses": [
+    "B1D4",
+    "2.2.4"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "5346",
+   "year": "2023",
+   "designation": "AS 5346:2023",
+   "title": "Exterior finish and insulation systems",
+   "clauses": [
+    "H1D7"
+   ]
+  },
+  {
+   "prefix": "AS/NZS",
+   "number": "5601.1",
+   "year": "2022",
+   "designation": "AS/NZS 5601.1:2022",
+   "title": "Gas installations — General installations (incorporating amendments 1 and 2)",
+   "clauses": [
+    "H6V3",
+    "J1V4"
+   ]
+  },
+  {
+   "prefix": "AS",
+   "number": "5637.1",
+   "year": "2015",
+   "designation": "AS 5637.1:2015",
+   "title": "Determination of fire hazard properties — Wall and ceiling linings",
+   "clauses": [
+    "A5G6",
+    "B1D5",
+    "B1D6",
+    "B4D3",
+    "C1V3",
+    "C1V4",
+    "C2D6",
+    "C3D2",
+    "C3D7",
+    "C3D8",
+    "C4D6",
+    "C4D7",
+    "C4D8",
+    "C4D9",
+    "D2D4",
+    "E2D8",
+    "E2D9",
+    "F8V1",
+    "G3D1",
+    "G3D6",
+    "G7D2",
+    "H1D6",
+    "H4D3",
+    "H4V5",
+    "H6V2",
+    "H6V3",
+    "H8D2",
+    "I1D2",
+    "I2D1",
+    "J1V1",
+    "J1V2",
+    "J1V3",
+    "J1V4",
+    "J3D3",
+    "J4D3",
+    "J4D7",
+    "J6D8",
+    "2.2.5",
+    "3.3.3",
+    "C2D13",
+    "C4D12",
+    "D2D17",
+    "D3D26",
+    "D3D30",
+    "E2D13",
+    "E2D14",
+    "E2D15",
+    "E2D16",
+    "E2D17",
+    "E2D19",
+    "E2D20",
+    "F4D12",
+    "H1D10",
+    "J3D14",
+    "J6D10",
+    "J6D11",
+    "J6D12",
+    "J6D13",
+    "10.8.1",
+    "11.2.3",
+    "13.6.2",
+    "Spec 5",
+    "Spec 6",
+    "Spec 7",
+    "Spec 17",
+    "Spec 20",
+    "Spec 25",
+    "Spec 31",
+    "Spec 33",
+    "Spec 34",
+    "Spec 35",
+    "Spec 42",
+    "Spec 47",
+    "Spec 48",
+    "Spec \n18",
+    "Spec \n35",
+    "Schedule 1",
+    "Schedule \n1"
+   ]
+  },
+  {
+   "prefix": "ISO",
+   "number": "140.6",
+   "year": "1998",
+   "designation": "ISO 140.6:1998",
+   "title": "Acoustics — Measurement of sound insulation in buildings and of building elements — Laboratory measurements of impact sound insulation of floors",
+   "clauses": [
+    "Spec 29"
+   ]
+  },
+  {
+   "prefix": "ISO",
+   "number": "540",
+   "year": "2008",
+   "designation": "ISO 540:2008",
+   "title": "Hard coal and coke — Determination of ash fusibility",
+   "clauses": [
+    "Spec 13"
+   ]
+  },
+  {
+   "prefix": "ISO",
+   "number": "8336",
+   "year": "1993",
+   "designation": "ISO 8336:1993",
+   "title": "Fibre-cement flat sheets",
+   "clauses": [
+    "7.5.3",
+    "7.5.4",
+    "7.5.5",
+    "Schedule 1"
+   ]
+  }
+ ]
+}
