@@ -1146,7 +1146,7 @@
       },
       "system": {
         "pill": "System",
-        "title": "",
+        "title": "System alert",
         "sub": "Open system health",
         "to": "System health",
         "k": {
