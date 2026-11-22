@@ -8,6 +8,8 @@ const OIDC = "http://127.0.0.1:8767";
 const ACCOUNT = /^(Account menu|账号菜单)$/;
 
 const signInButton = (page: Page) => page.getByRole("button", { name: /^(Sign in|登\s?录)$/ });
+// what a person waits for before pressing Sign in (it takes a moment after the page opens or after a failed try)
+const checked = (page: Page) => expect(page.getByRole("status", { name: "Bot check" })).toContainText("Bot check passed", { timeout: 30_000 });
 const as = (page: Page, q: string) => page.request.get(`${OIDC}/__as?${q}`);
 
 test.describe("sign-in page", () => {
@@ -53,6 +55,7 @@ test.describe("sign-in page", () => {
 
   test("LOGIN-04 keyboard only: Tab through, Enter signs in, spaces around the email are ignored", async ({ page }) => {
     await page.goto("/login");
+    await expect(page.getByLabel("Email")).toBeFocused({ timeout: 20_000 });
     await page.keyboard.type("  viewer@example.com ");
     await page.getByLabel("Password").focus();
     await page.keyboard.type(PW);
@@ -79,6 +82,7 @@ test.describe("sign-in page", () => {
     await expect(page.getByLabel("Email")).toHaveValue("reviewer@example.com");
     await page.unroute("**/api/v1/auth/login");
     await page.route("**/api/v1/auth/login", (r) => r.fulfill({ status: 500, body: "{}" }));
+    await checked(page);
     await signInButton(page).click();
     await expect(page.getByRole("alert")).toContainText("Check your connection");
   });
