@@ -229,6 +229,8 @@ def derive_state(row, room: dict) -> str:
         return "skipped"
     if outcome == "unprocessable" and row["reason"] == "protected" and _get(row, "covered_by"):
         return "skipped"
+    if _get(row, "covered_by") and not row["confirmed"] and outcome in ("result", "unprocessable"):
+        return "skipped"                     # another copy of the same edition is the one that is published
     if outcome in ("unprocessable", "skipped"):
         return "unprocessable"
     if row["confirmed"]:
@@ -245,30 +247,85 @@ def _get(row, key):
         return None
 
 
-_UNLOCKED = re.compile(r"[\s_\-()（）]*(已解锁|解锁版|unlocked|decrypted)[\s)）]*$", re.I)
+def _identity(room_id: str, r) -> dict:
+    """The file's standard and edition (see distill/editions.py), read from the start of its result when it has one."""
+    from ..distill import editions as ED
+    from ..distill import run as RN
+    text = ""
+    if r["out_dir"]:
+        base = RN.longpath(os.path.join(S.room_dir(room_id), "out", r["out_dir"]))
+        try:
+            files = [base] if os.path.isfile(base) else sorted(
+                os.path.join(a, f) for a, _, ff in os.walk(base) for f in ff if f.lower().endswith(".md"))
+            for f in files[:2]:
+                with open(f, encoding="utf-8", errors="ignore") as fh:
+                    text += fh.read(12000).split("---", 2)[-1][:6000]
+        except OSError:
+            pass
+    return {**ED.identify(r["rel"], text), "out_dir": r["out_dir"] or ""}
 
 
-def _covers(rows: list) -> list:
-    """Note, for each copy-protected file, an unlocked copy of it in the same folder that has a result (people keep
-    both: "AS 3500.2-2018.pdf" and "AS 3500.2-2018-已解锁.pdf"). The protected one then needs nothing more."""
-    out = [dict(r) for r in rows]
-    have = {}
-    for r in out:
-        if r["outcome"] == "result":
-            folder, name = r["rel"].rsplit("/", 1) if "/" in r["rel"] else ("", r["rel"])
-            stem = os.path.splitext(name)[0]
-            base = _UNLOCKED.sub("", stem)
-            if base != stem:
-                have[(folder, base.strip().lower())] = r["rel"]
-    for r in out:
-        if r["outcome"] == "unprocessable" and r["reason"] == "protected":
-            folder, name = r["rel"].rsplit("/", 1) if "/" in r["rel"] else ("", r["rel"])
-            r["covered_by"] = have.get((folder, os.path.splitext(name)[0].strip().lower()))
+def _editions(room_id: str, rows: list) -> list:
+    """Rows with their edition worked out: identity is stored once per result (it reads the result's first pages),
+    best copy and current/superseded are recomputed from the whole room every time."""
+    from ..distill import editions as ED
+    out, todo = [], []
+    for r in rows:
+        d = dict(r)
+        e = json.loads(d["edition"]) if _get(r, "edition") else None
+        if not e or e.get("out_dir", "") != (d["out_dir"] or ""):
+            e = _identity(room_id, d)
+            todo.append((json.dumps(e, ensure_ascii=False), room_id, d["rel"]))
+        d["edition"] = e
+        out.append(d)
+    if todo:
+        def _save():
+            con = db.trust_rw()
+            try:
+                con.executemany("UPDATE room_file SET edition=? WHERE room_id=? AND rel=?", todo)
+                con.commit()
+            finally:
+                con.close()
+        try:
+            db.trust_write(_save)
+        except Exception:                                    # noqa: BLE001 - worked out again next time
+            pass
+    out = ED.registry(out)
+    for d in out:
+        d["covered_by"] = d["edition"].get("copy_of")
     return out
 
 
+def editions_view(room: dict) -> dict:
+    """Standards by edition: for each edition, the copy that represents it, the other copies, and its status here."""
+    groups: dict = {}
+    for r in _files(room["id"]):
+        e = r["edition"]
+        if not e.get("key"):
+            continue
+        g = groups.setdefault(e["key"], {"designation": e["designation"], "number": e["number"], "year": e["year"],
+                                         "amendment": e.get("amendment"), "consolidated": e.get("consolidated"),
+                                         "status": e["status"], "superseded_by": e["superseded_by"],
+                                         "best": None, "copies": []})
+        item = {"rel": r["rel"], "state": derive_state(r, room), "accuracy": r["accuracy"]}
+        if e.get("copy_of"):
+            g["copies"].append(item)
+        else:
+            g["best"] = item
+    out = sorted(groups.values(), key=lambda g: (g["number"], g["year"], g["amendment"] or 0, bool(g["consolidated"])))
+    editions = [g for g in out if g["amendment"] is None]
+    return {"editions": out, "standards": len({g["number"] for g in out}),
+            "current": sum(1 for g in editions if g["status"] == "current"),
+            "superseded": sum(1 for g in editions if g["status"] == "superseded"),
+            "amendments": sum(1 for g in out if g["amendment"] is not None),
+            "extra_copies": sum(1 for g in out for c in g["copies"] if c["state"] != "published"),
+            # the same edition published more than once: the AI library holds it twice
+            "published_twice": sum(1 for g in out if any(c["state"] == "published" for c in g["copies"])
+                                   and g["best"] and g["best"]["state"] == "published")}
+
+
 def _files(room_id: str) -> list:
-    return _covers(_rows(room_id))
+    return _editions(room_id, _rows(room_id))
 
 
 def _rows(room_id: str) -> list:
@@ -276,7 +333,7 @@ def _rows(room_id: str) -> list:
     try:
         return con.execute("SELECT rel, kind, size, activity, outcome, reason, detail, accuracy, parts, diffs, number_diffs, "
                            "confirmed, confirmed_by, confirmed_at, pages, run_id, out_dir, content_hash, single_file, n_files, "
-                           "verdict, corrections, rule_checks, findings, known, updated_at FROM room_file WHERE room_id=?", (room_id,)).fetchall()
+                           "verdict, corrections, rule_checks, findings, known, edition, updated_at FROM room_file WHERE room_id=?", (room_id,)).fetchall()
     finally:
         con.close()
 
@@ -310,7 +367,14 @@ def _file_out(r, room) -> dict:
             "number_diffs": r["number_diffs"] or 0, "reason": r["reason"], "detail": r["detail"], "pages": r["pages"],
             "parts": json.loads(r["parts"]) if r["parts"] else None,
             "corrected": sum(i.get("count", 0) for i in json.loads(r["corrections"])) if r["corrections"] else 0,
-            "checks": r["rule_checks"] or 0, "covered_by": _get(r, "covered_by")}
+            "checks": r["rule_checks"] or 0, "covered_by": _get(r, "covered_by"), "edition": _edition_out(_get(r, "edition"))}
+
+
+def _edition_out(e) -> dict | None:
+    if not e or not e.get("designation"):
+        return None
+    return {k: e.get(k) for k in ("designation", "amendment", "amendment_year", "consolidated", "status", "superseded_by",
+                                  "copy_of", "copies", "basis")}
 
 
 def children(room: dict, path: str = "", state: str | None = None, q: str | None = None) -> dict:
@@ -619,7 +683,6 @@ def accept(room_id: str, user: str, rels=None, all_ok: bool = False, force: bool
 
     all_ok: every file that meets the threshold. rels: these files; one below the threshold needs force=True (a person
     decides it is good enough, and the published copy says so). Returns {job, count}."""
-    from .queue import queue
     room = get_room(room_id)
     if not room["dest"]:
         raise RoomError(422, "choose the output folder first")
@@ -650,9 +713,38 @@ def accept(room_id: str, user: str, rels=None, all_ok: bool = False, force: bool
         if not r["out_dir"]:
             raise RoomError(409, f"{r['rel']}: its result is missing; run the room again")
         items.append({"rel": r["rel"], "out_dir": r["out_dir"], "content_hash": r["content_hash"], "accuracy": r["accuracy"],
-                      "forced": derive_state(r, room) == "below", "by": user})
+                      "forced": derive_state(r, room) == "below", "by": user, "edition": _edition_out(r.get("edition"))})
     if not items:
         raise RoomError(409, "nothing to accept")
+    return _queue_publish(room, items, user)
+
+
+def restamp(room_id: str) -> dict:
+    """Send the published files again with their edition lines brought up to date (a newer edition arrived, so an
+    older one is now superseded), keeping who accepted each and when. Nothing is distilled again."""
+    import datetime as _dt
+    room = get_room(room_id)
+    if not room["dest"]:
+        raise RoomError(422, "choose the output folder first")
+    if active_job(room_id):
+        raise RoomError(409, "this room is queued or running; wait for it to finish")
+    items = []
+    for r in _files(room_id):
+        if not r["confirmed"] or not r["out_dir"]:
+            continue
+        nd = (r["number_diffs"] or 0) + (_get(r, "rule_checks") or 0)
+        at = _dt.datetime.fromtimestamp(r["confirmed_at"]).astimezone().isoformat(timespec="seconds") if r["confirmed_at"] else None
+        items.append({"rel": r["rel"], "out_dir": r["out_dir"], "content_hash": r["content_hash"], "accuracy": r["accuracy"],
+                      "forced": SC.decide(r["accuracy"], nd, room["threshold"], room["number_guard"]) == "below",
+                      "by": r["confirmed_by"] or "", "at": at, "edition": _edition_out(r.get("edition"))})
+    if not items:
+        raise RoomError(409, "nothing is published yet")
+    return _queue_publish(room, items, None)
+
+
+def _queue_publish(room: dict, items: list, user: str | None) -> dict:
+    from .queue import queue
+    room_id = room["id"]
     plan = os.path.join(S.room_dir(room_id), f"publish-{uuid.uuid4().hex[:8]}.json")
     os.makedirs(os.path.dirname(plan), exist_ok=True)
     with open(plan, "w", encoding="utf-8") as f:
@@ -664,8 +756,12 @@ def accept(room_id: str, user: str, rels=None, all_ok: bool = False, force: bool
     con = db.trust_rw()
     try:
         for it in items:
-            con.execute("UPDATE room_file SET activity='publishing', confirmed_by=?, confirmed_at=?, updated_at=? "
-                        "WHERE room_id=? AND rel=?", (user, now, now, room_id, it["rel"]))
+            if user is None:                                 # a re-stamp keeps who accepted it and when
+                con.execute("UPDATE room_file SET activity='publishing', updated_at=? WHERE room_id=? AND rel=?",
+                            (now, room_id, it["rel"]))
+            else:
+                con.execute("UPDATE room_file SET activity='publishing', confirmed_by=?, confirmed_at=?, updated_at=? "
+                            "WHERE room_id=? AND rel=?", (user, now, now, room_id, it["rel"]))
         con.execute("UPDATE room SET last_job_id=?, updated_at=? WHERE id=?", (jid, now, room_id))
         con.commit()
     finally:

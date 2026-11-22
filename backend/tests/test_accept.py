@@ -287,3 +287,47 @@ def test_results_filed_under_a_lower_case_folder_are_published_under_the_sources
     assert files["/Guide.md"]["out_dir"].replace("\\", "/").split("/")[-2:] == ["src", "Guide.md.md"]
     assert run("--room-dir", room, "--publish-from", plan) == 0
     assert "/out/SRC/Guide.md.md" in store.files and not any(k.startswith("/out/src/") for k in store.files)
+
+
+def _editions_room():
+    r = R.create_room(None, "t")
+    room = R.update_room(r["id"], {"source": "/as 3500", "dest": "/Transfer_Md/as 3500", "threshold": 99})
+    con = db.trust_rw()
+    for ev in (_file("/2015/AS 3500.1-2015.pdf", 99.9), _file("/2021/AS NZS 3500.1-2021.pdf", 99.8),
+               _file("/2021/SS/AS-NZS_3500.1-2021 Printed.pdf", 86.2),
+               _file("/2018/3500.3-2018 Stormwater.pdf", None, outcome="unprocessable", reason="protected"),
+               _file("/2018/3500.3-2018 Stormwater-已解锁.pdf", 99.7)):
+        R.apply_event(con, room["id"], "j0", ev)
+    con.execute("UPDATE room_file SET confirmed=1, confirmed_by='wang', confirmed_at=1795000000 WHERE rel LIKE '/2015/%'")
+    con.commit()
+    con.close()
+    return room
+
+
+def test_a_second_copy_of_an_edition_is_skipped_and_the_room_lists_editions():
+    room = _editions_room()
+    files = {f["rel"]: f for f in R.find_files(R.get_room(room["id"]))["files"]}
+    printed = files["/2021/SS/AS-NZS_3500.1-2021 Printed.pdf"]
+    assert printed["state"] == "skipped" and printed["covered_by"] == "/2021/AS NZS 3500.1-2021.pdf"
+    assert printed["edition"]["designation"] == "AS/NZS 3500.1:2021" and printed["edition"]["status"] == "current"
+    assert files["/2018/3500.3-2018 Stormwater.pdf"]["state"] == "skipped"
+    old = files["/2015/AS 3500.1-2015.pdf"]
+    assert old["state"] == "published" and old["edition"]["superseded_by"] == "AS/NZS 3500.1:2021"
+    v = R.editions_view(R.get_room(room["id"]))
+    assert (v["standards"], v["extra_copies"], v["superseded"], v["amendments"], v["published_twice"]) == (2, 2, 1, 0, 0)
+    # the copy that does not represent its edition is never offered for acceptance
+    out = R.accept(room["id"], "wang", all_ok=True)
+    plan = json.load(open(json.loads(queue.get(out["job"])["rel"])["publish_from"], encoding="utf-8"))
+    assert {i["rel"] for i in plan["items"]} == {"/2021/AS NZS 3500.1-2021.pdf", "/2018/3500.3-2018 Stormwater-已解锁.pdf"}
+    assert all(i["edition"]["designation"] for i in plan["items"])
+
+
+def test_restamping_sends_the_published_files_again_keeping_who_accepted_them():
+    room = _editions_room()
+    out = R.restamp(room["id"])
+    plan = json.load(open(json.loads(queue.get(out["job"])["rel"])["publish_from"], encoding="utf-8"))
+    (it,) = plan["items"]
+    assert it["rel"] == "/2015/AS 3500.1-2015.pdf" and it["by"] == "wang" and it["at"].startswith("2026-")
+    assert it["edition"]["status"] == "superseded" and it["forced"] is False
+    f = {x["rel"]: x for x in R.find_files(R.get_room(room["id"]))["files"]}["/2015/AS 3500.1-2015.pdf"]
+    assert f["state"] == "publishing"
