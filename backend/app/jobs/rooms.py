@@ -507,8 +507,11 @@ def apply_event(con, room_id: str, job_id: str, ev: dict):
                         "ON CONFLICT(room_id, rel) DO UPDATE SET kind=excluded.kind, size=excluded.size",
                         (room_id, f["rel"], f.get("kind"), f.get("size"), now))
         have = {f["rel"] for f in files}
-        for (rel,) in con.execute("SELECT rel FROM room_file WHERE room_id=? AND outcome IS NULL", (room_id,)).fetchall():
-            if rel not in have:                      # removed from the source before it was ever distilled
+        # A file removed from the source goes from the list unless it has a result: one never distilled, a skipped
+        # duplicate or a file that could not be read leaves nothing behind (a deleted duplicate used to stay listed).
+        for (rel,) in con.execute("SELECT rel FROM room_file WHERE room_id=? AND (outcome IS NULL OR outcome<>'result')",
+                                  (room_id,)).fetchall():
+            if rel not in have:
                 con.execute("DELETE FROM room_file WHERE room_id=? AND rel=?", (room_id, rel))
     elif t == "start":
         con.execute("UPDATE room_file SET activity='processing', updated_at=? WHERE room_id=? AND rel=?",
