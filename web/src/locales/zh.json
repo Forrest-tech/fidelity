@@ -418,7 +418,9 @@
         "backingUp": "正在备份并校验…",
         "days": "{{n}} 天",
         "hours": "{{n}} 小时",
-        "metrics": "监控:/api/v1/system/metrics 提供 Prometheus 格式的数据(需要管理员登录)。"
+        "metrics": "监控:/api/v1/system/metrics 提供 Prometheus 格式的数据(需要管理员登录)。",
+        "backupSize": "{{mb}} MB · {{count}} 个文件",
+        "minutes": "{{n}} 分钟"
       }
     },
     "users": {

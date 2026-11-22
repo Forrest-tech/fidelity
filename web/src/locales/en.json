@@ -418,7 +418,9 @@
         "backingUp": "Backing up and checking…",
         "days": "{{n}} days",
         "hours": "{{n}} hours",
-        "metrics": "Monitoring: /api/v1/system/metrics serves Prometheus-format figures (administrator sign-in needed)."
+        "metrics": "Monitoring: /api/v1/system/metrics serves Prometheus-format figures (administrator sign-in needed).",
+        "backupSize": "{{mb}} MB · {{count}} files",
+        "minutes": "{{n}} minutes"
       }
     },
     "users": {

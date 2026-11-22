@@ -44,6 +44,7 @@ describe("system health", () => {
     await u.click(screen.getByRole("button", { name: "Back up now" }));
     await waitFor(() => expect(calls.some((c) => c.url.endsWith("/system/backup"))).toBe(true));
     expect(await screen.findByText("Restored and checked")).toBeInTheDocument();
+    expect(screen.getByText("5.8 MB · 2008 files")).toBeInTheDocument();
     expect(screen.getByText("All is well.")).toBeInTheDocument();
   });
 
