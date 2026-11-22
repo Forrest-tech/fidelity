@@ -300,6 +300,18 @@ describe("distill page", () => {
     await waitFor(() => expect(calls.some((c) => c.url.includes("/withdraw") && String(c.init?.body).includes("Searchable.pdf"))).toBe(true));
   });
 
+  it("explains every state and reason in one place", async () => {
+    api("reviewer", [room()]);
+    renderApp("/distill");
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    await u.click(await screen.findByRole("button", { name: "What do these mean?" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText("Below threshold")).toBeInTheDocument();
+    expect(within(dialog).getByText(/compare with the source page/)).toBeInTheDocument();
+    expect(within(dialog).getByText("copying text not allowed")).toBeInTheDocument();
+    expect(within(dialog).getByText("Same edition used")).toBeInTheDocument();
+  });
+
   it("an empty room that was never set up can be set up or deleted from its card", async () => {
     const calls = api("reviewer", [room(), room({ id: "r2", name: "Room 2", source: null, dest: null, counts: counts() })],
       (url, init) => (url.endsWith("/rooms/r2") && init?.method === "DELETE" ? { body: {} } : undefined));

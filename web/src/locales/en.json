@@ -882,6 +882,49 @@
         "withdrawFile": "Withdraw {{name}} from the knowledge base",
         "withdrawTitle": "Withdraw this second copy?",
         "withdrawBody": "{{name}} and {{keep}} are the same edition and both are published, so the AI reads it twice. {{name}} moves to the output folder's archive (nothing is deleted; it can be rolled back); {{keep}} stays."
+      },
+      "help": {
+        "open": "What do these mean?",
+        "title": "What each state means",
+        "state": "State",
+        "means": "What it means",
+        "do": "What to do",
+        "reasons": "Why a file was skipped or cannot be processed",
+        "covered": "Same edition used",
+        "s": {
+          "ok": {
+            "means": "Read and checked against its source; the accuracy meets the room's threshold.",
+            "do": "Accept it (alone, or with Accept all that qualify)."
+          },
+          "published": {
+            "means": "In the output folder, with who accepted it and when written into the file.",
+            "do": "Nothing. A newer result replaces it only when someone accepts it."
+          },
+          "below": {
+            "means": "Read, but the accuracy is under the threshold, or a number differs from the source.",
+            "do": "Review it: compare with the source page, fix, and accept it if it is right."
+          },
+          "skipped": {
+            "means": "Not needed: another copy of the same edition (or an identical file) is the one used.",
+            "do": "Nothing. Show the original opens the copy that is used."
+          },
+          "unprocessable": {
+            "means": "Could not be read. The reason is shown beside it.",
+            "do": "Retry when the cause can go away (the network, memory); otherwise supply a readable copy."
+          },
+          "pending": {
+            "means": "Not read yet.",
+            "do": "Run the room."
+          },
+          "processing": {
+            "means": "Being downloaded, read or checked now.",
+            "do": "Wait; the step and the time left are shown."
+          },
+          "publishing": {
+            "means": "Being sent to the output folder.",
+            "do": "Wait."
+          }
+        }
       }
     },
     "corrections": {
@@ -1212,5 +1255,36 @@
     },
     "waitRead": "Waiting to read",
     "pace": "{{s}} s a page, about {{left}} left"
+  },
+  "start": {
+    "title": "Get started",
+    "intro": "Four steps from your documents to verified Markdown your AI tool can cite.",
+    "hide": "Hide this guide",
+    "progress": "{{n}} of {{total}} done",
+    "done": "done",
+    "todo": "to do",
+    "askAdmin": "Only an administrator can connect it: ask one.",
+    "step": {
+      "storage": {
+        "title": "Connect cloud storage",
+        "hint": "Dropbox or Google Drive, where your documents and the output folder are.",
+        "go": "Connect"
+      },
+      "room": {
+        "title": "Create a room with an input and an output folder",
+        "hint": "The input is read only; results go to the output folder, in the same folder structure.",
+        "go": "New room"
+      },
+      "run": {
+        "title": "Run it",
+        "hint": "Every file is read, checked against its source and scored. Scans take longer.",
+        "go": "Open the room"
+      },
+      "accept": {
+        "title": "Accept the results that qualify",
+        "hint": "Files that meet the threshold go to the output folder with who accepted them and when.",
+        "go": "Review results"
+      }
+    }
   }
 }
