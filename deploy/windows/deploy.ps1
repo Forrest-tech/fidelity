@@ -15,7 +15,13 @@ $py = Join-Path $root ".venv\Scripts\python.exe"
 $web = Join-Path $root "web"
 $log = Join-Path $root "data\work\deploy.log"
 function Say($m) { $line = "[deploy " + (Get-Date -Format s) + "] " + $m; Write-Output $line; Add-Content -Path $log -Value $line }
-function Git { $out = & git -C $root @args 2>&1; if ($LASTEXITCODE -ne 0) { throw "git $($args -join ' ') failed: $out" }; return $out }
+# Not named "Git": PowerShell names are case-insensitive, so a function "Git" calling git would call itself for ever.
+function Invoke-Git {
+    $saved = $ErrorActionPreference; $ErrorActionPreference = "Continue"     # git writes progress to stderr
+    try { $out = & git.exe -C $root @args 2>&1 | ForEach-Object { "$_" } } finally { $ErrorActionPreference = $saved }
+    if ($LASTEXITCODE -ne 0) { throw "git $($args -join ' ') failed: $out" }
+    return $out
+}
 
 function Restart-Server {
     $procs = Get-CimInstance Win32_Process -Filter "Name='python.exe'" |
@@ -44,21 +50,21 @@ function Wait-Healthy($bundle) {
 function Bundle { $f = Get-ChildItem (Join-Path $web "dist\assets") -Filter "index-*.js" -ErrorAction SilentlyContinue | Select-Object -First 1; if ($f) { $f.Name } else { "" } }
 
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $log) | Out-Null
-Git fetch -q origin main | Out-Null
-$branch = (Git rev-parse --abbrev-ref HEAD).Trim()
-$prev = (Git rev-parse HEAD).Trim()
-$next = (Git rev-parse origin/main).Trim()
-$dirty = Git status --porcelain --untracked-files=no
+Invoke-Git fetch -q origin main | Out-Null
+$branch = (Invoke-Git rev-parse --abbrev-ref HEAD).Trim()
+$prev = (Invoke-Git rev-parse HEAD).Trim()
+$next = (Invoke-Git rev-parse origin/main).Trim()
+$dirty = Invoke-Git status --porcelain --untracked-files=no
 Say "on $branch at $($prev.Substring(0,7)); origin/main is $($next.Substring(0,7))"
 if ($branch -ne "main") { throw "the checkout is on '$branch', not main: switch back first (git checkout main)" }
 if ($dirty) { throw "the checkout has uncommitted changes; commit or remove them first:`n$dirty" }
 if ($prev -eq $next) { Say "already up to date; nothing to deploy"; exit 0 }
-$changed = Git diff --name-only $prev $next
+$changed = Invoke-Git diff --name-only $prev $next
 $needPip = $changed -match '^backend/requirements.*\.txt$'
 $needNpm = $changed -match '^web/package(-lock)?\.json$'
 $needWeb = $changed -match '^web/'
 Say ("changes: " + @($changed).Count + " file(s); python packages: " + [bool]$needPip + "; web packages: " + [bool]$needNpm + "; web app: " + [bool]$needWeb)
-if ($Check) { Git log --oneline "$prev..$next"; exit 0 }
+if ($Check) { Invoke-Git log --oneline "$prev..$next"; exit 0 }
 
 # 1. a verified backup before anything changes
 & $py -c "import sys; sys.path.insert(0, r'$root\backend'); from app.ops import backup as B; r = B.make(); print(r['path'], 'verified' if r['ok'] else 'NOT verified'); sys.exit(0 if r['ok'] else 1)"
@@ -67,7 +73,7 @@ Say "backup made and verified"
 
 $oldDist = Join-Path $web "dist.prev"
 try {
-    Git merge -q --ff-only $next | Out-Null
+    Invoke-Git merge -q --ff-only $next | Out-Null
     Say "code updated to $($next.Substring(0,7))"
     if ($needPip) { & $py -m pip install -q -r (Join-Path $root "backend\requirements.txt"); if ($LASTEXITCODE -ne 0) { throw "pip install failed" }; Say "python packages installed" }
     if ($needNpm) { Push-Location $web; npm ci --no-audit --no-fund; $rc = $LASTEXITCODE; Pop-Location; if ($rc -ne 0) { throw "npm ci failed" }; Say "web packages installed" }
@@ -87,7 +93,7 @@ try {
     Say "deployed $($next.Substring(0,7)): healthy$(if ($want) { ', serving ' + $want })"
 } catch {
     Say ("FAILED: " + $_.Exception.Message + " - putting $($prev.Substring(0,7)) back")
-    & git -C $root reset -q --hard $prev
+    & git.exe -C $root reset -q --hard $prev
     if ($needWeb -and (Test-Path $oldDist)) {
         if (Test-Path (Join-Path $web "dist")) { Remove-Item -Recurse -Force (Join-Path $web "dist") }
         Rename-Item $oldDist "dist"
