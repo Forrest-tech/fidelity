@@ -148,6 +148,9 @@ def stamp_lines(edition: dict | None) -> list[str]:
         return []
     q = lambda s: '"' + str(s).replace('"', '\\"') + '"'       # noqa: E731
     lines = [f"edition: {q(edition['designation'])}"]
+    if edition.get("number") and edition.get("year"):           # the old name parser left ids like "AS 3500.1-"
+        lines += [f"std_id: {q((edition.get('prefix', '') + ' ' + edition['number']).strip())}",
+                  f"std_year: {q(edition['year'])}"]
     if edition.get("amendment") is not None:
         lines.append(f"amends: {q(edition['designation'])}")
         lines.append(f"amendment: {edition['amendment']}" + (f" ({edition['amendment_year']})" if edition.get("amendment_year") else ""))

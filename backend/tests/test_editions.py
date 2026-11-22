@@ -90,3 +90,19 @@ def test_a_superseded_edition_is_stamped_and_says_so_at_the_top():
 
 def test_without_an_edition_the_front_matter_is_left_as_it_was():
     assert AC.accept_markdown(FM, "a", "t", 99.9, False, None) == AC.accept_markdown(FM, "a", "t", 99.9, False)
+
+
+GATE_HELD = ('---\ndocument: "AS 3500.3-1990"\nstd_id: "AS 3500.3- National Plumbing and Drainage code"\nstd_year: "1990"\n'
+             'audit_status: pending_review\nverified: "FAIL — not trusted"\n---\n\nBody\n')
+
+
+def test_a_file_the_gate_held_but_a_person_accepted_no_longer_says_fail():
+    ed = {"designation": "AS 3500.3:1990", "prefix": "AS", "number": "3500.3", "year": "1990", "amendment": None,
+          "status": "current", "superseded_by": ""}
+    out = AC.accept_markdown(GATE_HELD, "wang", "2026-11-22", 99.9, False, ed)
+    assert "audit_status: human_accepted" in out and "FAIL" not in out
+    assert "met the room's threshold" in out and "99.9% accuracy" in out
+    assert 'std_id: "AS 3500.3"' in out and out.count("std_id:") == 1 and out.count("std_year:") == 1
+    # a file the gate passed keeps its status
+    passed = GATE_HELD.replace("pending_review", "auto_verified").replace('"FAIL — not trusted"', '"PASS"')
+    assert "audit_status: auto_verified" in AC.accept_markdown(passed, "wang", "t", 99.9, False, ed)
