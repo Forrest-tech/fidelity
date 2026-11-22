@@ -68,8 +68,7 @@ if ($Check) { Invoke-Git log --oneline "$prev..$next"; exit 0 }
 
 # 1. a verified backup before anything changes (made by the running version's code; a version older than the
 #    backup module cannot, which is only the case when this deploy is the one that brings it)
-& $py -c "import sys; sys.path.insert(0, r'$root\backend'); import importlib.util as u; sys.exit(0 if u.find_spec('app.ops.backup') else 3)"
-if ($LASTEXITCODE -eq 3) {
+if (-not (Test-Path (Join-Path $root "backend\app\ops\backup.py"))) {
     Say "the running version has no backup module yet (this deploy brings it): continuing without a pre-deploy backup"
 } else {
     & $py -c "import sys; sys.path.insert(0, r'$root\backend'); from app.ops import backup as B; r = B.make(); print(r['path'], 'verified' if r['ok'] else 'NOT verified'); sys.exit(0 if r['ok'] else 1)"
