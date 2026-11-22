@@ -398,3 +398,48 @@ def test_force_redoes_everything_in_a_room(world, tmp_path):
     ev = str(tmp_path / "e.jsonl")
     assert run("--dry-run", "--room-dir", room, "--force", "--events", ev) == 0
     assert {e["rel"] for e in _events(ev) if e["type"] == "file"} == {"/Guide.md", "/Note.md"}
+
+
+def test_a_dropbox_folder_keeps_the_letter_case_its_owner_gave_it():
+    """Dropbox paths are compared lower-case, but the output folder is named after the source as written."""
+    from types import SimpleNamespace
+    from app.distill import dropbox_io as D
+
+    class Dbx:
+        def __init__(self, name=None, fail=False):
+            self.name, self.fail = name, fail
+
+        def files_get_metadata(self, path):
+            if self.fail:
+                raise RuntimeError("offline")
+            return SimpleNamespace(name=self.name)
+    assert D.display_name(Dbx("AS 3500"), "/as 3500") == "AS 3500"
+    assert D.display_name(Dbx("AS 3500"), "/library/as 3500/") == "AS 3500"
+    assert D.display_name(Dbx(fail=True), "/as 3500") == "as 3500"           # offline: the run still works
+    assert D.display_name(Dbx("Other"), "/as 3500") == "as 3500"             # never a different folder's name
+
+
+def test_older_downloaded_copies_are_removed_before_a_run_stops_for_disk_space(tmp_path, monkeypatch):
+    """A real run stopped with 1.4 GB free while 1.2 GB were old downloaded copies: those go first, oldest first,
+    never a file the run still needs, and the run stops only if that is not enough."""
+    import collections
+    import os
+    usage = collections.namedtuple("usage", "total used free")
+    work = tmp_path / "work"
+    paths = {}
+    for i, name in enumerate(("old.pdf", "mid.pdf", "needed.pdf", "new.pdf")):
+        p = work / "src" / "AS 3500" / "2003" / name
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_bytes(b"x" * 100)
+        os.utime(p, (1000 + i, 1000 + i))
+        paths[name] = p
+    base = 50                                                     # free bytes besides the cached copies
+    free = lambda p: usage(1, 0, base + 400 - sum(x.stat().st_size for x in paths.values() if x.exists()))  # noqa: E731
+    monkeypatch.setattr(SY.shutil, "disk_usage", free)
+    monkeypatch.setattr(SY, "MIN_FREE", 200)
+    SY._check_space(str(work), 0, keep=[str(paths["needed.pdf"])])   # needs 200: two oldest copies go
+    assert not paths["old.pdf"].exists() and not paths["mid.pdf"].exists()
+    assert paths["needed.pdf"].exists() and paths["new.pdf"].exists()
+    with pytest.raises(SystemExit, match="not enough free disk space"):
+        SY._check_space(str(work), 100, keep=[str(paths["needed.pdf"])])   # needs 500: the needed copy stays
+    assert paths["needed.pdf"].exists() and not paths["new.pdf"].exists()

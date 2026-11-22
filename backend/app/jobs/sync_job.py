@@ -371,7 +371,11 @@ def write_known(room_id):
     def _rows():
         con = db.trust_rw()
         try:
-            return [r[0] for r in con.execute("SELECT rel FROM room_file WHERE room_id=? AND outcome IS NOT NULL", (room_id,))]
+            # a file that failed on a dropped connection or a download has no result: the next run must read it again
+            # (it was skipped as "unchanged" and stayed failed for good)
+            return [r[0] for r in con.execute(
+                "SELECT rel FROM room_file WHERE room_id=? AND outcome IS NOT NULL "
+                "AND NOT (outcome='unprocessable' AND COALESCE(reason,'') IN ('download','network'))", (room_id,))]
         finally:
             con.close()
     try:

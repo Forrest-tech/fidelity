@@ -96,11 +96,44 @@ def _retry(fn, what):
 MIN_FREE = 2 * 1024 ** 3          # keep this much disk free besides the file and its work files
 
 
-def _check_space(work, size):
+def _evict(work, need, keep=()):
+    """Downloaded sources under <work>/src are a cache: every file has a result once read, and the formula helper
+    copes with a missing copy. When the disk runs short, delete the oldest copies first (never one this run still
+    needs) instead of stopping the run. Returns the bytes freed."""
+    keep = {os.path.normcase(os.path.abspath(R.longpath(k))) for k in keep}
+    files = []
+    for root, _, names in os.walk(R.longpath(os.path.join(work, "src"))):
+        for n in names:
+            p = os.path.join(root, n)
+            try:
+                st = os.stat(p)
+            except OSError:
+                continue
+            if os.path.normcase(os.path.abspath(p)) not in keep:
+                files.append((st.st_mtime, st.st_size, p))
+    freed = 0
+    for _, size, p in sorted(files):
+        if shutil.disk_usage(work).free >= need:
+            break
+        try:
+            os.remove(p)
+            freed += size
+        except OSError:
+            pass
+    if freed:
+        print(f"freed {freed / 1e9:.1f} GB of older downloaded copies (they are downloaded again only if needed)", flush=True)
+    return freed
+
+
+def _check_space(work, size, keep=()):
     """Stop cleanly before a download would fill the disk (a real run died mid-download with
-    "No space left on device", and even the error could not be saved)."""
+    "No space left on device", and even the error could not be saved). Older downloaded copies are
+    removed first; the run stops only when that is not enough."""
     free = shutil.disk_usage(work).free
     need = 3 * size + MIN_FREE      # the file, its rendered pages / extracted text, and headroom
+    if free < need:
+        _evict(work, need, keep)
+        free = shutil.disk_usage(work).free
     if free < need:
         raise SystemExit(f"not enough free disk space on this machine: {free / 1e9:.1f} GB free, "
                          f"about {need / 1e9:.1f} GB needed for the next file — stopped before downloading")
@@ -153,7 +186,7 @@ def _publish_accepted(a, src, dst, ev, dest_root, stage_root, archive_root, live
     live.set(stage="running", total=len(items), queued=[it["rel"] for it in items])
 
     def send(it):
-        rel, key = it["rel"], AC.live_key(it["out_dir"])
+        rel, key = it["rel"], AC.live_key(it["out_dir"], src.name)
         live.file(rel, stage="uploading")
         # The walk and the relative paths both use the long (\\?\) form: mixing it with the plain form failed every
         # multi-file document on Windows ("path is on mount '\\?\C:', start on mount 'C:'"), so nothing was sent.
@@ -318,7 +351,8 @@ def _pipeline(a, plan, src, src_name, out, cache, rledger, ledger, ev, live, wor
     def start_download(rel, f):
         nonlocal reserved
         os.makedirs(a.work, exist_ok=True)
-        _check_space(a.work, (f.get("size") or 0) + reserved)       # SystemExit: stop cleanly before the disk fills
+        in_use = [x[3] for x in inflight.values() if x[0] == "download"] +                  [x[3][0] for x in inflight.values() if x[0] == "read"] + [x[2] for x in ready]
+        _check_space(a.work, (f.get("size") or 0) + reserved, in_use)   # SystemExit: stop cleanly before the disk fills
         reserved += f.get("size") or 0
         lp = os.path.join(a.work, "src", src_name, *rel.strip("/").split("/"))
         ev.emit("start", rel=rel)

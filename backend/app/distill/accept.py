@@ -42,7 +42,16 @@ def accept_markdown(text: str, who: str, when: str, accuracy, forced: bool) -> s
     return "---\n" + "\n".join(out) + "\n---\n" + text[m.end():]
 
 
-def live_key(out_dir: str) -> str:
-    """Where a document belongs in the output folder: its output path without the local `_pending` marker."""
+def live_key(out_dir: str, top: str | None = None) -> str:
+    """Where a document belongs in the output folder: its output path without the local `_pending` marker.
+
+    `top` is the source folder's name as the person sees it ("AS 3500"). Results distilled before the name kept
+    its letter case were filed under the lower-case form ("as 3500"); the output mirrors the source, so the first
+    folder is written the way the source spells it."""
     k = out_dir.replace("\\", "/").strip("/")
-    return k[len("_pending/"):] if k.startswith("_pending/") else k
+    k = k[len("_pending/"):] if k.startswith("_pending/") else k
+    if top:
+        head, sep, rest = k.partition("/")
+        if head.lower() == top.lower():
+            k = top + sep + rest
+    return k
