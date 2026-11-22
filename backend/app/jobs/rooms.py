@@ -12,6 +12,8 @@ File state seen by people (derived, never stored, so changing a room's threshold
     ok              has a result and meets the room's threshold
     below           has a result but is below the threshold, or has a number difference while the guard is on
     unprocessable   no result could be produced (reason says why); there is no percentage
+    skipped         not distilled on purpose, nothing is missing: a duplicate of another file, or a copy-protected file
+                    whose unlocked copy ("...-已解锁", "...unlocked") in the same folder has a result
     publishing      accepted, being sent to the output folder
     published       accepted and in the output folder
 """
@@ -28,7 +30,7 @@ from ..distill import scoring as SC
 from . import capacity, sync_job as S
 
 MODES = ("distill", "upload")
-STATES = ("pending", "processing", "ok", "below", "unprocessable", "publishing", "published")
+STATES = ("pending", "processing", "ok", "below", "unprocessable", "skipped", "publishing", "published")
 
 
 class RoomError(Exception):
@@ -223,6 +225,10 @@ def derive_state(row, room: dict) -> str:
     outcome = row["outcome"]
     if not outcome:
         return "pending"
+    if outcome == "skipped" and row["reason"] == "duplicate":
+        return "skipped"
+    if outcome == "unprocessable" and row["reason"] == "protected" and _get(row, "covered_by"):
+        return "skipped"
     if outcome in ("unprocessable", "skipped"):
         return "unprocessable"
     if row["confirmed"]:
@@ -239,7 +245,33 @@ def _get(row, key):
         return None
 
 
+_UNLOCKED = re.compile(r"[\s_\-()（）]*(已解锁|解锁版|unlocked|decrypted)[\s)）]*$", re.I)
+
+
+def _covers(rows: list) -> list:
+    """Note, for each copy-protected file, an unlocked copy of it in the same folder that has a result (people keep
+    both: "AS 3500.2-2018.pdf" and "AS 3500.2-2018-已解锁.pdf"). The protected one then needs nothing more."""
+    out = [dict(r) for r in rows]
+    have = {}
+    for r in out:
+        if r["outcome"] == "result":
+            folder, name = r["rel"].rsplit("/", 1) if "/" in r["rel"] else ("", r["rel"])
+            stem = os.path.splitext(name)[0]
+            base = _UNLOCKED.sub("", stem)
+            if base != stem:
+                have[(folder, base.strip().lower())] = r["rel"]
+    for r in out:
+        if r["outcome"] == "unprocessable" and r["reason"] == "protected":
+            folder, name = r["rel"].rsplit("/", 1) if "/" in r["rel"] else ("", r["rel"])
+            r["covered_by"] = have.get((folder, os.path.splitext(name)[0].strip().lower()))
+    return out
+
+
 def _files(room_id: str) -> list:
+    return _covers(_rows(room_id))
+
+
+def _rows(room_id: str) -> list:
     con = db.trust_rw()
     try:
         return con.execute("SELECT rel, kind, size, activity, outcome, reason, detail, accuracy, parts, diffs, number_diffs, "
@@ -278,7 +310,7 @@ def _file_out(r, room) -> dict:
             "number_diffs": r["number_diffs"] or 0, "reason": r["reason"], "detail": r["detail"], "pages": r["pages"],
             "parts": json.loads(r["parts"]) if r["parts"] else None,
             "corrected": sum(i.get("count", 0) for i in json.loads(r["corrections"])) if r["corrections"] else 0,
-            "checks": r["rule_checks"] or 0}
+            "checks": r["rule_checks"] or 0, "covered_by": _get(r, "covered_by")}
 
 
 def children(room: dict, path: str = "", state: str | None = None, q: str | None = None) -> dict:

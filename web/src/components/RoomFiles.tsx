@@ -6,8 +6,8 @@ import { Empty, Modal, Table } from "antd";
 import { api, json } from "../net/client";
 import { Bar, Seg } from "./ui";
 
-export type FileState = "pending" | "processing" | "ok" | "below" | "unprocessable" | "publishing" | "published";
-export const STATES: FileState[] = ["pending", "processing", "ok", "below", "unprocessable", "publishing", "published"];
+export type FileState = "pending" | "processing" | "ok" | "below" | "unprocessable" | "skipped" | "publishing" | "published";
+export const STATES: FileState[] = ["pending", "processing", "ok", "below", "unprocessable", "skipped", "publishing", "published"];
 
 export interface FileRow {
   rel: string;
@@ -23,10 +23,12 @@ export interface FileRow {
   pages: number | null;
   corrected?: number;
   checks?: number;
+  /** a copy-protected file whose unlocked copy has a result: that copy */
+  covered_by?: string | null;
 }
 
 type Counts = Record<FileState, number> & { total: number };
-const zero = (): Counts => ({ total: 0, pending: 0, processing: 0, ok: 0, below: 0, unprocessable: 0, publishing: 0, published: 0 });
+const zero = (): Counts => ({ total: 0, pending: 0, processing: 0, ok: 0, below: 0, unprocessable: 0, skipped: 0, publishing: 0, published: 0 });
 
 interface Node {
   key: string;
@@ -86,18 +88,18 @@ export function flatten(root: Node, open: Set<string>): Node[] {
 }
 
 const TONE: Record<FileState, string> = {
-  pending: "idle", processing: "run", ok: "ok", below: "warn", unprocessable: "bad", publishing: "run", published: "ok",
+  pending: "idle", processing: "run", ok: "ok", below: "warn", unprocessable: "bad", skipped: "idle", publishing: "run", published: "ok",
 };
 const COLOR: Record<FileState, string> = {
-  ok: "var(--ok)", published: "var(--ok)", below: "var(--warn)", processing: "var(--run)", publishing: "var(--run)", unprocessable: "var(--bad)", pending: "var(--idle-soft)",
+  ok: "var(--ok)", published: "var(--ok)", below: "var(--warn)", processing: "var(--run)", publishing: "var(--run)", unprocessable: "var(--bad)", skipped: "var(--idle)", pending: "var(--idle-soft)",
 };
 
 /** The state of one file, in the design's words: a percentage when there is a result, a reason when there is none. */
-export function StateTag({ state, accuracy, detail }: { state: FileState; accuracy?: number | null; detail?: string }) {
+export function StateTag({ state, accuracy, detail, title }: { state: FileState; accuracy?: number | null; detail?: string; title?: string }) {
   const { t } = useTranslation();
   const pct = (state === "ok" || state === "below") && accuracy != null ? ` ${accuracy}%` : "";
   return (
-    <span className={`fx-pill p-${TONE[state]}`}>
+    <span className={`fx-pill p-${TONE[state]}`} title={title}>
       {t(`pages.distill.state.${state}`)}{pct}
       {detail ? ` · ${detail}` : ""}
     </span>
@@ -136,7 +138,7 @@ export async function loadFiles(room: string, state: string, q: string): Promise
   return out;
 }
 
-const LEGEND: FileState[] = ["ok", "published", "below", "processing", "publishing", "unprocessable", "pending"];
+const LEGEND: FileState[] = ["ok", "published", "below", "processing", "publishing", "unprocessable", "skipped", "pending"];
 
 export function RoomFiles({
   roomId, live, counts, filter, onFilter, focusFile, onCompare, onFix, onRetry, canEdit = false, progress,
@@ -290,6 +292,15 @@ export function RoomFiles({
   const flashIndex = flash ? rows.findIndex((r) => r.key === flash) : -1;
 
   const action = (f: FileRow, name: string) => {
+    // a skipped file has no result of its own: point to the file that covers it (the original, or the unlocked copy)
+    if (f.state === "skipped") {
+      const to = f.covered_by || (f.reason === "duplicate" ? (f.detail || "").replace(/^same content as /, "") : "");
+      return to && allFiles.some((x) => x.rel === to)
+        ? <button className="fx-a" aria-label={t("pages.distill.showOriginalOf", { name })} onClick={() => reveal(to)}>{t("pages.distill.showOriginal")}</button>
+        : null;
+    }
+    // retrying helps only when the cause can go away (the network, memory, a change); not a copy-protected file
+    if (f.state === "unprocessable" && ["protected", "unsupported", "unreadable", "duplicate"].includes(f.reason ?? "")) return null;
     if (f.state === "unprocessable") return onRetry ? <button className="fx-a" onClick={onRetry} aria-label={t("pages.distill.retryFile", { name })}>{t("pages.distill.retry")}</button> : null;
     if (f.state === "pending" || f.state === "processing") return null;
     return (
@@ -435,19 +446,24 @@ export function RoomFiles({
                 render: (_: unknown, n: Node) => {
                   if (n.folder) {
                     const k = n.counts!;
-                    const parts = (["ok", "published", "below", "unprocessable", "processing", "publishing"] as FileState[]).filter((s) => k[s]).map((s) => `${t(`pages.distill.state.${s}`)} ${k[s]}`);
+                    const parts = (["ok", "published", "below", "unprocessable", "skipped", "processing", "publishing"] as FileState[]).filter((s) => k[s]).map((s) => `${t(`pages.distill.state.${s}`)} ${k[s]}`);
                     return <span className="fx-tiny fx-muted">{parts.join(" · ") || t("pages.distill.notStarted")}</span>;
                   }
                   const f = n.file!;
                   const act = progress?.active?.[f.rel];
                   const qi = progress?.queued ? progress.queued.indexOf(f.rel) : -1;
                   if (act || (qi >= 0 && (f.state === "pending" || f.state === "processing"))) return <StageCell a={act} queuedAt={act ? undefined : qi} />;
-                  const detail = f.state === "unprocessable" && f.reason ? t(`pages.distill.reason.${f.reason}`, { defaultValue: f.reason })
+                  const base = (p?: string | null) => (p || "").split("/").pop() || "";
+                  // a skipped file names the file that covers it: the original of a duplicate, or the unlocked copy
+                  const detail = f.state === "skipped" && f.covered_by ? t("pages.distill.coveredBy", { name: base(f.covered_by) })
+                    : f.state === "skipped" && f.reason === "duplicate" ? t("pages.distill.dupOf", { name: base((f.detail || "").replace(/^same content as /, "")) })
+                    : f.state === "unprocessable" && f.reason ? t(`pages.distill.reason.${f.reason}`, { defaultValue: f.reason })
                     : f.state === "below" && f.checks ? t("pages.distill.ruleChecks", { count: f.checks })
                     : f.state === "below" && f.diffs ? t("pages.distill.diffs", { count: f.diffs }) : undefined;
                   return (
-                    <span className="fx-row" style={{ gap: 6 }}>
-                      <StateTag state={f.state} detail={detail} />
+                    <span className="fx-row" style={{ gap: 6, minWidth: 0, maxWidth: "100%", flexWrap: "nowrap" }}>
+                      <StateTag state={f.state} detail={detail}
+                        title={[detail, f.reason ? t(`pages.distill.reasonLong.${f.state === "skipped" && f.covered_by ? "covered" : f.reason}`, { defaultValue: "" }) : ""].filter(Boolean).join("\n") || undefined} />
                       {!f.checks && !!f.corrected && <span className="fx-tiny fx-muted">{t("pages.distill.autoFixed", { count: f.corrected })}</span>}
                     </span>
                   );

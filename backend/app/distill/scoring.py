@@ -25,7 +25,8 @@ import re
 WEIGHTS = {"text": 0.40, "numbers": 0.30, "headings": 0.20, "tables": 0.10}
 
 REASONS = {
-    "download": "Could not download the file (network or permission).",
+    "network": "The connection to the cloud storage dropped and did not come back in time; the next run tries this file again.",
+    "download": "Could not download the file (no access, or the cloud storage refused it).",
     "unreadable": "The file is damaged or cannot be read.",
     "protected": "The file is copy-protected, so its text may not be extracted.",
     "resources": "The machine ran out of memory or disk space.",
@@ -38,8 +39,11 @@ REASONS = {
 _REASON_PATTERNS = (
     ("source_changed", ("SOURCE CHANGED", "does not match the source file's checksum", "source changed")),
     ("resources", ("No space left", "not enough free disk", "MemoryError", "out of memory", "Cannot allocate memory")),
-    ("download", ("download", "SSLError", "ConnectionError", "Timeout", "timed out", "Max retries", "RemoteDisconnected",
-                  "shared_link", "403", "429", "5xx")),
+    # a dropped connection is not a download problem: it also happens while re-checking the source (seen live:
+    # SSLEOFError "UNEXPECTED_EOF_WHILE_READING" from api.dropboxapi.com), and the next run simply tries again
+    ("network", ("SSLError", "SSLEOFError", "ConnectionError", "ConnectionResetError", "Timeout", "timed out",
+                 "Max retries", "RemoteDisconnected", "Connection aborted")),
+    ("download", ("download", "shared_link", "403", "429", "5xx")),
     ("unreadable", ("MuPDF", "cannot open", "not a PDF", "broken", "damaged", "EOF marker", "Failed to open", "BadZipFile",
                     "format error", "repair")),
 )

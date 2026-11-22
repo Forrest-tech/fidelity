@@ -384,17 +384,19 @@
         "below": "未达标",
         "unprocessable": "无法处理",
         "publishing": "入库中",
-        "published": "已入库"
+        "published": "已入库",
+        "skipped": "已跳过"
       },
       "reason": {
         "download": "下载失败",
         "unreadable": "无法读取",
-        "protected": "受版权保护",
+        "protected": "禁止复制文字",
         "resources": "内存或磁盘不足",
         "source_changed": "源文件被改动",
         "unsupported": "格式不支持",
         "duplicate": "重复文件",
-        "other": "出错"
+        "other": "出错",
+        "network": "网络中断"
       },
       "input": "输入",
       "output": "输出文件夹",
@@ -727,7 +729,24 @@
       "discard": "放弃",
       "saveRoom": "保存房间",
       "eg": "例如 {{p}}",
-      "egOut": "例如 {{p}}(可不填)"
+      "egOut": "例如 {{p}}(可不填)",
+      "coveredBy": "已用解锁版:{{name}}",
+      "dupOf": "与 {{name}} 相同",
+      "reasonLong": {
+        "network": "与云盘的连接中断,约 3.5 分钟内没有恢复。文件本身没有问题,下次运行会自动重试。",
+        "download": "云盘拒绝下载这个文件(没有访问权限)。",
+        "protected": "这个 PDF 自带「禁止复制文字」的权限设置(出版方设的,不是打开密码),所以不提取它的文字。把它的解锁版放在同一文件夹,命名如「文件名-已解锁.pdf」,系统就会蒸馏解锁版。",
+        "covered": "这个 PDF 禁止复制文字,但同一文件夹里它的解锁版已蒸馏,没有缺内容。",
+        "duplicate": "输入文件夹里有两份内容完全一样的文件(在不同位置),只蒸馏其中一份。",
+        "unreadable": "文件损坏或不是有效的文档。",
+        "resources": "读取时电脑内存或磁盘空间不够。",
+        "source_changed": "读取期间云盘里的文件被改动了,下次运行会读取新版本。",
+        "unsupported": "暂不支持这种文件类型。"
+      },
+      "emptyRoomHint": "空房间:还没有选输入文件夹",
+      "setUp": "设置",
+      "showOriginal": "查看原文件",
+      "showOriginalOf": "查看 {{name}} 对应的原文件"
     },
     "corrections": {
       "title": "纠正库",
@@ -1041,6 +1060,7 @@
       "uploading": "上传",
       "ready": "已下载 · 等待读取"
     },
-    "waitRead": "等待读取"
+    "waitRead": "等待读取",
+    "pace": "每页约 {{s}} 秒,约还需 {{left}}"
   }
 }

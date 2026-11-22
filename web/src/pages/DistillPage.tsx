@@ -25,6 +25,7 @@ interface Counts {
   ok: number;
   below: number;
   unprocessable: number;
+  skipped: number;
   publishing: number;
   published: number;
   finished: number;
@@ -262,6 +263,7 @@ function AcceptPanel({ room, canEdit, onReview }: { room: Room; canEdit: boolean
           <Pill tone="ok">{t("pages.distill.state.ok")} <b className="fx-num">{c.ok}</b></Pill>
           <Pill tone="warn">{t("pages.distill.state.below")} <b className="fx-num">{c.below}</b></Pill>
           <Pill tone="bad">{t("pages.distill.state.unprocessable")} <b className="fx-num">{c.unprocessable}</b></Pill>
+          {c.skipped > 0 && <Pill tone="idle">{t("pages.distill.state.skipped")} <b className="fx-num">{c.skipped}</b></Pill>}
           <Pill tone="idle">{t("pages.distill.state.pending")} <b className="fx-num">{c.pending}</b></Pill>
           {c.published > 0 && <Pill tone="ok">{t("pages.distill.state.published")} <b className="fx-num">{c.published}</b></Pill>}
         </div>
@@ -602,7 +604,15 @@ function RoomCard({ room, open, onToggle, canEdit, focusFile, focusState }: {
           {j?.status === "running" && <RunBadge live={j.live} fallback={j.progress ?? 0} />}
           {open && room.source && <span className="fx-muted fx-tiny">{weight}</span>}
           <span className="fx-sp" />
-          {!open && empty && <span className="fx-muted fx-tiny">{t("pages.distill.openToSetUp")}</span>}
+          {!open && empty && (
+            // a room with no input and no files (made by an older version, which created a room at once on
+            // "+ New room"): set it up, or delete it here without opening it
+            <>
+              <span className="fx-muted fx-tiny">{t("pages.distill.emptyRoomHint")}</span>
+              {canEdit && <button className="fx-btn sm pri" onClick={onToggle}>{t("pages.distill.setUp")}</button>}
+              {canEdit && !room.archived && <button className="fx-btn sm" onClick={() => setAskDelete(true)}>{t("pages.distill.delete")}</button>}
+            </>
+          )}
           {!open && !empty && (
             <>
               <span className="fx-tiny"><span className="fx-muted">{t("pages.distill.files")}</span> <b className="fx-num">{c.total}</b></span>

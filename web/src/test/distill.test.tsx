@@ -7,7 +7,7 @@ import type { FileRow } from "../components/RoomFiles";
 
 const ME = (role: string) => ({ id: "1", email: "a@example.com", role });
 const counts = (o: Record<string, number> = {}) => ({
-  total: 0, pending: 0, processing: 0, ok: 0, below: 0, unprocessable: 0, publishing: 0, published: 0, finished: 0, rate: 0, ...o,
+  total: 0, pending: 0, processing: 0, ok: 0, below: 0, unprocessable: 0, skipped: 0, publishing: 0, published: 0, finished: 0, rate: 0, ...o,
 });
 const room = (o: Record<string, unknown> = {}) => ({
   id: "r1", name: "AS 3500", source: { kind: "dropbox", link: "/as 3500" }, dest: { kind: "dropbox", link: "/Transfer_Md" },
@@ -183,10 +183,10 @@ describe("distill page", () => {
     const live = {
       v: 2, stage: "running", started: now - 120, updated: now, total: 6, done: 1, skipped: 1, workers: 2,
       active: {
-        "/2003/a.pdf": { stage: "ocr", page: 12, pages: 40, scan: true, since: now - 60, stage_since: now - 42 },
+        "/2003/a.pdf": { stage: "ocr", page: 12, pages: 40, scan: true, since: now - 60, stage_since: now - 440 },
         "/2003/amend/b.pdf": { stage: "downloading", bytes: 3_100_000, size: 9_400_000, since: now - 5 },
         "/2003/amend/c.pdf": { stage: "checking", since: now - 90 },
-        "/2018/x.pdf": { stage: "ready", since: now - 3 },
+        "/2018/x.pdf": { stage: "ready", since: now - 1900, stage_since: now - 1900 },
       },
       queued: ["/2018/d.pdf", "/2018/e.pdf"], counts: { PASS: 1 },
     };
@@ -197,7 +197,7 @@ describe("distill page", () => {
     expect(within(panel).getByText("1 of 5 done")).toBeInTheDocument();
     expect(within(panel).getByText("2 files being read at once")).toBeInTheDocument();   // OCR + checking; not the download or the waiting one
     expect(within(panel).getByText("a.pdf")).toBeInTheDocument();
-    expect(within(panel).getByText("page 12 of 40")).toBeInTheDocument();
+    expect(within(panel).getByText("page 12 of 40 · 40 s a page, about 19 min left")).toBeInTheDocument();   // 11 pages in 440 s
     expect(within(panel).getByText("3.1 / 9.4 MB")).toBeInTheDocument();
     const steps = within(panel).getAllByRole("list", { name: "Steps of this file" });
     expect(steps[0].querySelector('[aria-current="step"]')?.textContent).toContain("OCR");
@@ -206,6 +206,47 @@ describe("distill page", () => {
     expect(steps[3].querySelector('[aria-current="step"]')).toBeNull();
     expect(within(panel).getByText(/2 files waiting/)).toBeInTheDocument();
     expect(within(panel).getAllByRole("progressbar").length).toBeGreaterThanOrEqual(3);
+    // the file waiting for a free reader has not started: no clock beside it (it read as half an hour spent on it)
+    const waiting = within(panel).getByText("x.pdf").closest("li") as HTMLElement;
+    expect(within(waiting).queryByText(/^\d+:\d\d$/)).not.toBeInTheDocument();
+  });
+
+  it("says why a file was skipped or could not be processed, and duplicates are not failures", async () => {
+    const files = [
+      file("/AS 3500.0 Glossary.pdf", "skipped", { reason: "duplicate", detail: "same content as /2018/AS 3500.0 Glossary.pdf", pages: null }),
+      file("/2018/P.pdf", "skipped", { reason: "protected", covered_by: "/2018/P-已解锁.pdf", pages: null }),
+      file("/2018/S.pdf", "unprocessable", { reason: "protected", pages: null }),
+      file("/2018/P-已解锁.pdf", "ok", { accuracy: 99.9 }),
+      file("/1990/N.pdf", "unprocessable", { reason: "network", pages: null }),
+    ];
+    api("reviewer", [room({ counts: counts({ total: 5, ok: 1, unprocessable: 2, skipped: 2, finished: 5, rate: 100 }) })],
+      (url) => (url.includes("/files") ? { body: { total: files.length, files } } : undefined));
+    renderApp("/distill");
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    await u.click(await screen.findByRole("radio", { name: "Flat" }));
+    expect(await screen.findByText("Skipped · same as AS 3500.0 Glossary.pdf")).toHaveClass("p-idle");
+    expect(screen.getByText("Skipped · unlocked copy used: P-已解锁.pdf")).toHaveClass("p-idle");
+    const prot = screen.getByText("Cannot be processed · copying text not allowed");
+    expect(prot).toHaveClass("p-bad");
+    expect(prot.getAttribute("title")).toMatch(/forbid copying its text[\s\S]*unlocked copy of it in the same folder/);
+    expect(screen.getByText("Cannot be processed · network dropped").getAttribute("title")).toMatch(/next run tries it again/);
+    // a skipped file points to the file that covers it instead of opening an empty result
+    expect(screen.getByRole("button", { name: /^Show the file that covers .*P.pdf$/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Fix .*P\.pdf$/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Retry .*S\.pdf$/ })).not.toBeInTheDocument();   // retrying cannot help
+    expect(screen.getByRole("button", { name: /^Retry .*N\.pdf$/ })).toBeInTheDocument();          // a dropped connection: it can
+  });
+
+  it("an empty room that was never set up can be set up or deleted from its card", async () => {
+    const calls = api("reviewer", [room(), room({ id: "r2", name: "Room 2", source: null, dest: null, counts: counts() })],
+      (url, init) => (url.endsWith("/rooms/r2") && init?.method === "DELETE" ? { body: {} } : undefined));
+    renderApp("/distill");
+    const card = (await screen.findByText("Room 2")).closest(".fx-room") as HTMLElement;
+    expect(within(card).getByText("Empty: no input folder yet")).toBeInTheDocument();
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    await u.click(within(card).getByRole("button", { name: "Delete" }));
+    await u.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Delete" }));
+    await waitFor(() => expect(calls.some((c) => c.url.endsWith("/rooms/r2") && c.init?.method === "DELETE")).toBe(true));
   });
 
   it("a viewer can look but not change", async () => {

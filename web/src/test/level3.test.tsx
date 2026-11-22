@@ -115,7 +115,7 @@ describe("checking automatic adoptions", () => {
 
 describe("the Fix panel", () => {
   it("marks fixes the AI adopted on its own", async () => {
-    const counts = { total: 1, pending: 0, processing: 0, ok: 1, below: 0, unprocessable: 0, publishing: 0, published: 0, finished: 1, rate: 100 };
+    const counts = { total: 1, pending: 0, processing: 0, ok: 1, below: 0, unprocessable: 0, skipped: 0, publishing: 0, published: 0, finished: 1, rate: 100 };
     const room = { id: "r1", name: "Scans", source: { kind: "dropbox", link: "/as 3500" }, dest: null, mode: "distill", threshold: 99,
       number_guard: true, priority: 1, points: 1, archived: false, updated_at: 1, counts, job: null };
     const file = { rel: "/scan.pdf", name: "scan.pdf", kind: "pdf", size: 1, state: "ok", accuracy: 99.5, diffs: 0, number_diffs: 0,

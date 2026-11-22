@@ -55,6 +55,13 @@ export function stepDetail(a: ActiveFile, t: TFunction): string {
   return "";
 }
 
+/** OCR goes page by page: how long a page takes here, and how long this file still needs. */
+export function ocrPace(a: ActiveFile, now: number): { perPage: number; left: number } | null {
+  if (a.stage !== "ocr" || !a.pages || !a.page || a.page < 2 || !a.stage_since) return null;
+  const perPage = (now - a.stage_since) / (a.page - 1);           // pages finished so far: page - 1
+  return { perPage, left: perPage * (a.pages - a.page + 1) };
+}
+
 export function stageLabel(a: ActiveFile, t: TFunction) {
   return a.stage === "ocr" || (a.stage === "reading" && a.scan) ? t("run.step.ocr") : t(`run.step.${a.stage}`);
 }
@@ -153,7 +160,8 @@ export function RunPanel({ live, onCancel, canCancel }: { live: RunLive; onCance
         <ul className="fx-active" aria-label={t("run.activeTitle", { count: active.length })}>
           {active.map(([rel, a]) => {
             const f = stepFraction(a);
-            const d = stepDetail(a, t);
+            const pace = ocrPace(a, now);
+            const d = [stepDetail(a, t), pace ? t("run.pace", { s: Math.round(pace.perPage), left: humanDuration(pace.left, t) }) : ""].filter(Boolean).join(" · ");
             return (
               <li key={rel}>
                 <span className="fx-active-name" title={rel}>{name(rel)}</span>
@@ -167,7 +175,8 @@ export function RunPanel({ live, onCancel, canCancel }: { live: RunLive; onCance
                     </span>
                   )}
                   {f == null && a.stage !== "ready" && <span className="fx-bar fx-bar-run indet" style={{ width: 90 }} aria-hidden><i /></span>}
-                  <span className="fx-tiny fx-muted fx-num" title={t("run.inStep")}>{clock(now - (a.stage_since ?? a.since ?? now))}</span>
+                  {/* a file waiting for a free reader has not started: no clock, it would read as time spent on it */}
+                  {a.stage !== "ready" && <span className="fx-tiny fx-muted fx-num" title={t("run.inStep")}>{clock(now - (a.stage_since ?? a.since ?? now))}</span>}
                 </span>
               </li>
             );

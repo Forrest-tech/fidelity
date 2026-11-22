@@ -67,7 +67,9 @@ def test_scanned_file_scores_by_how_closely_the_two_engines_agree():
 
 def test_a_file_that_could_not_be_read_has_no_percentage_and_a_reason():
     c = S.classify(None, error="download: requests.exceptions.SSLError: Max retries exceeded")
-    assert c["outcome"] == "unprocessable" and c["accuracy"] is None and c["reason"] == "download"
+    assert c["outcome"] == "unprocessable" and c["accuracy"] is None and c["reason"] == "network"   # a dropped connection
+    assert S.classify(None, error="re-checking the source: SSLError: SSLEOFError(8, 'UNEXPECTED_EOF')")["reason"] == "network"
+    assert S.classify(None, error="download: ApiError 403 shared_link_access_denied")["reason"] == "download"
     assert S.classify(None, error="MemoryError")["reason"] == "resources"
     assert S.classify(None, error="No space left on device")["reason"] == "resources"
     assert S.classify(None, error="SOURCE CHANGED during the run")["reason"] == "source_changed"
