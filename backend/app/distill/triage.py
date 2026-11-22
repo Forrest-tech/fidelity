@@ -4,6 +4,9 @@
 Every source file is classified first; each class has its own route:
   text        text-layer PDF                -> distilled by this pipeline
   scan        image-only / scanned PDF      -> OCR route (Phase 4); listed, not distilled here
+              also a scan someone else ran OCR on ("Converted to Searchable"): each page is one picture with an
+              invisible text layer over it. That layer is another program's OCR, not the publisher's text, so it is
+              read again and verified like any scan (measured: such layers lost ~8% of numbers on AS/NZS 3500 2021).
   drawing     large-format vector drawing   -> drawing route (Phase 4); listed, not distilled here
   protected   password / copy-restricted    -> listed as "protected, not distilled" (F-13)
 """
@@ -17,6 +20,7 @@ SAMPLE_PAGES = 24
 SCAN_TEXT_CHARS = 25          # average text characters per sampled page below this => no usable text layer
 DRAWING_MIN_SIDE_PT = 1000    # about A1 and larger
 DRAWING_MIN_VECTORS = 300
+OCR_LAYER_IMAGE_SHARE = 0.85  # a page this much covered by one picture, with text on it, is a scan with an OCR layer
 
 
 def triage_pdf(path: str) -> dict:
@@ -35,23 +39,43 @@ def triage_pdf(path: str) -> dict:
             return {"class": "unsupported", "reason": "no pages"}
         step = max(1, n // SAMPLE_PAGES)
         sample = list(range(0, n, step))[:SAMPLE_PAGES]
-        chars = vectors = images = big = 0
+        chars = vectors = images = big = pictured = 0
         for i in sample:
             pg = doc[i]
-            chars += len(pg.get_text().strip())
+            text = len(pg.get_text().strip())
+            chars += text
             vectors += len(pg.get_drawings())
             images += len(pg.get_images())
             if max(pg.rect.width, pg.rect.height) >= DRAWING_MIN_SIDE_PT:
                 big += 1
+            if text >= SCAN_TEXT_CHARS and _picture_share(pg) >= OCR_LAYER_IMAGE_SHARE:
+                pictured += 1
         k = len(sample)
         info = {"pages": n, "avg_text_chars": round(chars / k, 1), "avg_vectors": round(vectors / k, 1)}
         if big >= k / 2 and vectors / k >= DRAWING_MIN_VECTORS:
             return {"class": "drawing", "reason": "large-format page with many vector elements", **info}
         if chars / k < SCAN_TEXT_CHARS:
             return {"class": "scan", "reason": "no usable text layer (%s images on sampled pages)" % images, **info}
+        if pictured >= k / 2:
+            return {"class": "scan", "reason": "scanned pages with another program's OCR text layer (%s of %s sampled "
+                                               "pages are one full-page picture): read again and verified" % (pictured, k),
+                    "ocr_layer": True, **info}
         return {"class": "text", "reason": "text layer present", **info}
     finally:
         doc.close()
+
+
+def _picture_share(page) -> float:
+    """The largest share of the page one picture covers (0 when it has none)."""
+    area = abs(page.rect) or 1.0
+    best = 0.0
+    try:
+        for info in page.get_image_info():
+            r = pymupdf.Rect(info["bbox"]) & page.rect
+            best = max(best, abs(r) / area)
+    except Exception:                                       # noqa: BLE001 - a page we cannot inspect counts as text
+        return 0.0
+    return best
 
 
 # ------------------------------------------------------------------ instruction-like text (F-23)

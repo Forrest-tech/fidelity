@@ -102,6 +102,7 @@ def run(pdf_path: str, pages, engines=None, degradations=None, log=print) -> dic
                                         "num_recall": round(number_recall(truth, r["text_corrected"]), 5),
                                         "conf": r["conf"]}
             row["published_char_acc"] = round(char_accuracy(truth, res.text), 5)
+            row["published_num_recall"] = round(number_recall(truth, res.text), 5)
             rows.append(row)
             log(f"  p{idx + 1} {dname}: {row['engines']} -> {res.status}")
     models = {e.name: getattr(e, "model", None) or "default" for e in engines}
