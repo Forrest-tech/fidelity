@@ -831,7 +831,16 @@
         "restampDone": "已排队:{{count}} 个文件",
         "twice": "{{count}} 个版本发布了两次",
         "twiceHint": "同一版本在输出文件夹里有两份,AI 会看到重复内容。在文件列表里找标着\"同版本也已发布\"的文件。",
-        "alsoPublished": "同版本也已发布:{{name}}"
+        "alsoPublished": "同版本也已发布:{{name}}",
+        "code": "NCC 2025",
+        "calledUp": "NCC 2025 引用这个版本:{{clauses}}",
+        "newer": "有新版",
+        "newerLong": "NCC 2025 引用更新的 {{ed}},本库里没有。",
+        "missing": "{{code}} 引用了 {{count}} 个本房间没有的版本:{{list}}",
+        "withdraw": "撤下",
+        "withdrawFile": "从知识库撤下 {{name}}",
+        "withdrawTitle": "从知识库撤下这份重复副本?",
+        "withdrawBody": "{{name}} 和 {{keep}} 是同一版本,两份都已发布,AI 会读到重复内容。撤下后它移到输出文件夹的存档里(不删除,可以回滚),{{keep}} 继续保留。"
       }
     },
     "corrections": {

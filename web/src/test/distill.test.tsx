@@ -257,14 +257,14 @@ describe("distill page", () => {
       ({ designation, amendment: null, status, superseded_by, copy_of, copies: copy_of ? 2 : 1 });
     const files = [
       file("/2015/AS 3500.1-2015.pdf", "published", { accuracy: 99.9, edition: ed("AS/NZS 3500.1:2015", "superseded", "AS/NZS 3500.1:2021") }),
-      file("/2021/AS NZS 3500.1-2021.pdf", "published", { accuracy: 99.9, edition: ed("AS/NZS 3500.1:2021", "current") }),
+      file("/2021/AS NZS 3500.1-2021.pdf", "published", { accuracy: 99.9, edition: { ...ed("AS/NZS 3500.1:2021", "current"), newer_edition: "AS/NZS 3500.1:2025" } }),
       file("/2021/SS/AS-NZS_3500.1-2021 Printed.pdf", "skipped", { accuracy: 86.2, covered_by: "/2021/AS NZS 3500.1-2021.pdf",
         edition: ed("AS/NZS 3500.1:2021", "current", "", "/2021/AS NZS 3500.1-2021.pdf") }),
       file("/notes/site.pdf", "ok", { accuracy: 99.9 }),
     ];
     api("reviewer", [room({ counts: counts({ total: 4, ok: 1, published: 2, skipped: 1, finished: 4, rate: 100 }) })],
       (url) => (url.includes("/files") ? { body: { total: files.length, files } }
-        : url.includes("/editions") ? { body: { standards: 1, current: 1, superseded: 1, amendments: 0, extra_copies: 1, published_twice: 0, editions: [] } } : undefined));
+        : url.includes("/editions") ? { body: { standards: 1, current: 1, superseded: 1, amendments: 0, extra_copies: 1, published_twice: 0, editions: [], code: "NCC 2025", missing: [{ designation: "AS/NZS 3500.1:2025", title: "Water services", clauses: ["B1D3"] }] } } : undefined));
     renderApp("/distill");
     const u = userEvent.setup({ pointerEventsCheck: 0 });
     await u.click(await screen.findByRole("radio", { name: "Flat" }));
@@ -274,6 +274,30 @@ describe("distill page", () => {
     expect(screen.getAllByText("AS/NZS 3500.1:2021")).toHaveLength(2);
     expect(screen.getByText("Skipped · same edition used: AS NZS 3500.1-2021.pdf")).toBeInTheDocument();
     expect(await screen.findByText(/1 standards · 1 current editions · 1 older editions · 0 amendments · 1 extra copies not published/)).toBeInTheDocument();
+    expect(screen.getByText("NCC 2025 calls up 1 editions this room does not hold: AS/NZS 3500.1:2025")).toBeInTheDocument();
+    expect(within(screen.getAllByText("AS/NZS 3500.1:2021")[0].parentElement as HTMLElement).getByText("newer exists")).toBeInTheDocument();
+  });
+
+  it("withdraws a second published copy of an edition after a confirmation", async () => {
+    const ed = { designation: "AS/NZS 3500.3:2021", amendment: null, status: "current" as const, superseded_by: "", copies: 2 };
+    const files = [
+      file("/2021/AS NZS 3500.3-2021.pdf", "published", { accuracy: 99.8, edition: { ...ed, copy_of: null } }),
+      file("/2021/SS/AS-NZS_3500.3-2021 Searchable.pdf", "published", { accuracy: 99.0, covered_by: "/2021/AS NZS 3500.3-2021.pdf",
+        edition: { ...ed, copy_of: "/2021/AS NZS 3500.3-2021.pdf" } }),
+    ];
+    const calls = api("reviewer", [room({ counts: counts({ total: 2, published: 2, finished: 2, rate: 100 }) })],
+      (url, init) => (url.includes("/withdraw") && init?.method === "POST" ? { body: { job: "j9", count: 1 } }
+        : url.includes("/files") ? { body: { total: files.length, files } } : undefined));
+    renderApp("/distill");
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    await u.click(await screen.findByRole("radio", { name: "Flat" }));
+    expect(screen.getByText("Accepted · same edition also published: AS NZS 3500.3-2021.pdf")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Withdraw .*AS NZS 3500\.3-2021\.pdf/ })).not.toBeInTheDocument();   // the one kept
+    await u.click(screen.getByRole("button", { name: /^Withdraw .*Searchable\.pdf/ }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(/nothing is deleted/)).toBeInTheDocument();
+    await u.click(within(dialog).getByRole("button", { name: "Withdraw" }));
+    await waitFor(() => expect(calls.some((c) => c.url.includes("/withdraw") && String(c.init?.body).includes("Searchable.pdf"))).toBe(true));
   });
 
   it("an empty room that was never set up can be set up or deleted from its card", async () => {

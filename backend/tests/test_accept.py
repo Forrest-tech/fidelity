@@ -331,3 +331,42 @@ def test_restamping_sends_the_published_files_again_keeping_who_accepted_them():
     assert it["edition"]["status"] == "superseded" and it["forced"] is False
     f = {x["rel"]: x for x in R.find_files(R.get_room(room["id"]))["files"]}["/2015/AS 3500.1-2015.pdf"]
     assert f["state"] == "publishing"
+
+
+def test_a_second_published_copy_is_withdrawn_to_the_archive_and_rollback_restores_it(world, tmp_path):
+    src, store, run = world
+    room, files = _distill(run, tmp_path)
+    plan, _ = _plan(tmp_path, files)
+    assert run("--room-dir", room, "--publish-from", plan) == 0
+    path = tmp_path / "withdraw.json"
+    g = files["/Note.md"]
+    path.write_text(json.dumps({"items": [{"rel": "/Note.md", "out_dir": g["out_dir"], "content_hash": g["content_hash"],
+                                           "withdraw": True}]}), encoding="utf-8")
+    ev = str(tmp_path / "w.jsonl")
+    assert run("--room-dir", room, "--publish-from", str(path), "--events", ev) == 0
+    live = {k for k in store.files if k.startswith("/out/")}
+    assert live == {"/out/src/Guide.md.md"}                           # the other copy stays published
+    assert any(k.startswith("/out_archive/") and k.endswith("Note.md.md") for k in store.files)   # nothing deleted
+    assert [e["rel"] for e in _events(ev) if e["type"] == "withdrawn"] == ["/Note.md"]
+    run("--rollback", next(e["run"] for e in _events(ev) if e["type"] == "withdrawn"))
+    assert "/out/src/Note.md.md" in store.files
+
+
+def test_only_a_second_copy_of_a_published_edition_may_be_withdrawn():
+    room = _editions_room()
+    con = db.trust_rw()
+    con.execute("UPDATE room_file SET confirmed=1, confirmed_by='wang' WHERE rel LIKE '/2021/%'")
+    con.commit()
+    con.close()
+    with pytest.raises(R.RoomError, match="only published copy"):
+        R.withdraw(room["id"], ["/2021/AS NZS 3500.1-2021.pdf"])
+    out = R.withdraw(room["id"], ["/2021/SS/AS-NZS_3500.1-2021 Printed.pdf"])
+    plan = json.load(open(json.loads(queue.get(out["job"])["rel"])["publish_from"], encoding="utf-8"))
+    assert plan["items"] == [{"rel": "/2021/SS/AS-NZS_3500.1-2021 Printed.pdf", "out_dir": plan["items"][0]["out_dir"],
+                              "content_hash": "h/2021/SS/AS-NZS_3500.1-2021 Printed.pdf", "withdraw": True}]
+    con = db.trust_rw()
+    R.apply_event(con, room["id"], out["job"], {"type": "withdrawn", "rel": "/2021/SS/AS-NZS_3500.1-2021 Printed.pdf", "t": 2.0})
+    con.commit()
+    con.close()
+    f = {x["rel"]: x for x in R.find_files(R.get_room(room["id"]))["files"]}["/2021/SS/AS-NZS_3500.1-2021 Printed.pdf"]
+    assert f["state"] == "skipped"

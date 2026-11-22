@@ -290,7 +290,8 @@ def _editions(room_id: str, rows: list) -> list:
             db.trust_write(_save)
         except Exception:                                    # noqa: BLE001 - worked out again next time
             pass
-    out = ED.registry(out)
+    from ..distill import references as RF
+    out = ED.registry(out, RF.by_number(RF.load()))
     for d in out:
         d["covered_by"] = d["edition"].get("copy_of")
     return out
@@ -299,13 +300,15 @@ def _editions(room_id: str, rows: list) -> list:
 def editions_view(room: dict) -> dict:
     """Standards by edition: for each edition, the copy that represents it, the other copies, and its status here."""
     groups: dict = {}
-    for r in _files(room["id"]):
+    rows = _files(room["id"])
+    for r in rows:
         e = r["edition"]
         if not e.get("key"):
             continue
         g = groups.setdefault(e["key"], {"designation": e["designation"], "number": e["number"], "year": e["year"],
                                          "amendment": e.get("amendment"), "consolidated": e.get("consolidated"),
                                          "status": e["status"], "superseded_by": e["superseded_by"],
+                                         "called_up_by": e.get("called_up_by", ""), "newer_edition": e.get("newer_edition", ""),
                                          "best": None, "copies": []})
         item = {"rel": r["rel"], "state": derive_state(r, room), "accuracy": r["accuracy"]}
         if e.get("copy_of"):
@@ -313,6 +316,10 @@ def editions_view(room: dict) -> dict:
         else:
             g["best"] = item
     out = sorted(groups.values(), key=lambda g: (g["number"], g["year"], g["amendment"] or 0, bool(g["consolidated"])))
+    from ..distill import editions as ED
+    from ..distill import references as RF
+    code = RF.load()
+    missing = ED.missing_editions(rows, RF.by_number(code))
     editions = [g for g in out if g["amendment"] is None]
     return {"editions": out, "standards": len({g["number"] for g in out}),
             "current": sum(1 for g in editions if g["status"] == "current"),
@@ -321,7 +328,9 @@ def editions_view(room: dict) -> dict:
             "extra_copies": sum(1 for g in out for c in g["copies"] if c["state"] != "published"),
             # the same edition published more than once: the AI library holds it twice
             "published_twice": sum(1 for g in out if any(c["state"] == "published" for c in g["copies"])
-                                   and g["best"] and g["best"]["state"] == "published")}
+                                   and g["best"] and g["best"]["state"] == "published"),
+            # editions the building code calls up that this room does not hold (D-1, checked against the code itself)
+            "code": code.get("code", ""), "code_note": code.get("adoption_note", ""), "missing": missing}
 
 
 def _files(room_id: str) -> list:
@@ -374,7 +383,7 @@ def _edition_out(e) -> dict | None:
     if not e or not e.get("designation"):
         return None
     return {k: e.get(k) for k in ("designation", "prefix", "number", "year", "amendment", "amendment_year", "consolidated",
-                                  "status", "superseded_by", "copy_of", "copies", "basis")}
+                                  "status", "superseded_by", "copy_of", "copies", "basis", "called_up_by", "newer_edition")}
 
 
 def children(room: dict, path: str = "", state: str | None = None, q: str | None = None) -> dict:
@@ -577,6 +586,9 @@ def apply_event(con, room_id: str, job_id: str, ev: dict):
                                   (room_id,)).fetchall():
             if rel not in have:
                 con.execute("DELETE FROM room_file WHERE room_id=? AND rel=?", (room_id, rel))
+    elif t == "withdrawn":                           # taken out of the output folder (archived there)
+        con.execute("UPDATE room_file SET activity=NULL, confirmed=0, updated_at=? WHERE room_id=? AND rel=?",
+                    (now, room_id, ev["rel"]))
     elif t == "start":
         con.execute("UPDATE room_file SET activity='processing', updated_at=? WHERE room_id=? AND rel=?",
                     (now, room_id, ev["rel"]))
@@ -739,6 +751,31 @@ def restamp(room_id: str) -> dict:
                       "by": r["confirmed_by"] or "", "at": at, "edition": _edition_out(r.get("edition"))})
     if not items:
         raise RoomError(409, "nothing is published yet")
+    return _queue_publish(room, items, None)
+
+
+def withdraw(room_id: str, rels: list) -> dict:
+    """Take published files out of the output folder (moved to its archive, undoable). Only a file that is a second
+    copy of an edition already published may be withdrawn here, so the library never loses an edition."""
+    room = get_room(room_id)
+    if not room["dest"]:
+        raise RoomError(422, "choose the output folder first")
+    if active_job(room_id):
+        raise RoomError(409, "this room is queued or running; wait for it to finish")
+    rows = {r["rel"]: r for r in _files(room_id)}
+    items = []
+    for rel in rels or []:
+        r = rows.get(rel)
+        if r is None:
+            raise RoomError(404, f"no such file in this room: {rel}")
+        if not r["confirmed"] or not r["out_dir"]:
+            raise RoomError(409, f"{rel} is not published")
+        other = rows.get(r.get("covered_by") or "")
+        if not other or not other["confirmed"]:
+            raise RoomError(409, f"{rel} is the only published copy of its edition; it cannot be withdrawn here")
+        items.append({"rel": rel, "out_dir": r["out_dir"], "content_hash": r["content_hash"], "withdraw": True})
+    if not items:
+        raise RoomError(409, "nothing to withdraw")
     return _queue_publish(room, items, None)
 
 

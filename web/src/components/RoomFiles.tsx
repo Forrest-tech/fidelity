@@ -38,17 +38,27 @@ export interface Edition {
   superseded_by: string;
   copy_of: string | null;
   copies: number;
+  /** clauses of the building code that call up this very edition */
+  called_up_by?: string;
+  /** a newer edition the building code calls up that this library does not hold */
+  newer_edition?: string;
 }
 
 export function EditionCell({ e }: { e?: Edition | null }) {
   const { t } = useTranslation();
   if (!e) return <span className="fx-muted">—</span>;
   const what = e.designation + (e.amendment != null ? ` ${t("pages.distill.edition.amd", { n: e.amendment })}` : "") + (e.consolidated ? ` ${t("pages.distill.edition.consolidated")}` : "");
-  const tip = e.status === "superseded" ? t("pages.distill.edition.supersededBy", { by: e.superseded_by }) : e.status === "current" ? t("pages.distill.edition.currentLong") : "";
+  const tip = [
+    e.status === "superseded" ? t("pages.distill.edition.supersededBy", { by: e.superseded_by }) : e.status === "current" ? t("pages.distill.edition.currentLong") : "",
+    e.called_up_by ? t("pages.distill.edition.calledUp", { clauses: e.called_up_by }) : "",
+    e.newer_edition ? t("pages.distill.edition.newerLong", { ed: e.newer_edition }) : "",
+  ].filter(Boolean).join("\n");
   return (
     <span className="fx-row" style={{ gap: 6, minWidth: 0, flexWrap: "nowrap" }} title={[what, tip].filter(Boolean).join("\n")}>
       <span className="fx-tiny" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{what}</span>
-      {e.status === "superseded" && <span className="fx-pill warn fx-tiny" style={{ flex: "none" }}>{t("pages.distill.edition.old")}</span>}
+      {e.called_up_by && <span className="fx-pill ok fx-tiny" style={{ flex: "none" }}>{t("pages.distill.edition.code")}</span>}
+      {e.status === "superseded" && !e.called_up_by && <span className="fx-pill warn fx-tiny" style={{ flex: "none" }}>{t("pages.distill.edition.old")}</span>}
+      {e.newer_edition && <span className="fx-pill warn fx-tiny" style={{ flex: "none" }}>{t("pages.distill.edition.newer")}</span>}
     </span>
   );
 }
@@ -312,6 +322,15 @@ export function RoomFiles({
       for (const k of ["rooms", "room-files", "accept-preview", "notifications"]) void qc.invalidateQueries({ queryKey: [k] });
     },
   });
+  // a second published copy of an edition: taken out of the output folder (archived there, undoable)
+  const [toWithdraw, setToWithdraw] = useState<FileRow | null>(null);
+  const withdraw = useMutation({
+    mutationFn: (rel: string) => api(`/rooms/${roomId}/withdraw`, json({ rels: [rel] })),
+    onSuccess: () => {
+      setToWithdraw(null);
+      for (const k of ["rooms", "queue", "room-files", "accept-preview", "room-editions", "notifications"]) void qc.invalidateQueries({ queryKey: [k] });
+    },
+  });
   const processing = allFiles.find((f) => f.state === "processing");
   const rowH = pref.compact ? 34 : 40;
   const height = Math.min(360, Math.max(rowH * 3, rows.length * rowH + 2));
@@ -340,6 +359,12 @@ export function RoomFiles({
           <>
             {" · "}
             <button className="fx-a" aria-label={t("pages.distill.compareFile", { name })} onClick={() => onCompare(f.rel)}>{t("pages.distill.compare")}</button>
+          </>
+        )}
+        {canEdit && f.state === "published" && f.covered_by && allFiles.some((x) => x.rel === f.covered_by && x.state === "published") && (
+          <>
+            {" · "}
+            <button className="fx-a" aria-label={t("pages.distill.edition.withdrawFile", { name })} onClick={() => setToWithdraw(f)}>{t("pages.distill.edition.withdraw")}</button>
           </>
         )}
       </span>
@@ -532,6 +557,23 @@ export function RoomFiles({
         <span className="fx-sp" />
         <span>{t("pages.distill.keysHint")}</span>
       </div>
+      <Modal
+        open={!!toWithdraw}
+        onCancel={() => setToWithdraw(null)}
+        title={t("pages.distill.edition.withdrawTitle")}
+        width={440}
+        footer={[
+          <button key="c" className="fx-btn" onClick={() => setToWithdraw(null)}>{t("pages.distill.cancel")}</button>,
+          <button key="ok" className="fx-btn pri" style={{ marginLeft: 8 }} disabled={withdraw.isPending} onClick={() => toWithdraw && withdraw.mutate(toWithdraw.rel)}>{t("pages.distill.edition.withdraw")}</button>,
+        ]}
+      >
+        {toWithdraw && (
+          <div className="fx-stack fx-tiny" style={{ gap: 8 }}>
+            <div>{t("pages.distill.edition.withdrawBody", { name: toWithdraw.rel.split("/").pop(), keep: (toWithdraw.covered_by || "").split("/").pop() })}</div>
+            {withdraw.error && <div className="fx-errnote" role="alert">{(withdraw.error as Error).message}</div>}
+          </div>
+        )}
+      </Modal>
       <Modal
         open={confirm}
         onCancel={() => setConfirm(false)}

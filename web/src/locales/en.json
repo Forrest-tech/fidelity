@@ -831,7 +831,16 @@
         "restampDone": "Queued: {{count}} files",
         "twice": "{{count}} edition published twice",
         "twiceHint": "The same edition is in the output folder twice, so the AI sees it twice. Look for \"same edition also published\" in the file list.",
-        "alsoPublished": "same edition also published: {{name}}"
+        "alsoPublished": "same edition also published: {{name}}",
+        "code": "NCC 2025",
+        "calledUp": "NCC 2025 calls up this edition: {{clauses}}",
+        "newer": "newer exists",
+        "newerLong": "NCC 2025 calls up the newer {{ed}}, which this library does not hold.",
+        "missing": "{{code}} calls up {{count}} editions this room does not hold: {{list}}",
+        "withdraw": "Withdraw",
+        "withdrawFile": "Withdraw {{name}} from the knowledge base",
+        "withdrawTitle": "Withdraw this second copy?",
+        "withdrawBody": "{{name}} and {{keep}} are the same edition and both are published, so the AI reads it twice. {{name}} moves to the output folder's archive (nothing is deleted; it can be rolled back); {{keep}} stays."
       }
     },
     "corrections": {
