@@ -45,6 +45,15 @@ def test_live_key_drops_the_local_pending_marker():
     assert AC.live_key("as 3500/2003/a.pdf.md") == "as 3500/2003/a.pdf.md"
 
 
+def test_live_key_spells_the_first_folder_the_way_the_source_does():
+    """The output mirrors the source: /Transfer_Md/AS 3500/2015/..., not /Transfer_Md/as 3500/2015/..."""
+    assert AC.live_key(r"_pending\as 3500\2015\a.pdf.md", "AS 3500") == "AS 3500/2015/a.pdf.md"
+    assert AC.live_key(r"as 3500\2015\AS 3500.1-2015", "AS 3500") == "AS 3500/2015/AS 3500.1-2015"
+    assert AC.live_key("AS 3500/2015/x", "AS 3500") == "AS 3500/2015/x"
+    assert AC.live_key("other/2015/x", "AS 3500") == "other/2015/x"           # only its own top folder
+    assert AC.live_key("as 3500", "AS 3500") == "AS 3500"
+
+
 # ------------------------------------------------------------------ the publish step of the sync (fake storage)
 from tests.test_backends_sync import world, MemStore, FakeSource, FakeDest, _events  # noqa: E402,F401
 import app.distill.sync as SY  # noqa: E402
@@ -267,3 +276,14 @@ def test_finishing_a_job_runs_the_follow_up_hooks():
         assert [j["id"] for j in seen] == [jid]
     finally:
         queue.after_done.remove(seen.append)
+
+
+def test_results_filed_under_a_lower_case_folder_are_published_under_the_sources_own_spelling(world, tmp_path):
+    """Results distilled before the fix sit under "as 3500"; publishing them must still create "AS 3500"."""
+    src, store, run = world
+    room, files = _distill(run, tmp_path)
+    src.name = "SRC"                                         # the source as the person spells it
+    plan, _ = _plan(tmp_path, {"/Guide.md": files["/Guide.md"]})
+    assert files["/Guide.md"]["out_dir"].replace("\\", "/").split("/")[-2:] == ["src", "Guide.md.md"]
+    assert run("--room-dir", room, "--publish-from", plan) == 0
+    assert "/out/SRC/Guide.md.md" in store.files and not any(k.startswith("/out/src/") for k in store.files)

@@ -101,6 +101,18 @@ def canonical(dbx, raw: str) -> str:
                      "and use its path (e.g. /Folder/Sub).")
 
 
+def display_name(dbx, root: str) -> str:
+    """The folder's name with the letter case the person gave it. Paths here are kept lower-case for comparing,
+    but the output mirrors the source, so its folder must read "AS 3500", not "as 3500"."""
+    fallback = root.rstrip("/").split("/")[-1]
+    try:
+        md = dbx.files_get_metadata(root)
+    except Exception:                                       # noqa: BLE001 - the lower-case name still works
+        return fallback
+    name = getattr(md, "name", "") or ""
+    return name if name.lower() == fallback.lower() else fallback
+
+
 def link_root(dbx, url):
     """Path in the user's Dropbox that a shared link points to ('' if not theirs); a path is returned as is."""
     if is_path(url):
