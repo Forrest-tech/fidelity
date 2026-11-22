@@ -398,3 +398,22 @@ def test_force_redoes_everything_in_a_room(world, tmp_path):
     ev = str(tmp_path / "e.jsonl")
     assert run("--dry-run", "--room-dir", room, "--force", "--events", ev) == 0
     assert {e["rel"] for e in _events(ev) if e["type"] == "file"} == {"/Guide.md", "/Note.md"}
+
+
+def test_a_dropbox_folder_keeps_the_letter_case_its_owner_gave_it():
+    """Dropbox paths are compared lower-case, but the output folder is named after the source as written."""
+    from types import SimpleNamespace
+    from app.distill import dropbox_io as D
+
+    class Dbx:
+        def __init__(self, name=None, fail=False):
+            self.name, self.fail = name, fail
+
+        def files_get_metadata(self, path):
+            if self.fail:
+                raise RuntimeError("offline")
+            return SimpleNamespace(name=self.name)
+    assert D.display_name(Dbx("AS 3500"), "/as 3500") == "AS 3500"
+    assert D.display_name(Dbx("AS 3500"), "/library/as 3500/") == "AS 3500"
+    assert D.display_name(Dbx(fail=True), "/as 3500") == "as 3500"           # offline: the run still works
+    assert D.display_name(Dbx("Other"), "/as 3500") == "as 3500"             # never a different folder's name

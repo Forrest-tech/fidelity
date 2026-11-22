@@ -23,7 +23,7 @@ class DropboxSource:
         self.link = link = D.canonical(self.dbx, link)      # website addresses and sub-folder links -> API form
         self.root = D.link_root(self.dbx, link)            # e.g. /2025 ('' for a link outside the account)
         self.label = self.root or link                      # ledger key, shown in logs
-        self.name = self.root.rstrip("/").split("/")[-1] if self.root else "source"
+        self.name = D.display_name(self.dbx, self.root) if self.root else "source"   # "AS 3500", not "as 3500"
 
     def snapshot(self) -> dict:
         return D.snapshot(self.dbx, self.link)

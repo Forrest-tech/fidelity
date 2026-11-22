@@ -153,7 +153,7 @@ def _publish_accepted(a, src, dst, ev, dest_root, stage_root, archive_root, live
     live.set(stage="running", total=len(items), queued=[it["rel"] for it in items])
 
     def send(it):
-        rel, key = it["rel"], AC.live_key(it["out_dir"])
+        rel, key = it["rel"], AC.live_key(it["out_dir"], src.name)
         live.file(rel, stage="uploading")
         # The walk and the relative paths both use the long (\\?\) form: mixing it with the plain form failed every
         # multi-file document on Windows ("path is on mount '\\?\C:', start on mount 'C:'"), so nothing was sent.
