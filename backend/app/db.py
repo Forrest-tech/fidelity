@@ -257,7 +257,7 @@ CREATE TABLE IF NOT EXISTS correction_check (
 # and what the scheduler needs: owning room, priority, capacity points, output folder key).
 _ROOM_FILE_COLUMNS = (("out_dir", "TEXT"), ("content_hash", "TEXT"), ("single_file", "INTEGER"), ("n_files", "INTEGER"),
                       ("verdict", "TEXT"), ("corrections", "TEXT"), ("rule_checks", "INTEGER DEFAULT 0"),
-                      ("known", "TEXT"))
+                      ("known", "TEXT"), ("edition", "TEXT"))
 # A rule the AI adopted on its own (level 3), whether it was picked for a person to check, and what the check found.
 _RULE_COLUMNS = (("auto", "INTEGER DEFAULT 0"), ("call_id", "TEXT"), ("sampled", "INTEGER DEFAULT 0"), ("check_result", "TEXT"),
                  ("checked_by", "TEXT"), ("checked_at", "REAL"))

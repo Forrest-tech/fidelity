@@ -16,12 +16,18 @@ def _yaml(s: str) -> str:
     return '"' + str(s).replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
-def accept_markdown(text: str, who: str, when: str, accuracy, forced: bool) -> str:
+def accept_markdown(text: str, who: str, when: str, accuracy, forced: bool, edition: dict | None = None) -> str:
     """Return `text` with its front matter updated for a human acceptance.
 
     forced=True: the file did not pass on its own (it was below the room's threshold), so audit_status becomes
     human_accepted and `verified` says who accepted it. forced=False: the file qualified by its accuracy and keeps
-    its status; the acceptance is only recorded. Text without front matter is returned unchanged."""
+    its status; the acceptance is only recorded. Text without front matter is returned unchanged.
+
+    edition: the file's edition in the library (distill/editions.py). Its lines replace any earlier ones, and a
+    superseded edition gets a one-line notice at the top of the body, so an answer drawn from it says so."""
+    from . import editions as ED
+    stamp = ED.stamp_lines(edition)
+    stamp_keys = {ln.split(":", 1)[0] for ln in stamp}
     m = _FM.match(text)
     if not m:
         return text
@@ -29,7 +35,8 @@ def accept_markdown(text: str, who: str, when: str, accuracy, forced: bool) -> s
     out, seen = [], set()
     for ln in lines:
         key = ln.split(":", 1)[0].strip() if ":" in ln else ""
-        if key in ("accepted_by", "accepted_at", "accuracy"):
+        if key in ("accepted_by", "accepted_at", "accuracy") or key in stamp_keys or \
+                (stamp and key in ("edition", "amends", "amendment", "superseded_by")):
             continue                                            # replaced below
         if forced and key == "audit_status":
             ln = "audit_status: human_accepted"
@@ -38,8 +45,13 @@ def accept_markdown(text: str, who: str, when: str, accuracy, forced: bool) -> s
         out.append(ln)
         seen.add(key)
     out += [f"accuracy: {accuracy}" if accuracy is not None else "accuracy: null",
-            f"accepted_by: {_yaml(who)}", f"accepted_at: {_yaml(when)}"]
-    return "---\n" + "\n".join(out) + "\n---\n" + text[m.end():]
+            f"accepted_by: {_yaml(who)}", f"accepted_at: {_yaml(when)}"] + stamp
+    body = text[m.end():]
+    if body.startswith(ED.BANNER_MARK):                         # an earlier notice: replaced (or dropped) below
+        body = body.split("\n", 2)[2] if body.count("\n") >= 2 else ""
+    if stamp:
+        body = ED.banner(edition) + body
+    return "---\n" + "\n".join(out) + "\n---\n" + body
 
 
 def live_key(out_dir: str, top: str | None = None) -> str:

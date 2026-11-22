@@ -794,13 +794,13 @@
       "saveRoom": "保存房间",
       "eg": "例如 {{p}}",
       "egOut": "例如 {{p}}(可不填)",
-      "coveredBy": "已用解锁版:{{name}}",
+      "coveredBy": "同版本已用:{{name}}",
       "dupOf": "与 {{name}} 相同",
       "reasonLong": {
         "network": "与云盘的连接中断,约 3.5 分钟内没有恢复。文件本身没有问题,下次运行会自动重试。",
         "download": "云盘拒绝下载这个文件(没有访问权限)。",
         "protected": "这个 PDF 自带「禁止复制文字」的权限设置(出版方设的,不是打开密码),所以不提取它的文字。把它的解锁版放在同一文件夹,命名如「文件名-已解锁.pdf」,系统就会蒸馏解锁版。",
-        "covered": "这个 PDF 禁止复制文字,但同一文件夹里它的解锁版已蒸馏,没有缺内容。",
+        "covered": "同一版本的标准在这个房间里有多份(比如打印扫描件和可搜索版、受保护原件和解锁版),系统只发布最好的那一份,这一份不需要再处理。",
         "duplicate": "输入文件夹里有两份内容完全一样的文件(在不同位置),只蒸馏其中一份。",
         "unreadable": "文件损坏或不是有效的文档。",
         "resources": "读取时电脑内存或磁盘空间不够。",
@@ -815,7 +815,24 @@
       "points_one": "{{count}} 点",
       "noCloud": "房间从 Dropbox 或 Google Drive 读取文件，但两者都还没有连接。",
       "noCloudAdmin": "去“设置 → 网盘与本机目录”连接一个。",
-      "noCloudAsk": "请联系管理员连接一个。"
+      "noCloudAsk": "请联系管理员连接一个。",
+      "points": "{{n}} 点",
+      "colEdition": "版本",
+      "edition": {
+        "amd": "修订 {{n}}",
+        "consolidated": "(含修订)",
+        "old": "旧版",
+        "supersededBy": "已被 {{by}} 取代(本库中最新的版本)。发布的文件里已注明。",
+        "currentLong": "本库中的最新版本",
+        "title": "标准版本",
+        "summary": "{{standards}} 个标准 · {{current}} 个现行版本 · {{superseded}} 个旧版本 · {{amendments}} 份修订单 · {{copies}} 份重复副本未发布",
+        "restamp": "更新已发布文件的版本标注",
+        "restampHint": "重新上传已发布的文件,写明它是哪个版本、是否已被新版本取代;不重新蒸馏。",
+        "restampDone": "已排队:{{count}} 个文件",
+        "twice": "{{count}} 个版本发布了两次",
+        "twiceHint": "同一版本在输出文件夹里有两份,AI 会看到重复内容。在文件列表里找标着\"同版本也已发布\"的文件。",
+        "alsoPublished": "同版本也已发布:{{name}}"
+      }
     },
     "corrections": {
       "title": "纠正库",

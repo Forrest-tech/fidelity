@@ -149,6 +149,18 @@ def accept(room_id: str, body: AcceptIn, user=Depends(current_user)):
     return _guard(R.accept, room_id, getattr(user, "email", "") or "", body.rels, body.all_ok, body.force)
 
 
+@router.post("/rooms/{room_id}/restamp")
+def restamp(room_id: str, user=Depends(current_user)):
+    """Send the published files again with their edition lines up to date (which edition, superseded by which)."""
+    return _guard(R.restamp, room_id)
+
+
+@router.get("/rooms/{room_id}/editions")
+def editions(room_id: str):
+    """The room's standards by edition: which copy represents each edition and whether it is current here."""
+    return _guard(R.editions_view, _guard(R.get_room, room_id))
+
+
 @router.get("/rooms/{room_id}/accept-impact")
 def accept_impact(room_id: str):
     """How many of the files that qualify are new to the output folder, and how many replace a live copy."""
