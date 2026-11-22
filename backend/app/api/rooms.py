@@ -196,3 +196,18 @@ def files(room_id: str, state: str | None = Query(None), q: str | None = Query(N
     if state and state not in R.STATES:
         raise HTTPException(422, "unknown state")
     return R.find_files(_guard(R.get_room, room_id), state, q, offset, limit)
+
+
+@router.get("/cloud/ready")
+def storage_ready():
+    """Which cloud storage can be read from (any signed-in user; no account details): a room needs one,
+    so the page can say so before someone fills in a room it cannot open."""
+    from ..distill import dropbox_io as D
+    from ..distill import gdrive_io as G
+
+    def has(data, role):
+        a = data.get(role) if isinstance(data, dict) else None
+        return bool(isinstance(a, dict) and a.get("refresh_token"))
+    d, g = D.load_auth(), G.load_auth()
+    return {"dropbox": has(d, "reader"), "google": has(g, "reader"),
+            "dropbox_write": has(d, "writer"), "google_write": has(g, "writer")}

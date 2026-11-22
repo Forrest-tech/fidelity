@@ -11,7 +11,8 @@ router = APIRouter()
 # ---------- 数据源 / 文件夹 ----------
 @router.get("/sources")
 def list_sources():
-    return config.get_sources()
+    # `available`: the folder exists on this server (a source copied from another machine may not)
+    return [dict(s, available=os.path.isdir(s.get("src_root") or "")) for s in config.get_sources()]
 
 
 @router.get("/browse")

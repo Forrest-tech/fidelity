@@ -36,6 +36,7 @@ function api(role: string, rooms: unknown[], extra?: (url: string, init?: Reques
     const e = extra?.(url, init);
     if (e) return e;
     if (url.endsWith("/me")) return { body: ME(role) };
+    if (url.endsWith("/cloud/ready")) return { body: { dropbox: true, google: false } };
     if (url.includes("/queue")) return { body: { capacity: 2, used: 0, running: [], queued: [] } };
     if (/\/rooms\?archived/.test(url)) return { body: { rooms } };
     if (url.includes("/accept-preview")) return { body: { ok: 1, below: 1, published: 0, publishing: 0, has_dest: true, dest: "/Transfer_Md" } };
@@ -104,7 +105,7 @@ describe("distill page", () => {
     expect(save).toBeDisabled();                                                                    // needs the input folder
     await u.type(within(draft).getByLabelText(/^Input/), "/as 3500");
     await u.type(within(draft).getByLabelText(/^Output/), "/Transfer_Md/as 3500");
-    expect(save).toBeEnabled();
+    await waitFor(() => expect(save).toBeEnabled()); // the draft state settles after the last keystroke
     await u.click(save);
     await waitFor(() => {
       const c = calls.find((x) => x.url.endsWith("/rooms") && x.init?.method === "POST");
@@ -112,6 +113,20 @@ describe("distill page", () => {
     });
     await waitFor(() => expect(screen.queryByRole("region", { name: "New room (not saved)" })).not.toBeInTheDocument());
     expect(sessionStorage.getItem("fidelity.draftRoom")).toBeNull();
+  });
+
+  it("says before the room is filled in when no cloud storage is connected, and who can fix it", async () => {
+    sessionStorage.clear();
+    for (const [role, hint] of [["reviewer", "Ask an administrator to connect one."], ["admin", "Connect one in Settings → Cloud storage."]] as const) {
+      api(role, [], (url) => (url.endsWith("/cloud/ready") ? { body: { dropbox: false, google: false } } : undefined));
+      const { unmount } = renderApp("/distill");
+      await userEvent.setup().click(await screen.findByRole("button", { name: /New room/ }));
+      const draft = await screen.findByRole("region", { name: "New room (not saved)" });
+      expect(await within(draft).findByRole("alert")).toHaveTextContent(hint);
+      if (role === "admin") expect(within(draft).getByRole("link", { name: hint })).toHaveAttribute("href", "/settings/storage");
+      unmount();
+      sessionStorage.clear();
+    }
   });
 
   it("discards a draft without making anything", async () => {

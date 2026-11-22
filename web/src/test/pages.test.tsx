@@ -174,13 +174,61 @@ describe("users (admin)", () => {
     });
     renderApp("/users");
     const user = userEvent.setup();
-    expect(await screen.findByText("a@example.com", { selector: "td" })).toBeInTheDocument();
+    expect((await screen.findAllByRole("cell", { name: /^a@example\.com/ }))[0]).toBeInTheDocument();
     await user.type(screen.getByRole("form", { name: "Add a user" }).querySelector("input[type=email]") as HTMLElement, "new@example.com");
     await user.type(screen.getByRole("form", { name: "Add a user" }).querySelector("input[type=password]") as HTMLElement, "long-enough-password");
     await user.click(screen.getByRole("button", { name: "Create user" }));
     expect(await screen.findByText("new@example.com")).toBeInTheDocument();
     const call = calls.find((c) => c.url.endsWith("/users/register"))!;
     expect(JSON.parse(String(call.init?.body))).toMatchObject({ email: "new@example.com", role: "viewer" });
+  });
+});
+
+describe("users (admin): change, switch off, set password", () => {
+  const ROWS = [
+    { id: "1", email: "a@example.com", role: "admin", is_active: true, sign_in: [] },
+    { id: "2", email: "b@example.com", role: "viewer", is_active: true, sign_in: ["google"] },
+  ];
+  it("shows how people sign in; cannot change yourself; changes others; explains a refusal", async () => {
+    const calls = mockApi((url, init) => {
+      if (url.endsWith("/me")) return { body: ME("admin") };
+      if (url.endsWith("/admin/users")) return { body: ROWS };
+      if (url.endsWith("/admin/users/2") && String(init?.body).includes("is_active")) return { status: 409, body: { detail: "LAST_ADMIN" } };
+      if (url.endsWith("/admin/users/2")) return { body: ROWS[1] };
+      return { body: [] };
+    });
+    renderApp("/users");
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    expect(await screen.findByText("Google")).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: "a@example.com can sign in" })).toBeDisabled(); // yourself
+    await u.click(screen.getByRole("switch", { name: "b@example.com can sign in" }));
+    expect(await screen.findByText(/only active administrator/)).toBeInTheDocument(); // the code is never shown
+    await u.click(screen.getAllByRole("button", { name: "Set password" })[1]);
+    const dialog = await screen.findByRole("dialog");
+    await u.type(within(dialog).getByLabelText("New password"), "short");
+    await u.click(within(dialog).getByRole("button", { name: "Set password" }));
+    expect(await within(dialog).findByText("Use at least 10 characters.")).toBeInTheDocument();
+    await u.clear(within(dialog).getByLabelText("New password"));
+    await u.type(within(dialog).getByLabelText("New password"), "a-long-new-password");
+    await u.click(within(dialog).getByRole("button", { name: "Set password" }));
+    await waitFor(() => expect(calls.some((c) => c.url.endsWith("/admin/users/2") && String(c.init?.body).includes("a-long-new-password"))).toBe(true));
+  });
+
+  it("an existing email gets a sentence, not a code", async () => {
+    mockApi((url) => {
+      if (url.endsWith("/me")) return { body: ME("admin") };
+      if (url.endsWith("/admin/users")) return { body: ROWS };
+      if (url.endsWith("/users/register")) return { status: 400, body: { detail: "REGISTER_USER_ALREADY_EXISTS" } };
+      return { body: [] };
+    });
+    renderApp("/users");
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    const form = await screen.findByRole("form", { name: "Add a user" });
+    await u.type(within(form).getByLabelText("Email"), "b@example.com");
+    await u.type(within(form).getByLabelText("Password"), "long-enough-password");
+    await u.click(within(form).getByRole("button", { name: "Create user" }));
+    expect(await screen.findByText("A user with this email already exists.")).toBeInTheDocument();
+    expect(screen.queryByText(/REGISTER_USER/)).not.toBeInTheDocument();
   });
 });
 
@@ -289,7 +337,7 @@ describe("first-run setup and cloud storage", () => {
     await u.click(screen.getByLabelText("Confirm password"));
     await u.paste("different-pw!");
     await u.click(screen.getByRole("button", { name: "Create administrator and sign in" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("do not match");
+    expect(await screen.findByText(/do not match/)).toBeInTheDocument(); // shown under the field
     expect(calls.some((c) => c.url.endsWith("/setup") && c.init?.method === "POST")).toBe(false);
   });
 

@@ -14,7 +14,9 @@ interface AuthState {
   me: Me | null;
   loading: boolean;
   error: Error | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, captcha?: string | null) => Promise<void>;
+  /** Read the session again (after the first-run set-up signed the new administrator in). */
+  refresh: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -36,8 +38,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  const login = async (email: string, password: string) => {
-    const body = new URLSearchParams({ username: email, password });
+  const login = async (email: string, password: string, captcha?: string | null) => {
+    const body = new URLSearchParams({ username: email.trim(), password });
+    if (captcha) body.set("altcha", captcha);
     await api("/auth/login", {
       method: "POST",
       body,
@@ -45,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     await qc.invalidateQueries({ queryKey: ["me"] });
   };
+  const refresh = () => qc.invalidateQueries({ queryKey: ["me"] });
   const logout = async () => {
     try {
       await api("/auth/logout", { method: "POST" });
@@ -55,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <Ctx.Provider value={{ me: q.data ?? null, loading: q.isLoading, error: q.error as Error | null, login, logout }}>
+    <Ctx.Provider value={{ me: q.data ?? null, loading: q.isLoading, error: q.error as Error | null, login, logout, refresh }}>
       {children}
     </Ctx.Provider>
   );

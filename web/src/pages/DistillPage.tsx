@@ -142,7 +142,7 @@ function QueueCard({ q, canEdit, rooms }: { q: QueueView; canEdit: boolean; room
       <div className="fx-row fx-wrap" style={{ gap: "8px 18px" }}>
         <b>{t("pages.distill.queue")}</b>
         <span className="fx-tiny">
-          {t("pages.distill.capacityIs")} <b className="fx-num">{t("pages.distill.points", { n: q.capacity })}</b>
+          {t("pages.distill.capacityIs")} <b className="fx-num">{t("pages.distill.points", { count: q.capacity })}</b>
           {t("pages.distill.colon")}
           {t("pages.distill.runningN")} <b className="fx-num">{q.running.length}</b> · {t("pages.distill.waitingN")} <b className="fx-num">{q.queued.length}</b>
         </span>
@@ -500,6 +500,21 @@ function keepDraft(d: Draft | null) {
 
 /** A room that exists only on this page until Save: nothing is made on the server before that, so a reload or a
  * closed tab never leaves a half-made "not set up" room behind. */
+/** A room reads from Dropbox or Google Drive: say so before the room is filled in, not after (in a slow
+ *  folder dialog), and tell each person what they can do about it. */
+function NoCloudNotice() {
+  const { t } = useTranslation();
+  const { me } = useAuth();
+  const q = useQuery({ queryKey: ["cloud-ready"], queryFn: () => api<{ dropbox: boolean; google: boolean }>("/cloud/ready"), staleTime: 60_000 });
+  if (!q.data || q.data.dropbox || q.data.google) return null;
+  return (
+    <div className="fx-note warn" role="alert">
+      {t("pages.distill.noCloud")}{" "}
+      {me?.role === "admin" ? <Link to="/settings/storage">{t("pages.distill.noCloudAdmin")}</Link> : t("pages.distill.noCloudAsk")}
+    </div>
+  );
+}
+
 function DraftRoom({ initial, restored, onSaved, onDiscard }: {
   initial: Draft; restored: boolean; onSaved: (r: Room) => void; onDiscard: () => void;
 }) {
@@ -539,6 +554,7 @@ function DraftRoom({ initial, restored, onSaved, onDiscard }: {
       </div>
       <div className="fx-room-b">
         {restored && <div className="fx-note" role="status">{t("pages.distill.draftRestored")}</div>}
+        <NoCloudNotice />
         <div className="fx-roomgrid">
           <Field id="src-draft" label={t("pages.distill.inputRO")} loc={null} value={d.source} onChange={(v) => setD({ ...d, source: v })}
             onPick={() => setPicking("source")} disabled={false} placeholder={t("pages.distill.eg", { p: "/as 3500" })} />

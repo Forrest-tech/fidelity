@@ -150,14 +150,14 @@ jobs:
       - name: Run with SQLite in the container
         run: |
           docker run -d --name f-sqlite -p 8000:8000 fidelity:ci
-          bash deploy/docker/smoke_test.sh http://127.0.0.1:8000 || (docker logs f-sqlite; exit 1)
+          bash deploy/docker/smoke_test.sh http://127.0.0.1:8000 f-sqlite || (docker logs f-sqlite; exit 1)
           docker rm -f f-sqlite
       - name: Run against PostgreSQL outside the container
         run: |
           docker run -d --name f-pg --network host \
             -e FIDELITY_DB_URL=postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/fidelity \
             -e FIDELITY_TRUST_URL=postgresql://postgres:postgres@127.0.0.1:5432/fidelity fidelity:ci
-          bash deploy/docker/smoke_test.sh http://127.0.0.1:8000 || (docker logs f-pg; exit 1)
+          bash deploy/docker/smoke_test.sh http://127.0.0.1:8000 f-pg || (docker logs f-pg; exit 1)
           docker exec f-pg python -c "import os;print(os.environ['FIDELITY_TRUST_URL'].split('@')[1])"
 
   frontend:

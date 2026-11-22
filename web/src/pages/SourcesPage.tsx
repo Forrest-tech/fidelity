@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, json } from "../net/client";
 import { useAuth } from "../auth/AuthProvider";
-import { Button, Card, Col, Row, Space, Typography } from "antd";
+import { Alert, Button, Card, Col, Row, Space, Typography } from "antd";
 import { FolderOpenOutlined, UploadOutlined } from "@ant-design/icons";
 import { EmptyState, ErrorState, Loading, PageHeader } from "../components/ui";
 import { DropboxSync } from "../components/DropboxSync";
@@ -12,6 +12,8 @@ interface SourceRow {
   id: string;
   name: string;
   src_root: string;
+  /** false when the folder does not exist on the server */
+  available?: boolean;
   md_root: string;
   enabled?: boolean;
 }
@@ -46,7 +48,8 @@ function SourceCard({ s, canEdit }: { s: SourceRow; canEdit: boolean }) {
       <Space orientation="vertical" size={8} style={{ width: "100%" }}>
         <Typography.Text type="secondary" style={{ wordBreak: "break-all" }}>{s.src_root}</Typography.Text>
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>{t("pages.sources.readOnly")}</Typography.Text>
-        {canEdit && (
+        {s.available === false && <Alert type="warning" showIcon title={t("pages.sources.missing")} />}
+        {canEdit && s.available !== false && (
           <Space wrap>
             <Button type="primary" onClick={() => batch.mutate()} loading={batch.isPending}>
               {t("pages.sources.distillAll")}

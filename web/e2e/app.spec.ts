@@ -72,7 +72,8 @@ test.describe("roles", () => {
     await expect(page.getByRole("menuitem", { name: "Users" })).toHaveCount(0);
     await page.keyboard.press("Escape");
     await page.goto("/users");
-    await expect(page.getByText("You do not have access to this page.")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "You do not have access to this page." })).toBeAttached();
+    await expect(page.getByTestId("empty-state")).toContainText("You do not have access to this page.");
     await page.goto("/sources");
     await expect(page.getByRole("heading", { name: "Sources" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Distill all PDFs" })).toHaveCount(0);
@@ -92,7 +93,7 @@ test.describe("roles", () => {
     await form.getByLabel("Email").fill(email);
     await form.getByLabel(/Password/).fill("another-long-password");
     await form.getByRole("button", { name: "Create user" }).click();
-    await expect(page.getByRole("cell", { name: email })).toBeVisible({ timeout: 15_000 }); // hashing a password is slow on a busy machine
+    await expect(page.getByRole("cell", { name: email, exact: true }).first()).toBeVisible({ timeout: 15_000 }); // hashing a password is slow on a busy machine
     const ctx = await browser.newContext();
     const p2 = await ctx.newPage();
     await p2.goto(new URL("/login", page.url()).toString());

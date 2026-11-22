@@ -36,7 +36,7 @@ describe("auth guard", () => {
   it("blocks a non-admin from /users", async () => {
     mockApi((url) => (url.endsWith("/me") ? { body: ME("viewer") } : { body: [] }));
     renderApp("/users");
-    expect(await screen.findByText(/do not have access/i)).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: /do not have access/i })).toBeInTheDocument();
   });
 });
 
@@ -67,7 +67,11 @@ describe("login", () => {
   });
 
   it("tells the user when too many attempts were made", async () => {
-    mockApi((url) => (url.endsWith("/me") ? { status: 401, body: {} } : { status: 429, body: { detail: "too many" } }));
+    mockApi((url) => {
+      if (url.endsWith("/me")) return { status: 401, body: {} };
+      if (url.endsWith("/auth/options")) return { body: { providers: [], captcha: false } };
+      return { status: 429, body: { detail: "too many" } };
+    });
     renderApp("/");
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText("Email"), "a@example.com");

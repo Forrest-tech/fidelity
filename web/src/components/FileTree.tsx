@@ -310,6 +310,7 @@ export default function FileTree({
   threshold,
   onThreshold,
   onBatchPass,
+  canEdit = true,
   busy,
 }: {
   sid: string;
@@ -322,6 +323,7 @@ export default function FileTree({
   threshold: number;
   onThreshold: (n: number) => void;
   onBatchPass: () => void;
+  canEdit?: boolean;
   busy?: boolean;
 }) {
   const [t] = useI18n();
@@ -636,6 +638,7 @@ export default function FileTree({
       </div>
 
       {/* 批量审核：阈值可调 + 多选批量打标 */}
+      {canEdit && (
       <div className="tree-foot">
         <label className="thresh" title={t("tree.threshold")}>
           <span className="nowrap">{t("tree.threshold")}</span>
@@ -654,6 +657,7 @@ export default function FileTree({
           {picked.size ? ` (${picked.size})` : ""}
         </button>
       </div>
+      )}
 
       {/* 拖拽调宽 */}
       <div className="tree-resizer" onMouseDown={startDrag} role="separator" aria-orientation="vertical" />

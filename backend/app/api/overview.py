@@ -88,4 +88,6 @@ def overview():
 @router.get("/admin/users", dependencies=[Depends(require_role())])
 async def list_users(session: AsyncSession = Depends(get_session)):
     rows = (await session.execute(select(User).order_by(User.email))).scalars().all()
-    return [{"id": str(u.id), "email": u.email, "role": u.role.value, "is_active": u.is_active} for u in rows]
+    return [{"id": str(u.id), "email": u.email, "role": u.role.value, "is_active": u.is_active,
+             # how the person signs in: their password and/or the providers linked to the account
+             "sign_in": sorted({a.oauth_name for a in (u.oauth_accounts or [])})} for u in rows]

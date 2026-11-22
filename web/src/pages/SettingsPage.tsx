@@ -103,7 +103,7 @@ function Queue() {
         <div className="fx-card" style={{ padding: 14 }}>
           <div className="fx-stack" style={{ gap: 10 }}>
             <div className="fx-row fx-wrap" style={{ gap: 18 }}>
-              <span>{t("pages.distill.capacityIs")} <b className="fx-num">{t("pages.distill.points", { n: d.capacity })}</b></span>
+              <span>{t("pages.distill.capacityIs")} <b className="fx-num">{t("pages.distill.points", { count: d.capacity })}</b></span>
               <span>{t("pages.distill.runningN")} <b className="fx-num">{d.running.length}</b></span>
               <span>{t("pages.distill.waitingN")} <b className="fx-num">{d.queued.length}</b></span>
             </div>
