@@ -19,7 +19,7 @@ _ENTRY = re.compile(r"(?m)^(?P<prefix>AS/NZS|AS|NZS|SA TS|SA/SNZ TS|ISO|IEC|EN|B
 _CLAUSE = re.compile(r"\b(?:[A-J]\d[A-Z]\d{1,2}|Spec(?:ification)?\s*\d+|Schedule\s*\d+|\d+\.\d+\.\d+)\b")
 _NOISE = re.compile(r"(?m)^(?:Referenced documents|NCC \d{4} Volume [A-Za-z]+ - .*|Page \d+\s*|No\.|Date|Title|"
                     r"Volume One|Volume Two|Housing Provisions|Volume Three)\s*$")
-DATA = os.path.join(os.path.dirname(__file__), "data")
+DATA = os.path.join(os.path.dirname(__file__), "codes")      # facts read from building codes (CC BY 4.0)
 
 
 def parse_table(text: str) -> list[dict]:
