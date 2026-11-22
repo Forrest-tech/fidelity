@@ -314,7 +314,8 @@
         "audit": "Audit log",
         "account": "Account",
         "appearance": "Appearance and language",
-        "sections": "Settings sections"
+        "sections": "Settings sections",
+        "system": "System health"
       },
       "groups": {
         "connect": "Connections",
@@ -378,7 +379,47 @@
       "pwRule": "At least 10 characters.",
       "pwMismatch": "The two new passwords are not the same.",
       "pwChanged": "Password changed.",
-      "pwChange": "Change password"
+      "pwChange": "Change password",
+      "sys": {
+        "hint": "Server, disk, runs and backups. Refreshes every 30 seconds.",
+        "allWell": "All is well.",
+        "level": {
+          "bad": "Act now",
+          "warn": "Note"
+        },
+        "do": {
+          "disk": "Free some space or move to a bigger disk.",
+          "memory": "Close other large programs; reading scans slows down.",
+          "backup_none": "Use Back up now below.",
+          "backup_failed": "See why below, then use Back up now.",
+          "backup_old": "Has the server been running? Use Back up now.",
+          "runs_failing": "Open the rooms whose runs failed to see why."
+        },
+        "server": "Server",
+        "version": "Version",
+        "uptime": "Running for",
+        "cpus": "CPU cores",
+        "memory": "Memory free",
+        "disk": "Disk",
+        "diskFree": "{{free}} GB free of {{total}} GB",
+        "diskUsed": "Disk {{pct}}% used",
+        "runs": "Distilling runs",
+        "runsLine": "Last {{days}} days: {{done}} done · {{failed}} failed · {{interrupted}} stopped",
+        "queueLine": "{{running}} running · {{queued}} waiting",
+        "lastFailure": "Last failure",
+        "backup": "Backups",
+        "backupLast": "Last: {{when}}",
+        "verified": "Restored and checked",
+        "notVerified": "Did not verify",
+        "copied": "Copied to {{to}}",
+        "notCopied": "On this machine only (a folder on another disk or a cloud drive can be set)",
+        "noBackup": "No backup yet.",
+        "backupNow": "Back up now",
+        "backingUp": "Backing up and checking…",
+        "days": "{{n}} days",
+        "hours": "{{n}} hours",
+        "metrics": "Monitoring: /api/v1/system/metrics serves Prometheus-format figures (administrator sign-in needed)."
+      }
     },
     "users": {
       "title": "Users",
@@ -1102,6 +1143,20 @@
         "title": "Rule #{{num}} was undone {{reverts}} times",
         "sub": "Check whether it is right",
         "to": "Corrections"
+      },
+      "system": {
+        "pill": "System",
+        "title": "",
+        "sub": "Open system health",
+        "to": "System health",
+        "k": {
+          "disk": "Only {{gb}} GB of disk left",
+          "memory": "Only {{mb}} MB of memory free",
+          "backup_none": "No backup yet",
+          "backup_failed": "The last backup did not verify",
+          "backup_old": "No backup for over 36 hours",
+          "runs_failing": "{{failed}} of the last {{total}} runs failed ({{pct}}%)"
+        }
       }
     },
     "help": {

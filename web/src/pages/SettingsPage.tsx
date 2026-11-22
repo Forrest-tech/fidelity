@@ -13,7 +13,7 @@ import { AiSettings } from "../components/AiSettings";
 import { CorrectionsPage } from "./CorrectionsPage";
 import { UsersPage } from "./UsersPage";
 
-type Section = "storage" | "ai" | "defaults" | "queue" | "corrections" | "archive" | "users" | "notifications" | "audit" | "account" | "appearance";
+type Section = "storage" | "ai" | "defaults" | "queue" | "corrections" | "archive" | "users" | "notifications" | "audit" | "system" | "account" | "appearance";
 interface Item {
   key: Section;
   group: "connect" | "distill" | "team" | "personal";
@@ -29,6 +29,7 @@ const ITEMS: Item[] = [
   { key: "users", group: "team", admin: true },
   { key: "notifications", group: "team" },
   { key: "audit", group: "team", admin: true },
+  { key: "system", group: "team", admin: true },
   { key: "account", group: "personal" },
   { key: "appearance", group: "personal" },
 ];
@@ -196,6 +197,87 @@ function Audit() {
   );
 }
 
+// ------------------------------------------------------------------ system health (requirements v2, phase D)
+interface Alert { key: string; level: "bad" | "warn"; kind: string; free?: number; available?: number; failed?: number; total?: number; rate?: number; problem?: string }
+interface Health {
+  version: string; uptime_s: number; cpus: number;
+  disk: { free: number; total: number }; memory: { available: number | null };
+  runs: { days: number; done: number; failed: number; interrupted: number; total: number; failure_rate: number; queued: number; running: number; last_failure: { message: string; updated_at: number } | null };
+  backup: { path: string; created: string; at: number; size: number; files: number; ok: boolean; problems: string[]; copied_to?: string } | null;
+  alerts: Alert[];
+}
+const GB = (b: number) => (b / 1024 ** 3).toFixed(1);
+
+function SystemHealth() {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ["system-health"], queryFn: () => api<Health>("/system/health"), refetchInterval: 30000 });
+  const backup = useMutation({ mutationFn: () => api("/system/backup", { method: "POST" }), onSuccess: () => void qc.invalidateQueries({ queryKey: ["system-health"] }) });
+  if (q.isLoading) return <Loading />;
+  if (q.isError) return <ErrorState message={(q.error as Error).message} />;
+  const h = q.data!;
+  const since = (s: number) => (s >= 86400 ? t("pages.settings.sys.days", { n: Math.floor(s / 86400) }) : t("pages.settings.sys.hours", { n: Math.floor(s / 3600) }));
+  const diskPct = Math.round((100 * (h.disk.total - h.disk.free)) / (h.disk.total || 1));
+  return (
+    <>
+      <PageHeader title={t("pages.settings.nav.system")} desc={t("pages.settings.sys.hint")} />
+      <div className="fx-stack" style={{ gap: 6 }} role="status" aria-live="polite">
+        {h.alerts.length === 0 && <div className="fx-note">{t("pages.settings.sys.allWell")}</div>}
+        {h.alerts.map((a) => (
+          <div key={a.key} className={a.level === "bad" ? "fx-errnote" : "fx-note"}>
+            <Pill tone={a.level === "bad" ? "bad" : "warn"}>{t(`pages.settings.sys.level.${a.level}`)}</Pill>{" "}
+            {t(`shell.n.system.k.${a.kind}`, { gb: GB(a.free ?? 0), mb: Math.round((a.available ?? 0) / 1024 ** 2), failed: a.failed, total: a.total, pct: Math.round((a.rate ?? 0) * 100) })}
+            {" — "}{t(`pages.settings.sys.do.${a.kind}`)}
+          </div>
+        ))}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+        <section className="fx-card" style={{ padding: 14 }} aria-label={t("pages.settings.sys.server")}>
+          <h3 className="fx-h3">{t("pages.settings.sys.server")}</h3>
+          <div className="fx-tiny fx-stack" style={{ gap: 4 }}>
+            <div>{t("pages.settings.sys.version")} <b className="fx-num">{h.version}</b></div>
+            <div>{t("pages.settings.sys.uptime")} <b>{since(h.uptime_s)}</b></div>
+            <div>{t("pages.settings.sys.cpus")} <b className="fx-num">{h.cpus}</b></div>
+            <div>{t("pages.settings.sys.memory")} <b className="fx-num">{h.memory.available == null ? "—" : `${GB(h.memory.available)} GB`}</b></div>
+          </div>
+        </section>
+        <section className="fx-card" style={{ padding: 14 }} aria-label={t("pages.settings.sys.disk")}>
+          <h3 className="fx-h3">{t("pages.settings.sys.disk")}</h3>
+          <div className="fx-tiny">{t("pages.settings.sys.diskFree", { free: GB(h.disk.free), total: GB(h.disk.total) })}</div>
+          <div role="progressbar" aria-valuenow={diskPct} aria-valuemin={0} aria-valuemax={100} aria-label={t("pages.settings.sys.diskUsed", { pct: diskPct })}
+            style={{ marginTop: 8, height: 8, borderRadius: 4, background: "var(--sunken)", overflow: "hidden" }}>
+            <div style={{ width: `${diskPct}%`, height: "100%", background: diskPct >= 90 ? "var(--bad)" : "var(--accent)" }} />
+          </div>
+        </section>
+        <section className="fx-card" style={{ padding: 14 }} aria-label={t("pages.settings.sys.runs")}>
+          <h3 className="fx-h3">{t("pages.settings.sys.runs")}</h3>
+          <div className="fx-tiny fx-stack" style={{ gap: 4 }}>
+            <div>{t("pages.settings.sys.runsLine", { done: h.runs.done, failed: h.runs.failed, interrupted: h.runs.interrupted, days: h.runs.days })}</div>
+            <div>{t("pages.settings.sys.queueLine", { running: h.runs.running, queued: h.runs.queued })}</div>
+            {h.runs.last_failure && <div className="fx-muted" style={{ wordBreak: "break-word" }}>{t("pages.settings.sys.lastFailure")}: {h.runs.last_failure.message}</div>}
+          </div>
+        </section>
+        <section className="fx-card" style={{ padding: 14 }} aria-label={t("pages.settings.sys.backup")}>
+          <h3 className="fx-h3">{t("pages.settings.sys.backup")}</h3>
+          <div className="fx-tiny fx-stack" style={{ gap: 4 }}>
+            {h.backup ? (
+              <>
+                <div>{t("pages.settings.sys.backupLast", { when: new Date(h.backup.at * 1000).toLocaleString() })}</div>
+                <div>{h.backup.ok ? <Pill tone="ok">{t("pages.settings.sys.verified")}</Pill> : <Pill tone="bad">{t("pages.settings.sys.notVerified")}</Pill>}{" "}
+                  <span className="fx-num">{(h.backup.size / 1e6).toFixed(1)} MB · {h.backup.files}</span></div>
+                <div className="fx-muted">{h.backup.copied_to ? t("pages.settings.sys.copied", { to: h.backup.copied_to }) : t("pages.settings.sys.notCopied")}</div>
+              </>
+            ) : <div>{t("pages.settings.sys.noBackup")}</div>}
+            <div><button className="fx-btn sm" disabled={backup.isPending} onClick={() => backup.mutate()}>{backup.isPending ? t("pages.settings.sys.backingUp") : t("pages.settings.sys.backupNow")}</button></div>
+            {backup.error && <div className="fx-errnote" role="alert">{(backup.error as Error).message}</div>}
+          </div>
+        </section>
+      </div>
+      <div className="fx-tiny fx-muted">{t("pages.settings.sys.metrics")}</div>
+    </>
+  );
+}
+
 function Account() {
   const { t } = useTranslation();
   const { me } = useAuth();
@@ -281,6 +363,7 @@ const BODY: Record<Section, () => ReactNode> = {
   users: () => <UsersPage />,
   notifications: () => <Notifications />,
   audit: () => <Audit />,
+  system: () => <SystemHealth />,
   account: () => <Account />,
   appearance: () => <Appearance />,
 };

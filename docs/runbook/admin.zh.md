@@ -177,3 +177,29 @@ FIDELITY_TRUST_URL=postgresql://fidelity:<密码>@<主机>:5432/fidelity        
 | 某扫描件总是进审核 | 两个引擎不一致时这是预期的；看报告里的 `disagreements` |
 | Windows 长路径找不到文件 | 用提供的命令——它们已处理长路径 |
 | GitHub API "rate limit" | 等一小时；轮询不要快于每分钟一次 |
+
+
+## 部署更新
+运行 `powershell -NoProfile -ExecutionPolicy Bypass -File deploy\windows\deploy.ps1`。可以先加 `-Check` 看会改什么。
+
+脚本依次：
+1. 如果当前不在 `main` 分支，或有本地改动，就停止。
+2. 备份并校验。
+3. 把代码更新到 `origin/main`。
+4. Python 包和前端包的清单有变化时才安装。
+5. 把前端构建到新文件夹，再替换旧的。
+6. 重启服务器进程，正在进行的蒸馏会被接管。
+7. 等待 `/healthz` 和新的页面包就绪。
+
+7 分钟内没有恢复正常，脚本会自动换回上一个版本和上一份页面，再重启。每一步都记在 `data/work/deploy.log`。
+
+## 备份
+每天自动做一次备份并校验，放在 `data/backups`，保留最近 14 份。设置 → 系统状态里可以看到最近一次备份，也有「立即备份」。
+
+恢复步骤：
+1. 停掉计划任务。
+2. 在 `backend` 目录运行 `python -c "from app.ops import backup as B; B.restore_to(r'<zip>', r'<空文件夹>')"`，把备份解压到一个空文件夹。
+3. 把 `databases\*.db` 放回 `backend\data`，`backend-data\…` 放回 `backend\data\…`，`data\…` 放回 `data\…`。
+4. 重新启动计划任务。
+
+设置 `FIDELITY_BACKUP_COPY_DIR`，可以在另一块磁盘上多保留一份。

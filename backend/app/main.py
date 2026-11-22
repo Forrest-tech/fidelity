@@ -95,6 +95,8 @@ def _startup():
     from .ai import level3 as _level3
     _level3.install_hooks()
     queue.start()
+    from .ops import backup as _backup
+    _backup.start()                                     # daily verified backups (requirements v2, S-6)
     print("[startup] trust.db ready, job workers started (owner pid=%s)" % os.getpid())
 
 

@@ -192,3 +192,29 @@ Back up `data/fidelity.db` (users, audit log), `data/trust.db` (jobs) and `data/
 | A scan always goes to review | expected when engines disagree; check the report's `disagreements` |
 | File not found for a long path (Windows) | use the provided commands — they handle long paths |
 | GitHub API "rate limit" | wait an hour; do not poll faster than once a minute |
+
+
+## Deploying an update
+`powershell -NoProfile -ExecutionPolicy Bypass -File deploy\windows\deploy.ps1`. Add `-Check` first to see what would change.
+
+The script:
+1. Stops if the checkout is not on `main` or has local changes.
+2. Makes a backup and checks it.
+3. Updates the code to `origin/main`.
+4. Installs Python and web packages, but only if their lists changed.
+5. Builds the web app into a new folder and swaps it in.
+6. Restarts the server process; a distilling run in progress is taken back over.
+7. Waits for `/healthz` and the new web bundle.
+
+If the server is not healthy within 7 minutes, the script puts back the previous commit and the previous web app, then restarts. Each step is logged in `data/work/deploy.log`.
+
+## Backups
+A verified backup is made each day into `data/backups`, and the newest 14 are kept. Settings → System health shows the last one and has **Back up now**.
+
+To get files back:
+1. Stop the scheduled task.
+2. Unpack the zip into an empty folder: `python -c "from app.ops import backup as B; B.restore_to(r'<zip>', r'<empty folder>')"` from `backend`.
+3. Copy `databases\*.db` to `backend\data`, `backend-data\…` to `backend\data\…` and `data\…` to `data\…`.
+4. Start the task again.
+
+Set `FIDELITY_BACKUP_COPY_DIR` to keep a second copy on another disk.
