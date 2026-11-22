@@ -20,8 +20,9 @@ def accept_markdown(text: str, who: str, when: str, accuracy, forced: bool, edit
     """Return `text` with its front matter updated for a human acceptance.
 
     forced=True: the file did not pass on its own (it was below the room's threshold), so audit_status becomes
-    human_accepted and `verified` says who accepted it. forced=False: the file qualified by its accuracy and keeps
-    its status; the acceptance is only recorded. Text without front matter is returned unchanged.
+    human_accepted and `verified` says who accepted it. forced=False: the file qualified by its accuracy; one the
+    automatic gate passed keeps its status, one the gate held for review (pending_review) becomes human_accepted
+    with `verified` saying what that means. Text without front matter is returned unchanged.
 
     edition: the file's edition in the library (distill/editions.py). Its lines replace any earlier ones, and a
     superseded edition gets a one-line notice at the top of the body, so an answer drawn from it says so."""
@@ -32,6 +33,9 @@ def accept_markdown(text: str, who: str, when: str, accuracy, forced: bool, edit
     if not m:
         return text
     lines = m.group(1).split("\n")
+    # qualified by its accuracy but the stricter automatic gate did not pass it (one heading or number differed):
+    # a person accepted it, so the file must not keep saying "FAIL — not trusted" (14 of 29 live files did)
+    gate_failed = not forced and any(ln.strip() == "audit_status: pending_review" for ln in lines)
     out, seen = [], set()
     for ln in lines:
         key = ln.split(":", 1)[0].strip() if ":" in ln else ""
@@ -42,6 +46,12 @@ def accept_markdown(text: str, who: str, when: str, accuracy, forced: bool, edit
             ln = "audit_status: human_accepted"
         elif forced and key == "verified":
             ln = "verified: " + _yaml(f"accepted by {who} on {when} at {accuracy}% accuracy (did not pass the automatic checks)")
+        elif gate_failed and key == "audit_status":
+            ln = "audit_status: human_accepted"
+        elif gate_failed and key == "verified":
+            ln = "verified: " + _yaml(f"accepted by {who} on {when} at {accuracy}% accuracy (met the room's threshold; "
+                                      "the stricter automatic gate flagged a few headings or numbers, so check the "
+                                      "source page when an exact figure matters)")
         out.append(ln)
         seen.add(key)
     out += [f"accuracy: {accuracy}" if accuracy is not None else "accuracy: null",

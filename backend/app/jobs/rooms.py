@@ -373,8 +373,8 @@ def _file_out(r, room) -> dict:
 def _edition_out(e) -> dict | None:
     if not e or not e.get("designation"):
         return None
-    return {k: e.get(k) for k in ("designation", "amendment", "amendment_year", "consolidated", "status", "superseded_by",
-                                  "copy_of", "copies", "basis")}
+    return {k: e.get(k) for k in ("designation", "prefix", "number", "year", "amendment", "amendment_year", "consolidated",
+                                  "status", "superseded_by", "copy_of", "copies", "basis")}
 
 
 def children(room: dict, path: str = "", state: str | None = None, q: str | None = None) -> dict:
