@@ -81,6 +81,14 @@ def _items(user) -> list:
                                     "pct": round(100 * spent / sk["budget_usd"]), "at": time.time(), "to": "/settings/ai"})
         except Exception:                                     # noqa: BLE001 - notifications never break the page
             pass
+    if getattr(user, "role", None) and getattr(user.role, "value", user.role) == "admin":
+        try:
+            from ..ops import health as H
+            for a in H.alerts():                          # disk, memory, backups, failing runs (requirements v2, S-5)
+                out.append({**{k: v for k, v in a.items() if k not in ("key", "level")}, "key": f"sys:{a['key']}",
+                            "type": "system", "tone": a["level"], "at": time.time(), "to": "/settings/system"})
+        except Exception:                                 # noqa: BLE001 - notifications never break the page
+            pass
     try:
         from ..jobs import corrections as CO
         for r in CO.library()["rules"]:

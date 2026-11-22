@@ -44,7 +44,14 @@ const I = {
 // ------------------------------------------------------------------ notifications
 export interface Notice {
   key: string;
-  type: "done" | "published" | "failed" | "interrupted" | "unprocessable" | "review" | "ai_budget" | "rule_undone";
+  type: "done" | "published" | "failed" | "interrupted" | "unprocessable" | "review" | "ai_budget" | "rule_undone" | "system";
+  /** for type "system": disk | memory | backup_none | backup_failed | backup_old | runs_failing */
+  kind?: string;
+  free?: number;
+  available?: number;
+  failed?: number;
+  rate?: number;
+  problem?: string;
   tone: "ok" | "bad" | "warn" | "ai";
   to: string;
   at: number;
@@ -101,9 +108,11 @@ function NoticeList({ onGo }: { onGo: () => void }) {
             <span className="fx-ud" aria-label={n.read ? undefined : t("shell.unread")} />
             <span className={`fx-pill p-${n.tone === "warn" ? "warn" : n.tone}`} style={{ marginTop: 2 }}>{t(`shell.n.${n.type}.pill`)}</span>
             <div style={{ minWidth: 0 }}>
-              {t(`shell.n.${n.type}.title`, { room: n.room_name, n: n.n, pct: n.pct, num: n.num, reverts: n.reverts, skill: n.skill ? t(`pages.ai.skill.${n.skill}`) : "" })}
+              {n.type === "system"
+                ? t(`shell.n.system.k.${n.kind}`, { gb: ((n.free ?? 0) / 1024 ** 3).toFixed(1), mb: Math.round((n.available ?? 0) / 1024 ** 2), failed: n.failed, total: n.total, pct: Math.round((n.rate ?? 0) * 100) })
+                : t(`shell.n.${n.type}.title`, { room: n.room_name, n: n.n, pct: n.pct, num: n.num, reverts: n.reverts, skill: n.skill ? t(`pages.ai.skill.${n.skill}`) : "" })}
               <div className="fx-muted fx-tiny">
-                {t(`shell.n.${n.type}.sub`, { room: n.room_name, finished: n.finished, total: n.total, ok: n.ok, message: n.message, skill: n.skill ? t(`pages.ai.skill.${n.skill}`) : "" })}
+                {n.type === "system" ? (n.problem || t("shell.n.system.sub")) : t(`shell.n.${n.type}.sub`, { room: n.room_name, finished: n.finished, total: n.total, ok: n.ok, message: n.message, skill: n.skill ? t(`pages.ai.skill.${n.skill}`) : "" })}
                 {" · "}
                 {ago(n.at, i18n.language)}
               </div>

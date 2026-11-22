@@ -314,7 +314,8 @@
         "audit": "审计日志",
         "account": "账号",
         "appearance": "外观与语言",
-        "sections": "设置分类"
+        "sections": "设置分类",
+        "system": "系统状态"
       },
       "groups": {
         "connect": "连接",
@@ -378,7 +379,47 @@
       "pwRule": "至少 10 个字符。",
       "pwMismatch": "两次输入的新密码不一样。",
       "pwChanged": "密码已修改。",
-      "pwChange": "修改密码"
+      "pwChange": "修改密码",
+      "sys": {
+        "hint": "服务器、磁盘、运行情况和备份。每 30 秒刷新。",
+        "allWell": "一切正常。",
+        "level": {
+          "bad": "需要处理",
+          "warn": "注意"
+        },
+        "do": {
+          "disk": "清理磁盘或换更大的磁盘。",
+          "memory": "关掉其他大程序;识别扫描件会变慢。",
+          "backup_none": "点下面的「立即备份」。",
+          "backup_failed": "查看下面的原因,再点「立即备份」。",
+          "backup_old": "服务器是否一直在运行?点「立即备份」。",
+          "runs_failing": "打开失败的蒸馏室看原因。"
+        },
+        "server": "服务器",
+        "version": "版本",
+        "uptime": "已运行",
+        "cpus": "CPU 核数",
+        "memory": "可用内存",
+        "disk": "磁盘",
+        "diskFree": "可用 {{free}} GB / 共 {{total}} GB",
+        "diskUsed": "磁盘已用 {{pct}}%",
+        "runs": "蒸馏运行",
+        "runsLine": "最近 {{days}} 天:完成 {{done}} · 失败 {{failed}} · 中断 {{interrupted}}",
+        "queueLine": "正在运行 {{running}} · 排队 {{queued}}",
+        "lastFailure": "最近一次失败",
+        "backup": "备份",
+        "backupLast": "最近一次:{{when}}",
+        "verified": "已恢复并校验",
+        "notVerified": "校验没通过",
+        "copied": "已复制到 {{to}}",
+        "notCopied": "只在这台电脑上(可以设置一个另一块盘或云盘的文件夹)",
+        "noBackup": "还没有备份。",
+        "backupNow": "立即备份",
+        "backingUp": "正在备份并校验…",
+        "days": "{{n}} 天",
+        "hours": "{{n}} 小时",
+        "metrics": "监控:/api/v1/system/metrics 提供 Prometheus 格式的数据(需要管理员登录)。"
+      }
     },
     "users": {
       "title": "用户",
@@ -1102,6 +1143,20 @@
         "title": "规则 #{{num}} 被撤销 {{reverts}} 次",
         "sub": "请检查它是否正确",
         "to": "纠正库"
+      },
+      "system": {
+        "pill": "系统",
+        "title": "系统提醒",
+        "sub": "打开系统状态",
+        "to": "系统状态",
+        "k": {
+          "disk": "磁盘只剩 {{gb}} GB",
+          "memory": "可用内存只剩 {{mb}} MB",
+          "backup_none": "还没有备份",
+          "backup_failed": "最近一次备份校验没通过",
+          "backup_old": "超过 36 小时没有备份",
+          "runs_failing": "最近的运行有 {{failed}}/{{total}} 次失败({{pct}}%)"
+        }
       }
     },
     "help": {
