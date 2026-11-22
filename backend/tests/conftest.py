@@ -12,6 +12,8 @@ import tempfile
 _TMP = tempfile.mkdtemp(prefix="fidelity-test-")
 os.environ.setdefault("FIDELITY_DB_URL", "sqlite+aiosqlite:///" + os.path.join(_TMP, "t.db").replace("\\", "/"))
 os.environ.setdefault("FIDELITY_SECRET", "test-secret-test-secret-test-secret-123")
+# Bot protection is switched on by the tests that check it (test_login_security.py); the rest sign in directly.
+os.environ.setdefault("FIDELITY_CAPTCHA", "off")
 os.environ.setdefault("FIDELITY_VISUAL_SAMPLES", "0")  # the visual check has its own tests
 os.environ.setdefault("FIDELITY_GLOSSARY", os.path.join(_TMP, "no-glossary.json"))  # tests pass their own
 os.environ.setdefault("FIDELITY_OCR_SELECTION", os.path.join(_TMP, "no-ocr-selection.json"))

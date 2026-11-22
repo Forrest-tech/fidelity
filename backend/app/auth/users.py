@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import config
 from ..orm import get_session
-from .models import Role, User
+from .models import OAuthAccount, Role, User
 
 SESSION_SECONDS = int(os.environ.get("FIDELITY_SESSION_SECONDS", str(8 * 3600)))
 
@@ -32,7 +32,7 @@ SECRET = _secret()
 
 
 async def get_user_db(session: AsyncSession = Depends(get_session)):
-    yield SQLAlchemyUserDatabase(session, User)
+    yield SQLAlchemyUserDatabase(session, User, OAuthAccount)
 
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
@@ -42,6 +42,26 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     async def validate_password(self, password, user):
         if len(password) < 10:
             raise InvalidPasswordException(reason="password must be at least 10 characters")
+
+    async def oauth_callback(self, oauth_name, access_token, account_id, account_email, expires_at=None,
+                             refresh_token=None, request=None, *, associate_by_email=False,
+                             is_verified_by_default=False):
+        """Sign-in with Google/Microsoft/GitHub/company SSO: only for people who already have a user
+        (matched by e-mail) or whose domain is allowed. New accounts from an allowed domain are viewers.
+        The provider's tokens are not kept (identity only)."""
+        from fastapi_users import exceptions
+        from .oauth import OAuthRefused, allowed_domains
+        try:
+            await self.get_by_oauth_account(oauth_name, account_id)
+        except exceptions.UserNotExists:
+            try:
+                await self.get_by_email(account_email)
+            except exceptions.UserNotExists:
+                if account_email.rsplit("@", 1)[-1].lower() not in allowed_domains():
+                    raise OAuthRefused("oauth_no_account")
+        return await super().oauth_callback(oauth_name, "-", account_id, account_email, None, None, request,
+                                            associate_by_email=associate_by_email,
+                                            is_verified_by_default=is_verified_by_default)
 
 
 async def get_user_manager(user_db=Depends(get_user_db)):

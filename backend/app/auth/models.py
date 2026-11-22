@@ -2,9 +2,9 @@ import enum
 import uuid
 from datetime import datetime, timezone
 
-from fastapi_users.db import SQLAlchemyBaseUserTableUUID
+from fastapi_users.db import SQLAlchemyBaseOAuthAccountTableUUID, SQLAlchemyBaseUserTableUUID
 from sqlalchemy import DateTime, Enum, ForeignKey, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..orm import Base
 
@@ -15,8 +15,14 @@ class Role(str, enum.Enum):
     viewer = "viewer"
 
 
+class OAuthAccount(SQLAlchemyBaseOAuthAccountTableUUID, Base):
+    """A Google / Microsoft / GitHub / company sign-in linked to a user. Used for identity only: the
+    provider's access token is not kept (see UserManager.oauth_callback)."""
+
+
 class User(SQLAlchemyBaseUserTableUUID, Base):
     role: Mapped[Role] = mapped_column(Enum(Role), default=Role.viewer, nullable=False)
+    oauth_accounts: Mapped[list[OAuthAccount]] = relationship("OAuthAccount", lazy="selectin")
 
 
 class AuditLog(Base):

@@ -1,12 +1,66 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Form, Request
+from fastapi.security import OAuth2PasswordRequestForm
+from fastapi_users.router.common import ErrorCode
 
+from . import captcha, guard, oauth
 from .models import User
 from .schemas import UserCreate, UserRead, UserUpdate
-from .users import backend, current_user, fastapi_users, require_role
+from .users import backend, current_user, fastapi_users, get_user_manager, require_role
 from .models import Role
 
 router = APIRouter()
-router.include_router(fastapi_users.get_auth_router(backend), prefix="/auth", tags=["auth"])
+
+
+# ------------------------------------------------------------------ sign in / out
+# The FastAPI Users login route plus bot protection (ALTCHA) and per-address/per-account failure limits.
+@router.post("/auth/login", tags=["auth"])
+async def login(request: Request, credentials: OAuth2PasswordRequestForm = Depends(),
+                altcha: str | None = Form(None), user_manager=Depends(get_user_manager),
+                strategy=Depends(backend.get_strategy)):
+    from fastapi import HTTPException
+    ip = guard.client_ip(request)
+    account = credentials.username.strip().lower()[:320]
+    wait = guard.login_blocked(ip, account)
+    if wait:
+        return guard.too_many(wait)
+    reason = captcha.verify(altcha)
+    if reason:
+        raise HTTPException(status_code=400, detail=reason)
+    user = await user_manager.authenticate(credentials)
+    if user is None or not user.is_active:
+        guard.login_failed(ip, account)
+        await guard.audit(None, "login_failed", ip)
+        raise HTTPException(status_code=400, detail=ErrorCode.LOGIN_BAD_CREDENTIALS)
+    guard.login_succeeded(ip, account)
+    await guard.audit(user.id, "login", ip)
+    response = await backend.login(strategy, user)
+    await user_manager.on_after_login(user, request, response)
+    return response
+
+
+_current_user_token = fastapi_users.authenticator.current_user_token(active=True)
+
+
+@router.post("/auth/logout", tags=["auth"])
+async def logout(user_token=Depends(_current_user_token), strategy=Depends(backend.get_strategy)):
+    user, token = user_token
+    return await backend.logout(strategy, user, token)
+
+
+@router.get("/auth/challenge", tags=["auth"])
+async def challenge():
+    """A fresh ALTCHA proof-of-work challenge for the sign-in or first-run form."""
+    from fastapi.responses import JSONResponse
+    return JSONResponse(captcha.new_challenge(), headers={"Cache-Control": "no-store"})
+
+
+@router.get("/auth/options", tags=["auth"])
+async def auth_options():
+    """What the sign-in page offers: the configured providers and whether the captcha is required."""
+    return {"providers": oauth.providers_public(), "captcha": captcha.enabled()}
+
+
+router.include_router(oauth.router)
 # User management is admin-only.
 router.include_router(
     fastapi_users.get_users_router(UserRead, UserUpdate),
@@ -36,6 +90,7 @@ from ..orm import SessionLocal  # noqa: E402
 class SetupIn(BaseModel):
     email: EmailStr
     password: str
+    altcha: str | None = None
 
 
 async def _user_count() -> int:
@@ -49,16 +104,28 @@ async def setup_status():
 
 
 @router.post("/setup", status_code=201, tags=["auth"])
-async def setup_first_admin(body: SetupIn):
+async def setup_first_admin(body: SetupIn, request: Request):
     if await _user_count() > 0:
         raise HTTPException(status_code=409, detail="setup is already complete")
+    reason = captcha.verify(body.altcha)
+    if reason:
+        raise HTTPException(status_code=400, detail=reason)
     from fastapi_users.db import SQLAlchemyUserDatabase
     from fastapi_users.exceptions import InvalidPasswordException
     from .users import UserManager
     async with SessionLocal() as s:
         mgr = UserManager(SQLAlchemyUserDatabase(s, User))
         try:
-            await mgr.create(UserCreate(email=body.email, password=body.password, role=Role.admin, is_verified=True))
+            user = await mgr.create(UserCreate(email=body.email, password=body.password, role=Role.admin, is_verified=True))
         except InvalidPasswordException as e:
             raise HTTPException(status_code=422, detail=str(e.reason))
-    return {"created": body.email, "role": "admin"}
+    # signed in straight away (the one captcha solution is used up by this request)
+    from fastapi.responses import JSONResponse
+    from .users import get_jwt_strategy
+    session = await backend.login(get_jwt_strategy(), user)
+    resp = JSONResponse({"created": body.email, "role": "admin"}, status_code=201)
+    for k, v in session.headers.items():
+        if k.lower() == "set-cookie":
+            resp.headers.append("set-cookie", v)
+    await guard.audit(user.id, "setup_first_admin", guard.client_ip(request))
+    return resp

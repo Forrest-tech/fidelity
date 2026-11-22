@@ -73,3 +73,10 @@ google-auth-oauthlib>=1.2
 # --- AI suggestions (optional; only used when an administrator adds a key) ---
 anthropic==2.12.0
 cryptography>=42
+
+# --- Sign-in (standard login): Google / Microsoft / GitHub / company OpenID Connect, bot check, rate limits ---
+# httpx-oauth: the OAuth 2 / OIDC clients FastAPI Users is built for (MIT). altcha: self-hosted proof-of-work
+# bot check, no third-party calls (MIT). limits: moving-window rate limiting (MIT; used by slowapi/Flask-Limiter).
+httpx-oauth==0.17.0
+altcha==2.5.0
+limits==5.8.0
