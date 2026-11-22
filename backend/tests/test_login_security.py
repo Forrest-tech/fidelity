@@ -463,3 +463,11 @@ def test_the_last_active_administrator_cannot_be_demoted_or_switched_off():
     finally:
         for u in others:
             c.patch("/api/v1/admin/users/" + u["id"], json={"is_active": True})
+
+
+def test_any_signed_in_person_can_see_whether_cloud_storage_is_connected():
+    c = client("10.9.1.1")
+    assert c.get("/api/v1/cloud/ready").status_code == 401
+    assert c.post("/api/v1/auth/login", data=creds("sec-viewer@example.com")).status_code == 204
+    j = c.get("/api/v1/cloud/ready").json()
+    assert set(j) == {"dropbox", "google", "dropbox_write", "google_write"} and all(isinstance(v, bool) for v in j.values())

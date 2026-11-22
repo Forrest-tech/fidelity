@@ -812,7 +812,10 @@
       "showOriginal": "查看原文件",
       "showOriginalOf": "查看 {{name}} 对应的原文件",
       "points_other": "{{count}} 点",
-      "points_one": "{{count}} 点"
+      "points_one": "{{count}} 点",
+      "noCloud": "房间从 Dropbox 或 Google Drive 读取文件，但两者都还没有连接。",
+      "noCloudAdmin": "去“设置 → 网盘与本机目录”连接一个。",
+      "noCloudAsk": "请联系管理员连接一个。"
     },
     "corrections": {
       "title": "纠正库",

@@ -7,7 +7,7 @@ const PW = "e2e-password-123";
 const OIDC = "http://127.0.0.1:8767";
 const ACCOUNT = /^(Account menu|账号菜单)$/;
 
-const signInButton = (page: Page) => page.getByRole("button", { name: /^(Sign in|登录)$/ });
+const signInButton = (page: Page) => page.getByRole("button", { name: /^(Sign in|登\s?录)$/ });
 const as = (page: Page, q: string) => page.request.get(`${OIDC}/__as?${q}`);
 
 test.describe("sign-in page", () => {
@@ -93,7 +93,7 @@ test.describe("sign-in page", () => {
     await page.goto("/login");
     await page.getByText("中文", { exact: true }).click();
     await expect(page.getByRole("heading", { level: 1, name: "登录 Fidelity" })).toBeVisible();
-    await page.getByRole("button", { name: "登录", exact: true }).click();
+    await page.getByRole("button", { name: /^登\s?录$/ }).click(); // antd spaces two-character Chinese labels
     await expect(page.getByText("请输入邮箱地址。")).toBeVisible();
     await page.getByText("English").click();
   });

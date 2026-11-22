@@ -143,6 +143,7 @@ code { font-size: 0.92em; }
   background: var(--sunken); color: var(--muted); white-space: nowrap; line-height: 1.5; }
 
 .fx-note { border-left: 3px solid var(--accent); padding: 6px 12px; background: var(--accent-soft); border-radius: 0 6px 6px 0; font-size: 12px; }
+.fx-note.warn { border-left-color: var(--warn); background: var(--warn-soft); margin-bottom: 10px; }
 .fx-ainote { border-left: 3px solid var(--ai); padding: 8px 12px; background: var(--ai-soft); border-radius: 0 6px 6px 0; font-size: 12px; }
 .fx-warnnote { border-left: 3px solid var(--warn); padding: 6px 12px; background: var(--warn-soft); border-radius: 0 6px 6px 0; font-size: 12px; }
 .fx-errnote { border-left: 3px solid var(--bad); padding: 6px 12px; background: var(--bad-soft); border-radius: 0 6px 6px 0; font-size: 12px; }

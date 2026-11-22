@@ -812,7 +812,10 @@
       "showOriginal": "Show the original",
       "showOriginalOf": "Show the file that covers {{name}}",
       "points_one": "{{count}} point",
-      "points_other": "{{count}} points"
+      "points_other": "{{count}} points",
+      "noCloud": "Rooms read from Dropbox or Google Drive, and neither is connected yet.",
+      "noCloudAdmin": "Connect one in Settings → Cloud storage.",
+      "noCloudAsk": "Ask an administrator to connect one."
     },
     "corrections": {
       "title": "Correction library",
