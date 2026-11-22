@@ -20,6 +20,21 @@
 - admin：全部权限 · reviewer：审核队列和审核决定 · viewer：只读。
 - 登录限制每个 IP 每 5 分钟 5 次；登录记录在审计日志里。
 
+## 登录：Google、Microsoft、GitHub、公司 SSO；人机验证；限流
+- 用户可以用邮箱和密码登录，也可以点登录方式按钮。只有在服务器环境变量里设置了对应凭据（然后重启）时才显示该按钮：
+  `FIDELITY_OAUTH_GOOGLE_CLIENT_ID` / `_SECRET`、`FIDELITY_OAUTH_MICROSOFT_CLIENT_ID` / `_SECRET`
+  （可选 `FIDELITY_OAUTH_MICROSOFT_TENANT`，默认 `common`）、`FIDELITY_OAUTH_GITHUB_CLIENT_ID` / `_SECRET`、
+  `FIDELITY_OAUTH_OIDC_CLIENT_ID` / `_SECRET` / `_DISCOVERY_URL`（另可设 `FIDELITY_OAUTH_OIDC_LABEL`，如 "Okta"）。
+- 在登录服务商处登记回调地址：`<站点>/api/v1/auth/oauth/<google|microsoft|github|oidc>/callback`。
+  经过反向代理时设置 `FIDELITY_PUBLIC_URL`（如 `https://fidelity.example.com`）。
+- 仅限邀请：只有 Fidelity 里已有相同邮箱的用户才能用第三方登录（在“用户”里添加）。要让整个公司域名以查看者身份登录，
+  设置 `FIDELITY_OAUTH_ALLOWED_DOMAINS=example.com`。只接受服务商已验证的邮箱；不保存服务商的令牌。
+- 人机验证（ALTCHA，在本服务器上运行，无需点击）保护登录和首次设置，在办公室的纯 HTTP 地址上也能用。
+  `FIDELITY_CAPTCHA=off` 仅用于脚本化部署。
+- 限流：每个地址 5 分钟内 5 次密码错误、每个账号 15 分钟内 10 次（之后返回 HTTP 429 和 Retry-After）；
+  每个地址每分钟 300 次登录相关请求（`FIDELITY_AUTH_CALLS_PER_MINUTE`）。
+- 忘记密码：用户 → 选中此人 → 设置密码。最后一个启用的管理员不能被降级或停用。
+
 ## Dropbox 权限
 **在网页里（推荐）：**设置 → **网盘连接**（管理员）。两个权限（*读取*用于源文件夹，*写入*用于输出文件夹）
 分别填 App key，点"连接"，在 Dropbox 里允许，然后粘贴授权码。连接保存在本服务器上，不需要在机器之间拷贝文件。

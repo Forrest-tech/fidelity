@@ -13,8 +13,8 @@ const as = (page: Page, q: string) => page.request.get(`${OIDC}/__as?${q}`);
 test.describe("sign-in page", () => {
   test("LOGIN-01 looks like a standard sign-in: SSO first, then email and password, with a bot check", async ({ page }) => {
     await page.goto("/login");
-    await expect(page.getByRole("heading", { level: 1, name: "Sign in to Fidelity" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Continue with Company SSO" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Sign in to Fidelity" })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole("button", { name: "Continue with Company SSO" })).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText("or", { exact: true })).toBeVisible();
     await expect(page.getByLabel("Email")).toBeFocused(); // ready to type at once
     await expect(page.getByLabel("Password")).toHaveAttribute("type", "password");

@@ -21,6 +21,24 @@ project environment (`..\.venv\Scripts\python` on Windows); set `PYTHONUTF8=1`.
 - admin: everything · reviewer: review queue and decisions · viewer: read only.
 - Sign-in is limited to 5 attempts per IP per 5 minutes; attempts are in the audit log.
 
+## Sign-in: Google, Microsoft, GitHub, company SSO; bot check; limits
+- People sign in with their email and password, or with a provider button. A button appears only when
+  its credentials are set as environment variables of the server, then restart:
+  `FIDELITY_OAUTH_GOOGLE_CLIENT_ID` / `_SECRET`, `FIDELITY_OAUTH_MICROSOFT_CLIENT_ID` / `_SECRET`
+  (optional `FIDELITY_OAUTH_MICROSOFT_TENANT`, default `common`), `FIDELITY_OAUTH_GITHUB_CLIENT_ID` / `_SECRET`,
+  `FIDELITY_OAUTH_OIDC_CLIENT_ID` / `_SECRET` / `_DISCOVERY_URL` (+ `FIDELITY_OAUTH_OIDC_LABEL`, e.g. "Okta").
+- Register this redirect address with the provider: `<site>/api/v1/auth/oauth/<google|microsoft|github|oidc>/callback`.
+  Behind a proxy set `FIDELITY_PUBLIC_URL` (e.g. `https://fidelity.example.com`).
+- Invitation only: a provider sign-in works when a Fidelity user with the same email exists (add them under
+  Users). To let a whole company domain in as viewers, set `FIDELITY_OAUTH_ALLOWED_DOMAINS=example.com`.
+  Only addresses the provider has verified are accepted; provider tokens are not stored.
+- Bot check (ALTCHA, runs on this server, nothing to click) protects sign-in and first-run set-up. It works
+  on plain-HTTP office addresses too. `FIDELITY_CAPTCHA=off` only for scripted set-ups.
+- Limits: 5 wrong passwords per address per 5 minutes, 10 per account per 15 minutes (then HTTP 429 with
+  Retry-After); 300 sign-in calls per address per minute (`FIDELITY_AUTH_CALLS_PER_MINUTE`).
+- Forgotten password: Users → the person → Set password. The last active administrator cannot be demoted
+  or switched off.
+
 ## Dropbox access
 **In the web interface (recommended):** Settings → **Cloud storage** (administrators). For each access
 (*Read* for sources, *Write* for output folders) enter the App key, click Connect, allow in Dropbox and

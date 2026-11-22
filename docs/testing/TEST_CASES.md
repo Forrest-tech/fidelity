@@ -109,3 +109,7 @@ Every page is also covered by the cross-cutting cases at the end (accessibility,
 | X-04 | Console and network | No console errors, no unexpected 4xx/5xx | manual audit |
 | X-05 | Visual | No unintended change against Linux baselines | e2e:app.spec |
 | X-06 | Lighthouse on sign-in | Performance, accessibility, best practices meet the CI budget | CI frontend-build |
+
+## F: regression tests for the audit findings
+
+Each finding fixed in [FINDINGS.md](FINDINGS.md) has a real-user test in `web/e2e/pages.spec.ts` (F-01 user management, F-02 viewer on Review, F-03 Review layout, F-04 missing source folder, F-05 room without cloud storage) that fails without its fix.
