@@ -83,7 +83,7 @@ test.describe("sign-in page", () => {
     await page.unroute("**/api/v1/auth/login");
     await page.route("**/api/v1/auth/login", (r) => r.fulfill({ status: 500, body: "{}" }));
     await checked(page);
-    await signInButton(page).click();
+    await page.getByLabel("Password").press("Enter"); // the second try from the keyboard
     await expect(page.getByRole("alert")).toContainText("Check your connection");
   });
 

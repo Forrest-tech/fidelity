@@ -74,7 +74,13 @@ export function LoginPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
 
-  const onCaptcha = useCallback((p: string | null) => setCaptcha(p), []);
+  // the latest proof, also in a ref: antd validates the form asynchronously, so `submit` can run with the
+  // values of an older render (found in testing: a click as the check finished waited 30 s for nothing)
+  const latest = useRef<string | null>(null);
+  const onCaptcha = useCallback((p: string | null) => {
+    latest.current = p;
+    setCaptcha(p);
+  }, []);
   // pressing Sign in before the bot check has finished: wait for it, then go on by itself
   const pending = useRef<{ email: string; password: string } | null>(null);
   useEffect(() => {
@@ -91,7 +97,8 @@ export function LoginPage() {
 
   const submit = async (v: { email: string; password: string }) => {
     setErr("");
-    if (needCaptcha && !captcha) {
+    const proof = latest.current;
+    if (needCaptcha && !proof) {
       pending.current = v;
       setBusy(true);
       window.setTimeout(() => {
@@ -108,10 +115,10 @@ export function LoginPage() {
     setBusy(true);
     try {
       if (firstRun) {
-        await api("/setup", json({ email: v.email.trim(), password: v.password, altcha: captcha }));
+        await api("/setup", json({ email: v.email.trim(), password: v.password, altcha: proof }));
         await refresh(); // the server signed the new administrator in
       } else {
-        await login(v.email, v.password, captcha);
+        await login(v.email, v.password, proof);
       }
     } catch (x) {
       captchaRef.current?.reset(); // each check works once: get a fresh one for the next attempt
