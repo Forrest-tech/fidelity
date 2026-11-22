@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { StageCell, type RunLive } from "./RunProgress";
+import { StateHelp } from "./StateHelp";
 import { Empty, Modal, Table } from "antd";
 import { api, json } from "../net/client";
 import { Bar, Seg } from "./ui";
@@ -387,6 +388,7 @@ export function RoomFiles({
               </button>
             ))}
             <span className="fx-muted fx-tiny">{t("pages.distill.legendHint")}</span>
+            <StateHelp />
           </div>
         </div>
       )}

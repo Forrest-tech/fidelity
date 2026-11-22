@@ -216,7 +216,8 @@ function SystemHealth() {
   if (q.isLoading) return <Loading />;
   if (q.isError) return <ErrorState message={(q.error as Error).message} />;
   const h = q.data!;
-  const since = (s: number) => (s >= 86400 ? t("pages.settings.sys.days", { n: Math.floor(s / 86400) }) : t("pages.settings.sys.hours", { n: Math.floor(s / 3600) }));
+  const since = (s: number) => (s >= 86400 ? t("pages.settings.sys.days", { n: Math.floor(s / 86400) })
+    : s >= 3600 ? t("pages.settings.sys.hours", { n: Math.floor(s / 3600) }) : t("pages.settings.sys.minutes", { n: Math.max(1, Math.floor(s / 60)) }));
   const diskPct = Math.round((100 * (h.disk.total - h.disk.free)) / (h.disk.total || 1));
   return (
     <>
@@ -264,7 +265,7 @@ function SystemHealth() {
               <>
                 <div>{t("pages.settings.sys.backupLast", { when: new Date(h.backup.at * 1000).toLocaleString() })}</div>
                 <div>{h.backup.ok ? <Pill tone="ok">{t("pages.settings.sys.verified")}</Pill> : <Pill tone="bad">{t("pages.settings.sys.notVerified")}</Pill>}{" "}
-                  <span className="fx-num">{(h.backup.size / 1e6).toFixed(1)} MB · {h.backup.files}</span></div>
+                  <span className="fx-num">{t("pages.settings.sys.backupSize", { mb: (h.backup.size / 1e6).toFixed(1), count: h.backup.files })}</span></div>
                 <div className="fx-muted">{h.backup.copied_to ? t("pages.settings.sys.copied", { to: h.backup.copied_to }) : t("pages.settings.sys.notCopied")}</div>
               </>
             ) : <div>{t("pages.settings.sys.noBackup")}</div>}

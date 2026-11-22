@@ -11,6 +11,7 @@ import type { FileRow } from "../components/RoomFiles";
 import { CompareDrawer } from "../components/CompareDrawer";
 import { FixDrawer } from "../components/FixDrawer";
 import { DropboxFolderPicker, isUnder } from "../components/DropboxFolderPicker";
+import { GettingStarted } from "../components/GettingStarted";
 import { LeaveGuard, useUnsaved } from "../components/LeaveGuard";
 import { RunPanel, progressOf, type RunLive } from "../components/RunProgress";
 
@@ -834,7 +835,12 @@ export function DistillPage() {
         <>
           {active.isLoading && <Loading />}
           {active.isError && <ErrorState message={(active.error as Error).message} onRetry={() => void active.refetch()} />}
-          {!active.isLoading && !active.isError && list.length === 0 && !draft && <EmptyState title={t("pages.distill.emptyTitle")} hint={t("pages.distill.emptyHint")} />}
+          {!active.isLoading && !active.isError && list.length === 0 && !draft && (
+            <>
+              <GettingStarted rooms={list} />
+              <EmptyState title={t("pages.distill.emptyTitle")} hint={t("pages.distill.emptyHint")} />
+            </>
+          )}
           <div className="fx-stack" style={{ gap: 10 }}>
             {draft && canEdit && <DraftRoom initial={draft.d} restored={draft.restored} onSaved={onSaved} onDiscard={() => setDraft(null)} />}
             {list.map((r) => (

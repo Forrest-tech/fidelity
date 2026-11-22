@@ -6,6 +6,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { Bar, EmptyState, ErrorState, Loading, PageHeader, Pill } from "../components/ui";
 import type { Room } from "./DistillPage";
 import type { Notice } from "../layout/AppShell";
+import { GettingStarted } from "../components/GettingStarted";
 
 interface Library {
   rules: { hits: number; enabled: boolean }[];
@@ -53,6 +54,7 @@ export function OverviewPage() {
     <div className="fx-stack">
       <PageHeader title={t("pages.overview.title")} desc={t("pages.overview.intro")}
         extra={canEdit && <button className="fx-btn pri" onClick={() => nav("/distill?new=1")}>+ {t("pages.distill.newRoom")}</button>} />
+      <GettingStarted rooms={all} />
       {!all.length ? (
         <EmptyState title={t("pages.overview.emptyRooms")} hint={t("pages.overview.emptyRoomsHint")} />
       ) : (
