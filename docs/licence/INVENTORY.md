@@ -57,7 +57,18 @@ are more restrictive.
 - The published Markdown repeats the licence stamps, including the names of the individuals the copies were
   licensed to (personal data of people outside the company).
 
-## 5. Decisions needed from the owner
+## 5. Owner decision (2026-11-22)
+
+The owner confirmed that the company is authorised to use this material — much of it is publicly permitted — and
+decided:
+
+- `/Transfer_Md/AS 3500` stays published and in use;
+- every similar source is handled the same way: licence stamps are **recorded** in this inventory, and they do
+  **not** block distilling or publishing.
+
+The owner's confirmation is the evidence for IR-5. The options below were considered and are kept for the record.
+
+## 6. Options considered before the decision
 
 1. Withdraw `/Transfer_Md/AS 3500` from the folder Grok reads (move it to a restricted folder; nothing is deleted)
    until the company holds a licence that covers this use.
