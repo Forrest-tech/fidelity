@@ -6,6 +6,7 @@
 | Version | 1.0 (2026-11-17) |
 | Owner | Forrest Lin |
 | Rule | This document is the source of truth. A change of requirement is made here first, then in code. |
+| Superseded in part | Requirements v2 (`REQUIREMENTS_V2.md`, accepted 2026-11-22) replaces sections 3, 9 and 11; where they differ, v2 wins. |
 
 ## 1. Purpose
 
