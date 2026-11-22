@@ -217,7 +217,8 @@
           "uploading": "Stage",
           "publishing": "Publish"
         }
-      }
+      },
+      "missing": "This folder is not found on the server. Check the path, or ask an administrator to update or remove this source."
     },
     "jobs": {
       "title": "Jobs",
@@ -385,7 +386,32 @@
       "role": "Role",
       "add": "Add a user",
       "create": "Create user",
-      "passwordHint": "At least 10 characters."
+      "passwordHint": "At least 10 characters.",
+      "intro": "Who can sign in, what they may do, and how they sign in. Viewers read; reviewers also run and fix; administrators also manage settings and users.",
+      "you": "you",
+      "roleOf": "Role of {{email}}",
+      "signIn": "Signs in with",
+      "password": "Password",
+      "active": "Active",
+      "activeOf": "{{email}} can sign in",
+      "actions": "Actions",
+      "resetPassword": "Set password",
+      "resetTitle": "Set a new password for {{email}}",
+      "resetHint": "Give the new password to the person in a safe way. Their current sessions keep working until they sign out.",
+      "resetOk": "Set password",
+      "newPassword": "New password",
+      "roleHint": "They can sign in with this password, or with Google/Microsoft/GitHub/SSO when it uses the same email.",
+      "created": "{{email}} can now sign in.",
+      "saved": "Saved.",
+      "passwordSet": "New password set.",
+      "err": {
+        "exists": "A user with this email already exists.",
+        "lastAdmin": "This is the only active administrator. Make someone else an administrator first.",
+        "password": "The password must be at least 10 characters.",
+        "email": "Enter a valid email address.",
+        "forbidden": "Only administrators can change users.",
+        "network": "Could not save. Check your connection and try again."
+      }
     },
     "distill": {
       "title": "Distill",
@@ -656,7 +682,6 @@
       "ocrPages": "OCR {{page}} / {{pages}} pages",
       "openToSetUp": "Open it to choose the input and output",
       "outputPlace": "Output folder",
-      "points": "{{n}} points",
       "prioHigh": "High",
       "prioLow": "Low",
       "prioNormal": "Normal",
@@ -785,7 +810,9 @@
       "emptyRoomHint": "Empty: no input folder yet",
       "setUp": "Set up",
       "showOriginal": "Show the original",
-      "showOriginalOf": "Show the file that covers {{name}}"
+      "showOriginalOf": "Show the file that covers {{name}}",
+      "points_one": "{{count}} point",
+      "points_other": "{{count}} points"
     },
     "corrections": {
       "title": "Correction library",

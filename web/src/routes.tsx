@@ -26,8 +26,19 @@ function RequireAuth({ roles, children }: { roles?: Role[]; children: JSX.Elemen
   if (loading) return <Loading />;
   if (error) return <ErrorState message={error.message} />;
   if (!me) return <Navigate to="/login" replace state={{ from: loc.pathname }} />;
-  if (roles && !roles.includes(me.role)) return <EmptyState title={t("state.forbidden")} />;
+  if (roles && !roles.includes(me.role))
+    return (
+      <>
+        <h1 className="fx-vh">{t("state.forbidden")}</h1>
+        <EmptyState title={t("state.forbidden")} />
+      </>
+    );
   return children;
+}
+
+function ReviewHeading() {
+  const { t } = useTranslation();
+  return <h1 className="fx-vh">{t("nav.review")}</h1>;
 }
 
 export function AppRoutes() {
@@ -53,6 +64,7 @@ export function AppRoutes() {
             <LangProvider>
               {/* legacy element styles (buttons, inputs) only apply inside this wrapper */}
               <div className="legacy-review" style={{ height: "calc(100vh - 104px)", minHeight: 480 }}>
+                <ReviewHeading />
                 <ErrorBoundary>
                   <Suspense fallback={<Loading />}>
                     <ReviewLegacy />

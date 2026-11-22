@@ -19,6 +19,7 @@ import ReviewerPanel from "../components/ReviewerPanel";
 import SourceManager from "../components/SourceManager";
 import FolderPicker from "../components/FolderPicker";
 import { useI18n } from "../i18n";
+import { useAuth } from "../auth/AuthProvider";
 
 type Notice = { kind: "warn" | "err" | "ok"; text: string };
 
@@ -33,6 +34,9 @@ function loadNum(k: string, d: number, lo: number, hi: number) {
 }
 
 export default function ReviewLegacy() {
+  // viewers read; only reviewers and administrators get the controls that change something
+  const { me } = useAuth();
+  const canEdit = me?.role !== "viewer";
   const [t] = useI18n(); // language comes from the application shell
 
   const [sources, setSources] = useState<Source[]>([]);
@@ -360,6 +364,8 @@ export default function ReviewLegacy() {
             </option>
           ))}
         </select>
+        {canEdit && (
+          <>
         <button onClick={() => setShowMgr(true)}>{t("src.manage")}</button>
         <div className="divider" />
         <button className="primary" disabled={busy} onClick={() => runBatch(false)}>
@@ -382,7 +388,11 @@ export default function ReviewLegacy() {
           {t("act.salvage")}
           {stats?.salvage ? ` (${stats.salvage})` : ""}
         </button>
+          </>
+        )}
         <div className="spacer" />
+        {canEdit && (
+          <>
         <label className="btn upload">
           {t("act.upload")}
           <input
@@ -410,6 +420,8 @@ export default function ReviewLegacy() {
           ))}
         </select>
         <button onClick={() => setShowReviewers(true)}>{t("act.config")}</button>
+          </>
+        )}
       </header>
 
       {/* ---------- 统计行 ---------- */}
@@ -513,6 +525,7 @@ export default function ReviewLegacy() {
           threshold={threshold}
           onThreshold={setThreshold}
           onBatchPass={batchPass}
+          canEdit={canEdit}
           busy={busy}
         />
 
@@ -579,6 +592,8 @@ export default function ReviewLegacy() {
                   <span className="hint num nowrap">{t("file.lines", { n: align.total_lines.toLocaleString() })}</span>
                 )}
 
+                {canEdit && (
+                  <>
                 <div className="vsep" />
 
                 {/* 裁决组：三态互斥，用 segmented 语义（同一时刻只有一个生效）。
@@ -654,6 +669,8 @@ export default function ReviewLegacy() {
                   >
                     {t("act.note")}
                   </button>
+                )}
+                  </>
                 )}
               </div>
 

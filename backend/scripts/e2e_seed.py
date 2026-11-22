@@ -34,7 +34,13 @@ async def main():
                 await mgr.create(UserCreate(email=f"{role.value}@example.com", password=PW, role=role, is_verified=True))
             except Exception:
                 pass  # already exists
-    print("e2e users ready")
+    # a local source folder that exists on this machine (the shipped default points at another computer)
+    from app import config
+    lib = os.path.abspath(os.path.join(".e2e", "library"))
+    os.makedirs(lib, exist_ok=True)
+    config.upsert_source({"id": "e2e", "name": "E2E library", "src_root": lib,
+                          "md_root": os.path.abspath(os.path.join(".e2e", "md"))})
+    print("e2e users and source ready")
 
 
 if __name__ == "__main__":

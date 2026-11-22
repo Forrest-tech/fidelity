@@ -129,3 +129,25 @@ async def setup_first_admin(body: SetupIn, request: Request):
             resp.headers.append("set-cookie", v)
     await guard.audit(user.id, "setup_first_admin", guard.client_ip(request))
     return resp
+
+
+# ------------------------------------------------------------------ user changes by an administrator
+# FastAPI Users' own PATCH /users/{id} needs its "superuser" flag; Fidelity uses roles instead, so the
+# same update (role, active, new password) is offered here for the admin role.
+import uuid as _uuid  # noqa: E402
+
+
+@router.patch("/admin/users/{user_id}", response_model=UserRead, tags=["users"])
+async def admin_update_user(user_id: _uuid.UUID, body: UserUpdate, request: Request,
+                            admin: User = Depends(require_role()), user_manager=Depends(get_user_manager)):
+    from fastapi_users import exceptions
+    try:
+        user = await user_manager.get(user_id)
+    except exceptions.UserNotExists:
+        raise HTTPException(status_code=404, detail="user not found")
+    patch = UserUpdate(**body.model_dump(exclude_unset=True, include={"role", "is_active", "password"}))
+    try:
+        user = await user_manager.update(patch, user, safe=False, request=request)
+    except exceptions.InvalidPasswordException as e:
+        raise HTTPException(status_code=400, detail="INVALID_PASSWORD: " + str(e.reason))
+    return user

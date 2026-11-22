@@ -36,7 +36,7 @@ describe("auth guard", () => {
   it("blocks a non-admin from /users", async () => {
     mockApi((url) => (url.endsWith("/me") ? { body: ME("viewer") } : { body: [] }));
     renderApp("/users");
-    expect(await screen.findByText(/do not have access/i)).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: /do not have access/i })).toBeInTheDocument();
   });
 });
 

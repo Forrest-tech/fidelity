@@ -410,3 +410,49 @@ def test_oauth_sign_ins_are_audited(provider):
         async with SessionLocal() as s:
             return (await s.execute(select(func.count()).select_from(AuditLog).where(AuditLog.action == "login_oauth"))).scalar()
     assert asyncio.run(n()) >= 1
+
+
+# ------------------------------------------------------------------ user management by an administrator
+def _admin_client():
+    asyncio.run(_mk("sec-admin@example.com", Role.admin))
+    c = client("10.9.0.1")
+    assert c.post("/api/v1/auth/login", data=creds("sec-admin@example.com")).status_code == 204
+    return c
+
+
+def test_admin_sees_how_each_person_signs_in(provider):
+    c0 = client()
+    c0.get("/api/v1/auth/oauth/oidc/callback", params={"code": "abc", "state": start(c0)})   # links SSO to sec-reviewer
+    rows = {u["email"]: u for u in _admin_client().get("/api/v1/admin/users").json()}
+    assert rows["sec-reviewer@example.com"]["sign_in"] == ["oidc"]
+    assert rows["sec-viewer@example.com"]["sign_in"] == []
+
+
+def test_admin_changes_role_switches_off_and_resets_password():
+    c = _admin_client()
+    uid = next(u["id"] for u in c.get("/api/v1/admin/users").json() if u["email"] == "sec-viewer@example.com")
+    assert c.patch("/api/v1/admin/users/" + uid, json={"role": "reviewer"}).json()["role"] == "reviewer"
+    assert c.patch("/api/v1/admin/users/" + uid, json={"password": "short"}).status_code == 400
+    assert c.patch("/api/v1/admin/users/" + uid, json={"password": "a-new-long-password"}).status_code == 200
+    assert client("10.9.0.2").post("/api/v1/auth/login", data=creds("sec-viewer@example.com")).status_code == 400
+    assert client("10.9.0.3").post("/api/v1/auth/login", data=creds("sec-viewer@example.com", "a-new-long-password")).status_code == 204
+    assert c.patch("/api/v1/admin/users/" + uid, json={"is_active": False}).status_code == 200
+    assert client("10.9.0.4").post("/api/v1/auth/login", data=creds("sec-viewer@example.com", "a-new-long-password")).status_code == 400
+    # put back for the other tests
+    c.patch("/api/v1/admin/users/" + uid, json={"is_active": True, "role": "viewer", "password": PW})
+
+
+def test_the_last_active_administrator_cannot_be_demoted_or_switched_off():
+    c = _admin_client()
+    admins = [u for u in c.get("/api/v1/admin/users").json() if u["role"] == "admin" and u["is_active"]]
+    me = next(u for u in admins if u["email"] == "sec-admin@example.com")
+    others = [u for u in admins if u["id"] != me["id"]]
+    for u in others:                                                       # leave only sec-admin active
+        assert c.patch("/api/v1/admin/users/" + u["id"], json={"is_active": False}).status_code == 200
+    try:
+        r = c.patch("/api/v1/admin/users/" + me["id"], json={"role": "viewer"})
+        assert r.status_code == 409 and r.json()["detail"] == "LAST_ADMIN"
+        assert c.patch("/api/v1/admin/users/" + me["id"], json={"is_active": False}).json()["detail"] == "LAST_ADMIN"
+    finally:
+        for u in others:
+            c.patch("/api/v1/admin/users/" + u["id"], json={"is_active": True})

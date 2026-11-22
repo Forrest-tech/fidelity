@@ -142,7 +142,7 @@ function QueueCard({ q, canEdit, rooms }: { q: QueueView; canEdit: boolean; room
       <div className="fx-row fx-wrap" style={{ gap: "8px 18px" }}>
         <b>{t("pages.distill.queue")}</b>
         <span className="fx-tiny">
-          {t("pages.distill.capacityIs")} <b className="fx-num">{t("pages.distill.points", { n: q.capacity })}</b>
+          {t("pages.distill.capacityIs")} <b className="fx-num">{t("pages.distill.points", { count: q.capacity })}</b>
           {t("pages.distill.colon")}
           {t("pages.distill.runningN")} <b className="fx-num">{q.running.length}</b> · {t("pages.distill.waitingN")} <b className="fx-num">{q.queued.length}</b>
         </span>

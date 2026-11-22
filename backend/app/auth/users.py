@@ -43,6 +43,21 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         if len(password) < 10:
             raise InvalidPasswordException(reason="password must be at least 10 characters")
 
+    async def update(self, user_update, user, safe=False, request=None):
+        """User changes by an administrator: never leave the installation without an active administrator
+        (demoting or switching off the last one would lock everybody out of user management)."""
+        from sqlalchemy import func, select
+        losing_admin = user.role == Role.admin and user.is_active and (
+            (getattr(user_update, "role", None) not in (None, Role.admin))
+            or getattr(user_update, "is_active", None) is False)
+        if losing_admin:
+            session = self.user_db.session
+            n = (await session.execute(select(func.count()).select_from(User).where(
+                User.role == Role.admin, User.is_active.is_(True)))).scalar_one()
+            if n <= 1:
+                raise HTTPException(status_code=409, detail="LAST_ADMIN")
+        return await super().update(user_update, user, safe=safe, request=request)
+
     async def oauth_callback(self, oauth_name, access_token, account_id, account_email, expires_at=None,
                              refresh_token=None, request=None, *, associate_by_email=False,
                              is_verified_by_default=False):

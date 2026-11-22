@@ -217,7 +217,8 @@
           "uploading": "暂存",
           "publishing": "发布"
         }
-      }
+      },
+      "missing": "服务器上找不到这个文件夹。请检查路径，或请管理员更新或删除这个数据源。"
     },
     "jobs": {
       "title": "任务",
@@ -385,7 +386,32 @@
       "role": "角色",
       "add": "添加用户",
       "create": "创建用户",
-      "passwordHint": "至少 10 个字符。"
+      "passwordHint": "至少 10 个字符。",
+      "intro": "谁可以登录、能做什么、用什么方式登录。查看者只读；审核员还可以运行和修正；管理员还可以管理设置和用户。",
+      "you": "你",
+      "roleOf": "{{email}} 的角色",
+      "signIn": "登录方式",
+      "password": "密码",
+      "active": "启用",
+      "activeOf": "{{email}} 可以登录",
+      "actions": "操作",
+      "resetPassword": "设置密码",
+      "resetTitle": "为 {{email}} 设置新密码",
+      "resetHint": "请用安全的方式把新密码交给对方。对方当前已登录的会话在退出前仍然有效。",
+      "resetOk": "设置密码",
+      "newPassword": "新密码",
+      "roleHint": "对方可以用这个密码登录；如果 Google/Microsoft/GitHub/SSO 账号使用相同邮箱，也可以用它们登录。",
+      "created": "{{email}} 现在可以登录了。",
+      "saved": "已保存。",
+      "passwordSet": "新密码已设置。",
+      "err": {
+        "exists": "已经有使用这个邮箱的用户。",
+        "lastAdmin": "这是唯一启用的管理员。请先把其他人设为管理员。",
+        "password": "密码至少需要 10 个字符。",
+        "email": "请输入有效的邮箱地址。",
+        "forbidden": "只有管理员可以修改用户。",
+        "network": "无法保存，请检查网络后重试。"
+      }
     },
     "distill": {
       "title": "蒸馏",
@@ -656,7 +682,6 @@
       "ocrPages": "OCR {{page}} / {{pages}} 页",
       "openToSetUp": "点开后选择输入和输出",
       "outputPlace": "输出位置",
-      "points": "{{n}} 点",
       "prioHigh": "高",
       "prioLow": "低",
       "prioNormal": "普通",
@@ -785,7 +810,9 @@
       "emptyRoomHint": "空房间:还没有选输入文件夹",
       "setUp": "设置",
       "showOriginal": "查看原文件",
-      "showOriginalOf": "查看 {{name}} 对应的原文件"
+      "showOriginalOf": "查看 {{name}} 对应的原文件",
+      "points_other": "{{count}} 点",
+      "points_one": "{{count}} 点"
     },
     "corrections": {
       "title": "纠正库",
