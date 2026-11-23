@@ -10,6 +10,10 @@ async function signIn(page: Page, email: string, password = PW) {
   await page.goto("/login");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
+  // "I'm not a robot": tick it and wait for the green tick, as a person does
+  const box = page.getByRole("checkbox", { name: /^(I'm not a robot|我不是机器人)$/ });
+  await box.click();
+  await expect(box).toHaveAttribute("aria-checked", "true", { timeout: 30_000 });
   await page.getByRole("button", { name: /^(Sign in|登\s?录)$/ }).click();
   await expect(page.getByRole("button", { name: ACCOUNT })).toBeVisible({ timeout: 20_000 });
 }

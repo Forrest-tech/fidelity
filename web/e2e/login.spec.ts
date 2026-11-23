@@ -193,6 +193,7 @@ test.describe("sign-up", () => {
   });
 
   test("LOGIN-15 anyone can ask for an account; it waits for an administrator, who approves it", async ({ page, browser }) => {
+    test.slow();                                    // sign-up, two sign-ins and an approval: more steps than most
     const email = `new-${Date.now()}@example.net`;
     await page.goto("/login");
     await page.getByRole("link", { name: "Create an account" }).click();
@@ -218,7 +219,9 @@ test.describe("sign-up", () => {
     await admin.getByLabel("Password").fill(PW);
     await tick(admin);
     await signInButton(admin).click();
+    await expect(admin.getByRole("button", { name: ACCOUNT })).toBeVisible({ timeout: 20_000 });   // signed in first
     await admin.goto(new URL("/settings/users", page.url()).toString());
+    await expect(admin.getByRole("heading", { name: /Waiting for approval/ })).toBeVisible({ timeout: 20_000 });
     const row = admin.getByRole("listitem").filter({ hasText: email });
     await row.getByRole("combobox").click();
     await admin.getByRole("option", { name: "Reviewer" }).click();
