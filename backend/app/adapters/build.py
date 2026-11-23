@@ -2,6 +2,10 @@
 """Render the adapter packs (spec F-19, 6.6): one template, one pack per AI tool, facts from the library.
 
     python -m app.adapters.build --library <local copy of the library> [--out adapters/dist] [--tools grok,claude]
+                                 [--house adapters/house_rules.trial.yaml]
+
+--house names a second rules file whose keys replace those in house_rules.yaml, e.g. a trial skill that reads
+another library folder under its own name, next to the skill staff use every day.
 
 The library copy is only read. Packs are written to --out; a build report lists starting points that
 could not be found so the owner can fix house_rules.yaml.
@@ -24,16 +28,20 @@ _REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."
 ADAPTERS = os.path.join(_REPO, "adapters")
 
 
-def load_config(adapters_dir: str = ADAPTERS):
+def load_config(adapters_dir: str = ADAPTERS, overlay: str | None = None):
     with open(os.path.join(adapters_dir, "house_rules.yaml"), encoding="utf-8") as f:
         house = yaml.safe_load(f)
+    if overlay:
+        with open(overlay, encoding="utf-8") as f:
+            house.update(yaml.safe_load(f) or {})
     with open(os.path.join(adapters_dir, "tools.yaml"), encoding="utf-8") as f:
         tools = yaml.safe_load(f)
     return house, tools
 
 
-def render(library_root: str, out_dir: str, tools_wanted=None, adapters_dir: str = ADAPTERS, today=None) -> dict:
-    house, tools = load_config(adapters_dir)
+def render(library_root: str, out_dir: str, tools_wanted=None, adapters_dir: str = ADAPTERS, today=None,
+           house_overlay: str | None = None) -> dict:
+    house, tools = load_config(adapters_dir, house_overlay)
     lib = F.scan(library_root)
     summary = F.summarise(lib)
     starts, missing = [], []
@@ -74,8 +82,9 @@ def main(argv=None) -> int:
     ap.add_argument("--library", required=True, help="local copy of the published library (read only)")
     ap.add_argument("--out", default=os.path.join(ADAPTERS, "dist"))
     ap.add_argument("--tools", default="", help="comma-separated subset of adapters/tools.yaml")
+    ap.add_argument("--house", default=None, help="rules file whose keys replace those in house_rules.yaml")
     a = ap.parse_args(argv)
-    rep = render(a.library, a.out, [t for t in a.tools.split(",") if t] or None)
+    rep = render(a.library, a.out, [t for t in a.tools.split(",") if t] or None, house_overlay=a.house)
     print(json.dumps(rep, ensure_ascii=False, indent=1))
     return 0
 

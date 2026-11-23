@@ -95,3 +95,30 @@ def test_library_map_lists_sub_folders_with_clause_and_page_ranges(tmp_path):
 def test_only_requested_tools(tmp_path):
     rep = B.render(library(tmp_path), str(tmp_path / "d"), ["grok"])
     assert list(rep["packs"]) == ["grok"]
+
+
+def test_trial_overlay_reads_a_root_that_is_the_library_itself(tmp_path):
+    """A trial skill next to the everyday one: own name, the root folder is the library, logs in a fixed folder."""
+    overlay = tmp_path / "trial.yaml"
+    overlay.write_text("skill_name: au-compliance-kb-trial\nskill_description: Trial copy.\ndefault_root: /Transfer_Md\n"
+                       "library_folder: \"\"\ndefault_logs: /Library_Installation_Chat_Logs\n", encoding="utf-8")
+    out = tmp_path / "d"
+    B.render(library(tmp_path), str(out), ["grok", "codex"], house_overlay=str(overlay))
+    g = (out / "grok" / "au-compliance-kb.md").read_text(encoding="utf-8")
+    assert g.startswith("---\nname: au-compliance-kb-trial\ndescription: Trial copy.\n---")
+    assert "that folder is\n   the library itself" in g
+    assert "`path` to `<root>` (or a sub-folder of it)" in g and "`path` = `<root>`:" in g
+    assert "`Library: <root> · Chat logs: <logs>`" in g
+    assert "otherwise `/Library_Installation_Chat_Logs`. Create it" in g
+    assert "Md_Library" not in g and "`<root>/` (or" not in g and "_Chat_Logs`\n   (a sibling" not in g
+    c = (out / "codex" / "AGENTS.md").read_text(encoding="utf-8")
+    assert "it is the library itself" in c and 'rg -n "D2D13" "."' in c and "Read only inside `<root>`." in c
+
+
+def test_without_overlay_the_everyday_skill_is_unchanged(tmp_path):
+    out = tmp_path / "d"
+    B.render(library(tmp_path), str(out), ["grok"])
+    g = (out / "grok" / "au-compliance-kb.md").read_text(encoding="utf-8")
+    assert "name: au-compliance-kb\n" in g and "(the folder that contains `Md_Library/`)" in g
+    assert "`path` to `<root>/Md_Library` (or a sub-folder of it)" in g
+    assert "otherwise `<root>_Chat_Logs`\n   (a sibling folder next to `<root>`). Create it" in g

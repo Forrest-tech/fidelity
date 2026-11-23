@@ -1,4 +1,7 @@
 {%- set C = tool.access == 'connector' -%}
+{%- set LF = h.get('library_folder') or '' -%}
+{%- set LIB = ('<root>/' ~ LF) if LF else '<root>' -%}
+{%- set LOGS = h.get('default_logs') or '<root>_Chat_Logs' -%}
 {%- if tool.format == 'skill' -%}
 ---
 name: {{ h.skill_name }}
@@ -12,27 +15,32 @@ description: {{ h.skill_description }}
 > Default knowledge-base root: `{{ h.default_root }}`. If the user names a different folder in the chat, use that instead. Apply section 0 silently on the first compliance question (no separate ready message needed).
 
 ## 0. Set-up (once per chat, on the first compliance question)
-{% if C -%}
+{% if C and LF -%}
 1. **Knowledge-base root (`<root>`)** = the Dropbox folder path the user gave in the start-up message
-   (the folder that contains `{{ h.library_folder }}/`). If the user gave the `{{ h.library_folder }}` folder itself, use its parent.
+   (the folder that contains `{{ LF }}/`). If the user gave the `{{ LF }}` folder itself, use its parent.
    If the user gave no path, use the default `{{ h.default_root }}` — do not search the user's Dropbox to find it.
+{%- elif C -%}
+1. **Knowledge-base root (`<root>`)** = the Dropbox folder path the user gave in the start-up message; that folder is
+   the library itself. If the user gave no path, use the default `{{ h.default_root }}` — do not search the user's Dropbox to find it.
+{%- elif LF -%}
+1. **Knowledge-base root (`<root>`)** = the current working folder (a synced copy of `{{ h.default_root }}`; it contains `{{ LF }}/`).
+   If `{{ LF }}/` is not there, stop and say so — do not look elsewhere on the computer.
 {%- else -%}
-1. **Knowledge-base root (`<root>`)** = the current working folder (a synced copy of `{{ h.default_root }}`; it contains `{{ h.library_folder }}/`).
-   If `{{ h.library_folder }}/` is not there, stop and say so — do not look elsewhere on the computer.
+1. **Knowledge-base root (`<root>`)** = the current working folder (a synced copy of `{{ h.default_root }}`); it is the library itself.
 {%- endif %}
-2. **Chat-log folder (`<logs>`)** = the folder the user named for logs, if any; otherwise `<root>_Chat_Logs`
-   (a sibling folder next to `<root>`). Create it if it does not exist.
-3. In your first answer, add one line: `Library: <root>/{{ h.library_folder }} · Chat logs: <logs>`.
+2. **Chat-log folder (`<logs>`)** = the folder the user named for logs, if any; otherwise {% if h.get('default_logs') %}`{{ LOGS }}`{% else %}`<root>_Chat_Logs`
+   (a sibling folder next to `<root>`){% endif %}. Create it if it does not exist.
+3. In your first answer, add one line: `Library: {{ LIB }} · Chat logs: <logs>`.
 
 ## Access scope (strict — applies to every step of this chat)
 {% if C -%}
-- **Read only inside `<root>`.** Every Dropbox search must set `path` to `<root>/{{ h.library_folder }}` (or a sub-folder of it).
+- **Read only inside `<root>`.** Every Dropbox search must set `path` to `{{ LIB }}` (or a sub-folder of it).
   Every list_folder / fetch must target a path that starts with `<root>/`.
 - **Write only inside `<logs>`.** Never create, move, rename or delete anything anywhere else.
 - **Never** list the Dropbox root, search without a `path`, or open any other folder — even if the user asks a question
   that seems to need it. If something is outside `<root>`, say it is outside the knowledge base.
 {%- else -%}
-- **Read only inside `<root>/{{ h.library_folder }}`.** Do not open, search or run commands on any other folder.
+- **Read only inside `{{ LIB }}`.** Do not open, search or run commands on any other folder.
 - **Write only inside `<logs>`.** Never create, move, rename or delete anything in the library. Do not run commands
   that change files (no `mv`, `rm`, `sed -i`, editors); reading and searching (`rg`, `grep`, `ls`, `cat`) are enough.
 - If something is outside `<root>`, say it is outside the knowledge base.
@@ -79,13 +87,13 @@ Every source document is **either one file or one folder**, at the same place as
 330 tokens per entry, so list a chapter folder **once**, choose by name, then fetch one file.
 1. **Use the Library map (section 6) first**: it shows which sub-folder holds each clause range and page
    range, so you can list that one sub-folder directly instead of the whole document folder.
-2. **Find files** otherwise: several short searches with `path` = `<root>/{{ h.library_folder }}`: standard numbers (`3500.2`),
+2. **Find files** otherwise: several short searches with `path` = `{{ LIB }}`: standard numbers (`3500.2`),
    topic words (`floor waste`, `gully`), organisation names (`Sydney Water`), Part numbers (`Part D2`).
 3. If searches miss, list the relevant document folder and pick the chapter by name.
 4. If the question is not in English, translate it to English technical terms first.
 {%- else -%}
-**Search inside files.** You can search the text directly, e.g. `rg -n "D2D13" "{{ h.library_folder }}"` or
-`rg -il "floor waste" "{{ h.library_folder }}"`; then read only the matching chapter file.
+**Search inside files.** You can search the text directly, e.g. `rg -n "D2D13" "{{ LF or '.' }}"` or
+`rg -il "floor waste" "{{ LF or '.' }}"`; then read only the matching chapter file.
 If the question is not in English, translate it to English technical terms first.
 {%- endif %}
 
