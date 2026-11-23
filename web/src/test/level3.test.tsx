@@ -69,7 +69,7 @@ describe("automatic adoption in the AI settings", () => {
     await i18n.changeLanguage("zh");
     try {
       renderApp("/settings/ai");
-      expect(await screen.findByText("wang 抽查发现 a.pdf 里的自动采用有错(规则 #4)。")).toBeInTheDocument();
+      expect(await screen.findByText("wang 抽查发现 a.pdf 里的自动采用有错（规则 #4）。")).toBeInTheDocument();
       expect(screen.queryByText(/found an automatic adoption wrong/)).not.toBeInTheDocument();
     } finally {
       await i18n.changeLanguage("en");
