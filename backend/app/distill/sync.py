@@ -168,7 +168,7 @@ def _skip(a, ledger, rledger, rel, content_hash, known=None) -> bool:
 
 def _publish_accepted(a, src, dst, ev, dest_root, stage_root, archive_root, live=None) -> int:
     """Send results that a person accepted. They are staged, checked and promoted together, like a normal run, and
-    the previous versions go to the archive, so the same --rollback undoes it."""
+    the previous versions go to the storage's history (Dropbox deleted files), so the same --rollback undoes it."""
     if not dst or not a.room_dir:
         raise SystemExit("--publish-from needs --dest-link and --room-dir")
     with open(a.publish_from, encoding="utf-8") as f:
@@ -502,7 +502,7 @@ def main(argv=None):
     ap.add_argument("--only", default=None, help="only files whose name contains this text")
     ap.add_argument("--publish-protected-metadata", action="store_true",
                     help="publish a metadata-only entry for protected files (they are always listed in the report)")
-    ap.add_argument("--rollback", default=None, metavar="RUN", help="undo a published run: restore the previous versions from the archive")
+    ap.add_argument("--rollback", default=None, metavar="RUN", help="undo a published run: restore the previous versions (from Dropbox deleted files, or the old archive folder)")
     ap.add_argument("--workers", type=int, default=1, help="capacity points for reading: a text file takes 1, a scanned "
                                                             "file (OCR) 2; files are read at once while their points fit")
     ap.add_argument("--live", default=None, help="keep every file's step in this JSON file while the run goes (web interface)")

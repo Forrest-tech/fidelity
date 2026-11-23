@@ -244,6 +244,16 @@ class GDriveStore:
             self.svc.files().update(fileId=f["id"], body={"trashed": True}, supportsAllDrives=True).execute()
             self._ids = {k: v for k, v in self._ids.items() if v != f["id"]}
 
+    def revisions(self, path):
+        """The id of what a delete puts in the Drive trash (a folder takes its contents with it)."""
+        _, f, _ = self._locate(path)
+        return [f["id"]] if f else []
+
+    def restore(self, tokens):
+        for fid in tokens:
+            self.svc.files().update(fileId=fid, body={"trashed": False}, supportsAllDrives=True).execute()
+        self._ids = {}
+
     def list(self, path):
         _, f, fid = self._locate(path)
         if fid is None:

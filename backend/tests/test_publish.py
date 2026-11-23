@@ -161,3 +161,89 @@ def test_rollback_survives_a_dropped_connection(tmp_path, monkeypatch):
     st.fail = ["after", "before"]
     pub.rollback()
     assert st.files["/kb/2025/Doc/a.md"] == b"old"
+
+
+# --------------------- only the library folder stays: no archive folder, staging gone after each publish (2026-11-23)
+class HistoryStore(FakeStore):
+    """Like Dropbox: a delete goes to the account's deleted files, restorable by revision; empty folders can go."""
+
+    def __init__(self):
+        super().__init__()
+        self.deleted, self.folders, self.rev, self.versions = {}, set(), 0, {}
+
+    def upload(self, path, data):
+        super().upload(path, data)
+        parts = path.split("/")
+        self.folders |= {"/".join(parts[:i]) for i in range(2, len(parts))}
+
+    def revisions(self, path):
+        out = []
+        for p in self.list(path):
+            self.rev += 1
+            self.versions[f"r{self.rev}"] = self.files[p]
+            out.append([p, f"r{self.rev}"])
+        return out
+
+    def delete(self, path):
+        for p in list(self.list(path)):
+            self.deleted[p] = self.files.pop(p)
+
+    def restore(self, tokens):
+        for p, rev in tokens:
+            self.files[p] = self.versions[rev]
+
+    def drop_empty(self, path):
+        if not self.list(path):
+            self.folders = {f for f in self.folders if not (f == path or f.startswith(path + "/"))}
+
+
+def test_a_publish_leaves_only_the_library_folder_and_can_still_be_undone(tmp_path):
+    st = HistoryStore()
+    st.files["/kb/2025/Doc/a.md"] = b"old"
+    _, pub = make(tmp_path, store=st)
+    pub.stage("2025/Doc", {"a.md": b"new", "b.md": b"new-b"})
+    pub.promote()
+    assert st.files["/kb/2025/Doc/a.md"] == b"new"
+    assert not [p for p in st.files if not p.startswith("/kb/")]              # no archive, nothing left in staging
+    assert not [f for f in st.folders if f.startswith("/staging")]            # the staging folder itself is gone
+    assert st.deleted == {"/kb/2025/Doc/a.md": b"old"}                        # the old version is in the history
+    pub.rollback()
+    assert st.files == {"/kb/2025/Doc/a.md": b"old"}
+
+
+def test_a_withdrawn_copy_comes_back_from_the_history(tmp_path):
+    st = HistoryStore()
+    st.files["/kb/2025/Copy.pdf.md"] = b"copy"
+    _, pub = make(tmp_path, store=st)
+    assert pub.withdraw("2025/Copy.pdf.md") == ["2025/Copy.pdf.md"]
+    assert not st.files
+    pub.rollback()
+    assert st.files == {"/kb/2025/Copy.pdf.md": b"copy"}
+
+
+def test_the_way_back_is_recorded_before_anything_is_deleted(tmp_path, monkeypatch):
+    import json
+    monkeypatch.setattr(Publisher, "BACKOFF", (0, 0, 0, 0, 0))
+
+    class DropsOnDelete(HistoryStore):
+        def delete(self, path):
+            raise ConnectionError("reset")
+    st = DropsOnDelete()
+    st.files["/kb/2025/Doc/a.md"] = b"old"
+    _, pub = make(tmp_path, store=st)
+    pub.stage("2025/Doc", {"a.md": b"new"})
+    with pytest.raises(ConnectionError):
+        pub.promote()
+    rec = json.load(open(pub.manifest_path, encoding="utf-8"))
+    assert rec["docs"]["2025/Doc"]["trashed"][0]["tokens"] == [["/kb/2025/Doc/a.md", "r1"]]
+    assert st.files["/kb/2025/Doc/a.md"] == b"old"                            # nothing lost
+
+
+def test_an_old_undo_record_still_restores_from_the_archive_folder(tmp_path):
+    st = HistoryStore()
+    st.files["/archive/r0/2025/Doc/a.md"] = b"old"
+    st.files["/kb/2025/Doc/a.md"] = b"new"
+    _, pub = make(tmp_path, run="r0", store=st)
+    pub.docs = {"2025/Doc": {"files": {"a.md": 3}, "state": "promoted", "archived": ["2025/Doc"]}}
+    pub.rollback()
+    assert st.files["/kb/2025/Doc/a.md"] == b"old"
