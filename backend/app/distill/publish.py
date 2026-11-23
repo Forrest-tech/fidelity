@@ -90,12 +90,32 @@ class Publisher:
             if d["state"] != "staged":
                 continue
             for old in [key] + list((replaces or {}).get(key, [])):
+                if old in d["archived"]:
+                    continue                                         # moved before a dropped connection
                 if self.s.list(self._live(old)):
-                    self.s.move(self._live(old), self._arch(old))     # previous version kept
+                    self._move(self._live(old), self._arch(old))     # previous version kept
                     d["archived"].append(old)
-            self.s.move(self._staged(key), self._live(key))
+                    self._save()
+            self._move(self._staged(key), self._live(key))
             d["state"] = "promoted"
             self._save()
+
+    BACKOFF = (2, 5, 15, 30, 60)
+
+    def _move(self, src: str, dst: str):
+        """A server-side move that survives a dropped connection (requirements v2 S-2): retried on network errors,
+        and a move the server finished although its answer was lost counts as done instead of failing on retry."""
+        import time
+        from .sync import _transient
+        for n in range(len(self.BACKOFF) + 1):
+            try:
+                return self.s.move(src, dst)
+            except Exception as e:                 # noqa: BLE001
+                if self.s.list(dst) and not self.s.list(src):
+                    return None                    # it went through; only the answer was lost
+                if n == len(self.BACKOFF) or not _transient(e):
+                    raise
+                time.sleep(self.BACKOFF[n])
 
     def withdraw(self, key: str, also: list | None = None):
         """Take a document out of the live folder: it moves to the archive (nothing is deleted) and the same
@@ -104,7 +124,7 @@ class Publisher:
         d["state"] = "withdrawn"
         for old in [key] + list(also or []):
             if self.s.list(self._live(old)):
-                self.s.move(self._live(old), self._arch(old))
+                self._move(self._live(old), self._arch(old))
                 d["archived"].append(old)
         self._save()
         return d["archived"]
@@ -115,16 +135,16 @@ class Publisher:
         for key, d in self.docs.items():
             if d["state"] == "withdrawn":
                 for old in d["archived"]:
-                    self.s.move(self._arch(old), self._live(old))
+                    self._move(self._arch(old), self._live(old))
                 d["state"] = "rolled_back"
                 self._save()
                 continue
             if d["state"] != "promoted":
                 continue
             if self.s.list(self._live(key)):
-                self.s.move(self._live(key), f"{self.staging}/{self.run}-rolled-back/{key}")
+                self._move(self._live(key), f"{self.staging}/{self.run}-rolled-back/{key}")
             for old in d["archived"]:
-                self.s.move(self._arch(old), self._live(old))
+                self._move(self._arch(old), self._live(old))
             d["state"] = "rolled_back"
             self._save()
 

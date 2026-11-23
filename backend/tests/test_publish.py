@@ -102,3 +102,62 @@ def test_manifest_allows_rollback_from_a_later_session(tmp_path):
 def test_overlapping_folders_are_refused(tmp_path):
     with pytest.raises(PublishError):
         Publisher(FakeStore(), "/kb", "/kb/staging", "/archive", "r", str(tmp_path))
+
+
+# ------------------------------------------------- S-2 drills: the network drops while the live folder is changed
+class FlakyStore(FakeStore):
+    """Fails chosen moves with a dropped connection, either before the server acts or after (answer lost)."""
+
+    def __init__(self, fail):
+        super().__init__()
+        self.fail = list(fail)          # ("before" | "after") per move call; then normal
+
+    def move(self, src, dst):
+        mode = self.fail.pop(0) if self.fail else None
+        if mode == "before":
+            raise ConnectionError("connection reset by peer")
+        super().move(src, dst)
+        if mode == "after":
+            raise TimeoutError("the answer never came")
+
+
+@pytest.mark.parametrize("fail", [["before"], ["after"], ["before", "before"], ["after", "before"], ["before", "after"]])
+def test_promote_survives_a_dropped_connection_at_any_move(tmp_path, monkeypatch, fail):
+    monkeypatch.setattr(Publisher, "BACKOFF", (0, 0, 0, 0, 0))
+    st = FlakyStore([])
+    st.files["/kb/2025/Doc/a.md"] = b"old"
+    _, pub = make(tmp_path, store=st)
+    pub.stage("2025/Doc", {"a.md": b"new"})
+    st.fail = fail
+    pub.promote()
+    assert st.files["/kb/2025/Doc/a.md"] == b"new"
+    assert st.files["/archive/r1/2025/Doc/a.md"] == b"old"          # the previous version is kept, once
+    assert pub.docs["2025/Doc"]["archived"] == ["2025/Doc"]
+    pub.rollback()
+    assert st.files["/kb/2025/Doc/a.md"] == b"old"
+
+
+def test_promote_gives_up_on_an_error_that_is_not_the_network(tmp_path, monkeypatch):
+    monkeypatch.setattr(Publisher, "BACKOFF", (0, 0, 0, 0, 0))
+
+    class Refusing(FakeStore):
+        def move(self, src, dst):
+            raise PermissionError("no write access")
+    st = Refusing()
+    _, pub = make(tmp_path, store=st)
+    pub.stage("2025/Doc", {"a.md": b"new"})
+    with pytest.raises(PermissionError):
+        pub.promote()
+    assert not [p for p in st.files if p.startswith("/kb")]
+
+
+def test_rollback_survives_a_dropped_connection(tmp_path, monkeypatch):
+    monkeypatch.setattr(Publisher, "BACKOFF", (0, 0, 0, 0, 0))
+    st = FlakyStore([])
+    st.files["/kb/2025/Doc/a.md"] = b"old"
+    _, pub = make(tmp_path, store=st)
+    pub.stage("2025/Doc", {"a.md": b"new"})
+    pub.promote()
+    st.fail = ["after", "before"]
+    pub.rollback()
+    assert st.files["/kb/2025/Doc/a.md"] == b"old"
