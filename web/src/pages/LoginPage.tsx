@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Navigate, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Alert, Button, Divider, Form, Input, Popover, Segmented, Typography } from "antd";
 import { GithubFilled, LockOutlined, MailOutlined, MoonOutlined, SafetyCertificateOutlined, SunOutlined } from "@ant-design/icons";
@@ -15,6 +16,7 @@ import { useTheme } from "../layout/ThemeProvider";
 interface AuthOptions {
   providers: Array<{ id: string; label: string }>;
   captcha: boolean;
+  signup?: boolean;
 }
 
 // Brand marks as the providers publish them (Google "G", Microsoft four squares); GitHub from Ant Design's icon set.
@@ -40,110 +42,13 @@ const MARK: Record<string, JSX.Element> = {
   github: <GithubFilled style={{ fontSize: 18 }} aria-hidden="true" />,
 };
 
-const OAUTH_ERRORS = ["oauth_no_account", "oauth_cancelled", "oauth_expired", "oauth_failed", "oauth_no_email", "oauth_inactive", "oauth_unavailable"];
+const OAUTH_ERRORS = ["oauth_no_account", "oauth_cancelled", "oauth_expired", "oauth_failed", "oauth_no_email", "oauth_inactive", "oauth_unavailable", "oauth_pending"];
 
-export function LoginPage() {
+/** The sign-in / sign-up frame: brand panel on the left, language and theme at the top, the card in the middle. */
+export function AuthFrame({ children, after }: { children: ReactNode; after?: ReactNode }) {
   const { t, i18n } = useTranslation();
-  const { me, loading, login, refresh } = useAuth();
   const { dark, setTheme } = useTheme();
-  const loc = useLocation() as { state?: { from?: string } };
-  const navigate = useNavigate();
-  const [params] = useSearchParams();
-  const [form] = Form.useForm<{ email: string; password: string; confirm?: string }>();
-  const [busy, setBusy] = useState(false);
-  const [leaving, setLeaving] = useState("");
-  const [err, setErr] = useState("");
-  const [captcha, setCaptcha] = useState<string | null>(null);
-  const captchaRef = useRef<CaptchaHandle>(null);
-  const setup = useQuery({ queryKey: ["setup"], queryFn: () => api<{ needs_setup: boolean }>("/setup"), retry: false });
-  const opts = useQuery({ queryKey: ["auth-options"], queryFn: () => api<AuthOptions>("/auth/options"), retry: 1, staleTime: 300_000 });
-  const firstRun = setup.data?.needs_setup === true;
-  // when the options cannot be read, show the check anyway (the server decides; it refuses a sign-in without it)
-  const needCaptcha = opts.data?.captcha === true || opts.isError;
-  const providers = firstRun ? [] : opts.data?.providers ?? [];
   const lang = i18n.language.startsWith("zh") ? "zh" : "en";
-  const from = loc.state?.from && loc.state.from !== "/login" ? loc.state.from : "/";
-
-  // a refused Google/Microsoft/GitHub sign-in comes back as /login?error=<code>: show it once, keep the URL clean
-  useEffect(() => {
-    const code = params.get("error");
-    if (code) {
-      setErr(OAUTH_ERRORS.includes(code) ? t(`login.oauth.${code}`) : t("login.oauth.oauth_failed"));
-      navigate("/login", { replace: true, state: loc.state });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params]);
-
-  // the latest proof, also in a ref: antd validates the form asynchronously, so `submit` can run with the
-  // values of an older render (found in testing: a click as the check finished waited 30 s for nothing)
-  const latest = useRef<string | null>(null);
-  const onCaptcha = useCallback((p: string | null) => {
-    latest.current = p;
-    setCaptcha(p);
-  }, []);
-  // pressing Sign in before the bot check has finished: wait for it, then go on by itself
-  const pending = useRef<{ email: string; password: string } | null>(null);
-  useEffect(() => {
-    if (captcha && pending.current) {
-      const v = pending.current;
-      pending.current = null;
-      void submit(v);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [captcha]);
-
-  if (loading) return <Loading />;
-  if (me) return <Navigate to={from} replace />;
-
-  const submit = async (v: { email: string; password: string }) => {
-    setErr("");
-    const proof = latest.current;
-    if (needCaptcha && !proof) {
-      pending.current = v;
-      setBusy(true);
-      window.setTimeout(() => {
-        if (pending.current === v) {
-          // the check did not finish (offline, blocked worker): say so instead of spinning for ever
-          pending.current = null;
-          setBusy(false);
-          setErr(t("login.captchaRequired"));
-          captchaRef.current?.reset();
-        }
-      }, 30_000);
-      return;
-    }
-    setBusy(true);
-    try {
-      if (firstRun) {
-        await api("/setup", json({ email: v.email.trim(), password: v.password, altcha: proof }));
-        await refresh(); // the server signed the new administrator in
-      } else {
-        await login(v.email, v.password, proof);
-      }
-    } catch (x) {
-      captchaRef.current?.reset(); // each check works once: get a fresh one for the next attempt
-      const detail = x instanceof ApiError ? x.message : "";
-      if (x instanceof ApiError && x.status === 429) setErr(t("login.tooMany"));
-      else if (detail === "CAPTCHA_EXPIRED" || detail === "CAPTCHA_REUSED") setErr(t("login.captchaExpired"));
-      else if (detail.startsWith("CAPTCHA_")) setErr(t("login.captchaRequired"));
-      else if (firstRun && x instanceof ApiError && x.status === 422) setErr(t("login.setupPassword"));
-      else if (firstRun && x instanceof ApiError && x.status === 409) {
-        void setup.refetch();
-        setErr(t("login.failed"));
-      } else if (x instanceof ApiError && x.status === 400) setErr(t("login.failed"));
-      else setErr(t("login.error"));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const goProvider = (id: string, label: string) => {
-    setLeaving(label);
-    window.location.assign(`/api/v1/auth/oauth/${id}/authorize?next=${encodeURIComponent(from)}`);
-  };
-
-  const title = firstRun ? t("login.setupTitle") : t("login.heading");
-
   return (
     <div className="fx-auth">
       <aside className="fx-auth-brand" aria-hidden="true">
@@ -162,19 +67,9 @@ export function LoginPage() {
       </aside>
       <main className="fx-auth-main" id="main">
         <div className="fx-auth-tools">
-          <Segmented
-            size="small"
-            aria-label={t("header.language")}
-            value={lang}
-            options={LANGS.map((l) => ({ value: l, label: l === "zh" ? "中文" : "English" }))}
-            onChange={(v) => void i18n.changeLanguage(String(v))}
-          />
-          <Button
-            size="small"
-            type="text"
-            aria-label={dark ? t("shell.lightTheme") : t("shell.darkTheme")}
-            onClick={() => setTheme(dark ? "light" : "dark")}
-          >
+          <Segmented size="small" aria-label={t("header.language")} value={lang}
+            options={LANGS.map((l) => ({ value: l, label: l === "zh" ? "中文" : "English" }))} onChange={(v) => void i18n.changeLanguage(String(v))} />
+          <Button size="small" type="text" aria-label={dark ? t("shell.lightTheme") : t("shell.darkTheme")} onClick={() => setTheme(dark ? "light" : "dark")}>
             {dark ? <SunOutlined aria-hidden="true" /> : <MoonOutlined aria-hidden="true" />}
           </Button>
         </div>
@@ -183,127 +78,178 @@ export function LoginPage() {
             <span className="fx-auth-mark">F</span>
             <span>{t("app.name")}</span>
           </div>
-          <Typography.Title level={1} className="fx-auth-h1">
-            {title}
-          </Typography.Title>
-          <Typography.Paragraph type="secondary" style={{ marginBottom: 20 }}>
-            {firstRun ? t("login.setupHint") : providers.length ? t("login.subheading") : t("app.tagline")}
-          </Typography.Paragraph>
-
-          {providers.length > 0 && (
-            <>
-              <div className="fx-auth-providers">
-                {providers.map((p) => (
-                  <Button
-                    key={p.id}
-                    size="large"
-                    block
-                    icon={MARK[p.id] ?? <SafetyCertificateOutlined aria-hidden="true" />}
-                    loading={leaving === p.label}
-                    disabled={!!leaving || busy}
-                    onClick={() => goProvider(p.id, p.label)}
-                  >
-                    {leaving === p.label ? t("login.redirecting", { provider: p.label }) : t("login.continueWith", { provider: p.label })}
-                  </Button>
-                ))}
-              </div>
-              <Divider plain className="fx-auth-or">
-                {t("login.or")}
-              </Divider>
-            </>
-          )}
-
-          <Form
-            form={form}
-            layout="vertical"
-            requiredMark={false}
-            aria-label={firstRun ? t("login.setupTitle") : t("login.title")}
-            onFinish={(v) => void submit(v)}
-            validateTrigger="onBlur"
-          >
-            <Form.Item
-              name="email"
-              label={t("login.email")}
-              htmlFor="login-email"
-              extra={firstRun ? t("login.setupEmailHint") : undefined}
-              rules={[
-                { required: true, whitespace: true, message: t("login.emailRequired") },
-                { type: "email", message: t("login.emailInvalid"), transform: (s: string) => s?.trim() },
-                { max: 320, message: t("login.emailInvalid") },
-              ]}
-            >
-              <Input
-                id="login-email"
-                size="large"
-                type="email"
-                inputMode="email"
-                autoComplete="username"
-                autoFocus
-                maxLength={320}
-                placeholder={t("login.emailPlaceholder")}
-                prefix={<MailOutlined aria-hidden="true" className="fx-auth-icon" />}
-              />
-            </Form.Item>
-            <Form.Item
-              name="password"
-              label={t("login.password")}
-              htmlFor="login-password"
-              extra={firstRun ? t("login.setupPasswordHint") : undefined}
-              rules={[
-                { required: true, message: t("login.passwordRequired") },
-                ...(firstRun ? [{ min: 10, message: t("login.setupPasswordShort") }] : []),
-                { max: 1000, message: t("login.passwordRequired") },
-              ]}
-            >
-              <Input.Password
-                id="login-password"
-                size="large"
-                autoComplete={firstRun ? "new-password" : "current-password"}
-                placeholder={t("login.passwordPlaceholder")}
-                prefix={<LockOutlined aria-hidden="true" className="fx-auth-icon" />}
-              />
-            </Form.Item>
-            {!firstRun && (
-              <div className="fx-auth-forgot-row">
-                <Popover content={<div style={{ maxWidth: 260 }}>{t("login.forgotHelp")}</div>} trigger="click" placement="bottomRight">
-                  <Button type="link" size="small" className="fx-auth-forgot">
-                    {t("login.forgot")}
-                  </Button>
-                </Popover>
-              </div>
-            )}
-            {firstRun && (
-              <Form.Item
-                name="confirm"
-                label={t("login.setupConfirm")}
-                htmlFor="login-confirm"
-                dependencies={["password"]}
-                rules={[
-                  { required: true, message: t("login.confirmRequired") },
-                  ({ getFieldValue }) => ({
-                    validator: (_r, v) => (!v || v === getFieldValue("password") ? Promise.resolve() : Promise.reject(new Error(t("login.setupMismatch")))),
-                  }),
-                ]}
-              >
-                <Input.Password id="login-confirm" size="large" autoComplete="new-password" prefix={<LockOutlined aria-hidden="true" className="fx-auth-icon" />} />
-              </Form.Item>
-            )}
-            {needCaptcha && (
-              <div style={{ marginBottom: 16 }}>
-                <Captcha ref={captchaRef} onChange={onCaptcha} />
-              </div>
-            )}
-            <div aria-live="polite">{err && <Alert type="error" showIcon title={err} style={{ marginBottom: 16 }} />}</div>
-            <Button type="primary" htmlType="submit" size="large" block loading={busy} disabled={!!leaving}>
-              {busy && pending.current ? t("login.captchaWait") : busy ? t("login.submitting") : firstRun ? t("login.setupSubmit") : t("login.submit")}
-            </Button>
-          </Form>
-          {!firstRun && <p className="fx-auth-foot">{t("login.noAccount")}</p>}
+          {children}
         </div>
-        <p className="fx-auth-secure">
-          <SafetyCertificateOutlined aria-hidden="true" /> {t("login.secure")}
-        </p>
+        {after}
       </main>
     </div>
+  );
+}
+
+/** "Continue with Google" (sign-in) or "Sign up with Google" (sign-up): the same provider flow. */
+export function ProviderButtons({ providers, verb, next, disabled }: { providers: Array<{ id: string; label: string }>; verb: "signin" | "signup"; next: string; disabled?: boolean }) {
+  const { t } = useTranslation();
+  const [leaving, setLeaving] = useState("");
+  return (
+    <div className="fx-auth-providers">
+      {providers.map((p) => (
+        <Button key={p.id} size="large" block icon={MARK[p.id] ?? <SafetyCertificateOutlined aria-hidden="true" />}
+          loading={leaving === p.label} disabled={!!leaving || disabled}
+          onClick={() => {
+            setLeaving(p.label);
+            window.location.assign(`/api/v1/auth/oauth/${p.id}/authorize?next=${encodeURIComponent(next)}`);
+          }}>
+          {leaving === p.label ? t("login.redirecting", { provider: p.label }) : t(verb === "signup" ? "signup.with" : "login.continueWith", { provider: p.label })}
+        </Button>
+      ))}
+    </div>
+  );
+}
+
+export function LoginPage() {
+  const { t } = useTranslation();
+  const { me, loading, login, refresh } = useAuth();
+  const loc = useLocation() as { state?: { from?: string } };
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const [form] = Form.useForm<{ email: string; password: string; confirm?: string }>();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [info, setInfo] = useState("");
+  const [needTick, setNeedTick] = useState(false);
+  const captchaRef = useRef<CaptchaHandle>(null);
+  const setup = useQuery({ queryKey: ["setup"], queryFn: () => api<{ needs_setup: boolean }>("/setup"), retry: false });
+  const opts = useQuery({ queryKey: ["auth-options"], queryFn: () => api<AuthOptions>("/auth/options"), retry: 1, staleTime: 300_000 });
+  const firstRun = setup.data?.needs_setup === true;
+  // when the options cannot be read, show the check anyway (the server decides; it refuses a sign-in without it)
+  const needCaptcha = opts.data?.captcha === true || opts.isError;
+  const providers = firstRun ? [] : opts.data?.providers ?? [];
+  const from = loc.state?.from && loc.state.from !== "/login" ? loc.state.from : "/";
+
+  // a refused Google/Microsoft/GitHub sign-in comes back as /login?error=<code>: show it once, keep the URL clean
+  useEffect(() => {
+    const code = params.get("error");
+    if (code) {
+      if (code === "oauth_pending") setInfo(t("login.oauth.oauth_pending"));
+      else setErr(OAUTH_ERRORS.includes(code) ? t(`login.oauth.${code}`) : t("login.oauth.oauth_failed"));
+      navigate("/login", { replace: true, state: loc.state });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
+
+  // the latest proof in a ref: antd validates the form asynchronously, so `submit` can run with an older render's values
+  const proof = useRef<string | null>(null);
+  const onCaptcha = useCallback((p: string | null) => {
+    proof.current = p;
+    if (p) setNeedTick(false);
+  }, []);
+
+  if (loading) return <Loading />;
+  if (me) return <Navigate to={from} replace />;
+
+  const submit = async (v: { email: string; password: string }) => {
+    setErr("");
+    setInfo("");
+    if (needCaptcha && !proof.current) {
+      setNeedTick(true);                         // as on other sites: tick "I'm not a robot" first
+      captchaRef.current?.focus();
+      return;
+    }
+    setBusy(true);
+    try {
+      if (firstRun) {
+        await api("/setup", json({ email: v.email.trim(), password: v.password, altcha: proof.current }));
+        await refresh(); // the server signed the new administrator in
+      } else {
+        await login(v.email, v.password, proof.current);
+      }
+    } catch (x) {
+      captchaRef.current?.reset(); // each check works once: tick again for the next attempt
+      const detail = x instanceof ApiError ? x.message : "";
+      if (x instanceof ApiError && x.status === 429) setErr(t("login.tooMany"));
+      else if (detail === "ACCOUNT_PENDING") setInfo(t("login.pending"));
+      else if (detail.startsWith("CAPTCHA_")) setErr(t("login.captchaExpiredTick"));
+      else if (firstRun && x instanceof ApiError && x.status === 422) setErr(t("login.setupPassword"));
+      else if (firstRun && x instanceof ApiError && x.status === 409) {
+        void setup.refetch();
+        setErr(t("login.failed"));
+      } else if (x instanceof ApiError && x.status === 400) setErr(t("login.failed"));
+      else setErr(t("login.error"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const title = firstRun ? t("login.setupTitle") : t("login.heading");
+  const signupOpen = !firstRun && opts.data?.signup !== false;
+
+  return (
+    <AuthFrame after={<p className="fx-auth-secure"><SafetyCertificateOutlined aria-hidden="true" /> {t("login.secure")}</p>}>
+      <Typography.Title level={1} className="fx-auth-h1">{title}</Typography.Title>
+      <Typography.Paragraph type="secondary" style={{ marginBottom: 20 }}>
+        {firstRun ? t("login.setupHint") : providers.length ? t("login.subheading") : t("app.tagline")}
+      </Typography.Paragraph>
+
+      {providers.length > 0 && (
+        <>
+          <ProviderButtons providers={providers} verb="signin" next={from} disabled={busy} />
+          <Divider plain className="fx-auth-or">{t("login.or")}</Divider>
+        </>
+      )}
+
+      <Form form={form} layout="vertical" requiredMark={false} aria-label={firstRun ? t("login.setupTitle") : t("login.title")}
+        onFinish={(v) => void submit(v)} validateTrigger="onBlur">
+        <Form.Item name="email" label={t("login.email")} htmlFor="login-email" extra={firstRun ? t("login.setupEmailHint") : undefined}
+          rules={[
+            { required: true, whitespace: true, message: t("login.emailRequired") },
+            { type: "email", message: t("login.emailInvalid"), transform: (s: string) => s?.trim() },
+            { max: 320, message: t("login.emailInvalid") },
+          ]}>
+          <Input id="login-email" size="large" type="email" inputMode="email" autoComplete="username" autoFocus maxLength={320}
+            placeholder={t("login.emailPlaceholder")} prefix={<MailOutlined aria-hidden="true" className="fx-auth-icon" />} />
+        </Form.Item>
+        <Form.Item name="password" label={t("login.password")} htmlFor="login-password" extra={firstRun ? t("login.setupPasswordHint") : undefined}
+          rules={[
+            { required: true, message: t("login.passwordRequired") },
+            ...(firstRun ? [{ min: 10, message: t("login.setupPasswordShort") }] : []),
+            { max: 1000, message: t("login.passwordRequired") },
+          ]}>
+          <Input.Password id="login-password" size="large" autoComplete={firstRun ? "new-password" : "current-password"}
+            placeholder={t("login.passwordPlaceholder")} prefix={<LockOutlined aria-hidden="true" className="fx-auth-icon" />} />
+        </Form.Item>
+        {!firstRun && (
+          <div className="fx-auth-forgot-row">
+            <Popover content={<div style={{ maxWidth: 260 }}>{t("login.forgotHelp")}</div>} trigger="click" placement="bottomRight">
+              <Button type="link" size="small" className="fx-auth-forgot">{t("login.forgot")}</Button>
+            </Popover>
+          </div>
+        )}
+        {firstRun && (
+          <Form.Item name="confirm" label={t("login.setupConfirm")} htmlFor="login-confirm" dependencies={["password"]}
+            rules={[
+              { required: true, message: t("login.confirmRequired") },
+              ({ getFieldValue }) => ({ validator: (_r, v) => (!v || v === getFieldValue("password") ? Promise.resolve() : Promise.reject(new Error(t("login.setupMismatch")))) }),
+            ]}>
+            <Input.Password id="login-confirm" size="large" autoComplete="new-password" prefix={<LockOutlined aria-hidden="true" className="fx-auth-icon" />} />
+          </Form.Item>
+        )}
+        {needCaptcha && (
+          <div style={{ marginBottom: 16 }}>
+            <Captcha ref={captchaRef} onChange={onCaptcha} invalid={needTick} />
+            {needTick && <div className="fx-human-note" role="alert">{t("login.tickFirst")}</div>}
+          </div>
+        )}
+        <div aria-live="polite">
+          {err && <Alert type="error" showIcon title={err} style={{ marginBottom: 16 }} />}
+          {info && <Alert type="info" showIcon title={info} style={{ marginBottom: 16 }} />}
+        </div>
+        <Button type="primary" htmlType="submit" size="large" block loading={busy}>
+          {busy ? t("login.submitting") : firstRun ? t("login.setupSubmit") : t("login.submit")}
+        </Button>
+      </Form>
+      {signupOpen ? (
+        <p className="fx-auth-foot">{t("signup.noAccount")} <Link to="/signup" className="fx-auth-signup">{t("signup.create")}</Link></p>
+      ) : !firstRun && <p className="fx-auth-foot">{t("login.noAccount")}</p>}
+    </AuthFrame>
   );
 }

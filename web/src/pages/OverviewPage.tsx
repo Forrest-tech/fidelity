@@ -80,9 +80,11 @@ export function OverviewPage() {
                         <td style={{ width: 110 }}><Pill tone={n.tone === "warn" ? "warn" : n.tone}>{t(`shell.n.${n.type}.pill`)}</Pill></td>
                         <td>
                           <Link to={n.to} onClick={(e) => e.stopPropagation()} style={{ color: "inherit" }}>
-                            {t(`shell.n.${n.type}.title`, { room: n.room_name, n: n.n, pct: n.pct, num: n.num, reverts: n.reverts, skill: n.skill ? t(`pages.ai.skill.${n.skill}`) : "" })}
+                            {n.type === "system"
+                              ? t(`shell.n.system.k.${n.kind}`, { gb: ((n.free ?? 0) / 1024 ** 3).toFixed(1), mb: Math.round((n.available ?? 0) / 1024 ** 2), failed: n.failed, total: n.total, pct: Math.round((n.rate ?? 0) * 100) })
+                              : t(`shell.n.${n.type}.title`, { room: n.room_name, n: n.n, pct: n.pct, num: n.num, reverts: n.reverts, skill: n.skill ? t(`pages.ai.skill.${n.skill}`) : "" })}
                           </Link>
-                          <div className="fx-muted fx-tiny">{t(`shell.n.${n.type}.sub`, { room: n.room_name, message: n.message, skill: n.skill ? t(`pages.ai.skill.${n.skill}`) : "" })}</div>
+                          <div className="fx-muted fx-tiny">{n.type === "system" ? (n.problem || t("shell.n.system.sub")) : t(`shell.n.${n.type}.sub`, { room: n.room_name, message: n.message, skill: n.skill ? t(`pages.ai.skill.${n.skill}`) : "" })}</div>
                         </td>
                         <td className="fx-muted fx-tiny" style={{ textAlign: "right", whiteSpace: "nowrap" }}>{t(`shell.n.${n.type}.to`)} →</td>
                       </tr>

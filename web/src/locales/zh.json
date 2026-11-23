@@ -74,7 +74,8 @@
       "oauth_failed": "使用该方式登录失败，请重试。",
       "oauth_no_email": "该登录方式没有提供已验证的邮箱。请使用已验证邮箱的账号，或用密码登录。",
       "oauth_inactive": "这个账号已被停用，请联系管理员。",
-      "oauth_unavailable": "此服务器未设置该登录方式。"
+      "oauth_unavailable": "此服务器未设置该登录方式。",
+      "oauth_pending": "已收到你的申请,正在等待管理员批准,批准后就能登录。"
     },
     "setupEmailHint": "这将是管理员的登录账号。",
     "setupPasswordHint": "至少 10 个字符。",
@@ -82,7 +83,13 @@
     "confirmRequired": "请再次输入密码。",
     "captchaChecking": "正在进行人机验证…",
     "captchaReady": "已通过人机验证",
-    "captchaFailed": "人机验证无法运行。"
+    "captchaFailed": "人机验证无法运行。",
+    "notRobot": "我不是机器人",
+    "verifying": "正在验证…",
+    "noTracking": "不跟踪",
+    "tickFirst": "请先勾选“我不是机器人”。",
+    "captchaExpiredTick": "验证已过期,请重新勾选“我不是机器人”。",
+    "pending": "你的账号正在等待管理员批准,批准后就能登录。"
   },
   "state": {
     "loading": "加载中…",
@@ -456,7 +463,14 @@
         "email": "请输入有效的邮箱地址。",
         "forbidden": "只有管理员可以修改用户。",
         "network": "无法保存，请检查网络后重试。"
-      }
+      },
+      "pendingTitle": "等待批准",
+      "pendingHint": "申请账号的人。选好角色后批准,或拒绝。",
+      "approve": "批准",
+      "decline": "拒绝",
+      "approved": "{{email}} 现在可以以「{{role}}」身份登录。",
+      "declined": "已拒绝 {{email}} 的申请。",
+      "asRole": "{{email}} 的角色"
     },
     "distill": {
       "title": "蒸馏",
@@ -1204,6 +1218,12 @@
           "backup_old": "超过 36 小时没有备份",
           "runs_failing": "最近的运行有 {{failed}}/{{total}} 次失败({{pct}}%)"
         }
+      },
+      "signup": {
+        "pill": "注册",
+        "title": "{{n}} 人等待批准",
+        "sub": "在「用户和角色」里批准或拒绝",
+        "to": "用户"
       }
     },
     "help": {
@@ -1290,5 +1310,22 @@
         "go": "查看结果"
       }
     }
+  },
+  "signup": {
+    "title": "创建账号",
+    "intro": "Fidelity 供公司员工使用。每个新账号都需要管理员批准,批准后就能登录。",
+    "with": "用 {{provider}} 注册",
+    "emailHint": "请填工作邮箱。",
+    "submit": "创建账号",
+    "noAccount": "还没有账号?",
+    "create": "立即注册",
+    "haveAccount": "已经有账号?",
+    "signIn": "登录",
+    "sentTitle": "申请已提交",
+    "sentBody": "已请管理员批准 {{email}},批准后就能登录。",
+    "backToSignIn": "返回登录",
+    "tooMany": "这个网络的申请太多了,请稍后再试。",
+    "closed": "这里暂不开放注册,请联系管理员为你添加账号。",
+    "closedTitle": "暂不开放注册"
   }
 }

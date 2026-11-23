@@ -87,7 +87,8 @@ def overview():
 
 @router.get("/admin/users", dependencies=[Depends(require_role())])
 async def list_users(session: AsyncSession = Depends(get_session)):
-    rows = (await session.execute(select(User).order_by(User.email))).scalars().all()
+    # people waiting for approval are listed apart (GET /admin/signups), not among the accounts
+    rows = (await session.execute(select(User).where(User.approval.is_(None)).order_by(User.email))).scalars().all()
     return [{"id": str(u.id), "email": u.email, "role": u.role.value, "is_active": u.is_active,
              # how the person signs in: their password and/or the providers linked to the account
              "sign_in": sorted({a.oauth_name for a in (u.oauth_accounts or [])})} for u in rows]

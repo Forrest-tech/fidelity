@@ -28,6 +28,49 @@ function userError(t: (k: string, o?: Record<string, unknown>) => string, e: unk
   return t("pages.users.err.network");
 }
 
+interface Pending { id: string; email: string; role: string }
+
+/** People who asked for an account (sign-up): an administrator chooses a role and approves, or declines. */
+function PendingSignups({ notify }: { notify: (kind: "success" | "error", text: string) => void }) {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ["signups"], queryFn: () => api<{ pending: Pending[] }>("/admin/signups") });
+  const [roles, setRoles] = useState<Record<string, string>>({});
+  const done = () => {
+    for (const k of ["signups", "users", "notifications"]) void qc.invalidateQueries({ queryKey: [k] });
+  };
+  const approve = useMutation({
+    mutationFn: (p: Pending) => api(`/admin/signups/${p.id}/approve`, json({ role: roles[p.id] ?? "viewer" })),
+    onSuccess: (_d, p) => { notify("success", t("pages.users.approved", { email: p.email, role: t(`roles.${roles[p.id] ?? "viewer"}`) })); done(); },
+    onError: (e) => { notify("error", userError(t, e)); done(); },
+  });
+  const decline = useMutation({
+    mutationFn: (p: Pending) => api(`/admin/signups/${p.id}/decline`, { method: "POST" }),
+    onSuccess: (_d, p) => { notify("success", t("pages.users.declined", { email: p.email })); done(); },
+    onError: (e) => { notify("error", userError(t, e)); done(); },
+  });
+  const list = q.data?.pending ?? [];
+  if (!list.length) return null;
+  return (
+    <section className="fx-card" style={{ padding: 14, marginBottom: 16 }} aria-labelledby="pending-title">
+      <h2 id="pending-title" style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>{t("pages.users.pendingTitle")} <Tag color="orange">{list.length}</Tag></h2>
+      <p className="fx-muted fx-tiny" style={{ margin: "2px 0 10px" }}>{t("pages.users.pendingHint")}</p>
+      <ul className="fx-stack" style={{ gap: 8, listStyle: "none", margin: 0, padding: 0 }}>
+        {list.map((p) => (
+          <li key={p.id} className="fx-row fx-wrap" style={{ gap: 10 }}>
+            <b style={{ minWidth: 220, wordBreak: "break-all" }}>{p.email}</b>
+            <Select size="small" style={{ width: 130 }} value={roles[p.id] ?? "viewer"} aria-label={t("pages.users.asRole", { email: p.email })}
+              onChange={(v) => setRoles((r) => ({ ...r, [p.id]: v }))}
+              options={["viewer", "reviewer", "admin"].map((r) => ({ value: r, label: t(`roles.${r}`) }))} />
+            <Button size="small" type="primary" loading={approve.isPending && approve.variables?.id === p.id} onClick={() => approve.mutate(p)}>{t("pages.users.approve")}</Button>
+            <Button size="small" danger loading={decline.isPending && decline.variables?.id === p.id} onClick={() => decline.mutate(p)}>{t("pages.users.decline")}</Button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export function UsersPage() {
   const { t } = useTranslation();
   const [message, toasts] = antMessage.useMessage();
@@ -71,6 +114,7 @@ export function UsersPage() {
     <>
       {toasts}
       <PageHeader title={t("pages.users.title")} desc={t("pages.users.intro")} />
+      <PendingSignups notify={(kind, text) => void message[kind](text)} />
       <Row gutter={[24, 24]}>
         <Col xs={24} xl={16}>
           {q.isLoading && <Loading />}

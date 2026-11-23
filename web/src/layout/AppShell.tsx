@@ -44,7 +44,7 @@ const I = {
 // ------------------------------------------------------------------ notifications
 export interface Notice {
   key: string;
-  type: "done" | "published" | "failed" | "interrupted" | "unprocessable" | "review" | "ai_budget" | "rule_undone" | "system";
+  type: "done" | "published" | "failed" | "interrupted" | "unprocessable" | "review" | "ai_budget" | "rule_undone" | "system" | "signup";
   /** for type "system": disk | memory | backup_none | backup_failed | backup_old | runs_failing */
   kind?: string;
   free?: number;

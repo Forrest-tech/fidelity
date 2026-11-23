@@ -201,7 +201,7 @@ async def callback(provider: str, request: Request, code: str | None = None, sta
         await guard.audit(None, "login_refused_oauth", "%s %s" % (provider, guard.client_ip(request)))
         return _to_login(e.code)
     if not user.is_active:
-        return _to_login("oauth_inactive")
+        return _to_login("oauth_pending" if getattr(user, "approval", None) == "pending" else "oauth_inactive")
     login = await backend.login(get_jwt_strategy(), user)      # the normal session cookie
     await guard.audit(user.id, "login_oauth", "%s %s" % (provider, guard.client_ip(request)))
     resp = RedirectResponse(_safe_next(st.get("next")), status_code=302)

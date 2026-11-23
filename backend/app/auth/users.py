@@ -73,7 +73,14 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
                 await self.get_by_email(account_email)
             except exceptions.UserNotExists:
                 if account_email.rsplit("@", 1)[-1].lower() not in allowed_domains():
-                    raise OAuthRefused("oauth_no_account")
+                    from .signup import PENDING, enabled
+                    if not enabled():
+                        raise OAuthRefused("oauth_no_account")
+                    # sign-up through the provider: the address is proven; an administrator still approves it
+                    user = await super().oauth_callback(oauth_name, "-", account_id, account_email, None, None, request,
+                                                        associate_by_email=associate_by_email,
+                                                        is_verified_by_default=is_verified_by_default)
+                    return await self.user_db.update(user, {"is_active": False, "approval": PENDING})
         return await super().oauth_callback(oauth_name, "-", account_id, account_email, None, None, request,
                                             associate_by_email=associate_by_email,
                                             is_verified_by_default=is_verified_by_default)

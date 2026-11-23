@@ -29,6 +29,7 @@ MAX_FAILURES = 5
 WINDOW_SECONDS = 300
 FAILS_PER_IP = parse("%d/%d seconds" % (MAX_FAILURES, WINDOW_SECONDS))
 FAILS_PER_ACCOUNT = parse("10/15 minutes")
+SIGNUPS_PER_IP = parse("5/hour")          # sign-up requests from one address
 def _auth_calls_per_ip():
     import os
     return parse("%d/minute" % max(1, int(os.environ.get("FIDELITY_AUTH_CALLS_PER_MINUTE", "300"))))
@@ -57,6 +58,13 @@ def login_blocked(ip: str, account: str) -> int:
     if account and not _limiter.test(FAILS_PER_ACCOUNT, "acct", account):
         return _retry_after(FAILS_PER_ACCOUNT, "acct", account)
     return 0
+
+
+def signup_blocked(ip: str) -> int:
+    """Seconds to wait when this address has asked for too many accounts, else 0 (the request is counted)."""
+    if _limiter.hit(SIGNUPS_PER_IP, "signup", ip):
+        return 0
+    return _retry_after(SIGNUPS_PER_IP, "signup", ip)
 
 
 def login_failed(ip: str, account: str):

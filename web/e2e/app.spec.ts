@@ -4,11 +4,18 @@ import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
 const PW = "e2e-password-123";
+// "I'm not a robot": tick the box and wait for the green tick, as a person does
+async function tick(page: Page) {
+  const box = page.getByRole("checkbox", { name: /^(I'm not a robot|我不是机器人)$/ });
+  await box.click();
+  await expect(box).toHaveAttribute("aria-checked", "true", { timeout: 30_000 });
+}
 
 async function login(page: Page, role: "admin" | "reviewer" | "viewer") {
   await page.goto("/login");
   await page.getByLabel("Email").fill(`${role}@example.com`);
   await page.getByLabel("Password").fill(PW);
+  await tick(page);
   await page.getByRole("button", { name: "Sign in" }).click();
   // the account button is in the top bar at every screen size
   await expect(page.getByRole("button", { name: ACCOUNT })).toBeVisible({ timeout: 15_000 });
@@ -51,6 +58,7 @@ test.describe("sign in and out", () => {
     await page.goto("/login");
     await page.getByLabel("Email").fill("admin@example.com");
     await page.getByLabel("Password").fill("not-the-password");
+    await tick(page);
     await page.getByRole("button", { name: "Sign in" }).click();
     await expect(page.getByRole("alert")).toContainText("Wrong email or password");
   });
@@ -99,6 +107,7 @@ test.describe("roles", () => {
     await p2.goto(new URL("/login", page.url()).toString());
     await p2.getByLabel("Email").fill(email);
     await p2.getByLabel("Password").fill("another-long-password");
+    await tick(p2);
     await p2.getByRole("button", { name: "Sign in" }).click();
     await expect(p2.getByRole("button", { name: ACCOUNT })).toBeVisible({ timeout: 15_000 });
     await ctx.close();

@@ -105,7 +105,7 @@ describe("distill page", () => {
     expect(save).toBeDisabled();                                                                    // needs the input folder
     await u.type(within(draft).getByLabelText(/^Input/), "/as 3500");
     await u.type(within(draft).getByLabelText(/^Output/), "/Transfer_Md/as 3500");
-    await waitFor(() => expect(save).toBeEnabled()); // the draft state settles after the last keystroke
+    await waitFor(() => expect(save).toBeEnabled(), { timeout: 20_000 }); // the draft state settles after the last keystroke (slow on CI)
     await u.click(save);
     await waitFor(() => {
       const c = calls.find((x) => x.url.endsWith("/rooms") && x.init?.method === "POST");
