@@ -14,7 +14,7 @@ from ..distill import scoring as SC
 
 router = APIRouter()
 PATH = os.path.join(config.DATA_DIR, "app_settings.json")
-DEFAULTS = {"threshold": 99.0, "number_guard": True, "mode": "distill"}
+DEFAULTS = {"threshold": 99.0, "number_guard": True, "mode": "distill", "ocr_protected": False}
 
 
 def defaults() -> dict:
@@ -30,6 +30,7 @@ class DefaultsIn(BaseModel):
     threshold: float | None = None
     number_guard: bool | None = None
     mode: str | None = None
+    ocr_protected: bool | None = None
 
 
 @router.get("/app-settings/defaults")
@@ -50,6 +51,8 @@ def put_defaults(body: DefaultsIn):
         if body.mode not in ("distill", "upload"):
             raise HTTPException(422, "mode must be distill or upload")
         d["mode"] = body.mode
+    if body.ocr_protected is not None:
+        d["ocr_protected"] = bool(body.ocr_protected)
     try:
         with open(PATH, encoding="utf-8") as f:
             all_ = json.load(f)

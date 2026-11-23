@@ -280,8 +280,8 @@ def _cost(lp) -> int:
         return 2
     if low.endswith(".pdf"):
         try:
-            from .triage import triage_pdf
-            return 2 if triage_pdf(lp).get("class") == "scan" else 1
+            from .triage import reads_as_scan, triage_pdf
+            return 2 if reads_as_scan(triage_pdf(lp)) else 1
         except Exception:                                  # noqa: BLE001 - the reader will report a broken file
             return 1
     return 1
