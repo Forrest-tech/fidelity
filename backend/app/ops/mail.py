@@ -52,9 +52,15 @@ def configured(s: dict | None = None) -> bool:
     return bool(s["host"] and s["from_address"]) or bool(os.environ.get("FIDELITY_MAIL_OUTBOX"))
 
 
+def missing(s: dict | None = None) -> list:
+    """Fields still needed before mail can be sent (the settings page names them)."""
+    s = s or load()
+    return [k for k in ("host", "from_address") if not s[k]]
+
+
 def public() -> dict:
     s = load()
-    return {**s, "password_set": bool(password()), "configured": configured(s)}
+    return {**s, "password_set": bool(password()), "configured": configured(s), "missing": missing(s)}
 
 
 def save(changes: dict) -> dict:
@@ -71,6 +77,10 @@ def save(changes: dict) -> dict:
     if s["approval"] not in APPROVAL:
         raise MailError("approval must be domains, all or none")
     s["site_url"] = str(s["site_url"]).strip().rstrip("/")
+    s["username"] = str(s["username"]).strip()
+    s["from_address"] = str(s["from_address"]).strip()
+    if not s["from_address"] and "@" in s["username"]:
+        s["from_address"] = s["username"]        # Gmail, Microsoft 365 and most services send only as the signed-in address
     if "password" in changes and changes["password"] is not None:
         from ..ai import config as CF
         CF._store_key(SECRET_ID, changes["password"] or None)     # "" clears it

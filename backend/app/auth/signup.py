@@ -310,6 +310,14 @@ async def put_mail(body: MailIn, admin: User = Depends(require_role())):
     return out
 
 
+@router.get("/admin/email/password", tags=["settings"])
+async def reveal_mail_password(admin: User = Depends(require_role())):
+    """The saved password, only when an administrator asks to see it; every look is in the audit log."""
+    from ..ops import mail
+    await guard.audit(admin.id, "email_password_revealed", mail.load()["host"])
+    return {"password": mail.password() or ""}
+
+
 @router.post("/admin/email/test", tags=["settings"])
 async def test_mail(admin: User = Depends(require_role())):
     from ..ops import mail

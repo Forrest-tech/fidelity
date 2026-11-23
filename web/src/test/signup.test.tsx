@@ -166,6 +166,30 @@ describe("email: confirm, reset, settings", () => {
     const body = JSON.parse(String(calls.find((c) => c.init?.method === "PUT")!.init!.body));
     expect(body).toMatchObject({ host: "smtp.example.com", password: "app-pass-123", from_address: "f@example.com" });
     expect(await screen.findByText("Sending email is set up.")).toBeInTheDocument();
-    expect(screen.getByLabelText(/^Password/)).toHaveValue("");
+    expect(screen.getByLabelText(/^Password/)).toHaveValue("••••••••");     // saved: shown masked, never the text
+    expect(calls.some((c) => c.url.endsWith("/admin/email/password"))).toBe(false);
+  });
+
+  it("a saved password shows as dots, Show fetches it on request, and the page names what is missing", async () => {
+    const calls = mockApi((url) => {
+      if (url.endsWith("/me")) return { body: { id: "1", email: "admin@example.com", role: "admin" } };
+      if (url.endsWith("/admin/email/password")) return { body: { password: "abcd efgh ijkl mnop" } };
+      if (url.endsWith("/admin/email")) return { body: { host: "smtp.gmail.com", port: 587, security: "starttls", username: "me@gmail.com", from_address: "", from_name: "Fidelity", site_url: "", approval: "domains", password_set: true, configured: false, missing: ["from_address"] } };
+      return { body: {} };
+    });
+    renderApp("/settings/email");
+    expect(await screen.findByText(/Still needed: Sender address\./)).toBeInTheDocument();
+    const pw = screen.getByLabelText(/^Password/);
+    expect(pw).toHaveValue("••••••••");
+    expect(pw).toHaveAttribute("type", "password");
+    expect(screen.getByLabelText("Sender address")).toHaveAttribute("placeholder", "me@gmail.com");
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    await u.click(screen.getByRole("button", { name: "Show" }));
+    await waitFor(() => expect(pw).toHaveValue("abcd efgh ijkl mnop"));
+    expect(pw).toHaveAttribute("type", "text");
+    expect(calls.filter((c) => c.url.endsWith("/admin/email/password"))).toHaveLength(1);
+    await u.click(screen.getByRole("button", { name: "Hide" }));
+    expect(pw).toHaveValue("••••••••");
+    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();        // nothing changed, nothing to save
   });
 });
