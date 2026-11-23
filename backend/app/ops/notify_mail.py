@@ -20,16 +20,8 @@ ROOM_TYPES = {"done", "published", "failed", "interrupted", "unprocessable", "re
 ADMIN_TYPES = ROOM_TYPES | {"system", "signup", "ai_budget", "rule_undone"}
 BASELINE = "__baseline__"
 
-_SCHEMA = """
-CREATE TABLE IF NOT EXISTS notification_mail (user_email TEXT, nkey TEXT, at REAL, PRIMARY KEY (user_email, nkey));
-CREATE TABLE IF NOT EXISTS notification_pref (user_email TEXT PRIMARY KEY, email INTEGER NOT NULL DEFAULT 1);
-"""
-
-
 def _con():
-    con = db.trust_rw()
-    con.executescript(_SCHEMA)
-    return con
+    return db.trust_rw()             # tables: db.py (SQLite and PostgreSQL alike)
 
 
 def wants_mail(email: str) -> bool:
@@ -119,7 +111,8 @@ def run_once() -> dict:
                     print(f"[notify-mail] {email}: {e}", flush=True)
                     continue                      # not marked: tried again next time
             now = time.time()
-            con.executemany("INSERT OR IGNORE INTO notification_mail(user_email, nkey, at) VALUES(?,?,?)",
+            con.executemany("INSERT INTO notification_mail(user_email, nkey, at) VALUES(?,?,?) "
+                            "ON CONFLICT(user_email, nkey) DO NOTHING",
                             [(email, k, now) for k in [BASELINE] + [i["key"] for i in new]])
             con.commit()
         finally:

@@ -24,6 +24,8 @@ def world(tmp_path, monkeypatch):
     monkeypatch.setattr(NM, "people", lambda: people)
     items = []
     monkeypatch.setattr(N, "_items", lambda user: list(items))
+    from app import db
+    db.init_trust()
     con = NM._con()
     con.execute("DELETE FROM notification_mail")
     con.execute("DELETE FROM notification_pref")
