@@ -27,9 +27,9 @@ async def login(request: Request, credentials: OAuth2PasswordRequestForm = Depen
     if reason:
         raise HTTPException(status_code=400, detail=reason)
     user = await user_manager.authenticate(credentials)
-    if user is not None and not user.is_active and getattr(user, "approval", None) == "pending":
-        # the right password for an account that waits for approval: say so (it reveals nothing to a stranger)
-        raise HTTPException(status_code=403, detail="ACCOUNT_PENDING")
+    if user is not None and not user.is_active and getattr(user, "approval", None) in ("pending", "unverified"):
+        # the right password for an account that waits: say for what (it reveals nothing to a stranger)
+        raise HTTPException(status_code=403, detail="EMAIL_NOT_CONFIRMED" if user.approval == "unverified" else "ACCOUNT_PENDING")
     if user is None or not user.is_active:
         guard.login_failed(ip, account)
         await guard.audit(None, "login_failed", ip)
@@ -61,7 +61,9 @@ async def challenge():
 async def auth_options():
     """What the sign-in page offers: the configured providers, whether the captcha is required, and sign-up."""
     from . import signup
-    return {"providers": oauth.providers_public(), "captcha": captcha.enabled(), "signup": signup.enabled()}
+    from ..ops import mail
+    return {"providers": oauth.providers_public(), "captcha": captcha.enabled(), "signup": signup.enabled(),
+            "email": mail.configured()}
 
 
 router.include_router(oauth.router)

@@ -322,7 +322,8 @@
         "account": "账号",
         "appearance": "外观与语言",
         "sections": "设置分类",
-        "system": "系统状态"
+        "system": "系统状态",
+        "email": "邮件"
       },
       "groups": {
         "connect": "连接",
@@ -1327,5 +1328,58 @@
     "tooMany": "这个网络的申请太多了,请稍后再试。",
     "closed": "这里暂不开放注册,请联系管理员为你添加账号。",
     "closedTitle": "暂不开放注册"
+  },
+  "email": {
+    "confirming": "正在确认邮箱…",
+    "confirmedTitle": "邮箱已确认",
+    "confirmedActive": "现在可以登录了。",
+    "confirmedPending": "接下来由管理员批准你的账号,批准后就能登录。",
+    "alreadyTitle": "已经确认过了",
+    "alreadyBody": "这个邮箱之前已经确认过。请登录,或等待管理员批准。",
+    "invalidTitle": "这个链接无效",
+    "invalidConfirm": "链接已过期或复制不完整。请重新发送确认邮件。",
+    "invalidReset": "链接已过期、已经用过,或复制不完整。请重新获取链接。",
+    "resend": "重新发送确认邮件",
+    "resendTitle": "确认邮箱",
+    "resendIntro": "输入注册时用的邮箱。如果还没确认,会发一个新的确认链接。",
+    "forgotTitle": "重置密码",
+    "forgotIntro": "输入账号的邮箱。如果有这个账号,我们会发一个设置新密码的链接。",
+    "sendLink": "发送链接",
+    "checkInbox": "请查收邮件",
+    "resetSent": "如果 {{email}} 有 Fidelity 账号,重置密码的链接正在发送,60 分钟内有效。",
+    "confirmSent": "确认链接已发送到 {{email}}。打开链接确认邮箱,24 小时内有效。没收到?请看看垃圾邮件。",
+    "resetTitle": "设置新密码",
+    "newPassword": "新密码",
+    "setPassword": "保存新密码",
+    "resetDoneTitle": "密码已修改",
+    "resetDoneBody": "请用新密码登录。",
+    "notConfirmed": "请先确认邮箱:打开我们发给你的链接。",
+    "notConfirmedTag": "邮箱尚未确认",
+    "settings": {
+      "hint": "Fidelity 用来发送确认链接和重置密码链接的邮件服务器。任何 SMTP 服务器都可以(公司邮箱、Microsoft 365、Google Workspace、腾讯企业邮…)。",
+      "host": "SMTP 服务器",
+      "port": "端口",
+      "security": "加密方式",
+      "username": "用户名",
+      "password": "密码",
+      "passwordSet": "已设置——不填则保持不变",
+      "passwordNotSet": "未设置",
+      "from": "发件地址",
+      "fromName": "发件人名称",
+      "siteUrl": "邮件链接里的 Fidelity 地址",
+      "siteUrlHint": "例如 http://10.0.0.150:8000;不填则使用用户访问时的地址",
+      "approval": "确认邮箱之后",
+      "ap": {
+        "domains": "公司域名直接可登录;其他等管理员批准",
+        "all": "所有人都等管理员批准",
+        "none": "所有人直接可登录(只读用户)"
+      },
+      "save": "保存",
+      "saved": "已保存。",
+      "test": "给我发一封测试邮件",
+      "tested": "测试邮件已发送到 {{email}}。",
+      "on": "邮件发送已设置。",
+      "off": "尚未设置:注册的人由管理员批准,忘记密码由管理员重置。"
+    }
   }
 }

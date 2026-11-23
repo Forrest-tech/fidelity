@@ -26,6 +26,7 @@ export function SignupPage() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [sent, setSent] = useState("");
+  const [byEmail, setByEmail] = useState(false);
   const [needTick, setNeedTick] = useState(false);
   const captchaRef = useRef<CaptchaHandle>(null);
   const proof = useRef<string | null>(null);
@@ -47,7 +48,8 @@ export function SignupPage() {
     }
     setBusy(true);
     try {
-      await api("/auth/signup", json({ email: v.email.trim(), password: v.password, altcha: proof.current }));
+      const r = await api<{ status: string }>("/auth/signup", json({ email: v.email.trim(), password: v.password, altcha: proof.current }));
+      setByEmail(r?.status === "verify_email");
       setSent(v.email.trim());
     } catch (x) {
       captchaRef.current?.reset();
@@ -68,7 +70,8 @@ export function SignupPage() {
         <Result status="info" title={t("signup.closedTitle")} subTitle={t("login.noAccount")}
           extra={<Link to="/login"><Button type="primary">{t("signup.backToSignIn")}</Button></Link>} />
       ) : sent ? (
-        <Result status="success" title={t("signup.sentTitle")} subTitle={t("signup.sentBody", { email: sent })}
+        <Result status="success" title={byEmail ? t("email.checkInbox") : t("signup.sentTitle")}
+          subTitle={byEmail ? t("email.confirmSent", { email: sent }) : t("signup.sentBody", { email: sent })}
           extra={<Link to="/login"><Button type="primary">{t("signup.backToSignIn")}</Button></Link>} />
       ) : (
         <>

@@ -38,6 +38,15 @@ async def get_user_db(session: AsyncSession = Depends(get_session)):
 class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     reset_password_token_secret = SECRET
     verification_token_secret = SECRET
+    reset_password_token_lifetime_seconds = 3600
+
+    async def on_after_forgot_password(self, user, token, request=None):
+        """The reset link goes to the address on the account (app/auth/signup.py: /auth/forgot-password)."""
+        from urllib.parse import quote
+        from ..ops import mail
+        link = f"{mail.site_url(request)}/reset-password?token={quote(token)}"
+        subject, text, html = mail.reset_message(link, self.reset_password_token_lifetime_seconds // 60)
+        mail.send(user.email, subject, text, html)
 
     async def validate_password(self, password, user):
         if len(password) < 10:
