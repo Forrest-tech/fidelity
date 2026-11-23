@@ -56,6 +56,9 @@ test.describe("users: an administrator manages people", () => {
     await off.goto("/login");
     await off.getByLabel("Email").fill(email);
     await off.getByLabel("Password").fill("second-long-password");
+    const box = off.getByRole("checkbox", { name: "I'm not a robot" });
+    await box.click();
+    await expect(box).toHaveAttribute("aria-checked", "true", { timeout: 30_000 });
     await off.getByRole("button", { name: /^Sign in$/ }).click();
     await expect(off.getByRole("alert")).toContainText("Wrong email or password", { timeout: 20_000 }); // switched off
     await ctx2.close();

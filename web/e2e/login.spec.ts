@@ -223,9 +223,7 @@ test.describe("sign-up", () => {
     await admin.goto(new URL("/settings/users", page.url()).toString());
     await expect(admin.getByRole("heading", { name: /Waiting for approval/ })).toBeVisible({ timeout: 20_000 });
     const row = admin.getByRole("listitem").filter({ hasText: email });
-    await row.getByRole("combobox").click();
-    await admin.getByRole("option", { name: "Reviewer" }).click();
-    await row.getByRole("button", { name: "Approve" }).click();
+    await row.getByRole("button", { name: "Approve" }).click();              // as a viewer, the default role
     await expect(admin.getByText(`${email} can now sign in`)).toBeVisible({ timeout: 15_000 });
     await ctx.close();
     // now the person signs in
