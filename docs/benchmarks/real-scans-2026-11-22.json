@@ -6,15 +6,15 @@
    "copy": "3500.1-2018  Plumbing and drainage - Water services.pdf",
    "read_by": "native text (another copy)",
    "truth": "3500.1-2018  Plumbing and drainage - Water services-已解锁.pdf",
-   "pages": 123,
+   "pages": 119,
    "test_pages": 129,
    "truth_pages": 129,
    "cer": 0.0,
    "word_recall": 1.0,
    "number_recall": 1.0,
    "number_extra": 0,
-   "pages_cer_le_1pct": 123,
-   "pages_all_numbers": 123,
+   "pages_cer_le_1pct": 119,
+   "pages_all_numbers": 119,
    "worst_pages": [
     [
      2,
@@ -46,9 +46,9 @@
    "pages": 119,
    "test_pages": 136,
    "truth_pages": 132,
-   "cer": 0.1519,
-   "word_recall": 0.9508,
-   "number_recall": 0.9321,
+   "cer": 0.152,
+   "word_recall": 0.9505,
+   "number_recall": 0.9319,
    "number_extra": 830,
    "pages_cer_le_1pct": 0,
    "pages_all_numbers": 13,
@@ -80,15 +80,15 @@
    "copy": "AS-NZS_3500.1-2021 Printed.pdf",
    "read_by": "our OCR (two engines)",
    "truth": "AS NZS 3500.1-2021.pdf",
-   "pages": 108,
+   "pages": 107,
    "test_pages": 136,
    "truth_pages": 132,
-   "cer": 0.1826,
-   "word_recall": 0.9425,
-   "number_recall": 0.9286,
-   "number_extra": 473,
+   "cer": 0.1648,
+   "word_recall": 0.9502,
+   "number_recall": 0.9263,
+   "number_extra": 262,
    "pages_cer_le_1pct": 2,
-   "pages_all_numbers": 12,
+   "pages_all_numbers": 11,
    "worst_pages": [
     [
      40,
@@ -99,16 +99,53 @@
      0.444
     ],
     [
-     76,
-     0.978
-    ],
-    [
      77,
      0.994
     ],
     [
      104,
      0.968
+    ],
+    [
+     38,
+     0.667
+    ]
+   ]
+  },
+  {
+   "edition": "AS/NZS 3500.2:2018",
+   "copy": "3500.2-2018_V3  Plumbing and drainage - Sanitary plumbing and drainage.pdf",
+   "read_by": "our OCR (two engines)",
+   "truth": "3500.2-2018_V3  Plumbing and drainage - Sanitary plumbing and drainage-已解锁.pdf",
+   "pages": 206,
+   "test_pages": 225,
+   "truth_pages": 225,
+   "cer": 0.0785,
+   "word_recall": 0.9588,
+   "number_recall": 0.8433,
+   "number_extra": 103,
+   "pages_cer_le_1pct": 3,
+   "pages_all_numbers": 43,
+   "worst_pages": [
+    [
+     120,
+     1.0
+    ],
+    [
+     122,
+     0.75
+    ],
+    [
+     156,
+     0.429
+    ],
+    [
+     143,
+     0.941
+    ],
+    [
+     212,
+     0.982
     ]
    ]
   },
@@ -120,8 +157,8 @@
    "pages": 180,
    "test_pages": 202,
    "truth_pages": 202,
-   "cer": 0.1339,
-   "word_recall": 0.9587,
+   "cer": 0.1341,
+   "word_recall": 0.9583,
    "number_recall": 0.9168,
    "number_extra": 559,
    "pages_cer_le_1pct": 0,
@@ -157,10 +194,10 @@
    "pages": 176,
    "test_pages": 202,
    "truth_pages": 202,
-   "cer": 0.1514,
+   "cer": 0.1407,
    "word_recall": 0.9474,
-   "number_recall": 0.8917,
-   "number_extra": 640,
+   "number_recall": 0.8926,
+   "number_extra": 294,
    "pages_cer_le_1pct": 2,
    "pages_all_numbers": 56,
    "worst_pages": [
@@ -181,8 +218,8 @@
      0.642
     ],
     [
-     154,
-     0.69
+     165,
+     0.165
     ]
    ]
   }

@@ -157,7 +157,7 @@ def _copy_restricted(tmp_path):
 
 
 def test_a_copy_only_restriction_is_told_apart_from_a_password(tmp_path, monkeypatch):
-    from app.distill.triage import reads_as_scan
+    from app.distill.triage import reads_protected_text as reads_as_scan
     t = triage_pdf(_copy_restricted(tmp_path))
     assert t["class"] == "protected" and t.get("copy_only") is True
     pw = triage_pdf(text_pdf(str(tmp_path / "pw2.pdf"), encryption=pymupdf.PDF_ENCRYPT_AES_256, user_pw="s", owner_pw="o"))
@@ -169,14 +169,16 @@ def test_a_copy_only_restriction_is_told_apart_from_a_password(tmp_path, monkeyp
     assert reads_as_scan(pw) is False                      # a password is never worked around
 
 
-def test_a_copy_restricted_pdf_is_read_from_page_images_when_switched_on(tmp_path, monkeypatch):
-    from app.distill import office, scan
-    seen = {}
-    monkeypatch.setattr(scan, "distill_scan", lambda *a, **k: seen.update(k) or {"verdict": "REVIEW", "via": k.get("via")})
+def test_a_copy_restricted_pdf_is_read_through_its_text_layer_when_switched_on(tmp_path, monkeypatch):
+    from app.distill import office
     p = _copy_restricted(tmp_path)
+    for d in ("c", "c2"):
+        (tmp_path / d).mkdir()
     monkeypatch.setenv("FIDELITY_OCR_PROTECTED", "1")
-    assert office.distill_any(p, "cr.pdf", str(tmp_path / "out"), "", str(tmp_path / "c"))["via"] == "page_images"
-    monkeypatch.setenv("FIDELITY_OCR_PROTECTED", "0")
-    seen.clear()
     r = office.distill_any(p, "cr.pdf", str(tmp_path / "out"), "", str(tmp_path / "c"))
-    assert not seen and r["verdict"] == "SKIP" and r["triage"]["class"] == "protected"
+    assert r["verdict"] != "SKIP" and r["files"] >= 1                      # read like a text PDF
+    md = "".join(open(os.path.join(a, f), encoding="utf-8").read() for a, _, ff in os.walk(tmp_path / "out") for f in ff)
+    assert "2400 mm" in md and "copy_restricted_source" in md
+    monkeypatch.setenv("FIDELITY_OCR_PROTECTED", "0")
+    r = office.distill_any(p, "cr2.pdf", str(tmp_path / "out2"), "", str(tmp_path / "c2"))
+    assert r["verdict"] == "SKIP" and r["triage"]["class"] == "protected"   # switched off: listed as before

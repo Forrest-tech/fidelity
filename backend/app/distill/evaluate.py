@@ -29,9 +29,23 @@ _WORD = re.compile(r"[a-z0-9]+(?:[.,][0-9]+)*")
 _FOLD = str.maketrans({"–": "-", "—": "-", "‑": "-", "−": "-", "’": "'", "‘": "'", "“": '"', "”": '"', " ": " "})
 
 
+# Lines that are not the document's content and differ between copies by nature: the vendor's licence stamp (one
+# copy carries it in its text layer, an OCR of another copy does not see it) and the running header with the
+# designation (an OCR reads it, a text layer often leaves it out). Left in, they cost every page two or three numbers.
+_STAMP = re.compile(r"licensed to\b.{0,220}?(?:prohibited(?:\s*\(\d+\))?\.?|use only\.?)"
+                    r"|accessed by\b.{0,120}?\b(?:19|20)\d{2}\b(?:\s*\(document currency[^)]*\))?", re.I)
+_HEADER = re.compile(r"\b(?:as\s*/\s*nzs|as|nzs)\s+\d{3,5}(?:\.\d+)*\s*[:—–-]\s*(?:19|20)\d{2}\b", re.I)
+_TIGHT = re.compile(r"(?<=\d)\s*([x×%:])\s*(?=[\d(])")
+_DN = re.compile(r"\b(dn|da|pn)\s+(?=\d)", re.I)
+
+
 def norm(s: str) -> str:
     s = unicodedata.normalize("NFKC", s).translate(_FOLD)
     s = _MARKS.sub(" ", s)
+    s = _STAMP.sub(" ", s)
+    s = _HEADER.sub(" ", s)
+    s = _TIGHT.sub(r"\1", s)          # "80 x 100", "1% (1:100)": spacing is not content
+    s = _DN.sub(r"\1", s)             # "DN 65" / "DN65"
     return re.sub(r"\s+", " ", s).strip().lower()
 
 
