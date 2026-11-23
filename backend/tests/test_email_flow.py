@@ -197,6 +197,20 @@ def test_administrators_set_up_the_mail_server_and_the_password_is_never_shown(o
                                             "from_address": "fidelity@example.com"})
     assert r.status_code == 200 and r.json()["password_set"] is True and "s3cret" not in r.text
     assert "s3cret" not in a.get("/api/v1/admin/email").text
+    assert a.get("/api/v1/admin/email/password").json() == {"password": "s3cret-app-password"}   # only on request
+    assert client("10.1.1.5").get("/api/v1/admin/email/password").status_code == 401
     assert a.put("/api/v1/admin/email", json={"port": 0}).status_code == 422
     assert a.post("/api/v1/admin/email/test").json() == {"sent_to": ADMIN}     # the outbox stands in for the server
     assert client("10.1.1.4").get("/api/v1/admin/email").status_code == 401
+
+
+def test_the_sender_defaults_to_the_username_and_the_page_is_told_what_is_missing(tmp_path, monkeypatch):
+    monkeypatch.delenv("FIDELITY_MAIL_OUTBOX", raising=False)
+    monkeypatch.setattr(mail, "PATH", str(tmp_path / "m.json"))
+    assert mail.public()["missing"] == ["host", "from_address"]
+    out = mail.save({"host": "smtp.gmail.com", "username": " someone@gmail.com "})
+    assert out["from_address"] == "someone@gmail.com" and out["configured"] and out["missing"] == []
+    assert mail.save({"from_address": "alias@gmail.com"})["from_address"] == "alias@gmail.com"   # a typed sender stays
+    monkeypatch.setattr(mail, "PATH", str(tmp_path / "n.json"))
+    out = mail.save({"host": "relay.office.local", "username": "relayuser"})
+    assert out["from_address"] == "" and out["missing"] == ["from_address"] and not out["configured"]

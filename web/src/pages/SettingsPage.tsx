@@ -301,7 +301,7 @@ function SystemHealth() {
 }
 
 // ------------------------------------------------------------------ e-mail (requirements v2, U-1)
-interface MailSettings { host: string; port: number; security: "starttls" | "ssl" | "none"; username: string; from_address: string; from_name: string; site_url: string; approval: "domains" | "all" | "none"; password_set: boolean; configured: boolean }
+interface MailSettings { host: string; port: number; security: "starttls" | "ssl" | "none"; username: string; from_address: string; from_name: string; site_url: string; approval: "domains" | "all" | "none"; password_set: boolean; configured: boolean; missing?: string[] }
 
 function EmailSettings() {
   const { t } = useTranslation();
@@ -309,11 +309,17 @@ function EmailSettings() {
   const { me } = useAuth();
   const q = useQuery({ queryKey: ["mail-settings"], queryFn: () => api<MailSettings>("/admin/email") });
   const [draft, setDraft] = useState<Partial<MailSettings> & { password?: string }>({});
+  const [shown, setShown] = useState<string | null>(null);       // the saved password, only after "Show"
+  const reveal = useMutation({
+    mutationFn: () => api<{ password: string }>("/admin/email/password"),
+    onSuccess: (d) => setShown(d.password),
+  });
   const save = useMutation({
     mutationFn: () => api<MailSettings>("/admin/email", { ...json(draft), method: "PUT" }),
     onSuccess: (d) => {
       qc.setQueryData(["mail-settings"], d);
       setDraft({});
+      setShown(null);
       void qc.invalidateQueries({ queryKey: ["auth-options"] });
     },
   });
@@ -336,6 +342,9 @@ function EmailSettings() {
       <PageHeader title={t("pages.settings.nav.email")} desc={t("email.settings.hint")} />
       <div className={q.data!.configured ? "fx-note" : "fx-note"} role="status">
         <Pill tone={q.data!.configured ? "ok" : "warn"}>{q.data!.configured ? "✓" : "!"}</Pill> {q.data!.configured ? t("email.settings.on") : t("email.settings.off")}
+        {!q.data!.configured && !!q.data!.missing?.length && (
+          <> {t("email.settings.missing", { fields: q.data!.missing.map((m) => t(`email.settings.${m === "from_address" ? "from" : m}`)).join(t("email.settings.listSep")) })}</>
+        )}
       </div>
       <form className="fx-card fx-stack" style={{ padding: 14, gap: 10 }} onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
         {field("host", t("email.settings.host"), { placeholder: "smtp.example.com", autoComplete: "off" })}
@@ -346,8 +355,27 @@ function EmailSettings() {
             options={[{ value: "starttls", label: "STARTTLS" }, { value: "ssl", label: "SSL/TLS" }, { value: "none", label: "—" }]} />
         </div>
         {field("username", t("email.settings.username"), { autoComplete: "off" })}
-        {field("password", `${t("email.settings.password")} (${q.data!.password_set ? t("email.settings.passwordSet") : t("email.settings.passwordNotSet")})`, { type: "password", autoComplete: "new-password" })}
-        {field("from_address", t("email.settings.from"), { type: "email", placeholder: "fidelity@company.com" })}
+        <div className="fx-row fx-wrap" style={{ gap: 8 }}>
+          <label className="fx-lab" htmlFor="mail-password" style={{ width: 200 }}>
+            {t("email.settings.password")} {q.data!.password_set ? <Pill tone="ok">{t("email.settings.savedTag")}</Pill> : <Pill tone="warn">{t("email.settings.passwordNotSet")}</Pill>}
+          </label>
+          <div className="fx-field sm" style={{ flex: 1, minWidth: 220 }}>
+            <input id="mail-password" autoComplete="new-password"
+              type={draft.password === undefined && shown !== null ? "text" : "password"}
+              value={draft.password ?? (shown ?? (q.data!.password_set ? "••••••••" : ""))}
+              onFocus={(e) => { if (draft.password === undefined && shown === null && q.data!.password_set) e.currentTarget.select(); }}
+              onChange={(e) => set("password", e.target.value.replace(/•/g, ""))} />
+          </div>
+          {q.data!.password_set && draft.password === undefined && (
+            <button className="fx-btn sm" type="button" disabled={reveal.isPending}
+              onClick={() => (shown === null ? reveal.mutate() : setShown(null))}>
+              {shown === null ? t("email.settings.show") : t("email.settings.hide")}
+            </button>
+          )}
+        </div>
+        {q.data!.password_set && <div className="fx-tiny fx-muted" style={{ marginLeft: 208 }}>{t("email.settings.passwordKeep")}</div>}
+        {reveal.error && <div className="fx-errnote" role="alert">{(reveal.error as Error).message}</div>}
+        {field("from_address", t("email.settings.from"), { type: "email", placeholder: s.username.includes("@") ? s.username : "fidelity@company.com" })}
         {field("from_name", t("email.settings.fromName"))}
         {field("site_url", t("email.settings.siteUrl"), { placeholder: t("email.settings.siteUrlHint") })}
         <div className="fx-row fx-wrap" style={{ gap: 8 }}>
