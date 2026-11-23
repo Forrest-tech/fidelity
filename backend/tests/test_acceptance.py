@@ -110,3 +110,21 @@ def test_search_steers_to_the_part_and_edition_asked():
     s = Search(units)
     assert s.top("AS/NZS 3500.1:2021 communication cable separation", 1)[0].year == "2021"
     assert "2018" in s.top("AS/NZS 3500.1:2018 communication cable separation", 1)[0].document
+
+
+def test_a_quote_may_join_fragments_but_every_fragment_must_be_on_the_page(tmp_path):
+    src = {"AS NZS 3500.1-2021.pdf": _pdf(tmp_path)}
+    joined = "The separation between any underground water service pipe ... shall be at least 100 mm."
+    assert grade_one(Q, _answer(citations=[{**_answer()["citations"][0], "quote": joined}]), src)["pass"]
+    forged = "The separation between any underground water service pipe ... shall be at least 150 mm from drains."
+    assert not grade_one(Q, _answer(citations=[{**_answer()["citations"][0], "quote": forged}]), src)["pass"]
+
+
+def test_quotes_of_the_library_markdown_count_but_forged_table_figures_do_not(tmp_path):
+    src = {"AS NZS 3500.1-2021.pdf": _pdf(tmp_path)}
+    heading = "### 5.3.3.3 Communication services · p.2\n\nThe separation between any underground water service pipe"
+    assert grade_one(Q, _answer(citations=[{**_answer()["citations"][0], "quote": heading}]), src)["pass"]
+    row = "The separation between any underground water service pipe ... cable | 100 mm | 600 mm"
+    assert grade_one(Q, _answer(citations=[{**_answer()["citations"][0], "quote": row}]), src)["pass"]
+    forged = "The separation between any underground water service pipe ... cable | 100 mm | 750 mm"
+    assert not grade_one(Q, _answer(citations=[{**_answer()["citations"][0], "quote": forged}]), src)["pass"]

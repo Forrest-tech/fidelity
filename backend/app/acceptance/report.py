@@ -9,14 +9,14 @@ def _pct(x: float) -> str:
 def write(path: str, bank: dict, runs: list[dict]):
     L = ["# Acceptance run", "", "Graded by fixed rules (`app/acceptance/grade.py`): figure and unit right, citation's quote "
          "found on the cited page of the original PDF (±1 page), edition status stated for superseded editions, traps "
-         "refused. 95% interval: Wilson.", "", "| Run | Passed | Rate | 95% interval | Traps | Failures: search missed the page / answer wrong |",
-         "|---|---|---|---|---|---|"]
+         "refused. 95% interval: Wilson.", "", "| Run | Passed | Rate | 95% interval | Traps | Failures: search missed the page / answer wrong | Not answered (call failed) |",
+         "|---|---|---|---|---|---|---|"]
     for r in runs:
         s = r["summary"]
         b = s["blame"]
         L.append(f"| {r['name']} | {s['passed']}/{s['questions']} | {_pct(s['rate'])} | {_pct(s['ci95'][0])}–{_pct(s['ci95'][1])} "
                  f"| {s['traps'][0]}/{s['traps'][1]} | {sum(v for k, v in b.items() if k.startswith('library'))} / "
-                 f"{b.get('answer', 0)} |")
+                 f"{b.get('answer', 0)} | {s.get('not_answered', 0)} |")
     L += ["", "## By category", "", "| Category | " + " | ".join(r["name"] for r in runs) + " |",
           "|---|" + "---|" * len(runs)]
     cats = sorted({c for r in runs for c in r["summary"]["by_category"]})
@@ -27,7 +27,8 @@ def write(path: str, bank: dict, runs: list[dict]):
     if len(runs) >= 2:
         a, b = runs[0], runs[1]
         pa = {x["id"]: x for x in a["rows"]}
-        dis = [x for x in b["rows"] if x["id"] in pa and pa[x["id"]]["pass"] != x["pass"]]
+        dis = [x for x in b["rows"] if x["id"] in pa and None not in (x["pass"], pa[x["id"]]["pass"])
+               and pa[x["id"]]["pass"] != x["pass"]]
         L += ["", f"## {a['name']} and {b['name']} disagree on {len(dis)} question(s)", "",
               "These go to a person first: one of the two runs is wrong on each.", ""]
         for x in dis[:80]:
@@ -36,7 +37,7 @@ def write(path: str, bank: dict, runs: list[dict]):
                      f"{b['name']}: {'pass' if x['pass'] else 'FAIL — ' + x['why']}")
     for r in runs:
         ans = {x["id"]: x for x in r["answers"]}
-        fails = [x for x in r["rows"] if not x["pass"]]
+        fails = [x for x in r["rows"] if x["pass"] is False]
         L += ["", f"## Failures — {r['name']} ({len(fails)})", ""]
         for x in fails[:150]:
             q, a = bank[x["id"]], ans.get(x["id"], {})

@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 import re
 
-from .text import contains_value, numbers, page_has, pdf_pages
+from .text import contains_value, norm, numbers, page_has, pdf_pages
 
 _NOT_FOUND = re.compile(r"not found|not in the (?:knowledge base|library)|no (?:such|clause)|does not (?:exist|contain)"
                         r"|isn'?t in|not held|not available", re.I)
@@ -18,8 +18,33 @@ def _doc_matches(cited: str, designation: str) -> bool:
     return bool(num and num.group(0) in c and (not year or year.group(0) in c))
 
 
+def _pieces(quote: str) -> list[str]:
+    """A quote as people write it: fragments joined by "…" and sentences that skip a heading in between. Every piece
+    must still be on the page word for word; a piece too short to mean anything on its own is not counted."""
+    quote = re.sub(r"(?m)^#+\s*|\s*·\s*p\.\d+\b", "", quote)       # the library's heading marks and page tags
+    parts = re.split(r"\s*(?:\.\.\.|…)\s*|(?<=[.;:])\s+(?=[A-Z(\[])|\n+", quote)
+    return [p.strip(" -—–") for p in parts if len(p.strip(" -—–")) >= 15]
+
+
+def _piece_on_page(src: str, page: int, piece: str) -> bool:
+    if page_has(src, page, piece, spread=1):
+        return True
+    # a table row ("80 100 125 150 | 1.65 1.65 …") or a drawing's labels ("Floor waste gully riser — Untrapped
+    # waste DN 25 …") come out of the PDF cell by cell, in another order: then every cell must be on that page
+    if "|" not in piece and "—" not in piece and not piece.startswith("["):
+        return False
+    cells = [c for c in re.split(r"\s*(?:\||—|\*\*)\s*", re.sub(r"^\[[^\]]*\]", "", piece)) if re.search(r"\w", c)]
+    pages = pdf_pages(src)
+    near = " ".join(norm(pages[p - 1]) for p in (page - 1, page, page + 1) if 1 <= p <= len(pages))
+    return bool(cells) and all(norm(c) in near or all(n in numbers(near) for n in numbers(c)) and not re.search(r"[a-z]{3}", norm(c))
+                               for c in cells)
+
+
 def _quote_on_page(src: str, page: int, quote: str, cat: str) -> bool:
     if page_has(src, page, quote, spread=1):
+        return True
+    pieces = _pieces(quote)
+    if pieces and sum(len(p) for p in pieces) >= 30 and all(_piece_on_page(src, page, p) for p in pieces):
         return True
     if not cat.startswith("E"):
         return False
@@ -38,8 +63,8 @@ def grade_one(q: dict, a: dict, sources: dict[str, str]) -> dict:
     g = q.get("ground", {})
     said = _said(a)
     r = {"id": q["id"], "cat": q["cat"], "model": a.get("model"), "error": a.get("error")}
-    if a.get("error"):
-        return {**r, "pass": False, "why": "no answer: " + a["error"]}
+    if a.get("error"):        # the call failed (out of credit, network): not an answer, so not graded
+        return {**r, "pass": None, "why": "not answered: " + a["error"]}
     trap = q.get("trap")
     if trap in ("not_found", "not_held"):
         refused = a.get("status") in ("not_found", "not_held") or bool(_NOT_FOUND.search(a.get("answer") or ""))
@@ -80,6 +105,8 @@ def wilson(k: int, n: int, z: float = 1.96) -> tuple[float, float]:
 
 
 def summary(rows: list[dict]) -> dict:
+    skipped = sum(1 for r in rows if r["pass"] is None)
+    rows = [r for r in rows if r["pass"] is not None]
     n, k = len(rows), sum(r["pass"] for r in rows)
     lo, hi = wilson(k, n)
     cats: dict = {}
@@ -88,7 +115,7 @@ def summary(rows: list[dict]) -> dict:
         c[0] += r["pass"]
         c[1] += 1
     traps = [r for r in rows if r["cat"].startswith("F")]
-    return {"questions": n, "passed": k, "rate": round(k / n, 4) if n else 0, "ci95": [round(lo, 4), round(hi, 4)],
+    return {"questions": n, "not_answered": skipped, "passed": k, "rate": round(k / n, 4) if n else 0, "ci95": [round(lo, 4), round(hi, 4)],
             "traps": [sum(r["pass"] for r in traps), len(traps)],
             "by_category": {c: {"passed": a, "of": b} for c, (a, b) in sorted(cats.items())},
             "blame": {b: sum(1 for r in rows if r.get("blame") == b) for b in {r.get("blame") for r in rows} if b}}
