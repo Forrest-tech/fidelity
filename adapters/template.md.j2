@@ -63,6 +63,10 @@ Every source document is **either one file or one folder**, at the same place as
   `NCC 2025 Volume One · 045 Part D2 Provision for escape [D2D1–D2D23] p224-236.md`.
   A clause ID tells you its Part (D2D13 → Part D2; S5C11 → Specification 5). **Pick the one file whose name covers
   the clause or topic and read only that file.**
+- **Australian Standards** (e.g. AS/NZS 3500) → a folder per edition year (`AS 3500/2021/`) → the document folder →
+  one sub-folder per Section (`05 Section 5 Installation of cold water services/`) → one file per numbered clause
+  group, e.g. `AS NZS 3500.1-2021 · 038 5.3 Proximity to other services [5.3.1–5.3.5] p38-41.md`. Clause 5.3.3.3 is in
+  the file named `5.3 …` inside `Section 5`; appendices are files named `Appendix A …`.
 - **State and territory variations** are in the `Schedule <n> <State>` sub-folders, named by Section with the clause
   range they change (e.g. `Section D Access and egress [D2D1–D4D1]` under `Schedule 5 New South Wales`).
 - **Defined terms** (italic in the text) are in the glossary files, named by letter range
@@ -92,7 +96,13 @@ If the question is not in English, translate it to English technical terms first
   `<!-- unit: p0065 | src: p.65 | chars: … | flags: … -->` and ends with `<!-- /unit -->`. The value after `src:` is
   the page (or section name) to cite. **Cite the nearest marker *before* the quoted text** — never a page number
   from a table of contents or another clause. Clause headings also show their page.
-- **Citation**: document + clause ID + page, e.g. `NCC 2025 Volume One, D2D13(2), p.229`.
+- **Citation**: document + clause ID + page, e.g. `NCC 2025 Volume One, D2D13(2), p.229` or
+  `AS/NZS 3500.1:2021, Clause 5.3.3.3, p.40`.
+- **Editions**: `edition` names the edition a file is. Answer from the current edition unless the question names an
+  older one. A file with `edition_status: superseded` (it names its `superseded_by` and starts with a notice) may be
+  quoted only when asked about that edition, and the answer must say it is superseded and by what. If the question
+  asks for an edition the library does not hold (a `newer_edition` line says e.g. "AS/NZS 3500.1:2025 … not held"),
+  say that edition is not in the knowledge base; you may add what the held edition says, labelled with its year.
 
 ## 4. Three rules learned from testing
 1. **Do not infer unreadable content.** Text marked `⚠️[formula/symbols not readable …]` could not be read from the

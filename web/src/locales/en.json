@@ -401,7 +401,8 @@
           "backup_none": "Use Back up now below.",
           "backup_failed": "See why below, then use Back up now.",
           "backup_old": "Has the server been running? Use Back up now.",
-          "runs_failing": "Open the rooms whose runs failed to see why."
+          "runs_failing": "Open the rooms whose runs failed to see why.",
+          "ai_credit": "Top it up on the provider's website; AI suggestions stop until then."
         },
         "server": "Server",
         "version": "Version",
@@ -431,7 +432,9 @@
         "minutes": "{{n}} minutes"
       },
       "ocrProtected": "Copy-protected PDFs",
-      "ocrProtectedLong": "Read PDFs that forbid copying their text through their own text layer (the publisher's exact text), checked against images of their pages like any PDF. Only for content the company is licensed to use."
+      "ocrProtectedLong": "Read PDFs that forbid copying their text through their own text layer (the publisher's exact text), checked against images of their pages like any PDF. Only for content the company is licensed to use.",
+      "mailMe": "Also e-mail me what the bell shows (one message per batch of new items)",
+      "mailNotReady": "No mail server is set up yet (Settings → Email), so nothing is sent for now."
     },
     "users": {
       "title": "Users",
@@ -1217,7 +1220,8 @@
           "backup_none": "No backup yet",
           "backup_failed": "The last backup did not verify",
           "backup_old": "No backup for over 36 hours",
-          "runs_failing": "{{failed}} of the last {{total}} runs failed ({{pct}}%)"
+          "runs_failing": "{{failed}} of the last {{total}} runs failed ({{pct}}%)",
+          "ai_credit": "The AI provider account has no credit left"
         }
       },
       "signup": {

@@ -72,6 +72,8 @@ def _http(url, headers, body, timeout):
         raise ProviderError("cannot reach the provider", retry=True)
     if r.status_code in (401, 403):
         raise ProviderError("the key was refused")
+    if r.status_code == 402:
+        raise ProviderError("the provider account has no credit left: top it up on the provider's website")
     if r.status_code == 404:
         raise ProviderError("unknown model or address")
     if r.status_code == 429:

@@ -97,6 +97,8 @@ def _startup():
     queue.start()
     from .ops import backup as _backup
     _backup.start()                                     # daily verified backups (requirements v2, S-6)
+    from .ops import notify_mail as _notify_mail
+    _notify_mail.start()                                # the bell's news by e-mail (requirements v2, U-4)
     print("[startup] trust.db ready, job workers started (owner pid=%s)" % os.getpid())
 
 

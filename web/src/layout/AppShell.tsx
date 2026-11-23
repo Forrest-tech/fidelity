@@ -45,7 +45,7 @@ const I = {
 export interface Notice {
   key: string;
   type: "done" | "published" | "failed" | "interrupted" | "unprocessable" | "review" | "ai_budget" | "rule_undone" | "system" | "signup";
-  /** for type "system": disk | memory | backup_none | backup_failed | backup_old | runs_failing */
+  /** for type "system": disk | memory | backup_none | backup_failed | backup_old | runs_failing | ai_credit */
   kind?: string;
   free?: number;
   available?: number;

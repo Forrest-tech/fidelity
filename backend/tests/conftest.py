@@ -19,6 +19,7 @@ os.environ.setdefault("FIDELITY_GLOSSARY", os.path.join(_TMP, "no-glossary.json"
 os.environ.setdefault("FIDELITY_OCR_SELECTION", os.path.join(_TMP, "no-ocr-selection.json"))
 os.environ.setdefault("FIDELITY_FORMULA_APPROVALS", os.path.join(_TMP, "no-formula-approvals.json"))
 os.environ.setdefault("FIDELITY_GOOGLE_AUTH", os.path.join(_TMP, "google_auth.json"))
+os.environ.setdefault("FIDELITY_OCR_PROTECTED", "0")   # never the owner's live switch in data/app_settings.json
 
 # The job/review database and the cache are module paths, not environment settings: point them at the
 # test folder too, so a test can never touch the real data/trust.db of the machine running the suite

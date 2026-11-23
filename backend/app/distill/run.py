@@ -65,7 +65,10 @@ def visual_check(pdf_path, page_count, log=print, samples=None, pages=None):
         if pages:                                  # specific pages to confirm, not a sample
             pick = [p - 1 for p in pages if 1 <= p <= page_count][:12]
         else:
-            cand = [i for i in range(page_count) if len(doc[i].get_text().strip()) >= 200]
+            # not the cover: its large, styled title text reads at ~77% by OCR on good copies of AS 3500.1/.2:2018,
+            # while their body pages read at 90-96%; a wrong text encoding would show on body pages as well
+            first = 1 if page_count > 5 else 0
+            cand = [i for i in range(first, page_count) if len(doc[i].get_text().strip()) >= 200]
             if not cand:
                 return {"ok": True, "skipped": "no text-rich pages"}
             step = max(1, len(cand) // n)
@@ -101,6 +104,12 @@ def parse_standard(name: str) -> dict:
              "NZ" if n.startswith("NZS") else "US" if n.startswith(("IBC", "ICC", "NFPA", "ASCE", "ACI")) else "unknown")
     kind = ("code" if n.startswith(("NCC", "IBC")) else "standard" if re.match(r"(AS|NZS|NFPA|ASCE|ACI|ISO|BS|EN)", n) else "document")
     sid = re.sub(r"\s*(?:19|20)\d{2}\s*", " ", name).strip() if year else name
+    from .editions import identify           # "AS NZS 3500.1-2021" -> AS/NZS 3500.1, not "AS NZS 3500.1-"
+    ed = identify(name + ".pdf")
+    if ed["number"] and kind != "code" and not _YEAR.fullmatch(ed["number"]):   # "NCC 2025" is not "AS 2025"
+        sid, year = f"{ed['prefix']} {ed['number']}".strip(), ed["year"] or year
+        kind = "standard"
+        juris = "NZ" if ed["prefix"] == "NZS" else "AU"
     return {"std_id": sid, "std_year": year, "std_kind": kind, "jurisdiction": juris}
 
 
@@ -202,8 +211,9 @@ def _yaml_str(s):
 def chunk_clauses(c: S.Chunk):
     out = []
     for _, _, it in c.items:
-        if it is not None and getattr(it, "kind", "") == "heading" and it.toc.level >= 3:
-            out.append(it.toc)
+        if it is not None and getattr(it, "kind", "") == "heading" and (
+                it.toc.level >= 3 or (it.toc.level == 2 and S.AS_CLAUSE_RE.match(it.toc.title))):
+            out.append(it.toc)            # an AS clause group heading ("5.3 Proximity …") is a clause too
     return out
 
 
@@ -379,9 +389,13 @@ def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=prin
     doc_dir = base_dir if single else os.path.join(base_dir, name)   # single file lives beside its siblings
     os.makedirs(doc_dir, exist_ok=True)
     verdict = "PASS" if trusted else "FAIL — not trusted"
+    as_style = bool(clause_file) and not any(S.CLAUSE_ID_RE.fullmatch(k) for k in clause_file)
     layout = ("One file for the whole document (small documents are not split)." if single else
-              "This document's folder → one sub-folder per Section/Schedule → one file per Part. "
-              "Names show clause range and pages; a clause ID gives its Part (D2D13 → Part D2, S5C11 → Specification 5)."
+              ("This document's folder → one sub-folder per Section/Appendix → one file per numbered clause group. "
+               "Names show clause range and pages; clause 5.3.3.3 is in the file named '5.3 …' inside 'Section 5'."
+               if as_style else
+               "This document's folder → one sub-folder per Section/Schedule → one file per Part. "
+               "Names show clause range and pages; a clause ID gives its Part (D2D13 → Part D2, S5C11 → Specification 5).")
               + (f" Italic terms are defined in '{defs_dir}'." if defs_dir else ""))
     std = parse_standard(name)
 

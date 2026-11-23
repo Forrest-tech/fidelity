@@ -158,9 +158,24 @@ function Notifications() {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const read = useMutation({ mutationFn: () => api("/notifications/read", json({ all: true })), onSuccess: (d) => qc.setQueryData(["notifications"], d) });
+  const pref = useQuery({ queryKey: ["notify-mail"], queryFn: () => api<{ email: boolean; eligible: boolean; mail_ready: boolean }>("/notifications/email") });
+  const setPref = useMutation({
+    mutationFn: (email: boolean) => api("/notifications/email", { ...json({ email }), method: "PUT" }),
+    onSuccess: (d) => qc.setQueryData(["notify-mail"], d),
+  });
   return (
     <>
       <PageHeader title={t("pages.settings.nav.notifications")} desc={t("pages.settings.notificationsHint")} />
+      {pref.data?.eligible && (
+        <div className="fx-row">
+          <label className="fx-row" style={{ gap: 8 }}>
+            <input type="checkbox" className="fx-cb" checked={pref.data.email} disabled={setPref.isPending}
+              onChange={(e) => setPref.mutate(e.target.checked)} />
+            {t("pages.settings.mailMe")}
+          </label>
+          {!pref.data.mail_ready && <span className="fx-tiny fx-muted">{t("pages.settings.mailNotReady")}</span>}
+        </div>
+      )}
       <div className="fx-tbox">
         <table className="fx-t">
           <thead><tr><th>{t("pages.settings.event")}</th><th>{t("pages.settings.leadsTo")}</th></tr></thead>

@@ -141,3 +141,22 @@ def mark_read(body: ReadIn, user=Depends(current_user)):
     finally:
         con.close()
     return notifications(user)
+
+
+class MailPrefIn(BaseModel):
+    email: bool
+
+
+@router.get("/notifications/email")
+def mail_pref(user=Depends(current_user)):
+    """Whether this person gets the bell's news by e-mail too (administrators and reviewers; on unless switched off)."""
+    from ..ops import mail, notify_mail as NM
+    role = getattr(user.role, "value", user.role)
+    return {"email": NM.wants_mail(_who(user)), "eligible": role in ("admin", "reviewer"), "mail_ready": mail.configured()}
+
+
+@router.put("/notifications/email")
+def set_mail_pref(body: MailPrefIn, user=Depends(current_user)):
+    from ..ops import notify_mail as NM
+    NM.set_wants_mail(_who(user), body.email)
+    return mail_pref(user)

@@ -246,6 +246,14 @@ CREATE TABLE IF NOT EXISTS notification_read (
   user_email TEXT, nkey TEXT, at REAL,
   PRIMARY KEY (user_email, nkey)
 );
+-- Notifications already sent to a person by e-mail, and who switched the e-mails off (ops/notify_mail.py).
+CREATE TABLE IF NOT EXISTS notification_mail (
+  user_email TEXT, nkey TEXT, at REAL,
+  PRIMARY KEY (user_email, nkey)
+);
+CREATE TABLE IF NOT EXISTS notification_pref (
+  user_email TEXT PRIMARY KEY, email INTEGER NOT NULL DEFAULT 1
+);
 -- A person checked a number rule's change in one document and found it right.
 CREATE TABLE IF NOT EXISTS correction_check (
   rule_id TEXT, room_id TEXT, rel TEXT, by_user TEXT, at REAL,
