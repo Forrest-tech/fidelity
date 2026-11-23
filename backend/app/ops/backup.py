@@ -159,8 +159,16 @@ def restore_to(path: str, target: str) -> list[str]:
     if os.listdir(target):
         raise FileExistsError(f"{target} is not empty")
     with zipfile.ZipFile(path) as z:
-        z.extractall(target)
+        z.extractall(_long(target))       # room folders nest deep: past Windows' 260-character limit
         return z.namelist()
+
+
+def _long(path: str) -> str:
+    """Windows' extended-length form, which lifts the 260-character path limit; unchanged elsewhere."""
+    path = os.path.abspath(path)
+    if os.name != "nt" or path.startswith("\\\\?\\"):
+        return path
+    return "\\\\?\\UNC\\" + path[2:] if path.startswith("\\\\") else "\\\\?\\" + path
 
 
 def status(dest_dir: str = BACKUP_DIR) -> dict | None:
