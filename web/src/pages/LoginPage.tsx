@@ -17,6 +17,7 @@ interface AuthOptions {
   providers: Array<{ id: string; label: string }>;
   captcha: boolean;
   signup?: boolean;
+  email?: boolean;
 }
 
 // Brand marks as the providers publish them (Google "G", Microsoft four squares); GitHub from Ant Design's icon set.
@@ -168,6 +169,7 @@ export function LoginPage() {
       const detail = x instanceof ApiError ? x.message : "";
       if (x instanceof ApiError && x.status === 429) setErr(t("login.tooMany"));
       else if (detail === "ACCOUNT_PENDING") setInfo(t("login.pending"));
+      else if (detail === "EMAIL_NOT_CONFIRMED") setInfo(t("email.notConfirmed"));
       else if (detail.startsWith("CAPTCHA_")) setErr(t("login.captchaExpiredTick"));
       else if (firstRun && x instanceof ApiError && x.status === 422) setErr(t("login.setupPassword"));
       else if (firstRun && x instanceof ApiError && x.status === 409) {
@@ -219,9 +221,13 @@ export function LoginPage() {
         </Form.Item>
         {!firstRun && (
           <div className="fx-auth-forgot-row">
-            <Popover content={<div style={{ maxWidth: 260 }}>{t("login.forgotHelp")}</div>} trigger="click" placement="bottomRight">
-              <Button type="link" size="small" className="fx-auth-forgot">{t("login.forgot")}</Button>
-            </Popover>
+            {opts.data?.email ? (
+              <Link to="/forgot-password" className="fx-auth-forgot">{t("login.forgot")}</Link>
+            ) : (
+              <Popover content={<div style={{ maxWidth: 260 }}>{t("login.forgotHelp")}</div>} trigger="click" placement="bottomRight">
+                <Button type="link" size="small" className="fx-auth-forgot">{t("login.forgot")}</Button>
+              </Popover>
+            )}
           </div>
         )}
         {firstRun && (
@@ -241,7 +247,8 @@ export function LoginPage() {
         )}
         <div aria-live="polite">
           {err && <Alert type="error" showIcon title={err} style={{ marginBottom: 16 }} />}
-          {info && <Alert type="info" showIcon title={info} style={{ marginBottom: 16 }} />}
+          {info && <Alert type="info" showIcon title={info} style={{ marginBottom: 16 }}
+            action={info === t("email.notConfirmed") ? <Link to="/resend-confirmation">{t("email.resend")}</Link> : undefined} />}
         </div>
         <Button type="primary" htmlType="submit" size="large" block loading={busy}>
           {busy ? t("login.submitting") : firstRun ? t("login.setupSubmit") : t("login.submit")}

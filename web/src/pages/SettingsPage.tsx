@@ -13,7 +13,7 @@ import { AiSettings } from "../components/AiSettings";
 import { CorrectionsPage } from "./CorrectionsPage";
 import { UsersPage } from "./UsersPage";
 
-type Section = "storage" | "ai" | "defaults" | "queue" | "corrections" | "archive" | "users" | "notifications" | "audit" | "system" | "account" | "appearance";
+type Section = "storage" | "ai" | "defaults" | "queue" | "corrections" | "archive" | "users" | "notifications" | "audit" | "system" | "email" | "account" | "appearance";
 interface Item {
   key: Section;
   group: "connect" | "distill" | "team" | "personal";
@@ -22,6 +22,7 @@ interface Item {
 const ITEMS: Item[] = [
   { key: "storage", group: "connect", admin: true },
   { key: "ai", group: "connect", admin: true },
+  { key: "email", group: "connect", admin: true },
   { key: "defaults", group: "distill", admin: true },
   { key: "queue", group: "distill" },
   { key: "corrections", group: "distill" },
@@ -284,6 +285,76 @@ function SystemHealth() {
   );
 }
 
+// ------------------------------------------------------------------ e-mail (requirements v2, U-1)
+interface MailSettings { host: string; port: number; security: "starttls" | "ssl" | "none"; username: string; from_address: string; from_name: string; site_url: string; approval: "domains" | "all" | "none"; password_set: boolean; configured: boolean }
+
+function EmailSettings() {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const { me } = useAuth();
+  const q = useQuery({ queryKey: ["mail-settings"], queryFn: () => api<MailSettings>("/admin/email") });
+  const [draft, setDraft] = useState<Partial<MailSettings> & { password?: string }>({});
+  const save = useMutation({
+    mutationFn: () => api<MailSettings>("/admin/email", { ...json(draft), method: "PUT" }),
+    onSuccess: (d) => {
+      qc.setQueryData(["mail-settings"], d);
+      setDraft({});
+      void qc.invalidateQueries({ queryKey: ["auth-options"] });
+    },
+  });
+  const test = useMutation({ mutationFn: () => api<{ sent_to: string }>("/admin/email/test", { method: "POST" }) });
+  if (q.isLoading) return <Loading />;
+  if (q.isError) return <ErrorState message={(q.error as Error).message} />;
+  const s = { ...q.data!, ...draft };
+  const set = (k: string, v: unknown) => setDraft((d) => ({ ...d, [k]: v }));
+  const field = (k: keyof MailSettings | "password", label: string, props: Record<string, unknown> = {}) => (
+    <div className="fx-row fx-wrap" style={{ gap: 8 }}>
+      <label className="fx-lab" htmlFor={`mail-${k}`} style={{ width: 200 }}>{label}</label>
+      <div className="fx-field sm" style={{ flex: 1, minWidth: 220 }}>
+        <input id={`mail-${k}`} value={k === "password" ? draft.password ?? "" : String((s as Record<string, unknown>)[k] ?? "")}
+          onChange={(e) => set(k, k === "port" ? Number(e.target.value.replace(/\D/g, "")) : e.target.value)} {...props} />
+      </div>
+    </div>
+  );
+  return (
+    <>
+      <PageHeader title={t("pages.settings.nav.email")} desc={t("email.settings.hint")} />
+      <div className={q.data!.configured ? "fx-note" : "fx-note"} role="status">
+        <Pill tone={q.data!.configured ? "ok" : "warn"}>{q.data!.configured ? "✓" : "!"}</Pill> {q.data!.configured ? t("email.settings.on") : t("email.settings.off")}
+      </div>
+      <form className="fx-card fx-stack" style={{ padding: 14, gap: 10 }} onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
+        {field("host", t("email.settings.host"), { placeholder: "smtp.example.com", autoComplete: "off" })}
+        {field("port", t("email.settings.port"), { inputMode: "numeric" })}
+        <div className="fx-row fx-wrap" style={{ gap: 8 }}>
+          <span className="fx-lab" style={{ width: 200 }}>{t("email.settings.security")}</span>
+          <Seg label={t("email.settings.security")} value={s.security} onChange={(v) => set("security", v)}
+            options={[{ value: "starttls", label: "STARTTLS" }, { value: "ssl", label: "SSL/TLS" }, { value: "none", label: "—" }]} />
+        </div>
+        {field("username", t("email.settings.username"), { autoComplete: "off" })}
+        {field("password", `${t("email.settings.password")} (${q.data!.password_set ? t("email.settings.passwordSet") : t("email.settings.passwordNotSet")})`, { type: "password", autoComplete: "new-password" })}
+        {field("from_address", t("email.settings.from"), { type: "email", placeholder: "fidelity@company.com" })}
+        {field("from_name", t("email.settings.fromName"))}
+        {field("site_url", t("email.settings.siteUrl"), { placeholder: t("email.settings.siteUrlHint") })}
+        <div className="fx-row fx-wrap" style={{ gap: 8 }}>
+          <label className="fx-lab" htmlFor="mail-approval" style={{ width: 200 }}>{t("email.settings.approval")}</label>
+          <select id="mail-approval" className="fx-field sm" value={s.approval} onChange={(e) => set("approval", e.target.value)} style={{ flex: 1, minWidth: 220 }}>
+            {(["domains", "all", "none"] as const).map((a) => <option key={a} value={a}>{t(`email.settings.ap.${a}`)}</option>)}
+          </select>
+        </div>
+        {save.error && <div className="fx-errnote" role="alert">{(save.error as Error).message}</div>}
+        {save.isSuccess && !Object.keys(draft).length && <div className="fx-note" role="status">{t("email.settings.saved")}</div>}
+        <div className="fx-row" style={{ gap: 8 }}>
+          <button className="fx-btn pri" type="submit" disabled={!Object.keys(draft).length || save.isPending}>{t("email.settings.save")}</button>
+          <button className="fx-btn" type="button" disabled={!q.data!.configured || test.isPending} onClick={() => test.mutate()}>{t("email.settings.test")}</button>
+        </div>
+        {test.error && <div className="fx-errnote" role="alert">{(test.error as Error).message}</div>}
+        {test.data && <div className="fx-note" role="status">{t("email.settings.tested", { email: test.data.sent_to || me?.email })}</div>}
+      </form>
+    </>
+  );
+}
+
+
 function Account() {
   const { t } = useTranslation();
   const { me } = useAuth();
@@ -370,6 +441,7 @@ const BODY: Record<Section, () => ReactNode> = {
   notifications: () => <Notifications />,
   audit: () => <Audit />,
   system: () => <SystemHealth />,
+  email: () => <EmailSettings />,
   account: () => <Account />,
   appearance: () => <Appearance />,
 };

@@ -8,6 +8,7 @@ import { AppShell } from "./layout/AppShell";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { LoginPage } from "./pages/LoginPage";
 import { SignupPage } from "./pages/SignupPage";
+import { ForgotPasswordPage, ResendConfirmationPage, ResetPasswordPage, VerifyEmailPage } from "./pages/EmailPages";
 import { DistillPage } from "./pages/DistillPage";
 import { DocumentsPage } from "./pages/DocumentsPage";
 import { JobsPage } from "./pages/JobsPage";
@@ -47,6 +48,10 @@ export function AppRoutes() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/resend-confirmation" element={<ResendConfirmationPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route
         element={
           <RequireAuth>

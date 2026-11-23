@@ -322,7 +322,8 @@
         "account": "Account",
         "appearance": "Appearance and language",
         "sections": "Settings sections",
-        "system": "System health"
+        "system": "System health",
+        "email": "Email"
       },
       "groups": {
         "connect": "Connections",
@@ -1327,5 +1328,58 @@
     "tooMany": "Too many requests from this network. Try again later.",
     "closed": "New accounts are not open here: ask an administrator to add you.",
     "closedTitle": "Sign-up is closed"
+  },
+  "email": {
+    "confirming": "Confirming your email address…",
+    "confirmedTitle": "Email address confirmed",
+    "confirmedActive": "You can sign in now.",
+    "confirmedPending": "An administrator will now approve your account; you can sign in once it is approved.",
+    "alreadyTitle": "Already confirmed",
+    "alreadyBody": "This address was confirmed before. Sign in, or wait for an administrator's approval.",
+    "invalidTitle": "This link does not work",
+    "invalidConfirm": "It has expired or was copied incompletely. Ask for a new confirmation email.",
+    "invalidReset": "It has expired, was used already, or was copied incompletely. Ask for a new link.",
+    "resend": "Send the confirmation email again",
+    "resendTitle": "Confirm your email address",
+    "resendIntro": "Enter the address you signed up with. If it still needs confirming, a new link is sent.",
+    "forgotTitle": "Reset your password",
+    "forgotIntro": "Enter the email address of your account. If it has one, a link to choose a new password is sent.",
+    "sendLink": "Send the link",
+    "checkInbox": "Check your inbox",
+    "resetSent": "If {{email}} has a Fidelity account, a link to reset its password is on its way. It works for 60 minutes.",
+    "confirmSent": "We sent a confirmation link to {{email}}. Open it to confirm your address; it works for 24 hours. Nothing there? Check your spam folder.",
+    "resetTitle": "Choose a new password",
+    "newPassword": "New password",
+    "setPassword": "Save the new password",
+    "resetDoneTitle": "Password changed",
+    "resetDoneBody": "Sign in with your new password.",
+    "notConfirmed": "Confirm your email address first: open the link we sent you.",
+    "notConfirmedTag": "email not confirmed yet",
+    "settings": {
+      "hint": "The mail server Fidelity uses to send confirmation and password-reset links. Any SMTP server works (company mail, Microsoft 365, Google Workspace, Tencent Exmail…).",
+      "host": "SMTP server",
+      "port": "Port",
+      "security": "Security",
+      "username": "Username",
+      "password": "Password",
+      "passwordSet": "set — leave empty to keep it",
+      "passwordNotSet": "not set",
+      "from": "Sender address",
+      "fromName": "Sender name",
+      "siteUrl": "Address of Fidelity in links",
+      "siteUrlHint": "e.g. http://10.0.0.150:8000 — left empty, the address people use is taken",
+      "approval": "After the address is confirmed",
+      "ap": {
+        "domains": "company domains sign in at once; others wait for an administrator",
+        "all": "everyone waits for an administrator",
+        "none": "everyone signs in at once (as a viewer)"
+      },
+      "save": "Save",
+      "saved": "Saved.",
+      "test": "Send me a test email",
+      "tested": "A test email went to {{email}}.",
+      "on": "Sending email is set up.",
+      "off": "Not set up yet: sign-ups wait for an administrator and forgotten passwords are reset by an administrator."
+    }
   }
 }

@@ -99,3 +99,73 @@ describe("approving sign-ups", () => {
     });
   });
 });
+
+describe("email: confirm, reset, settings", () => {
+  it("the confirmation link confirms the address and says what happens next", async () => {
+    const calls = signedOut((url, init) => (url.endsWith("/auth/verify-email") && init?.method === "POST" ? { body: { status: "pending" } } : undefined));
+    renderApp("/verify-email?token=abc.def");
+    expect(await screen.findByText("Email address confirmed")).toBeInTheDocument();
+    expect(screen.getByText(/administrator will now approve/)).toBeInTheDocument();
+    expect(JSON.parse(String(calls.find((c) => c.url.endsWith("/auth/verify-email"))!.init!.body))).toEqual({ token: "abc.def" });
+  });
+
+  it("a broken confirmation link offers to send a new one", async () => {
+    signedOut((url) => (url.endsWith("/auth/verify-email") ? { status: 400, body: { detail: "LINK_INVALID" } } : undefined));
+    renderApp("/verify-email?token=bad");
+    expect(await screen.findByText("This link does not work")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Send the confirmation email again" })).toHaveAttribute("href", "/resend-confirmation");
+  });
+
+  it("forgot password sends a link and never says whether the address has an account", async () => {
+    signedOut((url, init) => (url.endsWith("/auth/forgot-password") && init?.method === "POST" ? { body: { status: "sent_if_account" } } : undefined),
+      OPTS({ email: true }));
+    renderApp("/forgot-password");
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    await u.type(await screen.findByLabelText("Email"), "someone@example.com");
+    await u.click(screen.getByRole("button", { name: "Send the link" }));
+    expect(await screen.findByText(/If someone@example.com has a Fidelity account/)).toBeInTheDocument();
+  });
+
+  it("the reset link lets a person choose a new password", async () => {
+    const calls = signedOut((url, init) => (url.endsWith("/auth/reset-password") && init?.method === "POST" ? { body: { status: "reset" } } : undefined));
+    renderApp("/reset-password?token=t0k");
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    await u.type(await screen.findByLabelText("New password"), "a-brand-new-password");
+    await u.type(screen.getByLabelText("Confirm password"), "a-brand-new-password");
+    await u.click(screen.getByRole("button", { name: "Save the new password" }));
+    expect(await screen.findByText("Password changed")).toBeInTheDocument();
+    expect(JSON.parse(String(calls.find((c) => c.url.endsWith("/auth/reset-password"))!.init!.body))).toEqual({ token: "t0k", password: "a-brand-new-password" });
+  });
+
+  it("signing in before confirming says so and links to a new confirmation email", async () => {
+    signedOut((url) => (url.endsWith("/auth/login") ? { status: 403, body: { detail: "EMAIL_NOT_CONFIRMED" } } : undefined));
+    renderApp("/login");
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    await u.type(await screen.findByLabelText("Email"), "new@example.com");
+    await u.type(screen.getByLabelText("Password"), "a-new-long-password");
+    await u.click(screen.getByRole("button", { name: /^Sign in$/ }));
+    expect(await screen.findByText(/Confirm your email address first/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Send the confirmation email again" })).toBeInTheDocument();
+  });
+
+  it("an administrator sets up the mail server; the password is never shown back", async () => {
+    const calls = mockApi((url, init) => {
+      if (url.endsWith("/me")) return { body: { id: "1", email: "admin@example.com", role: "admin" } };
+      if (url.endsWith("/admin/email") && init?.method === "PUT") return { body: { host: "smtp.example.com", port: 587, security: "starttls", username: "f", from_address: "f@example.com", from_name: "Fidelity", site_url: "", approval: "domains", password_set: true, configured: true } };
+      if (url.endsWith("/admin/email")) return { body: { host: "", port: 587, security: "starttls", username: "", from_address: "", from_name: "Fidelity", site_url: "", approval: "domains", password_set: false, configured: false } };
+      return { body: {} };
+    });
+    renderApp("/settings/email");
+    expect(await screen.findByText(/Not set up yet/)).toBeInTheDocument();
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    await u.type(screen.getByLabelText("SMTP server"), "smtp.example.com");
+    await u.type(screen.getByLabelText(/^Password/), "app-pass-123");
+    await u.type(screen.getByLabelText("Sender address"), "f@example.com");
+    await u.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(calls.some((c) => c.url.endsWith("/admin/email") && c.init?.method === "PUT")).toBe(true));
+    const body = JSON.parse(String(calls.find((c) => c.init?.method === "PUT")!.init!.body));
+    expect(body).toMatchObject({ host: "smtp.example.com", password: "app-pass-123", from_address: "f@example.com" });
+    expect(await screen.findByText("Sending email is set up.")).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Password/)).toHaveValue("");
+  });
+});

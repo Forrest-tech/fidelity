@@ -28,7 +28,7 @@ function userError(t: (k: string, o?: Record<string, unknown>) => string, e: unk
   return t("pages.users.err.network");
 }
 
-interface Pending { id: string; email: string; role: string }
+interface Pending { id: string; email: string; role: string; state?: string }
 
 /** People who asked for an account (sign-up): an administrator chooses a role and approves, or declines. */
 function PendingSignups({ notify }: { notify: (kind: "success" | "error", text: string) => void }) {
@@ -59,6 +59,7 @@ function PendingSignups({ notify }: { notify: (kind: "success" | "error", text: 
         {list.map((p) => (
           <li key={p.id} className="fx-row fx-wrap" style={{ gap: 10 }}>
             <b style={{ minWidth: 220, wordBreak: "break-all" }}>{p.email}</b>
+            {p.state === "unverified" && <Tag>{t("email.notConfirmedTag")}</Tag>}
             <Select size="small" style={{ width: 130 }} value={roles[p.id] ?? "viewer"} aria-label={t("pages.users.asRole", { email: p.email })}
               onChange={(v) => setRoles((r) => ({ ...r, [p.id]: v }))}
               options={["viewer", "reviewer", "admin"].map((r) => ({ value: r, label: t(`roles.${r}`) }))} />
