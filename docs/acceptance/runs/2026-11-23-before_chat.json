@@ -4,8 +4,8 @@
   "C:/Users/forre/AppData/Local/Temp/claude/0e3037b4c097d18c/d94ed576-4c0d-473d-b84d-0a444f4de788/scratchpad/lib_published"
  ],
  "tokens": [
-  2591037,
-  102433
+  2741226,
+  111145
  ],
  "answers": [
   {
@@ -19709,8 +19709,8 @@
   {
    "id": 298,
    "model": "deepseek:deepseek-chat",
-   "seconds": 10.4,
-   "error": "provider error 402",
+   "seconds": 5.6,
+   "error": null,
    "retrieved": [
     {
      "file": "as nzs 3500.2-2021 · 011 front matter (part 11 of 16) p136-151.md",
@@ -19751,6 +19751,35 @@
      "file": "as nzs 3500.2-2021 · 012 front matter (part 12 of 16) p152-168.md",
      "source": "AS NZS 3500.2-2021.pdf",
      "page": 152
+    }
+   ],
+   "status": "answered",
+   "answer": "No — the library does not support 1350 mm. Under AS/NZS 3500.2:2021 Clause 9.8.5(c), for a DN 100 stack of one floor with the top section graded (domestic or residential building, max 90 fixture units), the connection of a fixture discharge pipe to the graded section of the stack shall be not less than 450 mm from the lower vertical section of the stack, measured from the inlet of the lower bend commencing the graded section. Clause 9.8.5(d) separately prohibits branches on the vertical sections within 600 mm below the lower bend; Figure 9.8.5 depicts 450 min./600 min. No 1350 mm figure appears in Clause 9.8.5. (The 1350 mm dimension is not part of this clause in the excerpts.)",
+   "values": [
+    "450 mm",
+    "600 mm",
+    "DN 100",
+    "90 fixture units"
+   ],
+   "edition_used": "AS/NZS 3500.2:2021 — published edition (in force per the library record); a later 2025 edition exists per house rules, but no 2025 excerpts were supplied, so this answer is for the 2021 edition only",
+   "citations": [
+    {
+     "document": "AS NZS 3500.2-2021 — Plumbing and drainage, Part 2: Sanitary plumbing and drainage",
+     "clause": "9.8.5(c)",
+     "page": 146,
+     "quote": "The connection of a fixture discharge pipe to the graded section of the stack shall be not less than 450 mm from the lower vertical section of the stack, measured from the inlet of the lower bend commencing the graded section."
+    },
+    {
+     "document": "AS NZS 3500.2-2021 — Plumbing and drainage, Part 2: Sanitary plumbing and drainage",
+     "clause": "9.8.5(d)",
+     "page": 146,
+     "quote": "Branches shall not be connected to the vertical sections of the stack within 600 mm below the lower bend forming part of the offset."
+    },
+    {
+     "document": "AS NZS 3500.2-2021 — Plumbing and drainage, Part 2: Sanitary plumbing and drainage",
+     "clause": "Figure 9.8.5",
+     "page": 147,
+     "quote": "Vent pipe DN 50 450 min. ... Vent pipe DN 50 450 min. ... 600 min. Stack DN 100 Ground"
     }
    ]
   },
@@ -19863,8 +19892,8 @@
   {
    "id": 301,
    "model": "deepseek:deepseek-chat",
-   "seconds": 4.1,
-   "error": "provider error 402",
+   "seconds": 5.7,
+   "error": null,
    "retrieved": [
     {
      "file": "as nzs 3500.3-2021 · 054 6.3 site stormwater drains p83-87.md",
@@ -19905,14 +19934,38 @@
      "file": "as nzs 3500.3-2021 · 089 appendix i (informative) box gutter systems — general method — e p157-181.md",
      "source": "AS NZS 3500.3-2021.pdf",
      "page": 167
+    }
+   ],
+   "status": "not_found",
+   "answer": "Clause 34.9.2 is not present in the excerpts provided, so no minimum clearance can be given from the library. The excerpts come from AS/NZS 3500.3:2021 and contain no clause numbered 34.9.2 (the documents shown use clause numbering such as 6.2, 6.3, 7.5 and section 9). The closest clearance provisions found are in Clause 6.2 — for example a minimum 25 mm clearance between the top of a drain and the underside of a strip footing under which it passes (Clause 6.2.8(a)), a 25 mm annular space where a drain passes through footings or walls (Clause 6.2.8(b)), a minimum 25 mm clearance between a conduit or pit and the drain (Clause 6.3.7(b)(ii)), and a minimum 300 mm clearance to any underground obstruction (Clause 6.2(l)). None of these is Clause 34.9.2. Searched: '34.9.2', 'clause 34.9', 'minimum clearance', 'clearance'.",
+   "values": [],
+   "edition_used": "AS/NZS 3500.3:2021 (published edition, not superseded in the library)",
+   "citations": [
+    {
+     "document": "AS NZS 3500.3-2021 — Plumbing and drainage, Part 3: Stormwater drainage",
+     "clause": "6.2.8(a)",
+     "page": 81,
+     "quote": "The minimum clearance between the top of the drain to the underside of the footing shall be 25 mm."
+    },
+    {
+     "document": "AS NZS 3500.3-2021 — Plumbing and drainage, Part 3: Stormwater drainage",
+     "clause": "6.3.7(b)(ii)",
+     "page": 86,
+     "quote": "there shall be a minimum clearance of 25 mm between the conduit or pit and the drain."
+    },
+    {
+     "document": "AS NZS 3500.3-2021 — Plumbing and drainage, Part 3: Stormwater drainage",
+     "clause": "6.2(l)",
+     "page": 81,
+     "quote": "Stormwater drains shall be installed with a minimum 300 mm clearance to any underground obstruction to protect the drain from physical damage and to permit repairs."
     }
    ]
   },
   {
    "id": 302,
    "model": "deepseek:deepseek-chat",
-   "seconds": 3.1,
-   "error": "provider error 402",
+   "seconds": 5.2,
+   "error": null,
    "retrieved": [
     {
      "file": "as nzs 3500.3-2021 · 054 6.3 site stormwater drains p83-87.md",
@@ -19954,13 +20007,18 @@
      "source": "AS NZS 3500.3-2021.pdf",
      "page": 167
     }
-   ]
+   ],
+   "status": "not_found",
+   "answer": "Clause 35.3.9 is not present in the supplied excerpts, and none of the excerpts contains a clause with that number or a clearance requirement attributable to it. The excerpts cite Clauses 6.2.5, 6.2.7, 6.2.8, 6.3.5.1, 6.3.6 and 6.3.7 (minimum clearances of 25 mm to footings/conduits, 100 mm vertical separation at service crossings, and 300 mm clearance to underground obstructions), but AS/NZS 3500.3 uses the Section/Clause numbering shown (e.g. 6.2.8, 6.3.7); no Clause 35.3.9 appears. No figure can be given for Clause 35.3.9.",
+   "values": [],
+   "edition_used": "AS/NZS 3500.3:2021 (published; current edition in the library — not superseded)",
+   "citations": []
   },
   {
    "id": 303,
    "model": "deepseek:deepseek-chat",
-   "seconds": 2.6,
-   "error": "provider error 402",
+   "seconds": 5.1,
+   "error": null,
    "retrieved": [
     {
      "file": "as nzs 3500.3-2021 · 055 6.4 subsoil drains p87-90.md",
@@ -20002,13 +20060,39 @@
      "source": "AS NZS 3500.3-2021.pdf",
      "page": 70
     }
+   ],
+   "status": "answered",
+   "answer": "No — the library does not support 900 mm. Under AS/NZS 3500.3:2021 Clause 6.4.1(c)(iv), clean-out points for subsoil pipes or geocomposite drains must extend vertically to the top of paved surfaces, or within 300 mm of an unpaved finished surface. The clause's own words are: \"that extend vertically to the top of paved surfaces or within 300 mm of an unpaved finished surface\". Appendix L (informative) L.4.2(d) simply refers back to Clause 6.4.1(c) for clean-out points. The 300 mm figure also coincides with a separate requirement in Clause 6.2.10(a) (trench fill within 300 mm of the top of pipes must be free of builders' waste and similar material) — but that is a different provision and does not set a 900 mm clean-out extension. The question's premise of 900 mm is contradicted by the library: the figure is 300 mm.",
+   "values": [
+    "300 mm"
+   ],
+   "edition_used": "AS/NZS 3500.3:2021 (published edition, per excerpt edition_status: published — not indicated as superseded in the excerpts)",
+   "citations": [
+    {
+     "document": "AS NZS 3500.3-2021 — Plumbing and drainage, Part 3: Stormwater drainage",
+     "clause": "6.4.1(c)(iv)",
+     "page": 87,
+     "quote": "that extend vertically to the top of paved surfaces or within 300 mm of an unpaved finished surface"
+    },
+    {
+     "document": "AS NZS 3500.3-2021 — Plumbing and drainage, Part 3: Stormwater drainage",
+     "clause": "L.4.2(d)",
+     "page": 185,
+     "quote": "have clean-out points, see Clause 6.4.1(c)."
+    },
+    {
+     "document": "AS NZS 3500.3-2021 — Plumbing and drainage, Part 3: Stormwater drainage",
+     "clause": "6.2.10(a)",
+     "page": 83,
+     "quote": "provided the material placed within 300 mm of the top of pipes is free from builders’ waste, bricks, pieces of concrete, rocks or similar material that would be retained on a 75 mm sieve"
+    }
    ]
   },
   {
    "id": 304,
    "model": "deepseek:deepseek-chat",
-   "seconds": 4.2,
-   "error": "provider error 402",
+   "seconds": 4.4,
+   "error": null,
    "retrieved": [
     {
      "file": "as nzs 3500.3-2021 · 066 7.10 on-site stormwater detention systems p101-103.md",
@@ -20050,13 +20134,27 @@
      "source": "AS NZS 3500.3-2021.pdf",
      "page": 155
     }
+   ],
+   "status": "answered",
+   "answer": "The library contradicts the figure of 4 you propose. Under AS/NZS 3500.3:2021, Clause 7.10.2(b)(iv), where a discharge control pit is included in the storage, the sump must be set a minimum of 1.5 times the diameter of the orifice of the outlet below the centre of the orifice. The exact wording is: 'Where a discharge control pit is included in the storage, this shall contain a sump set a minimum of 1.5 times the diameter of the orifice of the outlet below the centre of the orifice.' The clause also requires the sump to have a base level set below that of the main storage, be provided with weepholes to drain out to the surrounding soil, and be founded on a compacted granular base.",
+   "values": [
+    "1.5 times the orifice diameter"
+   ],
+   "edition_used": "AS/NZS 3500.3:2021 (published edition — current edition held in the library)",
+   "citations": [
+    {
+     "document": "AS NZS 3500.3-2021 — Plumbing and drainage, Part 3: Stormwater drainage",
+     "clause": "7.10.2(b)(iv)",
+     "page": 102,
+     "quote": "Where a discharge control pit is included in the storage, this shall contain a sump set a minimum of 1.5 times the diameter of the orifice of the outlet below the centre of the orifice."
+    }
    ]
   },
   {
    "id": 305,
    "model": "deepseek:deepseek-chat",
-   "seconds": 4.6,
-   "error": "provider error 402",
+   "seconds": 5.0,
+   "error": null,
    "retrieved": [
     {
      "file": "as nzs 3500.3-2021 · 038 4.3 thermal variation p52-53.md",
@@ -20098,13 +20196,39 @@
      "source": "AS NZS 3500.3-2021.pdf",
      "page": 167
     }
+   ],
+   "status": "answered",
+   "answer": "The library does not support the figure 2.4000000000000004 — the correct value is 15 m. Under AS/NZS 3500.3:2021 Clause 4.3.2(a), for box gutters, Table 4.3.2 gives the maximum lengths between expansion joints; for Copper with base metal thickness 0.80 mm, the maximum length between expansion joints for 'One end fixed and one end free to move' is 15 m. Clause 4.3.2(a) also states that 'The maximum lengths between expansion joints in Table 4.3.2 shall apply from the fixed point to the free end(s).' The 2021 edition is the published edition and is used here; the superseded 2018 edition gives the same value (15 m) in TABLE 4.3.2, p.46.",
+   "values": [
+    "15 m (maximum length between expansion joints) for copper, base metal thickness 0.80 mm, one end fixed and one end free to move"
+   ],
+   "edition_used": "AS/NZS 3500.3:2021 — Plumbing and drainage, Part 3: Stormwater drainage (published; current). Superseded AS/NZS 3500.3:2018 agrees (15 m).",
+   "citations": [
+    {
+     "document": "AS NZS 3500.3-2021 — Plumbing and drainage, Part 3: Stormwater drainage",
+     "clause": "4.3.2(a) and Table 4.3.2",
+     "page": 52,
+     "quote": "(a) *Box gutters* — For box gutters and support systems, the maximum lengths between expansion joints and minimum expansion space shall be as given in Table 4.3.2. ... The maximum lengths between expansion joints in Table 4.3.2 shall apply from the fixed point to the free end(s)."
+    },
+    {
+     "document": "AS NZS 3500.3-2021 — Plumbing and drainage, Part 3: Stormwater drainage",
+     "clause": "Table 4.3.2 (Copper row)",
+     "page": 52,
+     "quote": "Copper | 17 × 10−6 | 0.60 0.80 1.00 | 9 15 26 | 18 30 52 | 50"
+    },
+    {
+     "document": "3500.3-2018 Plumbing and drainage - Stormwater drainage (superseded)",
+     "clause": "TABLE 4.3.2 (Copper row)",
+     "page": 46,
+     "quote": "Copper | 17  10−6 | 0.60 0.80 1.00 | 9 15 26 | 18 30 52 | 50"
+    }
    ]
   },
   {
    "id": 306,
    "model": "deepseek:deepseek-chat",
-   "seconds": 6.9,
-   "error": "provider error 402",
+   "seconds": 3.0,
+   "error": null,
    "retrieved": [
     {
      "file": "as nzs 3500.3-2021 · 054 6.3 site stormwater drains p83-87.md",
@@ -20146,13 +20270,39 @@
      "source": "AS NZS 3500.3-2021.pdf",
      "page": 96
     }
+   ],
+   "status": "answered",
+   "answer": "No — the library does not support 75 mm for this case. AS/NZS 3500.3:2021 Clause 6.3.6(a) sets the overlay between the top of the pipe and the underside of a reinforced concrete slab at not less than 25 mm, not 75 mm. Clause 6.3.6 reads: \"(a) the thickness of overlay between the top of the pipe and the underside of a reinforced concrete slab shall be not less than 25 mm; and (b) there shall be protection from mechanical damage.\" The 75 mm figures in the library are for other things: earth foundations not less than 75 mm thick (6.3.5.2, p.86), haunch support in rock not less than 75 mm (p.86), and 75 mm minimum cover to plastics under a paved driveway below the underside of the pavement (Table 6.2.5; Appendix I example J.2.2(b)(i)(B), p.169). Note also that Clause 6.2.5 says \"Except as specified in Clause 6.3.6, the cover shall be not less than that given in Table 6.2.5\" — so 6.3.6 is the specific rule for drains under buildings. Edition used: AS/NZS 3500.3:2021 (published, current in the library; not superseded).",
+   "values": [
+    "25 mm (minimum overlay between top of pipe and underside of a reinforced concrete slab, Clause 6.3.6(a))"
+   ],
+   "edition_used": "AS/NZS 3500.3:2021 (published)",
+   "citations": [
+    {
+     "document": "AS/NZS 3500.3:2021 — Plumbing and drainage, Part 3: Stormwater drainage",
+     "clause": "6.3.6(a)",
+     "page": 86,
+     "quote": "the thickness of overlay between the top of the pipe and the underside of a reinforced concrete slab shall be not less than 25 mm; and"
+    },
+    {
+     "document": "AS/NZS 3500.3:2021 — Plumbing and drainage, Part 3: Stormwater drainage",
+     "clause": "6.2.5",
+     "page": 79,
+     "quote": "Except as specified in Clause 6.3.6, the cover shall be not less than that given in Table 6.2.5 or shall be in accordance with —"
+    },
+    {
+     "document": "AS/NZS 3500.3:2021 — Plumbing and drainage, Part 3: Stormwater drainage",
+     "clause": "6.3.5.2(b)(iii)(B)",
+     "page": 86,
+     "quote": "Earth foundations shall be not less than 75 mm thick."
+    }
    ]
   },
   {
    "id": 307,
    "model": "deepseek:deepseek-chat",
-   "seconds": 8.0,
-   "error": "provider error 402",
+   "seconds": 3.8,
+   "error": null,
    "retrieved": [
     {
      "file": "as nzs 3500.3-2021 · 061 7.5 stormwater pits, inlet pits and arresters p91-98.md",
@@ -20194,13 +20344,47 @@
      "source": "AS NZS 3500.3-2021.pdf",
      "page": 84
     }
+   ],
+   "status": "answered",
+   "answer": "No — the premise of the question is not supported by the library. AS/NZS 3500.3:2021 Clause 7.5.3 does not require 60 mm; the library text states the floor of a pit without a sump shall be graded to fall at least 20 mm between the inverts of the inlet and outlet pipes. Clause 7.5.3(b) reads: 'Pits without a sump, as shown in Figure 7.5.3 (a), shall have the floor graded to fall at least 20 mm between the inverts of the inlet and outlet pipes. Sump pits shall have a flat floor but a fall of at least 20 mm between pipe inverts, as shown in Figure 7.5.3 (b).' Figure 7.5.3 on p.95 also annotates both (a) pit without sump and (b) sump pit as 'Fall ≥20 mm', and the worked example (Appendix I, p.173) refers to 'the minimum fall from the upstream to the downstream invert levels of 20 mm, see Clause 7.5.3' and to 'the minimum fall across each pit' as 20 mm (p.169). So the minimum fall is 20 mm, not 60 mm.",
+   "values": [
+    "20 mm",
+    "20 mm (sump pits)",
+    "20 mm (minimum fall across pit)"
+   ],
+   "edition_used": "AS/NZS 3500.3:2021 — Plumbing and drainage, Part 3: Stormwater drainage (published edition held in library; current as held — no later edition evidenced in the excerpts)",
+   "citations": [
+    {
+     "document": "AS NZS 3500.3-2021 — Plumbing and drainage, Part 3: Stormwater drainage",
+     "clause": "7.5.3(b)",
+     "page": 94,
+     "quote": "Pits without a sump, as shown in Figure 7.5.3 (a), shall have the floor graded to fall at least 20 mm between the inverts of the inlet and outlet pipes. Sump pits shall have a flat floor but a fall of at least 20 mm between pipe inverts, as shown in Figure 7.5.3 (b)."
+    },
+    {
+     "document": "AS NZS 3500.3-2021 — Plumbing and drainage, Part 3: Stormwater drainage",
+     "clause": "Figure 7.5.3",
+     "page": 95,
+     "quote": "Fall ≥20 mm (a) Pit without sump (b) Sump pit"
+    },
+    {
+     "document": "AS NZS 3500.3-2021 — Plumbing and drainage, Part 3: Stormwater drainage",
+     "clause": "Appendix I (J.2.3 Stormwater pits)",
+     "page": 169,
+     "quote": "the minimum fall across each pit is 20 mm, see Figure 7.5.3 (a)."
+    },
+    {
+     "document": "AS NZS 3500.3-2021 — Plumbing and drainage, Part 3: Stormwater drainage",
+     "clause": "Appendix I (Column 13)",
+     "page": 173,
+     "quote": "Column 13 gives for each pit the minimum fall from the upstream to the downstream invert levels of 20 mm, see Clause 7.5.3."
+    }
    ]
   },
   {
    "id": 308,
    "model": "deepseek:deepseek-chat",
-   "seconds": 2.8,
-   "error": "provider error 402",
+   "seconds": 3.7,
+   "error": null,
    "retrieved": [
     {
      "file": "3500.1-2018 plumbing and drainage - water services-已解锁 · 126 16.3 installation p86-88.md",
@@ -20242,13 +20426,46 @@
      "source": "AS 3500.1-2015.pdf",
      "page": 85
     }
+   ],
+   "status": "not_held",
+   "answer": "AS/NZS 3500.1:2025 is not held in the knowledge base. The excerpts contain only AS/NZS 3500.1:2003 Amdt 2-2010, AS/NZS 3500.1:2015, AS/NZS 3500.1:2018 and AS/NZS 3500.1:2021 — all superseded or earlier editions relative to the 2025 edition asked about. No 2025 figure can be given from the library. For reference only (superseded editions), the wording has been consistent across the editions held: pipework from a rainwater tank shall be marked 'RAINWATER' at intervals not exceeding 500 mm where concealed in walls, or 1 m where exposed or buried — i.e. 1 m maximum for exposed/buried pipe under the superseded texts. This is not a statement of the 2025 requirement; the 2025 edition must be checked.",
+   "values": [
+    "1 m (exposed or buried) — superseded editions only, not the 2025 edition",
+    "500 mm (concealed in walls) — superseded editions only"
+   ],
+   "edition_used": "None for 2025 (not held). Nearest held: AS/NZS 3500.1:2021 (superseded by the 2025 edition), AS/NZS 3500.1:2018 (superseded), AS/NZS 3500.1:2015 (superseded), AS/NZS 3500.1:2003 Amdt 2-2010 (superseded)",
+   "citations": [
+    {
+     "document": "AS NZS 3500.1-2021 — Plumbing and drainage, Part 1: Water services",
+     "clause": "15.3.2 / 15.3.2.1",
+     "page": 94,
+     "quote": "Pipework from a rainwater tank shall be clearly marked with the word \"RAINWATER\" at intervals not exceeding 500 mm where concealed in walls, or 1 m where exposed or buried."
+    },
+    {
+     "document": "AS/NZS 3500.1:2018 Plumbing and drainage - Water services",
+     "clause": "16.3.2.1",
+     "page": 86,
+     "quote": "Pipework from a rainwater tank shall be clearly marked with the word ‘RAINWATER’ at intervals not exceeding 500 mm where concealed in walls, or 1 m where exposed or buried."
+    },
+    {
+     "document": "AS/NZS 3500.1:2015 Plumbing and drainage - Water services",
+     "clause": "16.3.2.1",
+     "page": 82,
+     "quote": "intervals not exceeding 500 mm where concealed in walls, or 1 m where exposed or buried."
+    },
+    {
+     "document": "AS/NZS 3500.1:2003 Amendment No. 2",
+     "clause": "14.3.2.1",
+     "page": 19,
+     "quote": "pipework from a rainwater tank shall be clearly marked with the word ‘RAINWATER’ at intervals not exceeding 500 mm where concealed in walls, or 1 m where exposed or buried."
+    }
    ]
   },
   {
    "id": 309,
    "model": "deepseek:deepseek-chat",
-   "seconds": 3.6,
-   "error": "provider error 402",
+   "seconds": 4.2,
+   "error": null,
    "retrieved": [
     {
      "file": "as 3500.1 plumbing and drainage - water services · 039 5.3 proximity to other services p32-35.md",
@@ -20290,13 +20507,41 @@
      "source": "AS 3500.1 Plumbing and drainage - Water services.pdf",
      "page": 32
     }
+   ],
+   "status": "not_held",
+   "answer": "The library does not hold AS/NZS 3500.1:2025. The latest edition actually present in the excerpts is AS/NZS 3500.1:2021, and every other excerpt is from superseded editions (2003, 2015, 2018), so no 2025 figure can be given. What the held editions say, for reference only: for an underground water service running parallel to another service (not consumer gas piping or electrical/communication), the separation must be at least 100 mm for a pipe not greater than DN 65 and 300 mm for a pipe greater than DN 65 — so a DN 80 pipe would need 300 mm. Where the water service instead crosses another service, the requirement is a vertical separation of not less than 100 mm, crossing at not less than 45° and marker tape laid 150 mm above. Because the question says 'run past' (parallel), the 300 mm parallel-separation rule would be the relevant one under the 2021 edition. These figures must not be relied on as the AS/NZS 3500.1:2025 requirement; check the 2025 edition.",
+   "values": [
+    "300 mm (parallel separation, water service > DN 65 — AS/NZS 3500.1:2021 only)",
+    "100 mm (vertical separation at crossover — AS/NZS 3500.1:2021 only)",
+    "45° minimum crossing angle (at crossover)"
+   ],
+   "edition_used": "AS/NZS 3500.1:2021 (library's latest held edition); editions 2003, 2015 and 2018 also present but superseded. AS/NZS 3500.1:2025 is not in the library.",
+   "citations": [
+    {
+     "document": "AS NZS 3500.1-2021 — Plumbing and drainage, Part 1: Water services",
+     "clause": "5.3.3.6 Other services",
+     "page": 41,
+     "quote": "The separation between any underground water service pipe and any other service, other than consumer gas piping and electrical or communication service, shall be at least — (a) 100 mm for a water service pipe not greater than DN 65; or (b) 300 mm for a water service pipe greater than DN 65."
+    },
+    {
+     "document": "AS NZS 3500.1-2021 — Plumbing and drainage, Part 1: Water services",
+     "clause": "5.3.4 Crossover of underground services",
+     "page": 41,
+     "quote": "Any underground water service crossing another service or any underground service crossing a water service shall — (a) cross at an angle of not less than 45°; (b) have a vertical separation of not less than 100 mm; and (c) be marked along its length for 1 m either side of the centre-line of the service with marker tape conforming to AS/NZS 2648.1 and laid 150 mm above the installed service."
+    },
+    {
+     "document": "3500.1-2018 Plumbing and drainage - Water services",
+     "clause": "5.2.8 Separation from other underground services",
+     "page": 35,
+     "quote": "The separation between any underground water service pipe and any other service, other than consumer gas piping and electrical or communication service, shall be at least— (a) 100 mm for a water service pipe not greater than DN 65; or (b) 300 mm for a water service pipe greater than DN 65."
+    }
    ]
   },
   {
    "id": 310,
    "model": "deepseek:deepseek-chat",
-   "seconds": 2.3,
-   "error": "provider error 402",
+   "seconds": 2.9,
+   "error": null,
    "retrieved": [
     {
      "file": "as nzs 3500.1-2021 · 006 front matter (part 6 of 10) p58-76.md",
@@ -20338,13 +20583,27 @@
      "source": "AS NZS 3500.1-2021.pdf",
      "page": 71
     }
+   ],
+   "status": "not_held",
+   "answer": "AS/NZS 3500.1:2025 is not held in the library — the latest edition in the excerpts is AS/NZS 3500.1:2021 (published), which is itself now superseded by the 2025 edition. I therefore cannot give the 2025 requirement. For reference only, the 2021 edition text at Clause 8.3.3 (p.70) states: 'Where the interior depth of any storage tank exceeds 2 m, access ladders shall be installed.' This is the 2021 figure, not the 2025 requirement — check the 2025 edition.",
+   "values": [
+    "access ladders shall be installed (AS/NZS 3500.1:2021, Clause 8.3.3, p.70) — not the 2025 edition"
+   ],
+   "edition_used": "AS/NZS 3500.1:2021 (published; superseded by the 2025 edition, which is not held)",
+   "citations": [
+    {
+     "document": "AS NZS 3500.1-2021 — Plumbing and drainage, Part 1: Water services",
+     "clause": "8.3.3",
+     "page": 70,
+     "quote": "Where the interior depth of any storage tank exceeds 2 m, access ladders shall be installed."
+    }
    ]
   },
   {
    "id": 311,
    "model": "deepseek:deepseek-chat",
-   "seconds": 3.6,
-   "error": "provider error 402",
+   "seconds": 3.3,
+   "error": null,
    "retrieved": [
     {
      "file": "as 3500.2-2003 plumbing and drainage - sanitary plumbing and · 057 5.3 concrete support for drains p70.md",
@@ -20386,13 +20645,45 @@
      "source": "3500.2-2018_V3  Plumbing and drainage - Sanitary plumbing and drainage-已解锁.pdf",
      "page": 27
     }
+   ],
+   "status": "not_held",
+   "answer": "The 2025 edition of AS/NZS 3500.2 is not held in the knowledge base, so no figure can be given from it. The latest published edition held is AS/NZS 3500.2:2021 (i.e. AS 3500.2-2021, edition_status: published). Every excerpt that states the concrete pad thickness is from a superseded edition (2003, 2015, 2018) or the 2021 published edition: each of them reads 'Concrete pads used to support drains shall be a minimum of 100 mm thick' (Clause 5.3). Because the question asks specifically about the 2025 edition, this value is not confirmed for that edition from the library: check AS/NZS 3500.2:2025 Clause 5.3 in the source, since the library is behind.",
+   "values": [
+    "100 mm (AS/NZS 3500.2:2021 and earlier superseded editions only — not verified for the 2025 edition)"
+   ],
+   "edition_used": "AS/NZS 3500.2:2021 (published, latest held); 2025 edition not held — superseded excerpts (2003/2015/2018) agree",
+   "citations": [
+    {
+     "document": "AS NZS 3500.2-2021 — Plumbing and drainage, Part 2: Sanitary plumbing and drainage",
+     "clause": "5.3",
+     "page": 79,
+     "quote": "Concrete pads used to support drains shall be a minimum of 100 mm thick and be laid —"
+    },
+    {
+     "document": "AS 3500.2-2018_V3 Plumbing and drainage - Sanitary plumbing and drainage",
+     "clause": "5.3",
+     "page": 71,
+     "quote": "Concrete pads used to support drains shall be a minimum of 100 mm thick and shall be laid—"
+    },
+    {
+     "document": "AS 3500.2-2015 Plumbing and drainage - Sanitary plumbing and drainage",
+     "clause": "5.3",
+     "page": 68,
+     "quote": "Concrete pads used to support drains shall be a minimum of 100 mm thick and shall be laid—"
+    },
+    {
+     "document": "AS/NZS 3500.2:2003 Plumbing and drainage - Sanitary plumbing and drainage",
+     "clause": "5.3",
+     "page": 70,
+     "quote": "Concrete pads used to support drains shall be a minimum of 100 mm thick and shall be laid—"
+    }
    ]
   },
   {
    "id": 312,
    "model": "deepseek:deepseek-chat",
-   "seconds": 5.9,
-   "error": "provider error 402",
+   "seconds": 3.1,
+   "error": null,
    "retrieved": [
     {
      "file": "as 3500.2-2015 · 027 3.5 laying of drains p20-21.md",
@@ -20434,13 +20725,37 @@
      "source": "AS 3500.2-2003 Plumbing and Drainage - Sanitary Plumbing and Drainage Amended.pdf",
      "page": 44
     }
+   ],
+   "status": "not_held",
+   "answer": "The library does not hold AS/NZS 3500.2:2025. The excerpts cover AS/NZS 3500.2:2003, 2015 and 2018 (all superseded), plus the 2021 edition (published). The 2025 edition requested is not in the library, so no figure is given for it under that edition. For information only, the same Clause 3.5.2(b) wording appears in the older editions held, requiring “a minimum clearance of 100 mm ... between an open channel, pipeline or conduit and the drain” — but that is the 2021 and earlier text, not verified for 2025. Treat the 2025 requirement as unverified until the 2025 edition is obtained.",
+   "values": [],
+   "edition_used": "AS/NZS 3500.2:2025 — not held. Excerpts are from superseded 2003/2015/2018 editions and the 2021 edition (published).",
+   "citations": [
+    {
+     "document": "AS NZS 3500.2-2021 — Plumbing and drainage, Part 2: Sanitary plumbing and drainage",
+     "clause": "3.5.2(b)",
+     "page": 31,
+     "quote": "In an easement, a minimum clearance of 100 mm shall be maintained between an open channel, pipeline or conduit and the drain."
+    },
+    {
+     "document": "AS 3500.2-2015 — AS/NZS 3500.2:2015 Plumbing and drainage - Sanitary plumbing and drainage (superseded)",
+     "clause": "3.5.2(b)",
+     "page": 21,
+     "quote": "In an easement, a minimum clearance of 100 mm shall be maintained between an open channel, pipeline or conduit and the drain."
+    },
+    {
+     "document": "3500.2-2018_V3 Plumbing and drainage - Sanitary plumbing and drainage — AS/NZS 3500.2:2018 (superseded)",
+     "clause": "3.5.2(b)",
+     "page": 25,
+     "quote": "In an easement, a minimum clearance of 100 mm shall be maintained between an open channel, pipeline or conduit and the drain."
+    }
    ]
   },
   {
    "id": 313,
    "model": "deepseek:deepseek-chat",
-   "seconds": 4.4,
-   "error": "provider error 402",
+   "seconds": 2.7,
+   "error": null,
    "retrieved": [
     {
      "file": "as 3500.2-2015 · 032 3.10 unvented branch drains p28-31.md",
@@ -20482,13 +20797,41 @@
      "source": "AS NZS 3500.2-2021.pdf",
      "page": 56
     }
+   ],
+   "status": "not_held",
+   "answer": "The library does not hold AS/NZS 3500.2:2025. The only editions in the excerpts are AS/NZS 3500.2:2003, 2015, 2018 (all superseded) and 2021 (published). Clause 3.10.4 in every held edition states the same values — maximum two vertical jump-ups, each not exceeding 2 m in height, separated by not less than 300 mm of graded pipe — but these figures apply to the edition cited, not to the 2025 edition. The 2025 figures cannot be confirmed from the library; check the 2025 edition.",
+   "values": [
+    "maximum of two vertical jump-ups",
+    "each vertical jump-up not exceeding 2 m in height",
+    "not less than 300 mm of graded pipe between jump-ups"
+   ],
+   "edition_used": "AS/NZS 3500.2:2021 (published) and AS/NZS 3500.2:2003/2015/2018 (superseded) — AS/NZS 3500.2:2025 not held",
+   "citations": [
+    {
+     "document": "AS NZS 3500.2-2021 — Plumbing and drainage, Part 2: Sanitary plumbing and drainage",
+     "clause": "3.10.4",
+     "page": 40,
+     "quote": "Where the fixture discharge pipe is the same size as the unvented branch drain to which it connects, the drain to the trap shall have a maximum of two vertical jump-ups, each not exceeding 2 m in height, and separated by not less than 300 mm of graded pipe."
+    },
+    {
+     "document": "AS 3500.2-2015 — AS/NZS 3500.2:2015 Plumbing and drainage - Sanitary plumbing and drainage (superseded)",
+     "clause": "3.10.4",
+     "page": 31,
+     "quote": "the drain to the trap shall have a maximum of two vertical jump-ups, each not exceeding 2 m in height, and separated by not less than 300 mm of graded pipe."
+    },
+    {
+     "document": "AS 3500.2-2003 Plumbing and Drainage - Sanitary Plumbing and Drainage Amended (superseded)",
+     "clause": "3.10.4",
+     "page": 30,
+     "quote": "each not exceeding 2 m in height, and separated by not less than 300 mm of graded pipe."
+    }
    ]
   },
   {
    "id": 314,
    "model": "deepseek:deepseek-chat",
-   "seconds": 3.7,
-   "error": "provider error 402",
+   "seconds": 3.1,
+   "error": null,
    "retrieved": [
     {
      "file": "ncc 2025 volume one · 226 wa part f9 changes to as-nzs 3500.3-2021 [f9d1–f9d2] p926-927.md",
@@ -20530,13 +20873,40 @@
      "source": "AS 3500.3-2015.pdf",
      "page": 83
     }
+   ],
+   "status": "not_held",
+   "answer": "The library does not hold AS/NZS 3500.3:2025. The most recent edition held is AS/NZS 3500.3:2021 (published), which states in Clause 7.5.3(b), p.94: 'Sump pits shall have a flat floor but a fall of at least 20 mm between pipe inverts, as shown in Figure 7.5.3 (b).' That is, the required fall between pipe inverts is at least 20 mm, and a sump pit requires a flat floor (contrasted with pits without a sump, whose floor must be graded to fall at least 20 mm between the inverts of the inlet and outlet pipes). The same wording appears unchanged in the superseded AS/NZS 3500.3:2018 (Clause 7.5.3, p.85) and AS/NZS 3500.3:2015 (Clause 7.5.3, p.83); the 2021 figure should be confirmed against the 2025 edition, which is not held.",
+   "values": [
+    "at least 20 mm fall between pipe inverts",
+    "sump pits: flat floor"
+   ],
+   "edition_used": "AS/NZS 3500.3:2021 (most recent edition held; AS/NZS 3500.3:2025 not held)",
+   "citations": [
+    {
+     "document": "AS NZS 3500.3-2021 — Plumbing and drainage, Part 3: Stormwater drainage",
+     "clause": "7.5.3(b)",
+     "page": 94,
+     "quote": "Pits without a sump, as shown in Figure 7.5.3 (a), shall have the floor graded to fall at least 20 mm between the inverts of the inlet and outlet pipes. Sump pits shall have a flat floor but a fall of at least 20 mm between pipe inverts, as shown in Figure 7.5.3 (b)."
+    },
+    {
+     "document": "AS/NZS 3500.3:2018 Plumbing and drainage - Stormwater drainage",
+     "clause": "7.5.3(b)",
+     "page": 85,
+     "quote": "Sump pits shall have a flat floor, but a fall of at least 20 mm between pipe inverts, as shown in Figure 7.5.3(b)."
+    },
+    {
+     "document": "AS/NZS 3500.3:2015 Plumbing and drainage - Stormwater drainage",
+     "clause": "7.5.3(b)",
+     "page": 83,
+     "quote": "Sump pits shall have a flat floor, but a fall of at least 20 mm between pipe inverts, as shown in Figure 7.5.3(b)."
+    }
    ]
   },
   {
    "id": 315,
    "model": "deepseek:deepseek-chat",
-   "seconds": 3.7,
-   "error": "provider error 402",
+   "seconds": 2.9,
+   "error": null,
    "retrieved": [
     {
      "file": "as 3500.3 plumbing and drainage - stormwater drainage · 080 9.3 wet wells p95-96.md",
@@ -20578,13 +20948,28 @@
      "source": "3500.3-2018  Plumbing and drainage - Stormwater drainage.pdf",
      "page": 95
     }
+   ],
+   "status": "not_held",
+   "answer": "The library does not hold AS/NZS 3500.3:2025. The latest edition in the library is AS/NZS 3500.3:2021 (edition_status: published), which states at Clause 8.3.6 that the minimum wet well storage between the high and low working levels, expressed in cubic metres, \"shall be 1 % of the catchment area in m2 and not less than 3 m3\". Earlier, superseded editions (2018, 2015, 2003) carry the same rule. Because the edition asked for (2025) is not in the library, this figure is given only from the 2021 edition and should not be treated as the 2025 requirement — check the 2025 edition before using the value.",
+   "values": [
+    "1% of the catchment area in m2",
+    "not less than 3 m3"
+   ],
+   "edition_used": "AS/NZS 3500.3:2021 — published edition; the 2025 edition is not held. (2018, 2015 and 2003 editions cited in the excerpts are superseded.)",
+   "citations": [
+    {
+     "document": "AS NZS 3500.3-2021 — Plumbing and drainage, Part 3: Stormwater drainage",
+     "clause": "8.3.6",
+     "page": 104,
+     "quote": "The minimum wet well storage between the high and low working levels, expressed in cubic metres, shall be 1 % of the catchment area in m2 and not less than 3 m3."
+    }
    ]
   },
   {
    "id": 316,
    "model": "deepseek:deepseek-chat",
    "seconds": 2.9,
-   "error": "provider error 402",
+   "error": null,
    "retrieved": [
     {
      "file": "ncc 2025 volume two · 089 wa part h10 changes to as-nzs 3500.3-2021 [h10d1–h10d2] p323-324.md",
@@ -20625,6 +21010,21 @@
      "file": "as nzs 3500.3-2021 · 033 3.7 box gutter systems p39-50.md",
      "source": "AS NZS 3500.3-2021.pdf",
      "page": 50
+    }
+   ],
+   "status": "not_held",
+   "answer": "AS/NZS 3500.3:2025 is not held in the knowledge base; the latest edition held is AS/NZS 3500.3:2021 (published), with 2018, 2015 and 2003 editions also held but superseded. Under the held 2021 edition, Clause 3.7.8 (Downpipes) states: \"Downpipes shall be at least 90 mm in diameter or 100 mm × 50 mm rectangular downpipe, be fitted vertically to the base of a rainhead or sump, and discharge to —\". So the 2021 minimums are 90 mm circular diameter and 100 mm × 50 mm for a rectangular downpipe — these are from the 2021 edition, not 2025. Note also that no excerpt from Clause 3.7.8 of the 2025 edition is present, so the 2025 figure cannot be confirmed from this library. (A related but distinct provision is the WA variation to AS/NZS 3500.3 Table 3.5.2 for eaves gutter downpipe sizing, which tabulates circular sizes from 65 mm upward depending on gutter cross-sectional area — that is a state variation to clause 3.5.2, not clause 3.7.8.)",
+   "values": [
+    "90 mm circular (AS/NZS 3500.3:2021, cl. 3.7.8)",
+    "100 mm × 50 mm rectangular (AS/NZS 3500.3:2021, cl. 3.7.8)"
+   ],
+   "edition_used": "AS/NZS 3500.3:2021 (published, not superseded within the library); AS/NZS 3500.3:2025 not held",
+   "citations": [
+    {
+     "document": "AS NZS 3500.3-2021 — Plumbing and drainage, Part 3: Stormwater drainage",
+     "clause": "3.7.8",
+     "page": 50,
+     "quote": "Downpipes shall be at least 90 mm in diameter or 100 mm × 50 mm rectangular downpipe, be fitted"
     }
    ]
   }

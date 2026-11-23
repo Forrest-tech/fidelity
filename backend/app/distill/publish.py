@@ -52,11 +52,13 @@ class Publisher:
     # --- stage ------------------------------------------------------------------------
     def stage(self, key: str, files: dict):
         """files: {relative path inside the document (or '' for a single-file document): bytes}"""
-        sizes = {}
-        for rel, data in files.items():
-            dest = self._staged(key) + (f"/{rel}" if rel else "")
-            self.s.upload(dest, data)
-            sizes[rel] = len(data)
+        sizes = {rel: len(data) for rel, data in files.items()}
+        paths = {self._staged(key) + (f"/{rel}" if rel else ""): data for rel, data in files.items()}
+        if hasattr(self.s, "upload_many"):                 # Dropbox: parallel sessions, one commit
+            self.s.upload_many(paths)
+        else:
+            for dest, data in paths.items():
+                self.s.upload(dest, data)
         with _STAGE_LOCK:                      # documents are staged from several upload threads at once
             self.docs[key] = {"files": sizes, "state": "staged", "archived": []}
             self._save()
@@ -82,7 +84,11 @@ class Publisher:
     def promote(self, replaces: dict | None = None):
         """Move every staged document into the live folder. `replaces` maps a key to the other
         live paths (relative to live) it supersedes, e.g. a document that switched between
-        single file and chapter folder. All documents are validated first; nothing moves if any fails."""
+        single file and chapter folder. All documents are validated first; nothing moves if any fails.
+
+        What a document replaces is deleted into the storage's own history (Dropbox "deleted files", the Drive
+        trash) after its restore handles are written to this run's record, so undo brings it back and no archive
+        folder sits next to the library. A store without that history keeps the archive folder."""
         bad = {k: p for k in self.docs if self.docs[k]["state"] == "staged" for p in [self.validate(k)] if p}
         if bad:
             raise PublishError(f"validation failed, nothing promoted: {bad}")
@@ -90,61 +96,86 @@ class Publisher:
             if d["state"] != "staged":
                 continue
             for old in [key] + list((replaces or {}).get(key, [])):
-                if old in d["archived"]:
-                    continue                                         # moved before a dropped connection
+                if old in d["archived"] or old in {t["key"] for t in d.get("trashed", [])}:
+                    continue                                         # done before a dropped connection
                 if self.s.list(self._live(old)):
-                    self._move(self._live(old), self._arch(old))     # previous version kept
-                    d["archived"].append(old)
-                    self._save()
+                    self._put_away(d, old)
             self._move(self._staged(key), self._live(key))
             d["state"] = "promoted"
             self._save()
+        self._tidy_staging()
+
+    def _history(self) -> bool:
+        return hasattr(self.s, "revisions") and hasattr(self.s, "restore")
+
+    def _put_away(self, d: dict, old: str):
+        """The previous version of `old` leaves the live folder, restorable by rollback."""
+        if self._history():
+            d.setdefault("trashed", []).append({"key": old, "tokens": self.s.revisions(self._live(old))})
+            self._save()                                             # the way back is on disk before anything goes
+            self._retry(lambda: self.s.delete(self._live(old)), done=lambda: not self.s.list(self._live(old)))
+        else:
+            self._move(self._live(old), self._arch(old))
+            d["archived"].append(old)
+        self._save()
+
+    def _tidy_staging(self):
+        """Staging holds a run only while it is published: the empty folders it leaves go too."""
+        drop = getattr(self.s, "drop_empty", None)
+        if drop is None:
+            return
+        try:
+            drop(f"{self.staging}/{self.run}")
+            drop(self.staging)
+        except Exception as e:                     # noqa: BLE001 - tidying never fails a publish
+            print(f"  staging folder left in place: {type(e).__name__}: {e}", flush=True)
 
     BACKOFF = (2, 5, 15, 30, 60)
 
     def _move(self, src: str, dst: str):
         """A server-side move that survives a dropped connection (requirements v2 S-2): retried on network errors,
         and a move the server finished although its answer was lost counts as done instead of failing on retry."""
+        self._retry(lambda: self.s.move(src, dst), done=lambda: bool(self.s.list(dst)) and not self.s.list(src))
+
+    def _retry(self, fn, done):
         import time
         from .sync import _transient
         for n in range(len(self.BACKOFF) + 1):
             try:
-                return self.s.move(src, dst)
+                return fn()
             except Exception as e:                 # noqa: BLE001
-                if self.s.list(dst) and not self.s.list(src):
+                if done():
                     return None                    # it went through; only the answer was lost
                 if n == len(self.BACKOFF) or not _transient(e):
                     raise
                 time.sleep(self.BACKOFF[n])
 
     def withdraw(self, key: str, also: list | None = None):
-        """Take a document out of the live folder: it moves to the archive (nothing is deleted) and the same
+        """Take a document out of the live folder (into the storage's history, or the archive folder) and the same
         rollback brings it back. Used for a second copy of an edition that is already published."""
         d = self.docs.setdefault(key, {"state": "withdrawn", "archived": [], "files": {}})
         d["state"] = "withdrawn"
         for old in [key] + list(also or []):
             if self.s.list(self._live(old)):
-                self._move(self._live(old), self._arch(old))
-                d["archived"].append(old)
+                self._put_away(d, old)
         self._save()
-        return d["archived"]
+        return d["archived"] + [t["key"] for t in d.get("trashed", [])]
 
     # --- rollback ---------------------------------------------------------------------
     def rollback(self):
-        """Undo this run: new versions are moved back to staging, previous versions restored."""
+        """Undo this run: new versions leave the live folder, previous versions come back."""
         for key, d in self.docs.items():
-            if d["state"] == "withdrawn":
-                for old in d["archived"]:
-                    self._move(self._arch(old), self._live(old))
-                d["state"] = "rolled_back"
-                self._save()
+            if d["state"] not in ("promoted", "withdrawn"):
                 continue
-            if d["state"] != "promoted":
-                continue
-            if self.s.list(self._live(key)):
-                self._move(self._live(key), f"{self.staging}/{self.run}-rolled-back/{key}")
-            for old in d["archived"]:
+            if d["state"] == "promoted" and self.s.list(self._live(key)):
+                if self._history():
+                    self._retry(lambda: self.s.delete(self._live(key)), done=lambda: not self.s.list(self._live(key)))
+                else:
+                    self._move(self._live(key), f"{self.staging}/{self.run}-rolled-back/{key}")
+            for old in d["archived"]:                                # records written before 2026-11-23
                 self._move(self._arch(old), self._live(old))
+            for t in d.get("trashed", []):
+                self.s.restore(t["tokens"])
             d["state"] = "rolled_back"
             self._save()
 

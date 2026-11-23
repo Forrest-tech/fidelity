@@ -243,6 +243,46 @@ class SafeWriter:
         self.check(path)
         self.dbx.files_delete_v2(path)
 
+    def upload_many(self, items: dict, workers: int = 6):
+        """Upload many files the way Dropbox recommends for bulk writes: each file's bytes go up in its own upload
+        session, several at once, and all of them are committed in one batch (one write lock instead of one per
+        file). A dropped connection is retried for that one file, not for the whole document. Measured 2026-11-23:
+        one request per file took ~10 s per file on this VM's flaky TLS link, and one drop restarted a document."""
+        import concurrent.futures as cf
+
+        from dropbox.files import CommitInfo, UploadSessionCursor, UploadSessionFinishArg, WriteMode
+
+        from .sync import _retry
+        for p in items:
+            self.check(p)
+
+        def start(item):
+            path, data = item
+            sid = _retry(lambda: self.dbx.files_upload_session_start(data, close=True).session_id, f"upload {path}")
+            return UploadSessionFinishArg(UploadSessionCursor(sid, len(data)), CommitInfo(path, mode=WriteMode.overwrite, mute=True))
+
+        with cf.ThreadPoolExecutor(max(1, min(workers, len(items)))) as ex:
+            entries = list(ex.map(start, items.items()))
+        for i in range(0, len(entries), 1000):
+            part = entries[i:i + 1000]
+            res = _retry(lambda: self.dbx.files_upload_session_finish_batch_v2(part), "commit")
+            bad = [e.commit.path for e, r in zip(part, res.entries) if r.is_failure() and not self._has(e.commit.path, e.cursor.offset)]
+            if bad:
+                raise RuntimeError(f"Dropbox did not take {len(bad)} file(s), e.g. {bad[0]}")
+        self.written += list(items)
+
+    def _has(self, path, size) -> bool:
+        """The file is there with this size (a retried commit whose first answer was lost)."""
+        try:
+            return getattr(self.dbx.files_get_metadata(path), "size", -1) == size
+        except Exception:                          # noqa: BLE001
+            return False
+
+    def restore(self, path, rev):
+        """Bring back one deleted file at the revision it had (Dropbox keeps deleted files): inside output roots only."""
+        self.check(path)
+        self.dbx.files_restore(path, rev)
+
     def upload_tree(self, local_root, dest_prefix=None, log=print):
         prefix = dest_prefix or self.dest_root
         n = 0
@@ -354,11 +394,47 @@ class DropboxStore:
     def upload(self, path, data):
         self.w.upload(path, data)
 
+    def upload_many(self, items: dict):
+        self.w.upload_many(items)
+
     def move(self, src, dst):
         self.w.move(src, dst)
 
     def delete(self, path):
         self.w.delete(path)
+
+    def revisions(self, path):
+        """[[path, rev], …] for every file under `path`: what rollback needs to bring them back after a delete."""
+        import dropbox
+        try:
+            res = self.w.dbx.files_list_folder(path, recursive=True)
+        except dropbox.exceptions.ApiError:
+            try:
+                md = self.w.dbx.files_get_metadata(path)
+                return [[md.path_display, md.rev]] if isinstance(md, dropbox.files.FileMetadata) else []
+            except dropbox.exceptions.ApiError:
+                return []
+        out = []
+        while True:
+            out += [[e.path_display, e.rev] for e in res.entries if isinstance(e, dropbox.files.FileMetadata)]
+            if not res.has_more:
+                return out
+            res = self.w.dbx.files_list_folder_continue(res.cursor)
+
+    def restore(self, tokens):
+        for path, rev in tokens:
+            self.w.restore(path, rev)
+
+    def drop_empty(self, path):
+        """Delete a folder that holds no files any more (a published run's staging); a missing one is fine."""
+        import dropbox
+        if self.list(path):
+            return False
+        try:
+            self.w.delete(path)
+            return True
+        except dropbox.exceptions.ApiError:
+            return False
 
     def list(self, path):
         import dropbox
