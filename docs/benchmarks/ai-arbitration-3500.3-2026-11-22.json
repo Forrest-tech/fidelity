@@ -1,0 +1,33 @@
+{
+ "date": "2026-11-22",
+ "model": "deepseek-chat",
+ "scan": "AS-NZS_3500.3-2021 Printed.pdf",
+ "truth": "AS NZS 3500.3-2021.pdf",
+ "cases": 59,
+ "seconds": 109,
+ "cost_usd": 0.0,
+ "tally": {
+  "words": {
+   "right": 26,
+   "wrong": 5,
+   "abstain": 2,
+   "confident_right": 15,
+   "confident_wrong": 1,
+   "n": 33,
+   "accuracy_when_decided": 0.8387,
+   "accuracy_at_0.9": 0.9375,
+   "coverage_at_0.9": 0.4848
+  },
+  "digits": {
+   "right": 23,
+   "wrong": 3,
+   "abstain": 0,
+   "confident_right": 13,
+   "confident_wrong": 0,
+   "n": 26,
+   "accuracy_when_decided": 0.8846,
+   "accuracy_at_0.9": 1.0,
+   "coverage_at_0.9": 0.5
+  }
+ }
+}
