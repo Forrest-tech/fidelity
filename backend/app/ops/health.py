@@ -97,8 +97,26 @@ def alerts(r: dict | None = None) -> list[dict]:
     if failed >= FAIL_MIN and runs["failure_rate"] >= FAIL_RATE_WARN:
         out.append({"key": f"runs:{failed}", "level": "warn", "kind": "runs_failing", "failed": failed,
                     "total": runs["total"], "rate": runs["failure_rate"]})
+    credit = _ai_out_of_credit()
+    if credit:
+        out.append({"key": f"ai_credit:{credit}", "level": "bad", "kind": "ai_credit", "provider": credit})
     out.sort(key=lambda a: 0 if a["level"] == "bad" else 1)
     return out
+
+
+def _ai_out_of_credit() -> str:
+    """The provider of the latest AI call, when that call failed because the account has no credit (HTTP 402):
+    every AI suggestion stops until someone tops it up, so say so instead of letting calls fail quietly."""
+    try:
+        con = db.trust_rw()
+        try:
+            r = con.execute("SELECT provider, status, message FROM ai_call WHERE status IN ('ok','error','invalid','cached') "
+                            "ORDER BY created_at DESC LIMIT 1").fetchone()
+        finally:
+            con.close()
+    except Exception:                                   # noqa: BLE001 - no AI table yet
+        return ""
+    return (r["provider"] or "AI") if r and r["status"] == "error" and "no credit" in (r["message"] or "") else ""
 
 
 def metrics() -> str:

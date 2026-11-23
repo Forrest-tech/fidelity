@@ -401,7 +401,8 @@
           "backup_none": "点下面的「立即备份」。",
           "backup_failed": "查看下面的原因，再点「立即备份」。",
           "backup_old": "服务器是否一直在运行？点「立即备份」。",
-          "runs_failing": "打开失败的蒸馏室看原因。"
+          "runs_failing": "打开失败的蒸馏室看原因。",
+          "ai_credit": "请到服务商网站充值；充值前 AI 建议会暂停。"
         },
         "server": "服务器",
         "version": "版本",
@@ -431,7 +432,9 @@
         "minutes": "{{n}} 分钟"
       },
       "ocrProtected": "禁止复制的 PDF",
-      "ocrProtectedLong": "对禁止复制文字的 PDF,直接读取它自带的文字层（出版方的原文），并像其他 PDF 一样与页面图像对照校验。只用于公司有授权的内容。"
+      "ocrProtectedLong": "对禁止复制文字的 PDF,直接读取它自带的文字层（出版方的原文），并像其他 PDF 一样与页面图像对照校验。只用于公司有授权的内容。",
+      "mailMe": "把铃铛里的新消息也发到我的邮箱（新消息合并成一封）",
+      "mailNotReady": "还没有设置邮件服务器（设置 → 邮件），暂时不会发送。"
     },
     "users": {
       "title": "用户",
@@ -1217,7 +1220,8 @@
           "backup_none": "还没有备份",
           "backup_failed": "最近一次备份校验没通过",
           "backup_old": "超过 36 小时没有备份",
-          "runs_failing": "最近的运行有 {{failed}}/{{total}} 次失败（{{pct}}%）"
+          "runs_failing": "最近的运行有 {{failed}}/{{total}} 次失败（{{pct}}%）",
+          "ai_credit": "AI 服务商账户余额已用完"
         }
       },
       "signup": {
