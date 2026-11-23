@@ -428,7 +428,9 @@
         "metrics": "Monitoring: /api/v1/system/metrics serves Prometheus-format figures (administrator sign-in needed).",
         "backupSize": "{{mb}} MB · {{count}} files",
         "minutes": "{{n}} minutes"
-      }
+      },
+      "ocrProtected": "Copy-protected PDFs",
+      "ocrProtectedLong": "Read PDFs that forbid copying their text from images of their pages (both OCR engines, checked like a scan; the images are never saved). Only for content the company is licensed to use."
     },
     "users": {
       "title": "Users",
@@ -856,7 +858,7 @@
       "reasonLong": {
         "network": "The connection to the cloud storage dropped and did not come back within about 3.5 minutes. Nothing is wrong with the file; the next run tries it again.",
         "download": "The cloud storage refused the download (no access to this file).",
-        "protected": "The PDF's own settings forbid copying its text (a permission set by its publisher, not a password to open it). Its text is not extracted. Keep an unlocked copy of it in the same folder, named like \"name-已解锁.pdf\", and that copy is distilled instead.",
+        "protected": "The PDF's own settings forbid copying its text (a permission set by its publisher, not a password to open it). Its text is not extracted. Keep an unlocked copy of it in the same folder, named like \"name-已解锁.pdf\", and that copy is distilled instead. You can also switch on reading such files from page images in Settings → Defaults.",
         "covered": "This room holds several copies of the same edition (a printed scan and a searchable copy, a protected original and an unlocked copy); only the best one is published, so this one needs nothing more.",
         "duplicate": "The input folder holds this exact file twice (same content, another place). It is distilled once, from the other copy.",
         "unreadable": "The file is damaged or not a valid document.",
