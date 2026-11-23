@@ -43,7 +43,7 @@
     "setupConfirm": "Confirm password",
     "setupSubmit": "Create administrator and sign in",
     "setupMismatch": "The two passwords do not match.",
-    "setupPassword": "The password must be at least 10 characters.",
+    "setupPassword": "The password must be at least 8 characters.",
     "heading": "Sign in to Fidelity",
     "subheading": "Use your work account or your email and password.",
     "continueWith": "Continue with {{provider}}",
@@ -78,8 +78,8 @@
       "oauth_pending": "Thanks — your request is with an administrator. You can sign in once it is approved."
     },
     "setupEmailHint": "This becomes the administrator's sign-in.",
-    "setupPasswordHint": "At least 10 characters.",
-    "setupPasswordShort": "Use at least 10 characters.",
+    "setupPasswordHint": "At least 8 characters.",
+    "setupPasswordShort": "Use at least 8 characters.",
     "confirmRequired": "Enter the password again.",
     "captchaChecking": "Checking you are not a robot…",
     "captchaReady": "Bot check passed",
@@ -323,6 +323,7 @@
         "appearance": "Appearance and language",
         "sections": "Settings sections",
         "system": "System health",
+        "captcha": "Human check",
         "email": "Email"
       },
       "groups": {
@@ -384,7 +385,7 @@
       "pwCurrent": "Current password",
       "pwNew": "New password",
       "pwAgain": "New password again",
-      "pwRule": "At least 10 characters.",
+      "pwRule": "At least 8 characters.",
       "pwMismatch": "The two new passwords are not the same.",
       "pwChanged": "Password changed.",
       "pwChange": "Change password",
@@ -442,7 +443,7 @@
       "role": "Role",
       "add": "Add a user",
       "create": "Create user",
-      "passwordHint": "At least 10 characters.",
+      "passwordHint": "At least 8 characters.",
       "intro": "Who can sign in, what they may do, and how they sign in. Viewers read; reviewers also run and fix; administrators also manage settings and users.",
       "you": "you",
       "roleOf": "Role of {{email}}",
@@ -463,7 +464,7 @@
       "err": {
         "exists": "A user with this email already exists.",
         "lastAdmin": "This is the only active administrator. Make someone else an administrator first.",
-        "password": "The password must be at least 10 characters.",
+        "password": "The password must be at least 8 characters.",
         "email": "Enter a valid email address.",
         "forbidden": "Only administrators can change users.",
         "network": "Could not save. Check your connection and try again."
@@ -1332,6 +1333,16 @@
     "tooMany": "Too many requests from this network. Try again later.",
     "closed": "New accounts are not open here: ask an administrator to add you.",
     "closedTitle": "Sign-up is closed"
+  },
+  "captchaSettings": {
+    "hint": "The \"I'm not a robot\" check on sign-in, sign-up and the password pages.",
+    "provider": "Check",
+    "altcha": "Built-in (works without internet)",
+    "siteKey": "Turnstile site key",
+    "secretKey": "Turnstile secret key",
+    "onTurnstile": "Cloudflare Turnstile is on. When Cloudflare cannot be reached, the built-in check stands in so nobody is locked out.",
+    "onAltcha": "The built-in check is on (no outside service).",
+    "howTo": "Cloudflare dashboard → Turnstile → Add widget: enter the address people open Fidelity at as the hostname, choose \"Managed\", then copy the site key and the secret key here."
   },
   "email": {
     "confirming": "Confirming your email address…",

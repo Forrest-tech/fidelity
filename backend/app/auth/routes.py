@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Form, Request
+from pydantic import BaseModel
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_users.router.common import ErrorCode
 
@@ -62,8 +63,35 @@ async def auth_options():
     """What the sign-in page offers: the configured providers, whether the captcha is required, and sign-up."""
     from . import signup
     from ..ops import mail
+    c = captcha.settings()
+    turnstile = captcha.enabled() and captcha.provider() == "turnstile"
     return {"providers": oauth.providers_public(), "captcha": captcha.enabled(), "signup": signup.enabled(),
-            "email": mail.configured()}
+            "email": mail.configured(), "captcha_provider": "turnstile" if turnstile else "altcha",
+            "turnstile_site_key": c["site_key"] if turnstile else None}
+
+
+class CaptchaIn(BaseModel):
+    provider: str | None = None
+    site_key: str | None = None
+    secret_key: str | None = None          # write-only; "" removes it
+
+
+@router.get("/admin/captcha", dependencies=[Depends(require_role())], tags=["settings"])
+async def get_captcha():
+    return captcha.public()
+
+
+@router.put("/admin/captcha", tags=["settings"])
+async def put_captcha(body: CaptchaIn, admin: User = Depends(require_role())):
+    from fastapi import HTTPException
+    try:
+        out = captcha.save(body.model_dump(exclude_unset=True))
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    if out["provider"] == "turnstile" and out["active"] != "turnstile":
+        raise HTTPException(status_code=422, detail="Turnstile needs both the site key and the secret key")
+    await guard.audit(admin.id, "captcha_settings_changed", out["active"])
+    return out
 
 
 router.include_router(oauth.router)

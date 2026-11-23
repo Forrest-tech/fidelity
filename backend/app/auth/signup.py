@@ -170,6 +170,8 @@ async def verify_email(body: TokenIn, request: Request, user_manager=Depends(get
         return {"status": "active" if user.is_active else PENDING}
     state = await _after_confirm(user_manager, user)
     await guard.audit(user.id, "email_confirmed", state)
+    from ..ops import notify_mail
+    await notify_mail.new_signup(user.email, state, request)
     return {"status": state}
 
 

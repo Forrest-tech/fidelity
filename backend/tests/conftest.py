@@ -31,6 +31,12 @@ os.makedirs(_config.CACHE_DIR, exist_ok=True)
 # defaults for new rooms live in the data folder: keep the tests' own copy
 from app.api import appsettings as _appsettings  # noqa: E402
 _appsettings.PATH = os.path.join(_TMP, "app_settings.json")
+# the mail server and the human-check provider are the owner's live settings too (found 2026-11-23: once SMTP was
+# set up on the server, sign-up tests on that machine switched to "confirm your e-mail first")
+from app.ops import mail as _mail  # noqa: E402
+_mail.PATH = os.path.join(_TMP, "email_settings.json")
+from app.auth import captcha as _captcha  # noqa: E402
+_captcha._settings_path = lambda: os.path.join(_TMP, "captcha_settings.json")
 
 
 def _reset_postgres():

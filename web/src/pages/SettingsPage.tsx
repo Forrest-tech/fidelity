@@ -12,8 +12,9 @@ import { CloudStorage, GoogleDrive } from "../components/CloudStorage";
 import { AiSettings } from "../components/AiSettings";
 import { CorrectionsPage } from "./CorrectionsPage";
 import { UsersPage } from "./UsersPage";
+import { PASSWORD_MIN } from "../auth/password";
 
-type Section = "storage" | "ai" | "defaults" | "queue" | "corrections" | "archive" | "users" | "notifications" | "audit" | "system" | "email" | "account" | "appearance";
+type Section = "storage" | "ai" | "captcha" | "defaults" | "queue" | "corrections" | "archive" | "users" | "notifications" | "audit" | "system" | "email" | "account" | "appearance";
 interface Item {
   key: Section;
   group: "connect" | "distill" | "team" | "personal";
@@ -23,6 +24,7 @@ const ITEMS: Item[] = [
   { key: "storage", group: "connect", admin: true },
   { key: "ai", group: "connect", admin: true },
   { key: "email", group: "connect", admin: true },
+  { key: "captcha", group: "connect", admin: true },
   { key: "defaults", group: "distill", admin: true },
   { key: "queue", group: "distill" },
   { key: "corrections", group: "distill" },
@@ -398,6 +400,65 @@ function EmailSettings() {
 }
 
 
+// ------------------------------------------------------------------ human check (Cloudflare Turnstile, 2026-11-23)
+interface CaptchaSettingsData { provider: "altcha" | "turnstile"; site_key: string; secret_set: boolean; active: "altcha" | "turnstile" }
+
+function CaptchaSettings() {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ["captcha-settings"], queryFn: () => api<CaptchaSettingsData>("/admin/captcha") });
+  const [draft, setDraft] = useState<{ provider?: "altcha" | "turnstile"; site_key?: string; secret_key?: string }>({});
+  const save = useMutation({
+    mutationFn: () => api<CaptchaSettingsData>("/admin/captcha", { ...json(draft), method: "PUT" }),
+    onSuccess: (d) => {
+      qc.setQueryData(["captcha-settings"], d);
+      setDraft({});
+      void qc.invalidateQueries({ queryKey: ["auth-options"] });
+    },
+  });
+  if (q.isLoading) return <Loading />;
+  if (q.isError) return <ErrorState message={(q.error as Error).message} />;
+  const s = { ...q.data!, ...draft };
+  const on = q.data!.active === "turnstile";
+  return (
+    <>
+      <PageHeader title={t("pages.settings.nav.captcha")} desc={t("captchaSettings.hint")} />
+      <div className="fx-note" role="status">
+        <Pill tone={on ? "ok" : "idle"}>{on ? "Turnstile" : "ALTCHA"}</Pill> {on ? t("captchaSettings.onTurnstile") : t("captchaSettings.onAltcha")}
+      </div>
+      <form className="fx-card fx-stack" style={{ padding: 14, gap: 10 }} onSubmit={(e) => { e.preventDefault(); save.mutate(); }}>
+        <div className="fx-row fx-wrap" style={{ gap: 8 }}>
+          <span className="fx-lab" style={{ width: 200 }}>{t("captchaSettings.provider")}</span>
+          <Seg label={t("captchaSettings.provider")} value={s.provider} onChange={(v) => setDraft((d) => ({ ...d, provider: v as "altcha" | "turnstile" }))}
+            options={[{ value: "turnstile", label: "Cloudflare Turnstile" }, { value: "altcha", label: t("captchaSettings.altcha") }]} />
+        </div>
+        <div className="fx-row fx-wrap" style={{ gap: 8 }}>
+          <label className="fx-lab" htmlFor="cap-site" style={{ width: 200 }}>{t("captchaSettings.siteKey")}</label>
+          <div className="fx-field sm" style={{ flex: 1, minWidth: 220 }}>
+            <input id="cap-site" autoComplete="off" value={s.site_key} placeholder="0x4AAAAAAA…" onChange={(e) => setDraft((d) => ({ ...d, site_key: e.target.value }))} />
+          </div>
+        </div>
+        <div className="fx-row fx-wrap" style={{ gap: 8 }}>
+          <label className="fx-lab" htmlFor="cap-secret" style={{ width: 200 }}>
+            {t("captchaSettings.secretKey")} {q.data!.secret_set ? <Pill tone="ok">{t("email.settings.savedTag")}</Pill> : null}
+          </label>
+          <div className="fx-field sm" style={{ flex: 1, minWidth: 220 }}>
+            <input id="cap-secret" type="password" autoComplete="new-password"
+              value={draft.secret_key ?? (q.data!.secret_set ? "••••••••" : "")}
+              onFocus={(e) => { if (draft.secret_key === undefined && q.data!.secret_set) e.currentTarget.select(); }}
+              onChange={(e) => setDraft((d) => ({ ...d, secret_key: e.target.value.replace(/•/g, "") }))} />
+          </div>
+        </div>
+        <div className="fx-tiny fx-muted">{t("captchaSettings.howTo")}</div>
+        {save.error && <div className="fx-errnote" role="alert">{(save.error as Error).message}</div>}
+        {save.isSuccess && !Object.keys(draft).length && <div className="fx-note" role="status">{t("email.settings.saved")}</div>}
+        <div><button className="fx-btn pri" type="submit" disabled={!Object.keys(draft).length || save.isPending}>{t("email.settings.save")}</button></div>
+      </form>
+    </>
+  );
+}
+
+
 function Account() {
   const { t } = useTranslation();
   const { me } = useAuth();
@@ -435,7 +496,7 @@ function Account() {
           {mismatch && <div className="fx-errnote">{t("pages.settings.pwMismatch")}</div>}
           {change.error && <div className="fx-errnote" role="alert">{(change.error as Error).message}</div>}
           {change.isSuccess && <div className="fx-note" role="status">{t("pages.settings.pwChanged")}</div>}
-          <div><button className="fx-btn pri" type="submit" disabled={!cur || next.length < 10 || mismatch || change.isPending}>{t("pages.settings.pwChange")}</button></div>
+          <div><button className="fx-btn pri" type="submit" disabled={!cur || next.length < PASSWORD_MIN || mismatch || change.isPending}>{t("pages.settings.pwChange")}</button></div>
         </div>
       </form>
     </>
@@ -485,6 +546,7 @@ const BODY: Record<Section, () => ReactNode> = {
   audit: () => <Audit />,
   system: () => <SystemHealth />,
   email: () => <EmailSettings />,
+  captcha: () => <CaptchaSettings />,
   account: () => <Account />,
   appearance: () => <Appearance />,
 };

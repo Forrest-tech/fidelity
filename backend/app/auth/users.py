@@ -35,6 +35,9 @@ async def get_user_db(session: AsyncSession = Depends(get_session)):
     yield SQLAlchemyUserDatabase(session, User, OAuthAccount)
 
 
+PASSWORD_MIN = 8          # owner 2026-11-23: no 10-character rule; 8 is the common minimum (NIST SP 800-63B)
+
+
 class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     reset_password_token_secret = SECRET
     verification_token_secret = SECRET
@@ -49,8 +52,8 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         mail.send(user.email, subject, text, html)
 
     async def validate_password(self, password, user):
-        if len(password) < 10:
-            raise InvalidPasswordException(reason="password must be at least 10 characters")
+        if len(password) < PASSWORD_MIN:
+            raise InvalidPasswordException(reason=f"password must be at least {PASSWORD_MIN} characters")
 
     async def update(self, user_update, user, safe=False, request=None):
         """User changes by an administrator: never leave the installation without an active administrator

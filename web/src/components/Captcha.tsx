@@ -1,5 +1,7 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "../net/client";
 
 /**
  * "I'm not a robot": the check people know from other sites — tick the box, it spins for a moment, a green
@@ -49,7 +51,7 @@ async function solveOnce(signal: AbortSignal): Promise<string> {
   return btoa(JSON.stringify({ challenge, solution }));
 }
 
-export const Captcha = forwardRef<CaptchaHandle, { onChange: (payload: string | null) => void; invalid?: boolean }>(function Captcha({ onChange, invalid }, ref) {
+const AltchaBox = forwardRef<CaptchaHandle, { onChange: (payload: string | null) => void; invalid?: boolean }>(function AltchaBox({ onChange, invalid }, ref) {
   const { t } = useTranslation();
   const [phase, setPhase] = useState<Phase>("idle");
   const run = useRef<AbortController | null>(null);
@@ -131,4 +133,110 @@ export const Captcha = forwardRef<CaptchaHandle, { onChange: (payload: string | 
       {note && <div id="fx-human-note" className="fx-human-note">{note}</div>}
     </div>
   );
+});
+
+
+// ------------------------------------------------------------------ Cloudflare Turnstile (owner's choice, 2026-11-23)
+interface TurnstileApi {
+  render: (el: HTMLElement, o: Record<string, unknown>) => string;
+  reset: (id: string) => void;
+  remove: (id: string) => void;
+}
+declare global {
+  interface Window { turnstile?: TurnstileApi }
+}
+
+const TURNSTILE_SRC = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+let turnstileLoad: Promise<TurnstileApi> | null = null;
+
+function loadTurnstile(): Promise<TurnstileApi> {
+  if (window.turnstile) return Promise.resolve(window.turnstile);
+  if (!turnstileLoad) {
+    turnstileLoad = new Promise<TurnstileApi>((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = TURNSTILE_SRC;
+      s.async = true;
+      const timer = window.setTimeout(() => reject(new Error("timeout")), 8000);
+      s.onload = () => {
+        window.clearTimeout(timer);
+        if (window.turnstile) resolve(window.turnstile);
+        else reject(new Error("no turnstile"));
+      };
+      s.onerror = () => {
+        window.clearTimeout(timer);
+        reject(new Error("blocked"));
+      };
+      document.head.appendChild(s);
+    }).catch((e) => {
+      turnstileLoad = null;          // try again on the next page
+      throw e;
+    });
+  }
+  return turnstileLoad;
+}
+
+const TurnstileBox = forwardRef<CaptchaHandle, { siteKey: string; onChange: (payload: string | null) => void; onUnavailable: () => void; invalid?: boolean }>(
+  function TurnstileBox({ siteKey, onChange, onUnavailable, invalid }, ref) {
+    const { t, i18n } = useTranslation();
+    const host = useRef<HTMLDivElement>(null);
+    const widget = useRef<string | null>(null);
+    const api_ = useRef<TurnstileApi | null>(null);
+
+    useEffect(() => {
+      let gone = false;
+      loadTurnstile().then(
+        (ts) => {
+          if (gone || !host.current) return;
+          api_.current = ts;
+          widget.current = ts.render(host.current, {
+            sitekey: siteKey,
+            language: i18n.language?.startsWith("zh") ? "zh-cn" : "en",
+            callback: (token: string) => onChange(`turnstile:${token}`),
+            "expired-callback": () => onChange(null),
+            "error-callback": () => {
+              onChange(null);
+              return true;
+            },
+          });
+        },
+        () => {
+          if (!gone) onUnavailable();             // no internet or Cloudflare blocked: the self-hosted check instead
+        },
+      );
+      return () => {
+        gone = true;
+        if (widget.current && api_.current) api_.current.remove(widget.current);
+        widget.current = null;
+      };
+    }, [siteKey, onChange, onUnavailable, i18n.language]);
+
+    useImperativeHandle(ref, () => ({
+      reset: () => {
+        onChange(null);
+        if (widget.current && api_.current) api_.current.reset(widget.current);
+      },
+      focus: () => host.current?.scrollIntoView({ block: "center" }),
+    }), [onChange]);
+
+    return (
+      <div className={`fx-turnstile${invalid ? " fx-human-invalid" : ""}`} aria-label={t("login.captchaGroup")}>
+        <div ref={host} data-testid="turnstile" />
+      </div>
+    );
+  },
+);
+
+/** The human check on sign-in, sign-up and the e-mail pages: Cloudflare Turnstile when an administrator has set it up
+ * (Settings → Human check), otherwise — and whenever Cloudflare cannot be reached — the self-hosted box above. */
+export const Captcha = forwardRef<CaptchaHandle, { onChange: (payload: string | null) => void; invalid?: boolean }>(function Captcha(props, ref) {
+  const opts = useQuery({
+    queryKey: ["auth-options"],
+    queryFn: () => api<{ captcha_provider?: string; turnstile_site_key?: string | null }>("/auth/options"),
+    staleTime: 300_000,
+  });
+  const [fallback, setFallback] = useState(false);
+  const unavailable = useCallback(() => setFallback(true), []);
+  const key = opts.data?.captcha_provider === "turnstile" ? opts.data.turnstile_site_key : null;
+  if (key && !fallback) return <TurnstileBox ref={ref} siteKey={key} onUnavailable={unavailable} {...props} />;
+  return <AltchaBox ref={ref} {...props} />;
 });

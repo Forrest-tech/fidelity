@@ -74,7 +74,8 @@ def creds(email="sec-reviewer@example.com", pw=PW, **extra):
 # ------------------------------------------------------------------ bot protection
 def test_options_report_captcha_and_no_providers_by_default(captcha_on):
     j = client().get("/api/v1/auth/options").json()
-    assert j == {"providers": [], "captcha": True, "signup": True, "email": False}
+    assert j == {"providers": [], "captcha": True, "signup": True, "email": False,
+                 "captcha_provider": "altcha", "turnstile_site_key": None}
 
 
 def test_login_without_captcha_is_refused_when_on(captcha_on):

@@ -48,6 +48,14 @@ def admin():
     asyncio.run(_mk(ADMIN, Role.admin))
 
 
+def _join_notices():
+    """Sign-up notices go out on a background thread: let them land in this test's outbox, not the next one's."""
+    import threading
+    for t in threading.enumerate():
+        if t.name == "signup-notice":
+            t.join(10)
+
+
 @pytest.fixture()
 def outbox(tmp_path, monkeypatch):
     box = tmp_path / "outbox"
@@ -59,6 +67,7 @@ def outbox(tmp_path, monkeypatch):
     guard.reset()
     captcha.reset()
     yield box
+    _join_notices()
     guard.reset()
     captcha.reset()
 
@@ -214,3 +223,58 @@ def test_the_sender_defaults_to_the_username_and_the_page_is_told_what_is_missin
     monkeypatch.setattr(mail, "PATH", str(tmp_path / "n.json"))
     out = mail.save({"host": "relay.office.local", "username": "relayuser"})
     assert out["from_address"] == "" and out["missing"] == ["from_address"] and not out["configured"]
+
+
+def _wait_mail(box, to, n=1, timeout=10):
+    import time
+    end = time.time() + timeout
+    while time.time() < end:
+        got = mails(box, to)
+        if len(got) >= n:
+            return got
+        time.sleep(0.1)
+    return mails(box, to)
+
+
+def test_administrators_are_told_at_once_when_someone_confirms_a_sign_up(outbox):
+    """Owner 2026-11-23: a new sign-up must reach the administrators by e-mail straight away, not only when the
+    five-minute digest happens to see it still waiting."""
+    from app.ops import notify_mail
+    c = client("10.1.0.20")
+    c.post("/api/v1/auth/signup", json={"email": "newcomer@else.example", "password": PW, "altcha": proof(c)})
+    ((_s, text),) = mails(outbox, "newcomer@else.example")
+    assert c.post("/api/v1/auth/verify-email", json={"token": link_token(text, "/verify-email")}).json() == {"status": "pending"}
+    got = [m for m in _wait_mail(outbox, ADMIN) if "newcomer@else.example" in m[0]]
+    assert got, mails(outbox, ADMIN)
+    subject, body = got[0]
+    assert "waiting for approval" in subject and "/settings/users" in body
+    import time
+    time.sleep(0.3)
+    # the digest does not repeat it as "1 sign-up waits"
+    con = notify_mail._con()
+    keys = {r[0] for r in con.execute("SELECT nkey FROM notification_mail WHERE user_email=?", (ADMIN,))}
+    con.close()
+    assert any(k.startswith("signup:") for k in keys)
+
+
+def test_an_administrator_who_switched_mail_off_gets_no_sign_up_notice(outbox):
+    from app.ops import notify_mail
+    notify_mail.set_wants_mail(ADMIN, False)
+    try:
+        c = client("10.1.0.21")
+        c.post("/api/v1/auth/signup", json={"email": "quiet@else.example", "password": PW, "altcha": proof(c)})
+        ((_s, text),) = mails(outbox, "quiet@else.example")
+        c.post("/api/v1/auth/verify-email", json={"token": link_token(text, "/verify-email")})
+        import time
+        time.sleep(1)
+        assert not [m for m in mails(outbox, ADMIN) if "quiet@else.example" in m[0]]
+    finally:
+        notify_mail.set_wants_mail(ADMIN, True)
+
+
+def test_an_eight_character_password_is_accepted(outbox):
+    c = client("10.1.0.22")
+    r = c.post("/api/v1/auth/signup", json={"email": "short.pw@else.example", "password": "abcd1234", "altcha": proof(c)})
+    assert r.status_code == 201, r.text
+    r = c.post("/api/v1/auth/signup", json={"email": "too.short@else.example", "password": "abc123", "altcha": proof(c)})
+    assert r.status_code in (400, 422)

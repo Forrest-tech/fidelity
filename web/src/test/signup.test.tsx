@@ -57,7 +57,7 @@ describe("sign-in and sign-up", () => {
     await u.type(screen.getByLabelText("Password"), "short");
     await u.type(screen.getByLabelText("Confirm password"), "other");
     await u.click(screen.getByRole("button", { name: "Create account" }));
-    expect(await screen.findByText(/at least 10/)).toBeInTheDocument();
+    expect(await screen.findByText(/at least 8/)).toBeInTheDocument();
     expect(calls.some((c) => c.url.endsWith("/auth/signup"))).toBe(false);
   });
 

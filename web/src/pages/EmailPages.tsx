@@ -8,6 +8,7 @@ import { ApiError, api, json } from "../net/client";
 import { Captcha } from "../components/Captcha";
 import type { CaptchaHandle } from "../components/Captcha";
 import { AuthFrame } from "./LoginPage";
+import { PASSWORD_MIN } from "../auth/password";
 
 const back = (t: (k: string) => string) => <Link to="/login"><Button type="primary">{t("signup.backToSignIn")}</Button></Link>;
 
@@ -165,7 +166,7 @@ export function ResetPasswordPage() {
           <Typography.Title level={1} className="fx-auth-h1">{t("email.resetTitle")}</Typography.Title>
           <Form layout="vertical" requiredMark={false} aria-label={t("email.resetTitle")} onFinish={(v) => void go(v)} validateTrigger="onBlur">
             <Form.Item name="password" label={t("email.newPassword")} htmlFor="reset-password" extra={t("login.setupPasswordHint")}
-              rules={[{ required: true, message: t("login.passwordRequired") }, { min: 10, message: t("login.setupPasswordShort") }]}>
+              rules={[{ required: true, message: t("login.passwordRequired") }, { min: PASSWORD_MIN, message: t("login.setupPasswordShort") }]}>
               <Input.Password id="reset-password" size="large" autoComplete="new-password" autoFocus prefix={<LockOutlined aria-hidden="true" className="fx-auth-icon" />} />
             </Form.Item>
             <Form.Item name="confirm" label={t("login.setupConfirm")} htmlFor="reset-confirm" dependencies={["password"]}
