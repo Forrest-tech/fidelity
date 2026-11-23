@@ -118,6 +118,18 @@ def _send_existing(email, request):
     mail.send(email, "Your Fidelity account / 你的 Fidelity 账号", text)
 
 
+def _send_still_pending(email, request):
+    from ..ops import mail
+    base = mail.site_url(request)
+    text = ("Someone asked to reset the password of the Fidelity account with this address. The account is still "
+            "waiting for an administrator's approval, so its password cannot be reset yet. Once it is approved you can "
+            f"sign in at {base}/login, or reset the password at {base}/forgot-password. If it was not you, ignore this "
+            "message.\n\n"
+            "有人申请重置这个邮箱对应的 Fidelity 账号的密码。这个账号还在等管理员批准，暂时不能重置密码。批准后即可登录，"
+            "或再重置密码。如果不是你，请忽略此邮件。")
+    mail.send(email, "Your Fidelity account is waiting for approval / 你的 Fidelity 账号正在等待批准", text)
+
+
 async def _after_confirm(user_manager, user):
     """The address is proven. Who still needs an administrator: Settings → Email → approval."""
     from ..ops import mail
@@ -190,7 +202,12 @@ async def forgot_password(body: EmailIn, request: Request, user_manager=Depends(
         raise HTTPException(status_code=400, detail=reason)
     try:
         user = await user_manager.get_by_email(body.email.strip().lower())
-        await user_manager.forgot_password(user, request)     # -> UserManager.on_after_forgot_password sends it
+        if user.approval == UNVERIFIED:            # not confirmed yet: the confirmation link is what they need
+            _send_confirmation(user, request)
+        elif user.approval == PENDING:             # cannot sign in or reset before approval: say so, not silence
+            _send_still_pending(user.email, request)
+        else:
+            await user_manager.forgot_password(user, request)  # -> UserManager.on_after_forgot_password sends it
         await guard.audit(user.id, "password_reset_requested", guard.client_ip(request))
     except (exceptions.UserNotExists, exceptions.UserInactive, mail.MailError):
         pass

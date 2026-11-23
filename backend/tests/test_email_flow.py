@@ -164,6 +164,19 @@ def test_asking_for_a_reset_reveals_nothing_and_needs_the_human_check(outbox):
     assert c.post("/api/v1/auth/forgot-password", json={"email": "ghost@example.com"}).json()["detail"] == "CAPTCHA_REQUIRED"
 
 
+def test_a_reset_asked_before_the_account_is_usable_gets_the_mail_that_helps(outbox):
+    c = client("10.1.1.3")
+    c.post("/api/v1/auth/signup", json={"email": "early@example.com", "password": PW, "altcha": proof(c)})
+    c.post("/api/v1/auth/forgot-password", json={"email": "early@example.com", "altcha": proof(c)})
+    first, again = mails(outbox, "early@example.com")
+    assert "/verify-email?token=" in again[1]                         # not confirmed yet: the confirmation link again
+    c.post("/api/v1/auth/verify-email", json={"token": link_token(again[1], "/verify-email")})
+    r = c.post("/api/v1/auth/forgot-password", json={"email": "early@example.com", "altcha": proof(c)})
+    assert r.json() == {"status": "sent_if_account"}                  # the same answer as for every address
+    subject, text = mails(outbox, "early@example.com")[-1]
+    assert "waiting for approval" in subject and "reset-password" not in text
+
+
 def test_without_a_mail_server_everything_falls_back_to_an_administrator(tmp_path, monkeypatch):
     monkeypatch.delenv("FIDELITY_MAIL_OUTBOX", raising=False)
     monkeypatch.setenv("FIDELITY_CAPTCHA", "off")

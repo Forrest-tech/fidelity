@@ -118,3 +118,14 @@ def test_metrics_are_in_prometheus_text_format(monkeypatch):
     text = H.metrics()
     assert "# TYPE fidelity_disk_free_bytes gauge" in text and "fidelity_jobs_queued 2" in text
     assert "fidelity_backup_verified 1" in text and text.endswith("\n")
+
+
+def test_a_backup_restores_into_a_folder_whose_paths_pass_the_windows_limit(tmp_path):
+    import zipfile
+    deep = "backend-data/work/rooms/r1/out/_pending/AS 3500/1990/" + "/".join(["A long section folder name " * 2] * 4) + "/p.md"
+    src = tmp_path / "b.zip"
+    with zipfile.ZipFile(src, "w") as z:
+        z.writestr(deep, "text")
+    target = tmp_path / ("restore-target-" + "x" * 60)
+    assert len(str(target / deep)) > 260
+    assert deep in BK.restore_to(str(src), str(target))

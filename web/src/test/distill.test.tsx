@@ -105,8 +105,10 @@ describe("distill page", () => {
     expect(save).toBeDisabled();                                                                    // needs the input folder
     await u.type(within(draft).getByLabelText(/^Input/), "/as 3500");
     await u.type(within(draft).getByLabelText(/^Output/), "/Transfer_Md/as 3500");
-    await waitFor(() => expect(save).toBeEnabled(), { timeout: 20_000 }); // the draft state settles after the last keystroke (slow on CI)
-    await u.click(save);
+    // look the button up again: the draft area may re-render while typing (the cloud check arrives), leaving `save` detached
+    const saveNow = () => within(screen.getByRole("region", { name: "New room (not saved)" })).getByRole("button", { name: "Save room" });
+    await waitFor(() => expect(saveNow()).toBeEnabled(), { timeout: 20_000 });
+    await u.click(saveNow());
     await waitFor(() => {
       const c = calls.find((x) => x.url.endsWith("/rooms") && x.init?.method === "POST");
       expect(JSON.parse(String(c?.init?.body))).toEqual({ prefix: "Room", source: "/as 3500", dest: "/Transfer_Md/as 3500", mode: "distill" });
