@@ -104,6 +104,11 @@ python -m app.distill.sync --source-link <…> --dest-link <…>
    常用入口——修正或删掉。
 4. 安装：
    - **Grok**：Skills → 打开 `au-compliance-kb` → 用 `adapters/dist/grok/au-compliance-kb.md` 替换全部内容。
+     只在蒸馏库替换了 `Md_Library` 之后才这样做：适配包里的目录说明描述的是生成它时用的那个库。员工现在用的版本
+     保存在 `adapters/installed/`。
+   - **Grok 试运行技能**（蒸馏库还在 `/Transfer_Md` 期间）：从 `/Transfer_Md` 的拷贝生成，加
+     `--house ../adapters/house_rules.trial.yaml --out ../adapters/dist-trial --tools grok`；然后 Skills → New →
+     名称 `au-compliance-kb-trial`，粘贴 description 和 front matter 下面的正文。对话开头说"用试运行库"即可选中它。
    - **Claude**：Settings → Capabilities → Skills → 上传 `adapters/dist/claude/au-compliance-kb/`（压缩成 zip）。
    - **Codex / Gemini CLI**：把 `AGENTS.md` / `GEMINI.md` 复制到同步到本地的知识库根目录。
 5. 问一个已知答案的问题（例如楼梯踏步高度，D3D14），确认适配包生效。

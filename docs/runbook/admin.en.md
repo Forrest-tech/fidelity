@@ -113,6 +113,12 @@ Regenerate whenever the library changes noticeably, or when `adapters/house_rule
    `house_rules.yaml` the library does not hold — fix or remove them.
 4. Install:
    - **Grok**: Skills → open `au-compliance-kb` → replace its content with `adapters/dist/grok/au-compliance-kb.md`.
+     Do this only once the distilled library has replaced `Md_Library`: the pack's library map describes the
+     library it was built from. The text staff use today is kept in `adapters/installed/`.
+   - **Grok trial skill** (while the distilled library is still in `/Transfer_Md`): build with
+     `--house ../adapters/house_rules.trial.yaml --out ../adapters/dist-trial --tools grok` from a copy of
+     `/Transfer_Md`, then Skills → New → name `au-compliance-kb-trial`, paste the description and the text below the
+     front matter. Start a chat with "use the trial library" to pick it.
    - **Claude**: Settings → Capabilities → Skills → upload `adapters/dist/claude/au-compliance-kb/` (zipped).
    - **Codex / Gemini CLI**: copy `AGENTS.md` / `GEMINI.md` into the synced knowledge-base root.
 5. Ask one known question (e.g. riser heights, D3D14) to confirm the pack works.

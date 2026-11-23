@@ -1,0 +1,12 @@
+# Trial skill: the newly distilled library in /Transfer_Md, installed in Grok NEXT TO the everyday
+# au-compliance-kb skill (which keeps reading /Library_Installation/Md_Library) until the distilled
+# library replaces Md_Library. Build:
+#   python -m app.adapters.build --library <copy of /Transfer_Md> --house ../adapters/house_rules.trial.yaml --out ../adapters/dist-trial --tools grok
+skill_name: au-compliance-kb-trial
+skill_description: >-
+  TRIAL copy of au-compliance-kb that reads the newly distilled library in /Transfer_Md (NCC 2025, AS/NZS 3500).
+  Use ONLY when the user asks for the trial / new / distilled library or names /Transfer_Md; otherwise use
+  au-compliance-kb. Saves every answer to /Library_Installation_Chat_Logs.
+default_root: /Transfer_Md
+library_folder: ""
+default_logs: /Library_Installation_Chat_Logs
