@@ -122,3 +122,18 @@ def test_without_overlay_the_everyday_skill_is_unchanged(tmp_path):
     assert "name: au-compliance-kb\n" in g and "(the folder that contains `Md_Library/`)" in g
     assert "`path` to `<root>/Md_Library` (or a sub-folder of it)" in g
     assert "otherwise `<root>_Chat_Logs`\n   (a sibling folder next to `<root>`). Create it" in g
+
+
+def test_a_long_pending_review_list_is_summarised_by_folder(tmp_path):
+    root = tmp_path / "big"
+    for i in range(25):
+        d = root / ("n2_Technical" if i < 20 else "Code") / f"doc{i}"
+        d.mkdir(parents=True)
+        (d / f"doc{i}.pdf.md").write_text(fm(document=f"doc{i}", std_id="", std_year="", status="", audit_status="pending_review",
+                                              flags="[]", source_filename=f"doc{i}.pdf",
+                                              source_relative_path=f"x/doc{i}.pdf"), encoding="utf-8")
+    out = tmp_path / "d"
+    B.render(str(root), str(out), ["grok"])
+    g = (out / "grok" / "au-compliance-kb.md").read_text(encoding="utf-8")
+    assert "**Documents with pending-review parts**: 25 documents, by folder: `n2_Technical/` 20, `Code/` 5." in g
+    assert "doc7;" not in g

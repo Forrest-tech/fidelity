@@ -1,22 +1,15 @@
 {
  "generated": "2026-11-23",
  "version": "1",
- "library_files": 2911,
- "documents": 34,
+ "library_files": 4572,
+ "documents": 1561,
  "packs": {
   "grok": "grok/au-compliance-kb.md",
   "claude": "claude/au-compliance-kb/SKILL.md",
   "codex": "codex/AGENTS.md",
   "gemini": "gemini/GEMINI.md"
  },
- "starting_points_missing": [
-  "01-note-2-2023-floor-waste-and-fixture-requirements",
-  "02-note-1-2026-overflow-relief-gully-requirements",
-  "19-vt3-nsw-c2",
-  "20-vt3-wa-c2",
-  "34-pca-ps-a224",
-  "Water Mark Report dated 4 Feb 19.pdf"
- ],
+ "starting_points_missing": [],
  "install": {
   "grok": "Grok → Skills → replace the content of \"au-compliance-kb\" with this file.",
   "claude": "Claude → Settings → Capabilities → Skills → upload the au-compliance-kb folder (zip). Needs the Dropbox connector.",

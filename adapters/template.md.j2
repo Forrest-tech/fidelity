@@ -148,8 +148,10 @@ If the question is not in English, translate it to English technical terms first
 {% if f.unreadable_formulas -%}
 **Documents with unreadable formulas (rule 4.1 applies)**: {% for d in f.unreadable_formulas %}{{ d.document }}{% if not loop.last %}; {% endif %}{% endfor %}.
 {% endif %}
-{% if f.pending_review -%}
+{% if f.pending_review and f.pending_review|length <= 20 -%}
 **Documents with pending-review parts**: {% for d in f.pending_review %}{{ d.document }}{% if not loop.last %}; {% endif %}{% endfor %}.
+{% elif f.pending_review -%}
+**Documents with pending-review parts**: {{ "{:,}".format(f.pending_review|length) }} documents, by folder: {% for name, n in f.pending_by_folder %}`{{ name }}/` {{ n }}{% if not loop.last %}, {% endif %}{% endfor %}. Each file's `audit_status` says which; apply section 5.
 {% endif %}
 {% if f.protected -%}
 **Protected (metadata only — content not in the library)**: {% for d in f.protected %}{{ d.document }}{% if not loop.last %}; {% endif %}{% endfor %}.
