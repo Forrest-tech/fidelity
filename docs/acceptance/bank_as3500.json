@@ -1,0 +1,5088 @@
+{
+ "version": "2026-11-23",
+ "generator": "deepseek:deepseek-chat",
+ "method": "docs/acceptance/PHASE_F.md",
+ "rejected": 100,
+ "questions": [
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.1:2021, Clause 2.7.5, what is the maximum diameter of the low carbon stainless steel filler rods that shall be used for welded joints in stainless steel pipework larger than DN 25?",
+   "expected": "2 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 21,
+    "values": [
+     "2 mm",
+     "DN 25"
+    ],
+    "quote": "Welded joints in stainless steel pipework larger than DN 25 shall be made using filler rods of low carbon stainless steel not greater than 2 mm in diameter.",
+    "clause": "2.7.5"
+   },
+   "id": 1
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.1:2021, Clause 2.8.1, what is the minimum characteristic compressive strength for ready-mixed concrete?",
+   "expected": "20 MPa",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 21,
+    "values": [
+     "20 MPa"
+    ],
+    "quote": "Ready-mixed concrete shall have a minimum characteristic compressive strength of 20 MPa. Site-",
+    "clause": "2.8.1"
+   },
+   "id": 2
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.1:2021, Clause 3.3.2, what is the minimum working pressure required at the furthermost or most disadvantaged fixture or outlet, at the flow rate specified in Table 3.2.1?",
+   "expected": "50 kPa (5 m head)",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 26,
+    "values": [
+     "50 kPa",
+     "5 m"
+    ],
+    "quote": "The minimum working pressure at the furthermost or most disadvantaged fixture or outlet shall be not less than 50 kPa (5 m head), at the flow rate specified in Table 3.2.1.",
+    "clause": "3.3.2"
+   },
+   "id": 3
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.1:2021, for a domestic installation, what is the maximum static pressure permitted at any outlet within a building, excluding fire service outlets?",
+   "expected": "500 kPa",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 26,
+    "values": [
+     "500 kPa"
+    ],
+    "quote": "The maximum static pressure at any outlet, other than a fire service outlet, within a building shall not exceed 500 kPa.",
+    "clause": "3.3.4"
+   },
+   "id": 4
+  },
+  {
+   "cat": "E",
+   "q": "Under AS/NZS 3500.1:2021, Table 3.5.2, what is the maximum length of a branch offtake pipe with an internal diameter of 12.5 mm?",
+   "expected": "6 m",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 27,
+    "values": [
+     "12.5",
+     "6"
+    ],
+    "quote": "Internal diameter of offtake pipe\nMaximum length\nmm\nm\n12.5\n6",
+    "clause": "3.5.2"
+   },
+   "id": 5
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.1:2021, a branch offtake pipe with a minimum internal diameter of 10.0 mm is supplying a laundry trough and washing machine — what is the maximum permitted length of that branch?",
+   "expected": "3 m",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 27,
+    "values": [
+     "10.0",
+     "3"
+    ],
+    "quote": "a branch with a minimum internal diameter of 10.0 mm may supply a combination bath and shower unit, or a laundry trough and washing machine",
+    "clause": "3.5.2"
+   },
+   "id": 6
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.1:2021, Clause 4.6.3.2(b)(i), what is the minimum height above the highest outlet at which a pressure type vacuum breaker (PVB) shall be located?",
+   "expected": "not less than 300 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 35,
+    "values": [
+     "300 mm"
+    ],
+    "quote": "Pressure type vacuum breaker (PVB) — PVBs shall — (i) be located not less than 300 mm above the highest outlet;",
+    "clause": "4.6.3.2"
+   },
+   "id": 7
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.1:2021, where a reduced pressure zone device (RPZD) is installed, what is the minimum height the relief drain outlet must be above the finished surface level?",
+   "expected": "not less than 300 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 35,
+    "values": [
+     "300 mm"
+    ],
+    "quote": "have the relief drain outlet located not less than 300 mm above the finished surface level.",
+    "clause": "4.6.3.2"
+   },
+   "id": 8
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.1:2021, Clause 4.6.3.3, what is the minimum height an atmospheric vacuum breaker (AVB) must be located above the highest outlet?",
+   "expected": "Not less than 150 mm above the highest outlet.",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 36,
+    "values": [
+     "150 mm"
+    ],
+    "quote": "Atmospheric vacuum breaker (AVB) — AVBs shall —\n(i)\nbe located not less than 150 mm above the highest outlet;",
+    "clause": "4.6.3.3"
+   },
+   "id": 9
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.1:2021, Clause 4.6.3.3, what is the minimum height the vent port of a dual-check valve with atmospheric port (DCAP) must be located above the finished surface level?",
+   "expected": "Not less than 300 mm above the finished surface level.",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 36,
+    "values": [
+     "300 mm"
+    ],
+    "quote": "have the vent port located not less than 300 mm above the finished surface level so \nthat the device is freely drained or over a tundish.",
+    "clause": "4.6.3.3"
+   },
+   "id": 10
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.1:2021, Clause 5.3.3.1, what is the minimum separation between an underground water service pipe not greater than DN 65 and an electrical supply cable that is indicated along its length with orange marker tape and is mechanically protected?",
+   "expected": "100 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 39,
+    "values": [
+     "100 mm",
+     "DN 65"
+    ],
+    "quote": "The separation between any underground water service pipe and an electrical supply cable, \nshall be at least —\n(i)\n100 mm for a water service pipe not greater than DN 65, where the electrical",
+    "clause": "5.3.3.1"
+   },
+   "id": 11
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.1:2021, an underground water service pipe larger than DN 65 is being laid past an electrical supply cable that is neither marked with orange marker tape nor mechanically protected. What minimum separation must be maintained?",
+   "expected": "600 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 39,
+    "values": [
+     "600 mm",
+     "DN 65"
+    ],
+    "quote": "600 mm where the electrical supply cable is neither indicated nor protected in \naccordance with Items (a) or (b).",
+    "clause": "5.3.3.1"
+   },
+   "id": 12
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.1:2021, Clause 5.3.3.3, what is the minimum separation between any underground water service pipe and a communication cable?",
+   "expected": "At least 100 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 40,
+    "values": [
+     "100 mm"
+    ],
+    "quote": "The separation between any underground water service pipe and a communication cable shall be at least 100 mm.",
+    "clause": "5.3.3.3"
+   },
+   "id": 13
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.1:2021, when a water service pipe is laid in the same trench as a drain on compacted bedding, what is the minimum horizontal separation between the two pipes?",
+   "expected": "Not less than 100 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 40,
+    "values": [
+     "100 mm"
+    ],
+    "quote": "on compacted bedding such that the horizontal separation of the two pipes is not less than 100 mm and the required depth of cover is maintained.",
+    "clause": "5.3.3.4"
+   },
+   "id": 14
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.1:2021, an underground water service of DN 80 has to run past another underground service. What minimum separation must be maintained between them?",
+   "expected": "300 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 41,
+    "values": [
+     "300 mm",
+     "DN 65"
+    ],
+    "quote": "300 mm for a water service pipe greater than DN 65.",
+    "clause": "5.3.3.6"
+   },
+   "id": 15
+  },
+  {
+   "cat": "E",
+   "q": "Under AS/NZS 3500.1:2021, when notching wooden wall studs, what is the maximum notch depth into the stud breadth?",
+   "expected": "10 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 44,
+    "values": [
+     "10 mm"
+    ],
+    "quote": "Notch into stud breadth Max. 10 mm",
+    "clause": "5.5.2.1"
+   },
+   "id": 16
+  },
+  {
+   "cat": "B",
+   "q": "In AS/NZS 3500.1:2021, what is the maximum diameter of a hole drilled through the wide face of a wall stud?",
+   "expected": "25 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 44,
+    "values": [
+     "25 mm"
+    ],
+    "quote": "Hole diameter (studs and plates) Max. 25 mm (wide face only)",
+    "clause": "5.5.2.1"
+   },
+   "id": 17
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.1:2021, for a water service pipe laid beneath a concrete slab on ground, what is the minimum distance required between the top of the pipe and the underside of the slab or slab-stiffening beam?",
+   "expected": "75 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 48,
+    "values": [
+     "75 mm"
+    ],
+    "quote": "There shall be a minimum distance of 75 mm between the top of the pipe and the underside of the slab or slab-stiffening beam.",
+    "clause": "5.5.4"
+   },
+   "id": 18
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.1:2021, where pipework penetrates a concrete slab on ground and is lagged with an impermeable flexible material, what is the minimum thickness of that material?",
+   "expected": "6 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 48,
+    "values": [
+     "6 mm"
+    ],
+    "quote": "lagged for the full depth of the slab penetration with — (i) an impermeable flexible material of not less than 6 mm thickness;",
+    "clause": "5.5.4"
+   },
+   "id": 19
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.1:2021, Clause 5.6.10.2, when butt-welding stainless steel pipe larger than DN 25 using TIG argon arc, what is the maximum allowable gap between the abutting pipe ends?",
+   "expected": "0.5 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 51,
+    "values": [
+     "0.5 mm"
+    ],
+    "quote": "have a gap not greater than 0.5 mm between the abutting pipe ends to be joined;",
+    "clause": "5.6.10.2"
+   },
+   "id": 20
+  },
+  {
+   "cat": "B",
+   "q": "In AS/NZS 3500.1:2021, for stainless steel piping larger than DN 25, when using flanged joints, what is the minimum thickness of the gasket required?",
+   "expected": "3 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 51,
+    "values": [
+     "3 mm"
+    ],
+    "quote": "a gasket not less than 3 mm thick inserted.",
+    "clause": "5.6.10.2"
+   },
+   "id": 21
+  },
+  {
+   "cat": "E",
+   "q": "Under AS/NZS 3500.1:2021, Table 5.10, what is the minimum depth of cover for buried water pipes not subject to vehicular loading, excluding fire services?",
+   "expected": "300 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 56,
+    "values": [
+     "300"
+    ],
+    "quote": "Not subject to vehicular loading (excluding fire services)\n300",
+    "clause": "5.10"
+   },
+   "id": 22
+  },
+  {
+   "cat": "E",
+   "q": "Under AS/NZS 3500.1:2021, Table 5.10, what is the minimum depth of cover for buried pipes in embankments or subject to construction equipment loads?",
+   "expected": "750 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 56,
+    "values": [
+     "750"
+    ],
+    "quote": "Pipes in embankments or subject to construction equipment loads\n750",
+    "clause": "5.10"
+   },
+   "id": 23
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.1:2021, Clause 5.12, when a water service is fixed above ground in a contaminated area instead of being laid in a watertight conduit, what is the minimum height it must be fixed above the surface of the ground likely to be contaminated?",
+   "expected": "600 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 57,
+    "values": [
+     "600 mm"
+    ],
+    "quote": "fixed not less than 600 mm above the surface of the ground likely to be contaminated.",
+    "clause": "5.12"
+   },
+   "id": 24
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.1:2021, Clause 5.16.1, what is the minimum separation required between two or more water services installed in a private easement?",
+   "expected": "100 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 58,
+    "values": [
+     "100 mm"
+    ],
+    "quote": "Where two or more water services are installed in a private easement, they shall not cross or be closer than 100 mm to each other.",
+    "clause": "5.16.1"
+   },
+   "id": 25
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.1:2021, where water services pipes are laid outside a building in an area where the ambient temperature regularly falls below 0 °C, what minimum depth must the pipes and fittings be buried to, measured from the proposed finished surface level to the top of the pipe?",
+   "expected": "300 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 58,
+    "values": [
+     "300 mm",
+     "0 °C"
+    ],
+    "quote": "buried to a minimum depth of 300 mm, measured from the proposed finished surface level to the top of the pipe",
+    "clause": "5.18.2"
+   },
+   "id": 26
+  },
+  {
+   "cat": "E",
+   "q": "Under AS/NZS 3500.1:2021, using Table 5.18.2(A), what is the minimum thermal insulation thickness required for a DN 20 pipe where the insulating material has a thermal conductivity of 0.03 W/m.K?",
+   "expected": "4 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 59,
+    "values": [
+     "4"
+    ],
+    "quote": "Pipe size\nThermal conductivity of insulating material, W/m.K\n0.03\n0.04\n0.05\n0.06\n0.07\nDN\nMinimum thickness required, mm\n15\n9\n14\n20\n29\n40\n18",
+    "clause": "5.18.2"
+   },
+   "id": 27
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.1:2021, Clause 5.18.4.3, what is the minimum distance a pipe may be positioned from the external surface of an external wall?",
+   "expected": "20 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 60,
+    "values": [
+     "20 mm"
+    ],
+    "quote": "Pipes adjacent to external walls shall be positioned not less than 20 mm away from the external surface.",
+    "clause": "5.18.4.3"
+   },
+   "id": 28
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.1:2021, when a water service pipe runs alongside an external wall, what is the minimum clearance required between the pipe and the external wall surface?",
+   "expected": "20 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 60,
+    "values": [
+     "20 mm"
+    ],
+    "quote": "Pipes adjacent to external walls shall be positioned not less than 20 mm away from the external surface.",
+    "clause": "5.18.4.3"
+   },
+   "id": 29
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.1:2021, Clause 7.2, what is the minimum height above finished ground level that Type A irrigation system outlets and piping must be installed at, where they are not subject to ponding or back-pressure and do not involve injection systems?",
+   "expected": "150 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 63,
+    "values": [
+     "150 mm"
+    ],
+    "quote": "Type A systems — All permanently open outlets and piping more than 150 mm above finished \nground level, not subject to ponding or back-pressure and not involving injection systems.",
+    "clause": "7.2"
+   },
+   "id": 30
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.1:2021, an irrigation system in a domestic building has piping and outlets installed below a certain height above finished surface level (with no injection system involved), which puts it in Type B — what is the limiting height these outlets and piping must be less than?",
+   "expected": "150 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 63,
+    "values": [
+     "150 mm"
+    ],
+    "quote": "Type B systems — Irrigation systems in domestic or residential buildings with piping or \noutlets installed less than 150 mm above finished surface level and not involving injection \nsystems",
+    "clause": "7.2"
+   },
+   "id": 31
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.1:2021, Clause 8.3.2, at what level below overflow level is the water surface taken when measuring the storage capacity of a tank?",
+   "expected": "20 mm below overflow level",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 70,
+    "values": [
+     "20 mm"
+    ],
+    "quote": "The storage capacity of any tank shall be taken to be the volume of water above the invert of the outlet pipe when the water surface is 20 mm below overflow level.",
+    "clause": "8.3.2"
+   },
+   "id": 32
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.1:2021, a plumber is installing a water storage tank with an interior depth greater than 2 m — what access provision is required?",
+   "expected": "Access ladders shall be installed",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 70,
+    "values": [
+     "2 m"
+    ],
+    "quote": "Where the interior depth of any storage tank exceeds 2 m, access ladders shall be installed.",
+    "clause": "8.3.3"
+   },
+   "id": 33
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.1:2021, Clause 8.4.4.1, what is the minimum size for an overflow pipe from a cold water storage tank?",
+   "expected": "DN 40 minimum",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 71,
+    "values": [
+     "DN 40"
+    ],
+    "quote": "Overflow pipes from tanks shall be — (a) not smaller than DN 40; and",
+    "clause": "8.4.4.1"
+   },
+   "id": 34
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.1:2021, where a cold water storage tank has a cover that is not fully removable, what minimum size must the covered access opening be?",
+   "expected": "Not smaller than 0.5 m2",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 71,
+    "values": [
+     "0.5 m2"
+    ],
+    "quote": "Where the whole cover is not removable, the tank shall be provided with a covered access opening not smaller than 0.5 m2.",
+    "clause": "8.4.3"
+   },
+   "id": 35
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.1:2021, for an external storage tank with a safe-tray, what is the minimum clearance between any portion of the tank and the vertical line from the edge of the safe-tray?",
+   "expected": "75 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 76,
+    "values": [
+     "75 mm"
+    ],
+    "quote": "have no portion of the tank closer than 75 mm to a vertical line from the edge of the safe-tray",
+    "clause": "8.8.1"
+   },
+   "id": 36
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.1:2021, when installing a storage tank with a safe-tray, what is the minimum thickness of the durable supports placed between the tank and the safe-tray?",
+   "expected": "12 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 76,
+    "values": [
+     "12 mm"
+    ],
+    "quote": "have placed, between the tank and the safe-tray, durable supports not less than 12 mm thick",
+    "clause": "8.8.1"
+   },
+   "id": 37
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.1:2021, Clause 8.8.3, what is the minimum internal diameter for an overflow drain on a safe-tray in Australia and New Zealand?",
+   "expected": "DN 50 in Australia and DN 40 in New Zealand",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 77,
+    "values": [
+     "DN 50",
+     "DN 40"
+    ],
+    "quote": "an internal diameter greater than the diameter of the tank overflow, but not less than DN 50 in Australia and DN 40 in New Zealand;",
+    "clause": "8.8.3"
+   },
+   "id": 38
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.1:2021, what is the maximum horizontal and vertical spacing for supports on a safe-tray overflow pipe?",
+   "expected": "1 m horizontally and 2.4 m vertically",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 77,
+    "values": [
+     "1 m",
+     "2.4 m"
+    ],
+    "quote": "support in the vicinity of the tray and at intervals not greater than 1 m horizontally and 2.4 m vertically.",
+    "clause": "8.8.3"
+   },
+   "id": 39
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.1:2021, Clause 9.3.2.1, what is the minimum separation required between an above-ground non-drinking water service and any parallel drinking water service?",
+   "expected": "25 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 79,
+    "values": [
+     "25 mm"
+    ],
+    "quote": "Above-ground non-drinking water services shall be installed —\n(a)\na minimum of 25 mm from any parallel drinking water service; or",
+    "clause": "9.3.2.1"
+   },
+   "id": 40
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.1:2021, when installing a buried non-drinking water service, what minimum separation must be maintained from a parallel drinking water service and from any other non-drinking water service?",
+   "expected": "300 mm from any parallel drinking water service and 100 mm from any other non-drinking water service",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 79,
+    "values": [
+     "300 mm",
+     "100 mm"
+    ],
+    "quote": "Below-ground non-drinking water services shall be installed —\n(a)\na minimum of 300 mm from any parallel drinking water service; and\n(b)\na minimum of 100 mm from any other non-drinking water service.",
+    "clause": "9.3.2.2"
+   },
+   "id": 41
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.1:2021, when installing purple underground marking tape over buried non-drinking water pipe, at what maximum interval must the tape be fastened to the pipe?",
+   "expected": "3 m",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 81,
+    "values": [
+     "3 m"
+    ],
+    "quote": "running longitudinally, fastened to the pipe at not more than 3 \nm intervals",
+    "clause": "9.6.4"
+   },
+   "id": 42
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.1:2021, what is the minimum height above finished surface level at which an external non-drinking water hose tap outlet may be installed without a removable handle?",
+   "expected": "1 200 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 81,
+    "values": [
+     "1 200 mm"
+    ],
+    "quote": "have a removable handle, except where the outlet is installed 1 200 mm or more above the \nfinished surface level",
+    "clause": "9.7.1"
+   },
+   "id": 43
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.1:2021, when installing flush valves on wall-hung urinals, how far above the level of the sparge pipe must the flush valve be installed?",
+   "expected": "Not less than 300 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 85,
+    "values": [
+     "300 mm"
+    ],
+    "quote": "Flush valves shall be accessible and installed above the level of the sparge pipe \nby not less than —\n(a)\n300 mm for wall-hung urinals; and",
+    "clause": "11.4"
+   },
+   "id": 44
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.1:2021, for continuous wall urinals, what is the maximum height above floor level at which the flush valve operating mechanism may be installed?",
+   "expected": "Not more than 2 m",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 85,
+    "values": [
+     "2 m"
+    ],
+    "quote": "Flush valves that connect to urinals shall be installed so that the operating mechanism is not more than \n2 m above the floor level.",
+    "clause": "11.4"
+   },
+   "id": 45
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.1:2021, Clause 11.5.3, what is the maximum height at which the operating control of a manually operated cistern shall be positioned, measured from floor level?",
+   "expected": "2 m",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 86,
+    "values": [
+     "2 m"
+    ],
+    "quote": "Manually operated cisterns shall be installed so that the cistern’s operating control is positioned at a \nheight of not more than 2 m, measured from the floor level.",
+    "clause": "11.5.3"
+   },
+   "id": 46
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.1:2021, when a break tank supplies flush valves serving urinals, what is the minimum water storage that must be provided for each flush valve served?",
+   "expected": "30 L",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 86,
+    "values": [
+     "30 L"
+    ],
+    "quote": "The water storage to be provided for flush valves serving water closets shall be not less than 45 L for \neach flush valve served, and 30 L for each flush valve serving urinals.",
+    "clause": "11.6.2"
+   },
+   "id": 47
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.1:2021, Clause 15.3.2.1, at what maximum spacing shall pipework from a rainwater tank be marked with the word \"RAINWATER\" where the pipe is concealed in walls?",
+   "expected": "500 mm",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 94,
+    "values": [
+     "500 mm"
+    ],
+    "quote": "Pipework from a rainwater tank shall be clearly marked with the word “RAINWATER” at intervals not exceeding 500 mm where concealed in walls, or 1 m where exposed or buried.",
+    "clause": "15.3.2.1"
+   },
+   "id": 48
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.1:2021, a rainwater tank supply pipe running exposed along a wall or buried in the ground must carry \"RAINWATER\" markings — what is the maximum interval between those markings?",
+   "expected": "1 m",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 94,
+    "values": [
+     "1 m"
+    ],
+    "quote": "at intervals not exceeding 500 mm where concealed in walls, or 1 m where exposed or buried.",
+    "clause": "15.3.2.1"
+   },
+   "id": 49
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.1:2021, Clause 17.3.1, what hydrostatic pressure must a water service be subjected to and for what minimum period without showing leakage?",
+   "expected": "1 500 kPa for not less than 30 min",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 99,
+    "values": [
+     "1 500 kPa",
+     "30 min"
+    ],
+    "quote": "Water services shall not show any leakage when subjected to a hydrostatic pressure of 1 500 kPa for a period of not less than 30 min.",
+    "clause": "17.3.1"
+   },
+   "id": 50
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.1:2021, when commissioning a storage tank (other than a rainwater tank), how long must it be filled until it overflows?",
+   "expected": "Not less than 1 min",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 99,
+    "values": [
+     "1 min"
+    ],
+    "quote": "Storage tanks (except rainwater tanks) shall be filled until they overflow for a period of not less than 1 min.",
+    "clause": "17.3.2"
+   },
+   "id": 51
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 2.4.2, what is the maximum offset angle beyond which copper and copper alloy pipes shall not be bent on site?",
+   "expected": "10°",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 21,
+    "values": [
+     "10°"
+    ],
+    "quote": "Copper and copper alloy pipes shall not be bent on site beyond an offset angle of 10°. Type D copper shall not be bent.",
+    "clause": "2.4.2"
+   },
+   "id": 52
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, for above ground stainless steel pipes and fittings, what minimum PREN rating must be achieved?",
+   "expected": "16",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 21,
+    "values": [
+     "16"
+    ],
+    "quote": "Above ground stainless steel pipes and fittings shall have a PREN rating not less than 16.",
+    "clause": "2.4.2"
+   },
+   "id": 53
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 3.4.3, for a drain installed on a grade between 20% and vertical, what is the maximum spacing between anchor blocks along the inclined drain?",
+   "expected": "3 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 30,
+    "values": [
+     "3 m"
+    ],
+    "quote": "at intervals not exceeding 3 m.",
+    "clause": "3.4.3"
+   },
+   "id": 54
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 3.5.2, within an easement, what minimum clearance must be maintained between an open channel, pipeline or conduit and a drain?",
+   "expected": "100 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 31,
+    "values": [
+     "100 mm"
+    ],
+    "quote": "In an easement, a minimum clearance of 100 mm shall be maintained between an open channel, pipeline or conduit and the drain.",
+    "clause": "3.5.2"
+   },
+   "id": 55
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, where an obstacle prevents a drain from being laid at an even grade with the required cover, what minimum clearance may alternatively be provided between the obstacle and the drain?",
+   "expected": "25 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 31,
+    "values": [
+     "25 mm"
+    ],
+    "quote": "Alternatively, a minimum clearance of 25 mm shall be provided between the obstacle and the drain",
+    "clause": "3.5.2"
+   },
+   "id": 56
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 3.6.7, where an underground drain crosses a service, what is the minimum vertical separation that must be maintained between them?",
+   "expected": "Not less than 100 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 33,
+    "values": [
+     "100 mm"
+    ],
+    "quote": "have a vertical separation of not less than 100 mm; and",
+    "clause": "3.6.7"
+   },
+   "id": 57
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, when you run a drain past an underground obstruction such as a rock or existing structure, what minimum clearance must you leave to protect the drain from physical damage and allow repairs?",
+   "expected": "At least 100 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 33,
+    "values": [
+     "100 mm"
+    ],
+    "quote": "The clearance shall be at least 100 mm.",
+    "clause": "3.6.8"
+   },
+   "id": 58
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 3.9.3.3, where the minimum size of DN 65 for a drain line exists, what is the minimum size of vent pipe that may be connected?",
+   "expected": "DN 50",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 38,
+    "values": [
+     "DN 65",
+     "DN 50"
+    ],
+    "quote": "Where the minimum size of DN 65 for a drain line exists, a minimum DN 50 vent pipe may be connected as shown in Figure 3.9.3.1.",
+    "clause": "3.9.3.3"
+   },
+   "id": 59
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 3.10.4, where a fixture discharge pipe is the same size as the unvented branch drain it connects to, what is the maximum height of each vertical jump-up, and what is the minimum length of graded pipe required between them?",
+   "expected": "Each vertical jump-up shall not exceed 2 m in height, and the jump-ups shall be separated by not less than 300 mm of graded pipe.",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 40,
+    "values": [
+     "2 m",
+     "300 mm"
+    ],
+    "quote": "the drain to the trap shall have a maximum of two vertical jump-ups, each not exceeding 2 m in height, and separated by not less than 300 mm of graded pipe.",
+    "clause": "3.10.4"
+   },
+   "id": 60
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, when connecting ground-floor fixtures to an unvented branch drain, what is the maximum total length of the branch connections to fixtures?",
+   "expected": "The total length of branch connections to fixtures shall not exceed 10 m.",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 40,
+    "values": [
+     "10 m"
+    ],
+    "quote": "NOTE Total length of branch connections to fixtures to not exceed 10 m.",
+    "clause": "3.10.3"
+   },
+   "id": 61
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 3.17.2, what is the maximum distance a sullage point serving an individual caravan or mobile home site may be from the vented drain?",
+   "expected": "Not more than 10 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 45,
+    "values": [
+     "10 m"
+    ],
+    "quote": "Sullage points shall be positioned to obtain the shortest connection to the caravan. They shall be not more than 10 m from the vented drain.",
+    "clause": "3.17.2"
+   },
+   "id": 62
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, when installing a sullage connection point for an individual caravan site, how far can the sullage point be positioned from the vented drain?",
+   "expected": "Not more than 10 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 45,
+    "values": [
+     "10 m"
+    ],
+    "quote": "Sullage points shall be positioned to obtain the shortest connection to the caravan. They shall be not more than 10 m from the vented drain.",
+    "clause": "3.17.2"
+   },
+   "id": 63
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 3.19.2, what is the minimum grade for drains from a septic tank to a common effluent drain?",
+   "expected": "Not less than 1% (1 in 100)",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 47,
+    "values": [
+     "1 %",
+     "1 in 100"
+    ],
+    "quote": "Drains from septic or sullage tanks to the common effluent drain shall be not less than DN 80 and not more than DN 100. They shall be laid at a grade of not less than 1 % (1 in 100).",
+    "clause": "3.19.2"
+   },
+   "id": 64
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 4.4.3.1, what is the minimum thickness of the concrete footing required under the bend when supporting a jump-up?",
+   "expected": "100 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 56,
+    "values": [
+     "100 mm"
+    ],
+    "quote": "The jump-up shall be supported by placing a concrete footing not less than 100 mm thick under the bend",
+    "clause": "4.4.3.1"
+   },
+   "id": 65
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 4.6.2(c)(i), what is the minimum thickness and width of the concrete footing required for a gully installed below ground?",
+   "expected": "100 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 58,
+    "values": [
+     "100 mm",
+     "100 mm"
+    ],
+    "quote": "be supported on a concrete footing of a thickness not less than 100 mm, with a width not less than 100 mm beyond the sides of the trap",
+    "clause": "4.6.2"
+   },
+   "id": 66
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 4.6.3(c), what is the minimum height above the grating for a hose tap used to maintain the water seal in a gully?",
+   "expected": "450 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 58,
+    "values": [
+     "450 mm"
+    ],
+    "quote": "water from a hose tap located a minimum of 450 mm above the grating where no waste pipe discharges into gully",
+    "clause": "4.6.3"
+   },
+   "id": 67
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 4.6.5, what is the minimum nominal size of the vent pipe branching from the riser of a disconnector gully located inside a building?",
+   "expected": "DN 50",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 59,
+    "values": [
+     "DN 50"
+    ],
+    "quote": "(b) a DN 50 vent pipe, branching from the riser pipe or a fitting, extends at a grade of not less than 1.25 % and terminates with a grating at an external wall of the building —",
+    "clause": "4.6.5"
+   },
+   "id": 68
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, when a disconnector gully is installed inside a building, what is the minimum grade for the vent pipe that branches from the riser?",
+   "expected": "1.25%",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 59,
+    "values": [
+     "1.25 %"
+    ],
+    "quote": "(b) a DN 50 vent pipe, branching from the riser pipe or a fitting, extends at a grade of not less than 1.25 % and terminates with a grating at an external wall of the building —",
+    "clause": "4.6.5"
+   },
+   "id": 69
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, when positioning an overflow relief gully for a building, what is the minimum invert level height below the lowest fixture?",
+   "expected": "150 min. below lowest fixture",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 61,
+    "values": [
+     "150"
+    ],
+    "quote": "150 min. below\nlowest fixture\nInvert level",
+    "clause": "4.6.6.5"
+   },
+   "id": 70
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, where a hose tap is located above an overflow relief gully grating with no waste pipe discharging into the gully, what is the minimum height of the tap above the grating?",
+   "expected": "450 above the grating",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 61,
+    "values": [
+     "450"
+    ],
+    "quote": "Water from a hose tap located \na minimum of 450 above the \ngrating where no waste pipe\ndischarges into gully",
+    "clause": "4.6.6.5"
+   },
+   "id": 71
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 4.6.6.6, what is the minimum height that must be maintained between the top of the overflow gully riser and the lowest fixture connected to the drain?",
+   "expected": "150 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 62,
+    "values": [
+     "150 mm"
+    ],
+    "quote": "A minimum height of 150 mm shall be maintained between the top of the overflow gully riser and the lowest fixture connected to the drain.",
+    "clause": "4.6.6.6"
+   },
+   "id": 72
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 4.6.6.7, what is the minimum height between the top of the overflow gully riser, or the invert of the overflow pipe, and the finished surface level?",
+   "expected": "75 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 62,
+    "values": [
+     "75 mm"
+    ],
+    "quote": "The minimum height between the top of the overflow gully riser, or the invert of the overflow pipe, and the finished surface level shall be 75 mm",
+    "clause": "4.6.6.7"
+   },
+   "id": 73
+  },
+  {
+   "cat": "E",
+   "q": "Under AS/NZS 3500.2:2021, Table 4.6.7.2, what is the maximum length of waste pipe for an untrapped bath or shower connecting to the riser of a floor waste gully?",
+   "expected": "1.2 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 63,
+    "values": [
+     "1.2"
+    ],
+    "quote": "Bath, shower/bath\n1.2\n2.5\n2.5",
+    "clause": "4.6.7.2"
+   },
+   "id": 74
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, when a domestic bar sink is connected to a floor waste gully, what is the maximum waste pipe length when it is trapped and connected to the riser?",
+   "expected": "2.5 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 63,
+    "values": [
+     "2.5"
+    ],
+    "quote": "Bar sink (domestic)\n1.2\n2.5\n2.5",
+    "clause": "4.6.7.2"
+   },
+   "id": 75
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 4.6.7.3, what is the minimum grade at which each fixture or fixture pair connected to an FWG shall be connected by a separate waste pipe?",
+   "expected": "2.5 %",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 64,
+    "values": [
+     "2.5 %"
+    ],
+    "quote": "Each fixture or fixture pair that is connected to an FWG shall be connected by a separate waste pipe at a grade of not less than 2.5 %",
+    "clause": "4.6.7.3"
+   },
+   "id": 76
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, when installing a floor waste gully, what is the minimum riser size to finished surface level, unless its sole function is to dispose of water spillage and wash-down water?",
+   "expected": "DN 80",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 64,
+    "values": [
+     "DN 80",
+     "DN 50"
+    ],
+    "quote": "Floor waste gullies shall be installed with an accessible removable grate and have a riser of not less than DN 80 to finished surface level.",
+    "clause": "4.6.7.6"
+   },
+   "id": 77
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, where a floor waste gully has submerged inlets, what is the minimum height of the gully riser measured from the top of the water seal to floor level?",
+   "expected": "100 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 65,
+    "values": [
+     "100 mm"
+    ],
+    "quote": "For floor waste gullies with submerged inlets, the minimum height shall be 100 mm.",
+    "clause": "4.6.7.7"
+   },
+   "id": 78
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 4.6.7.7, what is the maximum height of a gully riser for floor waste gullies with connections to the gully riser, measured from the top of the water seal to floor surface level?",
+   "expected": "600 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 65,
+    "values": [
+     "600 mm"
+    ],
+    "quote": "the maximum height shall be 600 mm.",
+    "clause": "4.6.7.7"
+   },
+   "id": 79
+  },
+  {
+   "cat": "B",
+   "q": "For a floor waste gully serving only to dispose of water spillage and wash-down water, what is the minimum outlet size allowed under AS/NZS 3500.2:2021?",
+   "expected": "DN 50",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 66,
+    "values": [
+     "DN 50"
+    ],
+    "quote": "Where the sole function of the floor waste gully is to dispose of water spillage and wash-down water, a minimum DN 50 outlet may be used.",
+    "clause": "4.6.7.9"
+   },
+   "id": 80
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, when connecting a charge pipe to a floor waste gully as an untrapped waste, what is the maximum length of DN 25 untrapped waste permitted?",
+   "expected": "10 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 68,
+    "values": [
+     "25",
+     "10 m"
+    ],
+    "quote": "Untrapped waste DN 25\nmax. length 10 m",
+    "clause": "4.6.8.1"
+   },
+   "id": 81
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 4.7.2, what size must an inspection opening be in a drain up to DN 150?",
+   "expected": "The same size as the drain",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 70,
+    "values": [
+     "DN 150"
+    ],
+    "quote": "(a)\nthe same size as the drain for openings up to DN 150; or",
+    "clause": "4.7.2"
+   },
+   "id": 82
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, when installing an inspection opening in a drain larger than DN 150, what is the minimum size of the opening?",
+   "expected": "Not less than DN 150",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 70,
+    "values": [
+     "DN 150"
+    ],
+    "quote": "(b)\nnot less than DN 150 for openings larger than DN 150.",
+    "clause": "4.7.2"
+   },
+   "id": 83
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 4.8.3.3, at what depth of an inspection chamber, well or sump must rung-type and individual-rung ladders be installed?",
+   "expected": "Where the depth exceeds 1.2 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 74,
+    "values": [
+     "1.2 m"
+    ],
+    "quote": "Where the depth of an inspection chamber, well or sump exceeds 1.2 m, rung-type and individual-rung ladders shall be installed",
+    "clause": "4.8.3.3"
+   },
+   "id": 84
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, when individual-rung ladders are used in an inspection chamber, what is the maximum depth of chamber they are limited to?",
+   "expected": "3.0 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 74,
+    "values": [
+     "3.0 m"
+    ],
+    "quote": "the individual-rung ladders are limited to inspection chambers with a maximum depth of 3.0 m and to structures without prefabricated walls",
+    "clause": "4.8.3.3"
+   },
+   "id": 85
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 4.9.2, what is the maximum height of a vertical riser above the invert of the graded drain when using a junction installed in a vertical plane?",
+   "expected": "2 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 76,
+    "values": [
+     "2 m"
+    ],
+    "quote": "The vertical riser does not exceed 2 m in height, above the invert of the graded drain.",
+    "clause": "4.9.2"
+   },
+   "id": 86
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 5.2.1, what is the minimum clearance required on each side of the drain barrel when excavating a trench, measured to the inside of the sheeting or side of trench?",
+   "expected": "100 mm minimum clearance on each side of the drain barrel",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 79,
+    "values": [
+     "100 mm"
+    ],
+    "quote": "Trenches shall be made with a minimum clearance of 100 mm on each side of the drain barrel, measured to the inside of the sheeting or side of trench.",
+    "clause": "5.2.1"
+   },
+   "id": 87
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, where concrete pads are used to support drains, what is the minimum thickness of the concrete pad?",
+   "expected": "100 mm minimum thickness",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 79,
+    "values": [
+     "100 mm"
+    ],
+    "quote": "Concrete pads used to support drains shall be a minimum of 100 mm thick and be laid —",
+    "clause": "5.3"
+   },
+   "id": 88
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 5.4.2, what is the required nominal size range for crushed rock, gravel screenings or similar recycled materials used as bedding for drains?",
+   "expected": "Between 7 mm and 10 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 80,
+    "values": [
+     "7 mm",
+     "10 mm"
+    ],
+    "quote": "Crushed rock, gravel screenings or similar recycled materials of nominal size between 7 mm and 10 mm.",
+    "clause": "5.4.2"
+   },
+   "id": 89
+  },
+  {
+   "cat": "B",
+   "q": "For a drain laid on a grade greater than 20% (1 in 5) where the trench base is rock or shale and cement mortar bedding is used, what minimum depth of mortar below the pipe barrel and what minimum width are required by AS/NZS 3500.2:2021?",
+   "expected": "Minimum depth of 50 mm and not less than 75 mm wide",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 80,
+    "values": [
+     "20 %",
+     "1 in 5",
+     "50 mm",
+     "75 mm"
+    ],
+    "quote": "Where the grade is greater than 20 % (1 in 5), the cement mortar shall be — (i) of a minimum depth of 50 mm, measured below the barrel of the pipe; (ii) not less than 75 mm wide;",
+    "clause": "5.4.2"
+   },
+   "id": 90
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 5.5.2, what is the maximum allowable size of soil lumps in excavated material used for final backfill?",
+   "expected": "75 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 81,
+    "values": [
+     "75 mm"
+    ],
+    "quote": "broken up so that it does not contain soil lumps larger than 75 mm.",
+    "clause": "5.5.2"
+   },
+   "id": 91
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 6.5.2, what is the minimum water seal that fixture traps shall retain under normal operating conditions?",
+   "expected": "25 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 85,
+    "values": [
+     "25 mm"
+    ],
+    "quote": "Under normal operating conditions, fixture traps shall retain a water seal of not less than 25 mm.",
+    "clause": "6.5.2"
+   },
+   "id": 92
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 6.5.2, what minimum water seal shall traps installed in a pressurized chamber retain when the maximum pressure within the chamber is applied?",
+   "expected": "70 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 85,
+    "values": [
+     "70 mm"
+    ],
+    "quote": "Traps that are installed in a pressurized chamber shall retain a water seal of not less than 70 mm when the maximum pressure within the chamber is applied.",
+    "clause": "6.5.2"
+   },
+   "id": 93
+  },
+  {
+   "cat": "E",
+   "q": "Under AS/NZS 3500.2:2021, what is the minimum grade for a DN 100 graded discharge pipe as given in Table 6.6.1?",
+   "expected": "1.65%",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 86,
+    "values": [
+     "1.65",
+     "100"
+    ],
+    "quote": "Table 6.6.1 — Minimum grades of discharge pipes Size of graded section of pipe DN Minimum grade %",
+    "clause": "6.6.1"
+   },
+   "id": 94
+  },
+  {
+   "cat": "B",
+   "q": "In AS/NZS 3500.2:2021, when connecting a fixture discharge pipe to a graded discharge pipe, how much higher than the pipe soffit must the invert level of the trap weir be at minimum?",
+   "expected": "Minimum of 10 mm higher than the soffit of the graded discharge pipe",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 86,
+    "values": [
+     "10 mm"
+    ],
+    "quote": "The invert level of a trap or floor waste gully weir shall be a minimum of 10 mm higher than the soffit of the graded discharge pipe to which it connects.",
+    "clause": "6.6.2.1"
+   },
+   "id": 95
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 6.6.2.4.2, where a junction is used to connect a DN 100 branch pipe to another DN 100 pipe in a new installation, what is the minimum incline above the horizontal at which the entry level of the branch pipe shall be elevated?",
+   "expected": "15° above the horizontal",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 87,
+    "values": [
+     "15°"
+    ],
+    "quote": "Where a junction is used to make the connection of a DN 100 branch pipe to another DN 100 pipe, the entry level of the branch pipe shall be elevated at an incline of not less than 15° above the horizontal.",
+    "clause": "6.6.2.4.2"
+   },
+   "id": 96
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, when unequal junctions are used on graded discharge pipes, how much higher must the invert of the branch discharge pipe be than the soffit of the discharge pipe it connects to?",
+   "expected": "At least 10 mm higher",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 87,
+    "values": [
+     "10 mm"
+    ],
+    "quote": "Where unequal junctions are used, the invert of the branch discharge pipe shall be at least 10 mm higher than the soffit of the discharge pipe to which it connects.",
+    "clause": "6.6.2.4.1"
+   },
+   "id": 97
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 6.7.1, where a fixture is connected to the branch or common discharge pipe of a stack and the entry is at grade, what is the minimum length from the stack within which no fixture shall be connected?",
+   "expected": "500 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 88,
+    "values": [
+     "500 mm"
+    ],
+    "quote": "No fixture shall be connected to the branch or common discharge pipe within 500 mm in length from the stack if the entry is at grade.",
+    "clause": "6.7.1"
+   },
+   "id": 98
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 6.8.1(a)(i), for a stack of three floor levels or more, what is the minimum distance downstream of the base of the stack at which a connection may be made?",
+   "expected": "2.5 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 91,
+    "values": [
+     "2.5 m"
+    ],
+    "quote": "no connection shall be made closer than 2.5 m downstream or 1 m upstream of the base of the stack",
+    "clause": "6.8.1"
+   },
+   "id": 99
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, for a stack serving two floor levels or less, what is the minimum distance upstream or downstream of the base of the stack at which a discharge pipe may connect?",
+   "expected": "500 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 91,
+    "values": [
+     "500 mm"
+    ],
+    "quote": "no connection shall be made closer than 500 mm downstream or upstream of the base of the stack",
+    "clause": "6.8.1"
+   },
+   "id": 100
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, where a stack connects to a graded pipe or drain above ground using a 45° junction installed in the vertical plane with an extended branch, how far must the vertical projection of the stack be kept outside the junction area on the graded pipe or drain?",
+   "expected": "Wholly outside the junction area",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 93,
+    "values": [
+     "45°"
+    ],
+    "quote": "a 45° junction installed in the vertical plane with an extended branch so that the vertical projection of the stack, on the graded pipe or drain above the ground, is wholly outside the",
+    "clause": "6.8.3"
+   },
+   "id": 101
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, a stack rises more than five floor levels above the base of the stack in an area where foaming is not likely. What is the minimum length of the stack above the connection?",
+   "expected": "1 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 93,
+    "values": [
+     "1 m"
+    ],
+    "quote": "1 m for stacks that extend more than five floor levels above the base of the stack.",
+    "clause": "6.8.3"
+   },
+   "id": 102
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 6.9.2, what is the minimum grade at which vent pipes shall be installed?",
+   "expected": "1.25% (1:80)",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 94,
+    "values": [
+     "1.25 %",
+     "1:80"
+    ],
+    "quote": "Vents shall be installed at a minimum grade of 1.25 % (1:80) so that any condensation or other liquids that form in or enter the vent will drain to the sanitary plumbing and sanitary drainage system.",
+    "clause": "6.9.2"
+   },
+   "id": 103
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, when terminating a vent, what is the minimum height above any opening into any building that is within a horizontal distance of 3 m from the vent?",
+   "expected": "600 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 94,
+    "values": [
+     "600 mm",
+     "3 m"
+    ],
+    "quote": "Vents shall terminate as shown in Figure 6.9.4 in the open air outside the building and in a location not less than — (a) 600 mm above any opening into any building that is within a horizontal distance of 3 m from the vent;",
+    "clause": "6.9.4"
+   },
+   "id": 104
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, what is the minimum horizontal distance a vent must be from an air duct intake?",
+   "expected": "5 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 95,
+    "values": [
+     "5 m"
+    ],
+    "quote": "5 m in any direction from any air duct intake",
+    "clause": "6.9.4"
+   },
+   "id": 105
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, what is the minimum height a vent must be above any eaves, coping or parapet that is within a horizontal distance of 600 mm from the vent?",
+   "expected": "600 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 95,
+    "values": [
+     "600 mm"
+    ],
+    "quote": "600 mm above any eaves, coping or parapet that is within a horizontal distance of 600 mm from the vent.",
+    "clause": "6.9.4"
+   },
+   "id": 106
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 6.10.4, what is the maximum permitted deviation from vertical when installing an air admittance valve upright?",
+   "expected": "Within 5° of the vertical",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 99,
+    "values": [
+     "5°"
+    ],
+    "quote": "installed upright within 5° of the vertical as shown in Figure 6.10.4;",
+    "clause": "6.10.4"
+   },
+   "id": 107
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, when installing an air admittance valve on a branch, how far below the flood level of the lowest fixture connected to that branch may it be installed?",
+   "expected": "Not more than 1 000 mm below the flood level",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 99,
+    "values": [
+     "1 000 mm"
+    ],
+    "quote": "installed not more than 1 000 mm below the flood level of the fixture to which it is connected or, when installed on a branch, not more than 1 000 mm below the flood level of the lowest",
+    "clause": "6.10.4"
+   },
+   "id": 108
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 8.5.1.1, for basins and bidets, what is the minimum distance the vent must be connected from the crown of the fixture trap, provided no change of direction occurs between the trap and the vent connection?",
+   "expected": "75 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 109,
+    "values": [
+     "75 mm"
+    ],
+    "quote": "For basins and bidets, the vent shall be connected not closer than 75 mm and not further than",
+    "clause": "8.5.1.1"
+   },
+   "id": 109
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, when venting a fixture other than a basin or bidet where an S-trap is fitted or a bend is fitted downstream of the P-trap, what is the minimum distance the vent connection on the vertical discharge pipe must be from any bend at the base of the vertical section?",
+   "expected": "300 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 109,
+    "values": [
+     "300 mm"
+    ],
+    "quote": "the vent connection on the vertical discharge pipe is at least 300 mm from any bend at the base of the vertical section.",
+    "clause": "8.5.1.1"
+   },
+   "id": 110
+  },
+  {
+   "cat": "E",
+   "q": "Under AS/NZS 3500.2:2021, Table 8.5.1.3, what is the minimum size of trap vent DN for a fixture trap of DN 40?",
+   "expected": "32",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 110,
+    "values": [
+     "40",
+     "32"
+    ],
+    "quote": "Size of fixture trap DN\nSize of trap vent DN\n40\n32",
+    "clause": "8.5.1.3"
+   },
+   "id": 111
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, a trap vent is installed to rise above the flood level rim of the fixture. What is the minimum ascending grade permitted where the vent runs on a grade to connect with a vertical or branch vent?",
+   "expected": "1.25 %",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 110,
+    "values": [
+     "1.25 %"
+    ],
+    "quote": "On an ascending grade of at least 1.25 %, as a vertical vent to the open air.",
+    "clause": "8.5.1.4"
+   },
+   "id": 112
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, when sizing branch vents, what is the minimum DN for a branch vent that connects to a DN 40 group vent?",
+   "expected": "DN 40",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 114,
+    "values": [
+     "DN 40"
+    ],
+    "quote": "Group vent DN 40 Increase from DN 40 to DN 50 at this point",
+    "clause": "8.5.2.3"
+   },
+   "id": 113
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 8.5.7.5.4, when a basin or bidet is connected to a group-vented branch, what size trap and fixture discharge pipe must it have, and what is the maximum length and vertical drop of that fixture discharge pipe?",
+   "expected": "DN 40 trap and fixture discharge pipe, not greater than 2.5 m in length with a maximum vertical drop of 1.5 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 122,
+    "values": [
+     "DN 40",
+     "2.5 m",
+     "1.5 m"
+    ],
+    "quote": "each basin and bidet shall have a DN 40 trap and fixture discharge pipe not greater than 2.5 m in length with a maximum vertical drop of 1.5 m",
+    "clause": "8.5.7.5.4"
+   },
+   "id": 114
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, for a fixture other than a basin or bidet connected to a group-vented branch, what is the maximum length of a DN 100 fixture discharge pipe?",
+   "expected": "6 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 122,
+    "values": [
+     "DN 100",
+     "6 m"
+    ],
+    "quote": "have a length of any DN 100 fixture discharge pipe not greater than 6 m",
+    "clause": "8.5.7.5.5"
+   },
+   "id": 115
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 8.6.2.5, what is the minimum distance from the upper bend of a graded offset within which no connection shall be made?",
+   "expected": "2.5 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 125,
+    "values": [
+     "2.5 m"
+    ],
+    "quote": "No connection shall be made within — (a) 2.5 m of the upper bend; or",
+    "clause": "8.6.2.5"
+   },
+   "id": 116
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 8.6.2.5, what is the minimum distance from the lower bend of a graded offset within which no connection shall be made?",
+   "expected": "450 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 125,
+    "values": [
+     "450 mm"
+    ],
+    "quote": "No connection shall be made within — (a) 2.5 m of the upper bend; or (b) 450 mm of the lower bend.",
+    "clause": "8.6.2.5"
+   },
+   "id": 117
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, what is the maximum length of a vertical dropper on a fixture discharge pipe where the fixture is not a basin or bidet?",
+   "expected": "2.5 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 136,
+    "values": [
+     "2.5 m"
+    ],
+    "quote": "The maximum length of a vertical dropper on any fixture discharge pipe shall be 2.5 m, except for basins and bidets where it shall be 1.5 m.",
+    "clause": "9.5.5"
+   },
+   "id": 118
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 9.5.11.4, what is the maximum distance allowed between the centre-lines of adjacent traps and between the near face of the stack and the centre-line of the nearest trap?",
+   "expected": "2 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 139,
+    "values": [
+     "2 m"
+    ],
+    "quote": "The distance between the centre-lines of adjacent traps and between the near face of the stack and the centre-line of the nearest trap shall not exceed 2 m.",
+    "clause": "9.5.11.4"
+   },
+   "id": 119
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 9.5.12.4, what is the maximum distance permitted between the centre-lines of adjacent traps and the near face of the stack and the centre-line of the nearest connected trap?",
+   "expected": "6 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 140,
+    "values": [
+     "6 m"
+    ],
+    "quote": "The distance between the centre-lines of adjacent traps and the near face of the stack and the centre-\nline of the nearest connected trap shall not exceed 6 m.",
+    "clause": "9.5.12.4"
+   },
+   "id": 120
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 9.5.13.4, what is the maximum distance between the centre-lines of adjacent traps and the near face of the stack and the centre-line of the nearest connected trap?",
+   "expected": "2.5 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 141,
+    "values": [
+     "2.5 m"
+    ],
+    "quote": "The distance between the centre-lines of adjacent traps and the near face of the stack and the centre-\nline of the nearest connected trap shall not exceed 2.5 m.",
+    "clause": "9.5.13.4"
+   },
+   "id": 121
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, a stack extends not more than three floor levels with a maximum loading of 30 fixture units — what size may the vent be reduced to?",
+   "expected": "DN 50",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 141,
+    "values": [
+     "30",
+     "DN 50"
+    ],
+    "quote": "Stacks that extend not more than three floor levels with a maximum loading of 30 fixture units may \nhave the vent reduced to DN 50.",
+    "clause": "9.6.1"
+   },
+   "id": 122
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 9.8.3, for a DN 80 stack with the top section graded and installed in a domestic or residential building, what is the minimum distance a fixture discharge pipe connection to the graded section must be from the lower vertical section of the stack?",
+   "expected": "Not less than 450 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 144,
+    "values": [
+     "450 mm"
+    ],
+    "quote": "The connection of a fixture discharge pipe to the graded section of a stack shall be not less than 450 mm from the lower vertical section of the stack",
+    "clause": "9.8.3"
+   },
+   "id": 123
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 9.8.4, what is the maximum number of fixture units that a DN 100 stack up to three floors with a graded top section may receive in a domestic or residential building?",
+   "expected": "30 fixture units",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 145,
+    "values": [
+     "30"
+    ],
+    "quote": "The stack shall not exceed three floor levels in height and the stack loading shall not exceed 30 fixture units.",
+    "clause": "9.8.4"
+   },
+   "id": 124
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 9.8.5, for a DN 100 stack of one floor with the top section graded, what is the minimum distance from the lower vertical section of the stack at which a fixture discharge pipe may connect to the graded section?",
+   "expected": "450 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 146,
+    "values": [
+     "450 mm"
+    ],
+    "quote": "The connection of a fixture discharge pipe to the graded section of the stack shall be not less than 450 mm from the lower vertical section of the stack",
+    "clause": "9.8.5"
+   },
+   "id": 125
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, in a domestic building where a DN 100 stack serves the first floor above ground level with the top section graded and unvented fixture discharge pipes, what is the maximum stack loading permitted?",
+   "expected": "90 fixture units",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 146,
+    "values": [
+     "90"
+    ],
+    "quote": "The stack loading shall not exceed 90 fixture units.",
+    "clause": "9.8.5"
+   },
+   "id": 126
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 9.8.7.1(b), what is the minimum distance between the centre-lines of the vertical sections of a waste stack each side of a graded offset?",
+   "expected": "not less than 1 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 148,
+    "values": [
+     "1 m"
+    ],
+    "quote": "The distance between the centre-lines of the vertical sections of a stack each side of the graded offset shall be not less than 1 m.",
+    "clause": "9.8.7.1"
+   },
+   "id": 127
+  },
+  {
+   "cat": "E",
+   "q": "Under AS/NZS 3500.2:2021, using the offset requirements table, for a stack with 5 consecutive floor levels above the upper offset bend, what is the minimum distance between the upper offset bend and the connection of the fixture discharge pipe?",
+   "expected": "450 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 153,
+    "values": [
+     "450"
+    ],
+    "quote": "Maximum height in \nconsecutive floor levels \nabove upper offset bend\nMinimum distance \nbetween upper offset \nbend and connection of \nfixture discharge pipe\nmm",
+    "clause": "9.9.2"
+   },
+   "id": 128
+  },
+  {
+   "cat": "E",
+   "q": "Under AS/NZS 3500.2:2021, Table 9.9.3, for a DN 100 stack serving laundry troughs where the maximum height is 5 consecutive floor levels above the upper offset bend, what is the minimum distance between the upper offset bend and the connection of the fixture discharge pipe?",
+   "expected": "450 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 154,
+    "values": [
+     "450",
+     "5",
+     "100"
+    ],
+    "quote": "Minimum distance between upper offset bend and connection of fixture discharge pipe",
+    "clause": "9.9.3"
+   },
+   "id": 129
+  },
+  {
+   "cat": "B",
+   "q": "In AS/NZS 3500.2:2021, for a graded offset stack where a water closet pan is the lowest fixture connected, what is the minimum distance from the upper offset bend to any connection, provided the WC discharge pipe is fitted with a DN 40 trap vent?",
+   "expected": "600 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 156,
+    "values": [
+     "600 mm",
+     "DN 40"
+    ],
+    "quote": "Where a water closet pan is the lowest fixture connected, the distance may be reduced to 600 mm, provided the fixture discharge pipe from the water closet pan is fitted with a DN 40 trap vent",
+    "clause": "9.9.6"
+   },
+   "id": 130
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 10.3(g)(i), where plastic pipework is installed alongside a heated water pipe, what is the minimum clearance from an insulated heated water pipe?",
+   "expected": "75 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 158,
+    "values": [
+     "75 mm"
+    ],
+    "quote": "(i) at a minimum distance of 75 mm from an insulated heated water pipe or 150 mm from an uninsulated heated water pipe; and",
+    "clause": "10.3"
+   },
+   "id": 131
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, when plastic pipework is run below an uninsulated heated water pipe, what minimum distance must be maintained?",
+   "expected": "300 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 158,
+    "values": [
+     "300 mm"
+    ],
+    "quote": "(ii) below a heated water pipe, at a minimum distance of 150 mm from an insulated heated water pipe or 300 mm from an uninsulated heated water pipe.",
+    "clause": "10.3"
+   },
+   "id": 132
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, what is the minimum annular space required around a copper pipe where it passes through a wall or floor to be considered unrestrained?",
+   "expected": "6 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 160,
+    "values": [
+     "6 mm"
+    ],
+    "quote": "An annular space of at least 6 mm shall be provided, and such space may be filled with flexible material.",
+    "clause": "10.6.4"
+   },
+   "id": 133
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 10.6.4, what is the minimum distance from the junction with a stack that a branch discharge pipe must be free of restraint on movement?",
+   "expected": "450 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 160,
+    "values": [
+     "450 mm"
+    ],
+    "quote": "There shall be no restraint on movement on any branch discharge pipe for a distance of 450 mm from its junction with a stack.",
+    "clause": "10.6.4"
+   },
+   "id": 134
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 11.4, if interconnected stack vents are used, what is the minimum height above the highest flood rim level of the highest fixture at which the interconnection shall occur?",
+   "expected": "Not less than 1 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 168,
+    "values": [
+     "1 m"
+    ],
+    "quote": "If interconnected, interconnection of stack vents shall occur not less than 1 m above the highest flood rim level of the highest fixture.",
+    "clause": "11.4"
+   },
+   "id": 135
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, for a reduced velocity aerator stack system with interconnected stack vents, what is the maximum number of DN 100 stacks that may be interconnected, and what is the maximum size vent terminating through the roof?",
+   "expected": "5 × DN 100 stacks, with a maximum size vent of DN 300",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 168,
+    "values": [
+     "5 × DN 100",
+     "DN 300"
+    ],
+    "quote": "The number of interconnected stacks shall not exceed 5 × DN 100 stacks or 4 × DN 125 stack, with a maximum size vent of DN 300 terminating through the roof.",
+    "clause": "11.4"
+   },
+   "id": 136
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 11.5.2, where a pressure relief bypass is used for a graded stack offset, what is the minimum distance the pressure relief bypass pipe shall run from the centre-line of the stack to the centre of the pressure relief bypass inlet junction?",
+   "expected": "at least 0.5 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 170,
+    "values": [
+     "0.5 m"
+    ],
+    "quote": "the pressure relief bypass pipe shall \nrun at least 0.5 m from the centre-line of the stack to the centre of the pressure relief bypass inlet \njunction",
+    "clause": "11.5.2"
+   },
+   "id": 137
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, you're installing a pressure relief bypass on a graded stack offset — how far must the bypass pipe run from the centre-line of the stack to the centre of the pressure relief bypass inlet junction?",
+   "expected": "at least 0.5 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 170,
+    "values": [
+     "0.5 m"
+    ],
+    "quote": "the pressure relief bypass pipe shall \nrun at least 0.5 m from the centre-line of the stack to the centre of the pressure relief bypass inlet \njunction",
+    "clause": "11.5.2"
+   },
+   "id": 138
+  },
+  {
+   "cat": "B",
+   "q": "When detailing the pressure relief bypass off a graded stack offset under AS/NZS 3500.2:2021, what minimum dimension applies to the bypass connection shown on the figure?",
+   "expected": "min. 500 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 171,
+    "values": [
+     "500 mm"
+    ],
+    "quote": "min. 500 mm\n(see Clause 11.5.2)",
+    "clause": "11.5.2"
+   },
+   "id": 139
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 11.7, what is the maximum length of an unvented discharge pipe?",
+   "expected": "10 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 172,
+    "values": [
+     "10 m"
+    ],
+    "quote": "Any unvented discharge pipe or unvented common discharge pipe shall not exceed 10 m in length",
+    "clause": "11.7"
+   },
+   "id": 140
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, for an unvented discharge pipe serving a water closet pan with a DN 80 discharge pipe, what is the maximum vertical drop permitted between the crown of the trap and the invert of the junction?",
+   "expected": "2 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 172,
+    "values": [
+     "2 m",
+     "DN 80"
+    ],
+    "quote": "2 m for water closet pans with DN 80 discharge pipes;",
+    "clause": "11.7"
+   },
+   "id": 141
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 12.5.5, what is the minimum depth of a wet well above which a ladder must be provided?",
+   "expected": "1.2 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 175,
+    "values": [
+     "1.2 m"
+    ],
+    "quote": "Where a wet well exceeds a depth of 1.2 m, a ladder shall be provided in accordance with Clause 4.8.3.3.",
+    "clause": "12.5.5"
+   },
+   "id": 142
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, for a gravity discharge pipe entering a wet well, what is the minimum height above the highest working level that the invert must be located?",
+   "expected": "100 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 175,
+    "values": [
+     "100 mm"
+    ],
+    "quote": "The invert of the gravity discharge pipe to a wet well shall be located at least 100 mm above the highest working level",
+    "clause": "12.6.2"
+   },
+   "id": 143
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 12.8.4, what is the minimum height the invert of each waste inlet must be above the highest working level of the holding tank?",
+   "expected": "At least 100 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 176,
+    "values": [
+     "100 mm"
+    ],
+    "quote": "The invert of each waste inlet shall be located at least 100 mm above the highest working level of the holding tank.",
+    "clause": "12.8.4"
+   },
+   "id": 144
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, when installing a vent on a holding tank for a pumped waste fixture, what is the minimum vent size and how far above the waste inlet must the vent be positioned?",
+   "expected": "Minimum DN 50, positioned a minimum of 100 mm above the waste inlet",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 176,
+    "values": [
+     "DN 50",
+     "100 mm"
+    ],
+    "quote": "The holding tank shall be provided with a vent having a minimum size of DN 50. The holding tank shall conform to the venting requirements for waste fixtures. The vent shall be positioned a minimum of 100",
+    "clause": "12.8.6"
+   },
+   "id": 145
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, when connecting a pumped waste discharge from a swimming pool through a gully, what is the minimum depth between finished surface level and the invert level?",
+   "expected": "75 mm min.",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 177,
+    "values": [
+     "75 mm"
+    ],
+    "quote": "Finished surface level\nPumped discharge \nfrom swimming pool\nConcrete support for gully \n(see Clause 4.6.2(c)(i))\n150 mm\nInvert level\n75 mm min.",
+    "clause": "12.8.7"
+   },
+   "id": 146
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, for the connection of a pumped waste discharge shown in the figure, what depth is shown between the finished surface level and the tapered joint to suit application?",
+   "expected": "75 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 177,
+    "values": [
+     "75 mm"
+    ],
+    "quote": "Finished surface level\nGully grate (see Clause 4.6.2(b))\n75 mm\nTapered joint to\nsuit application",
+    "clause": "12.8.7"
+   },
+   "id": 147
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 13.23.1, what is the minimum size of an untrapped waste pipe connecting an ablution trough to a floor waste gully?",
+   "expected": "DN 40",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 183,
+    "values": [
+     "DN 40"
+    ],
+    "quote": "Ablution troughs shall be connected by —\n(a)\nan untrapped waste pipe, not smaller than DN 40, to a floor waste gully; or",
+    "clause": "13.23.1"
+   },
+   "id": 148
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 15.3.2, what is the initial air test pressure applied to the section being tested?",
+   "expected": "15 kPa",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 190,
+    "values": [
+     "15 kPa"
+    ],
+    "quote": "Apply an initial test pressure of approximately 15 kPa to the section being tested.",
+    "clause": "15.3.2"
+   },
+   "id": 149
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 15.3.2, what is the minimum stabilization period for air pressure before commencing the test?",
+   "expected": "3 min",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 190,
+    "values": [
+     "3 min"
+    ],
+    "quote": "Allow the air pressure to stabilize for a minimum of 3 min while checking for leaks.",
+    "clause": "15.3.2"
+   },
+   "id": 150
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 16.3.2, what is the required operating static pressure range throughout a vacuum drainage system, excluding vacuum generator over-run periods?",
+   "expected": "Between −35 kPa and −70 kPa",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 193,
+    "values": [
+     "−35 kPa",
+     "−70 kPa"
+    ],
+    "quote": "The operating static pressure shall be between −35 kPa and −70 kPa throughout the system,",
+    "clause": "16.3.2"
+   },
+   "id": 151
+  },
+  {
+   "cat": "B",
+   "q": "For a vacuum drainage system designed to AS/NZS 3500.2:2021, what operating static pressure must be maintained throughout the system, apart from vacuum generator over-run time periods?",
+   "expected": "Between −35 kPa and −70 kPa",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 193,
+    "values": [
+     "−35 kPa",
+     "−70 kPa"
+    ],
+    "quote": "The operating static pressure shall be between −35 kPa and −70 kPa throughout the system,",
+    "clause": "16.3.2"
+   },
+   "id": 152
+  },
+  {
+   "cat": "B",
+   "q": "In a vacuum drainage system to AS/NZS 3500.2:2021, what is the maximum accumulative vacuum lift permitted for the pipework?",
+   "expected": "6.0 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 194,
+    "values": [
+     "6.0 m"
+    ],
+    "quote": "The accumulative vacuum lift shall not exceed 6.0 m.",
+    "clause": "16.3.2"
+   },
+   "id": 153
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, what is the maximum VLU that a DN 50 vacuum main is permitted to serve?",
+   "expected": "100 VLU",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 195,
+    "values": [
+     "50",
+     "100"
+    ],
+    "quote": "DN 50 Vacuum\nmain size for\nup to 100 VLU",
+    "clause": "16.3.5"
+   },
+   "id": 154
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, what is the maximum VLU that a DN 65 vacuum main is permitted to serve?",
+   "expected": "400 VLU",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 195,
+    "values": [
+     "65",
+     "400"
+    ],
+    "quote": "DN 65 Vacuum\nmain size for\nup to 400 VLU",
+    "clause": "16.3.5"
+   },
+   "id": 155
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 16.3.9, what is the minimum grade required for vacuum pipes in the direction of flow?",
+   "expected": "Not less than 1% grade (10 mm per 1 m)",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 196,
+    "values": [
+     "1 %",
+     "10 mm",
+     "1 m"
+    ],
+    "quote": "Vacuum pipes shall be not less than 1 % grade in the direction of flow, see Figure 16.3.9.",
+    "clause": "16.3.9"
+   },
+   "id": 156
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, when installing a removable interface valve that serves a soil fixture or a buffer and is used as an inspection opening, what is the maximum distance it may be located from the junction connection to a vacuum branch or main pipeline?",
+   "expected": "Within 500 mm of the junction connection",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 196,
+    "values": [
+     "500 mm"
+    ],
+    "quote": "A removable interface valve which serves a soil fixture or a buffer may be used as an inspection opening, provided it is located within 500 mm of a junction connection to a vacuum branch or main pipeline.",
+    "clause": "16.4.1"
+   },
+   "id": 157
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 16.10.1, what diameter range must the vacuum lift pipe for each vacuum soil fixture be between?",
+   "expected": "DN 40 to DN 50",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 200,
+    "values": [
+     "40",
+     "50"
+    ],
+    "quote": "Each vacuum soil fixture shall be provided with a vacuum lift pipe between DN 40 and DN 50 in diameter, connected to a vacuum main or branch pipe",
+    "clause": "16.10.1"
+   },
+   "id": 158
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 16.10.2, what is the maximum horizontal distance from the VAIU for a vacuum lift pipe connected to a vacuum automatic interface unit?",
+   "expected": "1 500 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 200,
+    "values": [
+     "1 500 mm"
+    ],
+    "quote": "A vacuum lift pipe connected to VAIU shall have the following: (a) A maximum horizontal distance from the VAIU of 1 500 mm.",
+    "clause": "16.10.2"
+   },
+   "id": 159
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 16.10.3, how far above the soffit of the horizontal vacuum pipe it connects to must a vacuum lift pipe rise?",
+   "expected": "A minimum of 80 mm above the soffit",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 201,
+    "values": [
+     "80 mm"
+    ],
+    "quote": "rise a minimum of 80 mm above soffit of the horizontal vacuum pipe it is connecting to",
+    "clause": "16.10.3"
+   },
+   "id": 160
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, where two vacuum lift pipes connect to a common horizontal vacuum pipe, what is the minimum spacing permitted between the connections?",
+   "expected": "Not less than 150 mm between the connections",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 201,
+    "values": [
+     "150 mm"
+    ],
+    "quote": "not less than 150 mm between vacuum lift pipe connections on a common horizontal vacuum pipe",
+    "clause": "16.10.3"
+   },
+   "id": 161
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 16.10.4, what is the minimum height at which a second stage lift pipe must be installed with a vacuum reforming pocket?",
+   "expected": "greater than 900 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 202,
+    "values": [
+     "900 mm"
+    ],
+    "quote": "installed with a vacuum reforming pocket when greater than 900 mm as shown in Figure 16.10.4(A)",
+    "clause": "16.10.4"
+   },
+   "id": 162
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, for a branch line incorporating a second stage lift, what size must the second stage lift pipe be?",
+   "expected": "DN 40 or DN 50",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 202,
+    "values": [
+     "DN 40",
+     "DN 50"
+    ],
+    "quote": "The second stage lift pipe shall be — (a) DN 40 or DN 50; (b) vertical; (c) a maximum of 2 m;",
+    "clause": "16.10.4"
+   },
+   "id": 163
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 16.10.4, for a vacuum automatic interface unit with a second stage lift above 900 mm, what is the maximum first stage lift permitted?",
+   "expected": "Max. 2 m",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 203,
+    "values": [
+     "2 m"
+    ],
+    "quote": "Max. 2 m\nFirst stage lift\nVacuum pan\nAlternative\npositions for\ninterface valve\nMax.\n1 500 mm",
+    "clause": "16.10.4"
+   },
+   "id": 164
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 16.11.2, what is the maximum height of an open type vacuum reforming pocket?",
+   "expected": "900 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 204,
+    "values": [
+     "900 mm"
+    ],
+    "quote": "have a maximum height of 900 mm;",
+    "clause": "16.11.2"
+   },
+   "id": 165
+  },
+  {
+   "cat": "B",
+   "q": "In AS/NZS 3500.2:2021, for a closed type vacuum reforming pocket, what is the minimum length and the minimum waste water storage depth?",
+   "expected": "600 mm length and 60 mm depth",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 204,
+    "values": [
+     "600 mm",
+     "60 mm"
+    ],
+    "quote": "be a minimum of 600 mm in length; (c) have a minimum waste water storage depth of 60 mm;",
+    "clause": "16.11.3"
+   },
+   "id": 166
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 16.12, what is the minimum distance a vacuum branch connection must be kept from a change of direction (bend) in the main?",
+   "expected": "Not less than 500 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 205,
+    "values": [
+     "500 mm"
+    ],
+    "quote": "not be located within 500 mm of a change of direction (bend) in the main;",
+    "clause": "16.12"
+   },
+   "id": 167
+  },
+  {
+   "cat": "B",
+   "q": "On a multi-level vacuum drainage system in accordance with AS/NZS 3500.2:2021, how far either side of the 45° junction on the vacuum main must the vacuum branch connection be braced?",
+   "expected": "Bilaterally on each side of the 45° junction within 500 mm",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 205,
+    "values": [
+     "45°",
+     "500 mm"
+    ],
+    "quote": "be braced bilaterally on each side of the 45° junction within 500 mm, see Figure 16.13.2.",
+    "clause": "16.12"
+   },
+   "id": 168
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 16.13.2, how close must bilateral bracing be to each side of a change of direction or branch connection on above-ground vacuum drainage pipes?",
+   "expected": "Within 500 mm each side",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 206,
+    "values": [
+     "500 mm"
+    ],
+    "quote": "vacuum drainage pipes shall have bilateral bracing within 500 mm each side of change of direction or branch connection",
+    "clause": "16.13.2"
+   },
+   "id": 169
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, for an above-ground vacuum drainage pipe, what is the maximum distance between bilateral bracing and a change of direction or branch connection?",
+   "expected": "500 mm on each side",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 206,
+    "values": [
+     "500 mm"
+    ],
+    "quote": "vacuum drainage pipes shall have bilateral bracing within 500 mm each side of change of direction or branch connection, see Figure 16.13.2.",
+    "clause": "16.13.2"
+   },
+   "id": 170
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 16.15.2, what initial vacuum test pressure shall be applied to the section being tested for a vacuum drainage system?",
+   "expected": "−55 ± 5 kPa",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 207,
+    "values": [
+     "−55",
+     "5"
+    ],
+    "quote": "An initial vacuum test pressure of −55 ± 5 kPa shall be applied to the section being tested.",
+    "clause": "16.15.2"
+   },
+   "id": 171
+  },
+  {
+   "cat": "B",
+   "q": "For a vacuum drainage system, what initial vacuum test pressure must be applied, and for how long must the vacuum be allowed to stabilize while checking for leaks? (Refer to AS/NZS 3500.2:2021.)",
+   "expected": "−55 ± 5 kPa for a minimum of 3 min",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 207,
+    "values": [
+     "−55",
+     "5",
+     "3"
+    ],
+    "quote": "When −55 ± 5 kPa has been reached, the vacuum pump and supply valve shall be shut off. The vacuum shall be allowed to stabilize for a minimum of 3 min",
+    "clause": "16.15.2"
+   },
+   "id": 172
+  },
+  {
+   "cat": "E",
+   "q": "Under AS/NZS 3500.2:2021, when vacuum testing a DN 300 vacuum drainage pipe over a 250 m test length, what is the minimum test duration?",
+   "expected": "23 min",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 208,
+    "values": [
+     "23"
+    ],
+    "quote": "Table 16.15.3 — Vacuum drainage system vacuum testing — Acceptance times for 1 kPa pressure change",
+    "clause": "16.15.3"
+   },
+   "id": 173
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, after the vacuum has stabilized and you start the test by allowing the vacuum to fall to −50 kPa, what is the maximum permitted vacuum drop over the minimum test duration?",
+   "expected": "−1 kPa",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 208,
+    "values": [
+     "−1"
+    ],
+    "quote": "The section of sanitary plumbing or sanitary drainage being tested shall not have a drop in vacuum greater than −1 kPa over the minimum test duration specified in Table 16.15.3.",
+    "clause": "16.15.3"
+   },
+   "id": 174
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 2.13.1, when using natural sand as filter material for subsoil drains, what is the maximum percentage permitted to pass a 75 μm sieve?",
+   "expected": "Less than 5 %",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 24,
+    "values": [
+     "5 %",
+     "75 μm"
+    ],
+    "quote": "natural sand, less than 5 % passing a 75 μm sieve; and",
+    "clause": "2.13.1"
+   },
+   "id": 175
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.3:2021, you are specifying screened crushed rock as filter material for a subsoil drain. What size range must the crushed rock fall within?",
+   "expected": "3 mm to 20 mm",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 24,
+    "values": [
+     "3 mm",
+     "20 mm"
+    ],
+    "quote": "screened crushed rock, sizes 3 mm to 20 mm;",
+    "clause": "2.13.1"
+   },
+   "id": 176
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 3.6.2, what is the minimum sheet width for a valley gutter when the design rainfall intensity is 200 mm/h or less?",
+   "expected": "355 mm",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 39,
+    "values": [
+     "355",
+     "200"
+    ],
+    "quote": "Design rainfall intensity\nMinimum, mm\nmm/h\nSheet width\nEffective depth (he) Effective width (we)\n \n≤ 200\n355",
+    "clause": "3.6.2"
+   },
+   "id": 177
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 3.7.2, what is the freeboard for box gutters?",
+   "expected": "30 mm",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 39,
+    "values": [
+     "30"
+    ],
+    "quote": "The freeboard (hf) for box gutters shall be 30 mm",
+    "clause": "3.7.2"
+   },
+   "id": 178
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 3.7.3, what is the permissible gradient range for box gutter systems using the general method?",
+   "expected": "1:40 to 1:200",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 40,
+    "values": [
+     "1:40",
+     "1:200"
+    ],
+    "quote": "Gradients shall be in the range 1:40 to 1:200.",
+    "clause": "3.7.3"
+   },
+   "id": 179
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.3:2021, where a box gutter system with rainheads is designed using the general method, what maximum design flow may the rainheads be subject to?",
+   "expected": "16 L/s",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 40,
+    "values": [
+     "16 L/s"
+    ],
+    "quote": "design flows shall not exceed 16 L/s; and",
+    "clause": "3.7.3"
+   },
+   "id": 180
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 3.7.8, what is the minimum diameter for a downpipe, or the minimum size for a rectangular downpipe?",
+   "expected": "At least 90 mm in diameter, or 100 mm × 50 mm rectangular",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 50,
+    "values": [
+     "90 mm",
+     "100 mm",
+     "50 mm"
+    ],
+    "quote": "Downpipes shall be at least 90 mm in diameter or 100 mm × 50 mm rectangular downpipe",
+    "clause": "3.7.8"
+   },
+   "id": 181
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.3:2021, when sizing the downpipes on a roof drainage system, what is the smallest permissible diameter of a round downpipe and the smallest permissible size of a rectangular downpipe?",
+   "expected": "At least 90 mm diameter, or 100 mm × 50 mm rectangular",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 50,
+    "values": [
+     "90 mm",
+     "100 mm",
+     "50 mm"
+    ],
+    "quote": "Downpipes shall be at least 90 mm in diameter or 100 mm × 50 mm rectangular downpipe, be fitted vertically to the base of a rainhead or sump",
+    "clause": "3.7.8"
+   },
+   "id": 182
+  },
+  {
+   "cat": "E",
+   "q": "Under AS/NZS 3500.3:2021, using Table 4.3.2, for a copper box gutter with base metal thickness 0.80 mm, what is the maximum length between expansion joints where one end is fixed and one end is free to move?",
+   "expected": "15 m",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 52,
+    "values": [
+     "0.80",
+     "15"
+    ],
+    "quote": "Copper\n17 × 10−6\n0.60\n9\n18\n50\n \n \n0.80\n15\n30\n \n",
+    "clause": "4.3.2"
+   },
+   "id": 183
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.3:2021, where a box gutter is fixed between two fixed points such as between two sump outlets, what size expansion joint must be provided when the distance between the fixed points exceeds 6 m?",
+   "expected": "25 mm",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 52,
+    "values": [
+     "25 mm",
+     "6 m"
+    ],
+    "quote": "Where the gutter is fixed between two fixed points, such as in between two sump outlets or similar, an expansion joint of 25 mm shall be provided where the distance between the fixed points exceeds 6 m.",
+    "clause": "4.3.2"
+   },
+   "id": 184
+  },
+  {
+   "cat": "B",
+   "q": "On a metal eaves gutter installation under AS/NZS 3500.3:2021, where laps between sections are between 20 mm and 25 mm, how must the lap be treated?",
+   "expected": "The lap shall be fully sealed.",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 56,
+    "values": [
+     "20 mm",
+     "25 mm"
+    ],
+    "quote": "For metal gutters with laps between 20 mm to 25 mm, the lap shall be fully sealed.",
+    "clause": "4.5.3"
+   },
+   "id": 185
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 4.5.4, what is the minimum gradient for a box gutter with a sole width equal to or less than 600 mm?",
+   "expected": "1:200",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 57,
+    "values": [
+     "1:200",
+     "600 mm"
+    ],
+    "quote": "Gradients shall be not flatter than 1:200 for sole widths equal to or less than 600 mm wide.",
+    "clause": "4.5.4"
+   },
+   "id": 186
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.3:2021, for an unsealed lap joint in a valley gutter, what is the minimum lap length?",
+   "expected": "150 mm",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 57,
+    "values": [
+     "150 mm"
+    ],
+    "quote": "Lap joints shall be in accordance with Clause 4.5.3(b) and be a minimum of 150 mm for an unsealed joint.",
+    "clause": "4.5.5"
+   },
+   "id": 187
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 4.7.2.3, what is the minimum lap for eaves gutters?",
+   "expected": "Not less than 25 mm",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 59,
+    "values": [
+     "25 mm"
+    ],
+    "quote": "The laps for eaves gutters shall be not less than 25 mm.",
+    "clause": "4.7.2.3"
+   },
+   "id": 188
+  },
+  {
+   "cat": "B",
+   "q": "In AS/NZS 3500.3:2021, when fixing the laps of a box gutter joint with fasteners, at what maximum spacing must the fasteners be set and how far must they be kept from the joint edges?",
+   "expected": "Fasteners at not more than 40 mm centres and not less than 10 mm from the edges of the joint",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 59,
+    "values": [
+     "40 mm",
+     "10 mm"
+    ],
+    "quote": "The laps for box gutter fasteners shall be spaced at not more than 40 mm centres and not less than 10 mm from the edges of the joint.",
+    "clause": "4.7.2.3"
+   },
+   "id": 189
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 4.9.4, for a metal box gutter with a discontinuous support system, what is the maximum interval at which support brackets shall be located (apart from stop ends and both ends of sumps and rainheads)?",
+   "expected": "750 mm",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 62,
+    "values": [
+     "750 mm"
+    ],
+    "quote": "discontinuous, where the support brackets extend across the sole width of the gutter and are located at stop ends, both ends of sumps, rainheads and intervals not greater than 750 mm.",
+    "clause": "4.9.4"
+   },
+   "id": 190
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 4.9.4, when a metal box gutter has a continuous support system, what minimum percentage of the sole width must the support provide direct evenly distributed contact to?",
+   "expected": "25 %",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 62,
+    "values": [
+     "25 %"
+    ],
+    "quote": "continuous, where the support extends across the sole width for the full length of the gutter and provides a direct evenly distributed contact to not less than 25 % of the sole width",
+    "clause": "4.9.4"
+   },
+   "id": 191
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.3:2021, when designing an open channel, how far below the floor level or damp course of any adjacent building must the depth of flow in the channel be kept?",
+   "expected": "At least 300 mm below the floor level or damp course",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 71,
+    "values": [
+     "300 mm"
+    ],
+    "quote": "Check that the depth of flow in the channel is at least 300 mm below the floor level or damp course of any adjacent building.",
+    "clause": "5.4.9"
+   },
+   "id": 192
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 5.4.10.1, what is the minimum separation between the maximum ponding level at a sag pit inlet and the floor or damp course of the building?",
+   "expected": "Not less than 300 mm below the floor or damp course",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 71,
+    "values": [
+     "300 mm"
+    ],
+    "quote": "The maximum level shall be not less than 300 mm below the floor or damp course of the building.",
+    "clause": "5.4.10.1"
+   },
+   "id": 193
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 5.4.11.2, what full-pipe velocity shall the pipe drain not exceed?",
+   "expected": "2.0 m/s",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 73,
+    "values": [
+     "2.0 m/s"
+    ],
+    "quote": "repeat Step (c) until the hydraulic capacity exceeds the design flow. The full-pipe velocity shall not exceed 2.0 m/s.",
+    "clause": "5.4.11.2"
+   },
+   "id": 194
+  },
+  {
+   "cat": "E",
+   "q": "Under AS/NZS 3500.3:2021, Table 5.4.11.2, what is the Colebrook–White roughness coefficient k for copper, copper alloys and stainless steel pipe?",
+   "expected": "0.015 mm",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 73,
+    "values": [
+     "0.015"
+    ],
+    "quote": "Copper, copper alloys, stainless steel\n0.015",
+    "clause": "5.4.11.2"
+   },
+   "id": 195
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 5.4.12.1, what is the minimum clearance between the surcharge outlet grate level and the lowest floor level?",
+   "expected": "300 mm",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 76,
+    "values": [
+     "300 mm"
+    ],
+    "quote": "With the grate level — (i) not less than 300 mm below the lowest floor level; and",
+    "clause": "5.4.12.1"
+   },
+   "id": 196
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 6.2.11, what is the maximum loose layer thickness for placing trench fill, and what is the minimum compaction under pavements?",
+   "expected": "Loose layers not more than 200 mm thick, compacted to not less than 90 % or 95 % under pavements",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 83,
+    "values": [
+     "200 mm",
+     "90 %",
+     "95 %"
+    ],
+    "quote": "Trench fill shall be placed in loose layers not more than 200 mm thick and compacted to not less than 90 % or 95 % under pavements",
+    "clause": "6.2.11"
+   },
+   "id": 197
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.3:2021, when excavating for stormwater drainage by machine, how close to a point of connection to an external stormwater drainage network may the machine work?",
+   "expected": "Not within 600 mm of the point of connection",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 83,
+    "values": [
+     "600 mm"
+    ],
+    "quote": "Excavation by a machine shall not be carried out within 600 mm of a point of connection to an external stormwater drainage network.",
+    "clause": "6.2.12"
+   },
+   "id": 198
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.3:2021, for a stormwater drain on an urban residential allotment of less than 1 000 m2 serving a single dwelling, what is the minimum pipe diameter?",
+   "expected": "DN 90",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 84,
+    "values": [
+     "1 000 m2",
+     "DN 90"
+    ],
+    "quote": "For single dwellings in rural areas and residential buildings on urban allotments with areas less than 1 000 m2, minimum diameters shall be DN 90.",
+    "clause": "6.3.3"
+   },
+   "id": 199
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 6.3.5.1, what is the maximum size of crushed rock or gravel used as bedding material for pipes?",
+   "expected": "14 mm",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 85,
+    "values": [
+     "14 mm"
+    ],
+    "quote": "crushed rock or gravel up to a maximum size of 14 mm;",
+    "clause": "6.3.5.1"
+   },
+   "id": 200
+  },
+  {
+   "cat": "B",
+   "q": "For stormwater drainage using bedding material of excavated material, what is the maximum allowable dimension of soil lumps according to AS/NZS 3500.3:2021?",
+   "expected": "75 mm",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 85,
+    "values": [
+     "75 mm"
+    ],
+    "quote": "excavated material, provided it is free from rock or hard matter, and is broken up so that it contains no soil lumps having any dimension greater than 75 mm;",
+    "clause": "6.3.5.1"
+   },
+   "id": 201
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 6.3.6, for site stormwater drains under buildings, what is the minimum thickness of overlay between the top of the pipe and the underside of a reinforced concrete slab?",
+   "expected": "25 mm",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 86,
+    "values": [
+     "25 mm"
+    ],
+    "quote": "the thickness of overlay between the top of the pipe and the underside of a reinforced concrete slab shall be not less than 25 mm",
+    "clause": "6.3.6"
+   },
+   "id": 202
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.3:2021, where rock foundations are used for a site stormwater drain, how thick must the rock foundation bedding be and how thick must the haunch support be?",
+   "expected": "Rock foundation not less than 100 mm thick, haunch support not less than 75 mm thick",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 86,
+    "values": [
+     "100 mm",
+     "75 mm"
+    ],
+    "quote": "Rock foundations shall be not less than 100 mm thick with the haunch support not less than 75 mm thick",
+    "clause": "6.3.5.1"
+   },
+   "id": 203
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 6.4.1, clean-out points for subsoil pipes or geocomposite drains must extend vertically to the top of paved surfaces or within what distance of an unpaved finished surface?",
+   "expected": "Within 300 mm",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 87,
+    "values": [
+     "300 mm"
+    ],
+    "quote": "that extend vertically to the top of paved surfaces or within 300 mm of an unpaved finished surface; and",
+    "clause": "6.4.1"
+   },
+   "id": 204
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.3:2021, when installing subsoil drains with clean-out points, at what change of direction must a clean-out point be provided?",
+   "expected": "At each change of direction greater than 70°",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 87,
+    "values": [
+     "70°"
+    ],
+    "quote": "located at each change of direction greater than 70°;",
+    "clause": "6.4.1"
+   },
+   "id": 205
+  },
+  {
+   "cat": "E",
+   "q": "Under AS/NZS 3500.3:2021, Table 7.2, for a paved area exceeding 200 m2 draining to a surface water drainage system, what is the maximum longitudinal gradient or fall for an access road?",
+   "expected": "1:10 max.",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 90,
+    "values": [
+     "1:10 max."
+    ],
+    "quote": "Longitudinal gradient or fall\n1:10 max.a",
+    "clause": "7.2"
+   },
+   "id": 206
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.3:2021, in a paved catchment area exceeding 200 m2, what minimum gradient applies to kerb channels without a concrete gutter?",
+   "expected": "1:150 min.",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 90,
+    "values": [
+     "1:150 min."
+    ],
+    "quote": "without concrete gutter\n1:150 min.\n1:150 min.",
+    "clause": "7.2"
+   },
+   "id": 207
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 7.4.1, for other than single dwellings, what is the maximum even spacing between inspection openings installed on site stormwater drains?",
+   "expected": "not more than 30 m",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 91,
+    "values": [
+     "30 m"
+    ],
+    "quote": "(b) even spacings not more than 30 m apart;",
+    "clause": "7.4.1"
+   },
+   "id": 208
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.3:2021, when installing inspection openings on site stormwater drains other than for single dwellings, at what length of an inclined jump-up must an inspection opening be installed at each end?",
+   "expected": "inclined jump-up that exceeds 6 m in length",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 91,
+    "values": [
+     "6 m"
+    ],
+    "quote": "(c) each end of any inclined jump-up that exceeds 6 m in length;",
+    "clause": "7.4.1"
+   },
+   "id": 209
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 7.5.3, for a pit without a sump in a site stormwater drain, what is the minimum fall the floor shall be graded between the inverts of the inlet and outlet pipes?",
+   "expected": "At least 20 mm",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 94,
+    "values": [
+     "20 mm"
+    ],
+    "quote": "Pits without a sump, as shown in Figure 7.5.3 (a), shall have the floor graded to fall at least 20 mm between the inverts of the inlet and outlet pipes.",
+    "clause": "7.5.3"
+   },
+   "id": 210
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.3:2021, for a sump pit in a site stormwater drain, how much fall is required between the pipe inverts, and what floor arrangement is required?",
+   "expected": "A flat floor with a fall of at least 20 mm between pipe inverts",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 94,
+    "values": [
+     "20 mm"
+    ],
+    "quote": "Sump pits shall have a flat floor but a fall of at least 20 mm between pipe inverts, as shown in Figure 7.5.3 (b).",
+    "clause": "7.5.3"
+   },
+   "id": 211
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 7.5.4, how far below the surrounding paved area levels shall gratings be set to allow for settlement after construction?",
+   "expected": "5 mm below",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 95,
+    "values": [
+     "5 mm"
+    ],
+    "quote": "Gratings shall be set 5 mm below the levels of surrounding paved areas to allow for settlement after construction.",
+    "clause": "7.5.4"
+   },
+   "id": 212
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.3:2021, for an in-situ rectangular brickwork stormwater pit, what minimum thickness is required where the wall depth measured from the existing surface to the invert of the outlet is 500 mm?",
+   "expected": "110 mm min. thick",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 95,
+    "values": [
+     "110 mm",
+     "600 mm"
+    ],
+    "quote": "do not exceed 600 mm, 110 mm min. thick; or",
+    "clause": "7.5.5.1"
+   },
+   "id": 213
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 7.5.5.5, what is the minimum thickness of cement mortar required when rendering the brick walls and floors of pits and arresters?",
+   "expected": "At least 10 mm thick",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 97,
+    "values": [
+     "10 mm"
+    ],
+    "quote": "Brick walls and floors of pits and arresters shall be rendered with a coat of cement mortar at least 10 mm thick, trowelled to a smooth finish.",
+    "clause": "7.5.5.5"
+   },
+   "id": 214
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.3:2021, for a stormwater pit with tapered upper walls, how far above the invert of the outlet pipe must the taper start, and what are the minimum access shaft diameter and maximum access shaft length?",
+   "expected": "Not less than 1 500 mm above the invert of the outlet pipe; access shaft diameter not less than 600 mm and length not greater than 350 mm",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 97,
+    "values": [
+     "1 500 mm",
+     "100 mm",
+     "600 mm",
+     "350 mm"
+    ],
+    "quote": "(i) 1 500 mm above the invert of the outlet pipe; and (ii) 100 mm above the top of the highest inlet pipe. The diameter of the access shaft shall be not less than 600 mm, and its length not greater than 350 mm.",
+    "clause": "7.5.5.6"
+   },
+   "id": 215
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 7.8, what is the minimum thickness and minimum upward extension of the concrete footing supporting the bend at the base of a jump-up in a site stormwater drain?",
+   "expected": "Not less than 100 mm thick, extending upwards not less than 100 mm.",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 99,
+    "values": [
+     "100 mm",
+     "100 mm"
+    ],
+    "quote": "The bend at the base of the jump-up shall be supported on a concrete footing of a thickness not less than 100 mm and extending upwards not less than 100 mm.",
+    "clause": "7.8"
+   },
+   "id": 216
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.3:2021, when building a jump-up in a site stormwater drain, what concrete footing must be provided under the bend at the base of the jump-up?",
+   "expected": "A concrete footing of a thickness not less than 100 mm, extending upwards not less than 100 mm.",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 99,
+    "values": [
+     "100 mm",
+     "100 mm"
+    ],
+    "quote": "The bend at the base of the jump-up shall be supported on a concrete footing of a thickness not less than 100 mm and extending upwards not less than 100 mm.",
+    "clause": "7.8"
+   },
+   "id": 217
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 7.9, where the gradient of a site stormwater drain exceeds 1:5, what is the maximum interval at which anchor blocks shall be installed?",
+   "expected": "3 m",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 100,
+    "values": [
+     "3 m"
+    ],
+    "quote": "at intervals not exceeding 3 m.",
+    "clause": "7.9"
+   },
+   "id": 218
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.3:2021, a site stormwater drain is laid on a gradient steeper than 1:5. What is the minimum thickness required for the reinforced concrete anchor blocks on such a drain?",
+   "expected": "150 mm",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 100,
+    "values": [
+     "150 mm"
+    ],
+    "quote": "Thickness shall be not less than 150 mm.",
+    "clause": "7.9"
+   },
+   "id": 219
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 7.10.1, what is the minimum clearance required between ponding and overflow levels and any adjacent habitable floor levels?",
+   "expected": "300 mm",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 101,
+    "values": [
+     "300 mm"
+    ],
+    "quote": "Ponding and overflow levels shall be not less than 300 mm below any adjacent habitable floor levels",
+    "clause": "7.10.1"
+   },
+   "id": 220
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 7.10.2(iv), where a discharge control pit is included in a storage, what is the minimum depth of the sump below the centre of the orifice?",
+   "expected": "A minimum of 1.5 times the diameter of the orifice of the outlet",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 102,
+    "values": [
+     "1.5"
+    ],
+    "quote": "a discharge control pit is included in the storage, this shall contain a sump set a minimum of 1.5 times the diameter of the orifice of the outlet below the centre of the orifice.",
+    "clause": "7.10.2"
+   },
+   "id": 221
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.3:2021, for a below-ground storage tank that exceeds 1.2 m in depth, what access requirement must be met?",
+   "expected": "A ladder in accordance with Clause 7.5.5.4 shall be installed",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 102,
+    "values": [
+     "1.2"
+    ],
+    "quote": "Where the depth of the tank exceeds 1.2 m, a ladder in accordance with Clause 7.5.5.4 shall be installed.",
+    "clause": "7.10.2"
+   },
+   "id": 222
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 8.3.7, what is the maximum height the high-level alarm may be set above the invert of the inlet pipe in a wet well?",
+   "expected": "not higher than 100 mm above the invert of the inlet pipe",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 104,
+    "values": [
+     "100 mm"
+    ],
+    "quote": "The high-level alarm shall be set not higher than 100 mm above the invert of the inlet pipe, provided flooding of habitable or storage areas and vehicle garages is avoided.",
+    "clause": "8.3.7"
+   },
+   "id": 223
+  },
+  {
+   "cat": "B",
+   "q": "For a stormwater pump-out wet well designed to AS/NZS 3500.3:2021, what is the minimum wet well storage required between the high and low working levels?",
+   "expected": "1% of the catchment area in m2, and not less than 3 m3",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 104,
+    "values": [
+     "1 %",
+     "3 m3"
+    ],
+    "quote": "The minimum wet well storage between the high and low working levels, expressed in cubic metres, shall be 1 % of the catchment area in m2 and not less than 3 m3.",
+    "clause": "8.3.6"
+   },
+   "id": 224
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 9.3.1, when downpipes within buildings are given a water test, what is the minimum test period they must be subjected to?",
+   "expected": "Not less than 10 min",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 106,
+    "values": [
+     "10 m",
+     "10 min"
+    ],
+    "quote": "a water test at a pressure of a head of water equal to the lesser of 10 m or the length of the downpipe for a period of not less than 10 min",
+    "clause": "9.3.1"
+   },
+   "id": 225
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.3:2021, you are air testing downpipes within a building instead of water testing them. What minimum air test pressure and period must be applied?",
+   "expected": "Not less than 30 kPa for not less than 3 min",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 106,
+    "values": [
+     "30 kPa",
+     "3 min",
+     "1 kPa",
+     "100 mm"
+    ],
+    "quote": "an air test at a pressure of not less than 30 kPa for a period of not less than 3 min.",
+    "clause": "9.3.1"
+   },
+   "id": 226
+  },
+  {
+   "cat": "E",
+   "q": "Under AS/NZS 3500.3:2021, Table 9.3.2(B), what is the minimum period for a pressure drop from 25 kPa to 20 kPa for a DN 100 to DN 225 drain?",
+   "expected": "90 s",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 107,
+    "values": [
+     "90"
+    ],
+    "quote": "Minimum period for pressure drop from 25 kPa to 20 kPa",
+    "clause": "9.3.2"
+   },
+   "id": 227
+  },
+  {
+   "cat": "B",
+   "q": "Under AS/NZS 3500.3:2021, when conducting a water test on a section of below-ground drain, what is the maximum head of water that shall not be exceeded?",
+   "expected": "3 m",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 107,
+    "values": [
+     "3"
+    ],
+    "quote": "The head of water on any section of drain shall not exceed 3 m.",
+    "clause": "9.4.1"
+   },
+   "id": 228
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 10.2.1, what is the freeboard for box gutters in a siphonic drainage system?",
+   "expected": "30 mm",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 109,
+    "values": [
+     "30 mm"
+    ],
+    "quote": "The freeboard (hf) for box gutters shall be 30 mm, see Clause 3.7.2.",
+    "clause": "10.2.1"
+   },
+   "id": 229
+  },
+  {
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 10.2.8, what is the minimum internal diameter for any pipe in a siphonic roof drainage system?",
+   "expected": "44 mm",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 110,
+    "values": [
+     "44 mm"
+    ],
+    "quote": "The minimum internal diameter for any pipe in a siphonic roof drainage system shall be 44 mm.",
+    "clause": "10.2.8"
+   },
+   "id": 230
+  },
+  {
+   "cat": "B",
+   "q": "In a siphonic roof drainage system to AS/NZS 3500.3:2021, what minimum velocity must be achieved under full-flow conditions to help clear debris entering the piping system?",
+   "expected": "not less than 1.0 m/s",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 110,
+    "values": [
+     "1.0 m/s"
+    ],
+    "quote": "The minimum velocity under full-flow conditions shall be not less than 1.0 m/s to assist in clearing debris entering the piping system.",
+    "clause": "10.2.6"
+   },
+   "id": 231
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.1:2018, Clause 5.2.9, what is the minimum angle at which an underground water service shall cross another underground service?",
+   "expected": "45°",
+   "ground": {
+    "doc": "3500.1-2018  Plumbing and drainage - Water services-已解锁.pdf",
+    "designation": "AS 3500.1:2018",
+    "page": 36,
+    "values": [
+     "45°"
+    ],
+    "quote": "Any underground water service crossing another service or any underground service crossing a water service shall— cross at an angle of not less than 45°;",
+    "clause": "5.2.9"
+   },
+   "id": 232
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.1:2018, when a DN 50 water service pipe is installed near an underground obstruction, what minimum clearance must be provided to protect the pipe from physical damage and permit repairs?",
+   "expected": "100 mm",
+   "ground": {
+    "doc": "3500.1-2018  Plumbing and drainage - Water services-已解锁.pdf",
+    "designation": "AS 3500.1:2018",
+    "page": 36,
+    "values": [
+     "100 mm",
+     "DN 65"
+    ],
+    "quote": "The clearance shall be at least— (a) 100 mm for a water service not exceeding DN 65;",
+    "clause": "5.2.10"
+   },
+   "id": 233
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.1:2018, Clause 5.4.4, what is the minimum distance required between the top of a water service pipe laid beneath a concrete slab on ground and the underside of the slab or slab-stiffening beam?",
+   "expected": "75 mm",
+   "ground": {
+    "doc": "3500.1-2018  Plumbing and drainage - Water services-已解锁.pdf",
+    "designation": "AS 3500.1:2018",
+    "page": 43,
+    "values": [
+     "75 mm"
+    ],
+    "quote": "There shall be a minimum distance of 75 mm between the top of the pipe and the underside of the slab or slab-stiffening beam.",
+    "clause": "5.4.4"
+   },
+   "id": 234
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.1:2018, when pipework penetrates a concrete slab on ground, what minimum thickness of impermeable flexible lagging must be provided for the full depth of the slab penetration?",
+   "expected": "6 mm",
+   "ground": {
+    "doc": "3500.1-2018  Plumbing and drainage - Water services-已解锁.pdf",
+    "designation": "AS 3500.1:2018",
+    "page": 43,
+    "values": [
+     "6 mm"
+    ],
+    "quote": "an impermeable flexible material of not less than 6 mm thickness; or",
+    "clause": "5.4.4"
+   },
+   "id": 235
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.1:2018, Clause 5.5.10.2, when butt-welding stainless steel pipe larger than DN 25 by the TIG argon arc method, what is the maximum gap permitted between the abutting pipe ends?",
+   "expected": "0.5 mm",
+   "ground": {
+    "doc": "3500.1-2018  Plumbing and drainage - Water services-已解锁.pdf",
+    "designation": "AS 3500.1:2018",
+    "page": 45,
+    "values": [
+     "0.5 mm"
+    ],
+    "quote": "have a gap not greater than 0.5 mm between the abutting pipe ends to be joined;",
+    "clause": "5.5.10.2"
+   },
+   "id": 236
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.1:2018, when butt-welding stainless steel water pipe larger than DN 25 with a wall thickness less than 1.2 mm, what length of backup ring made from the parent pipe must be inserted to straddle the joint?",
+   "expected": "6 mm",
+   "ground": {
+    "doc": "3500.1-2018  Plumbing and drainage - Water services-已解锁.pdf",
+    "designation": "AS 3500.1:2018",
+    "page": 45,
+    "values": [
+     "6 mm"
+    ],
+    "quote": "have inserted a backup ring 6 mm long, made from the parent pipe, to straddle the joint of pipes with a wall thickness less than 1.2 mm;",
+    "clause": "5.5.10.2"
+   },
+   "id": 237
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.1:2018, when a buried water service is installed under slabs and footings (concrete), what is the minimum depth of cover measured from the proposed finished surface level?",
+   "expected": "75 mm",
+   "ground": {
+    "doc": "3500.1-2018  Plumbing and drainage - Water services-已解锁.pdf",
+    "designation": "AS 3500.1:2018",
+    "page": 49,
+    "values": [
+     "75"
+    ],
+    "quote": "Under slabs and footings (concrete) 75",
+    "clause": "5.9"
+   },
+   "id": 238
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.1:2018, a below-ground water service other than a fire service is to be buried where it will not be subject to vehicular loading. What minimum cover must be provided, measured from proposed finished surface levels?",
+   "expected": "300 mm",
+   "ground": {
+    "doc": "3500.1-2018  Plumbing and drainage - Water services-已解锁.pdf",
+    "designation": "AS 3500.1:2018",
+    "page": 49,
+    "values": [
+     "300"
+    ],
+    "quote": "Not subject to vehicular loading (excluding fire services) 300",
+    "clause": "5.9"
+   },
+   "id": 239
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.1:2018, Clause 5.17.4.2, what is the minimum distance pipes in unheated roof spaces shall be located away from the roof covering and external walls?",
+   "expected": "Not less than 100 mm",
+   "ground": {
+    "doc": "3500.1-2018  Plumbing and drainage - Water services-已解锁.pdf",
+    "designation": "AS 3500.1:2018",
+    "page": 52,
+    "values": [
+     "100 mm"
+    ],
+    "quote": "Pipes in unheated roof spaces shall be located not less than 100 mm away from the roof covering and external walls.",
+    "clause": "5.17.4.2"
+   },
+   "id": 240
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.1:2018, when running pipework adjacent to an external wall, what is the minimum distance the pipes must be positioned away from the external surface?",
+   "expected": "Not less than 20 mm",
+   "ground": {
+    "doc": "3500.1-2018  Plumbing and drainage - Water services-已解锁.pdf",
+    "designation": "AS 3500.1:2018",
+    "page": 52,
+    "values": [
+     "20 mm"
+    ],
+    "quote": "Pipes adjacent to external walls shall be positioned not less than 20 mm away from the external surface.",
+    "clause": "5.17.4.3"
+   },
+   "id": 241
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.1:2018, when the interior depth of a water storage tank is greater than the specified limit, access ladders of standard design to AS 1657 must be installed — what is that maximum interior depth before ladders become mandatory?",
+   "expected": "2 m",
+   "ground": {
+    "doc": "3500.1-2018  Plumbing and drainage - Water services-已解锁.pdf",
+    "designation": "AS 3500.1:2018",
+    "page": 63,
+    "values": [
+     "2 m"
+    ],
+    "quote": "Where the interior depth of any storage tank exceeds 2 m, access ladders of standard design and dimensions conforming to AS 1657 shall be installed.",
+    "clause": "8.3.3"
+   },
+   "id": 242
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.1:2018, Clause 8.4.1, above what tank capacity must provision be made at the base for removal of sludge?",
+   "expected": "500 L",
+   "ground": {
+    "doc": "3500.1-2018  Plumbing and drainage - Water services-已解锁.pdf",
+    "designation": "AS 3500.1:2018",
+    "page": 63,
+    "values": [
+     "500 L"
+    ],
+    "quote": "Where the capacity exceeds 500 L, provision shall be made at the base for removal of sludge.",
+    "clause": "8.4.1"
+   },
+   "id": 243
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.1:2018, Clause 8.4.4.3, what is the minimum size of telltale pipe required where the tank overflow pipe does not discharge to a readily visible position?",
+   "expected": "DN 20",
+   "ground": {
+    "doc": "3500.1-2018  Plumbing and drainage - Water services-已解锁.pdf",
+    "designation": "AS 3500.1:2018",
+    "page": 68,
+    "values": [
+     "DN 20"
+    ],
+    "quote": "a telltale pipe not smaller than DN 20 shall be connected to the invert of the overflow pipe",
+    "clause": "8.4.4.3"
+   },
+   "id": 244
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.1:2018, for a storage tank with a capacity exceeding 500 L, what is the minimum size of sludge valve that must be fitted, expressed as a minimum DN size?",
+   "expected": "DN 40",
+   "ground": {
+    "doc": "3500.1-2018  Plumbing and drainage - Water services-已解锁.pdf",
+    "designation": "AS 3500.1:2018",
+    "page": 68,
+    "values": [
+     "DN 40"
+    ],
+    "quote": "The minimum size of the valve shall be not less than half the outlet pipe size nor less than DN 40.",
+    "clause": "8.7"
+   },
+   "id": 245
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.1:2018, Clause 18.3.1, what hydrostatic test pressure must a water service withstand, and for what minimum period, without showing any leakage?",
+   "expected": "1500 kPa for not less than 30 min",
+   "ground": {
+    "doc": "3500.1-2018  Plumbing and drainage - Water services-已解锁.pdf",
+    "designation": "AS 3500.1:2018",
+    "page": 91,
+    "values": [
+     "1500 kPa",
+     "30 min"
+    ],
+    "quote": "Water services shall not show any leakage when subjected to a hydrostatic pressure of 1500 kPa for a period of not less than 30 min.",
+    "clause": "18.3.1"
+   },
+   "id": 246
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.1:2018, when commissioning a storage tank (other than a rainwater tank), for what minimum period must it be filled until it overflows?",
+   "expected": "not less than 1 min",
+   "ground": {
+    "doc": "3500.1-2018  Plumbing and drainage - Water services-已解锁.pdf",
+    "designation": "AS 3500.1:2018",
+    "page": 91,
+    "values": [
+     "1 min"
+    ],
+    "quote": "Storage tanks (except rainwater tanks) shall be filled until they overflow for a period of not less than 1 min.",
+    "clause": "18.3.2"
+   },
+   "id": 247
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.2:2018, Clause 2.4.2(c), what is the maximum offset angle to which copper and copper alloy pipes may be bent on site?",
+   "expected": "10°",
+   "ground": {
+    "doc": "3500.2-2018_V3  Plumbing and drainage - Sanitary plumbing and drainage-已解锁.pdf",
+    "designation": "AS 3500.2:2018",
+    "page": 17,
+    "values": [
+     "10°"
+    ],
+    "quote": "Copper and copper alloy pipes shall not be bent on site beyond an offset angle of 10°, except that Type D copper shall not be bent.",
+    "clause": "2.4.2"
+   },
+   "id": 248
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.2:2018, when installing a drainage stack more than 9 m in height, what type of copper alloy bends and junctions must be used at the base of the stack?",
+   "expected": "Cast or hot-pressed copper alloy bends and junctions",
+   "ground": {
+    "doc": "3500.2-2018_V3  Plumbing and drainage - Sanitary plumbing and drainage-已解锁.pdf",
+    "designation": "AS 3500.2:2018",
+    "page": 17,
+    "values": [
+     "9 m"
+    ],
+    "quote": "Copper alloy bends and junctions used at the base of stacks greater than 9 m in height shall be cast or hot-pressed.",
+    "clause": "2.4.2"
+   },
+   "id": 249
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.2:2018, Clause 4.6.6.6, what is the minimum height between the top of the overflow gully riser and the lowest fixture connected to the drain?",
+   "expected": "150 mm",
+   "ground": {
+    "doc": "3500.2-2018_V3  Plumbing and drainage - Sanitary plumbing and drainage-已解锁.pdf",
+    "designation": "AS 3500.2:2018",
+    "page": 55,
+    "values": [
+     "150 mm"
+    ],
+    "quote": "A minimum height of 150 mm shall be maintained between the top of the overflow gully riser and the lowest fixture connected to the drain.",
+    "clause": "4.6.6.6"
+   },
+   "id": 250
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.2:2018, when connecting an untrapped waste pipe to a floor waste gully, what is the maximum length allowed for that untrapped waste pipe?",
+   "expected": "1.2 m",
+   "ground": {
+    "doc": "3500.2-2018_V3  Plumbing and drainage - Sanitary plumbing and drainage-已解锁.pdf",
+    "designation": "AS 3500.2:2018",
+    "page": 56,
+    "values": [
+     "1.2 m"
+    ],
+    "quote": "Untrapped waste\n1.2 m long max.",
+    "clause": "4.6.7.1"
+   },
+   "id": 251
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.2:2018, Clause 6.8.1, for a stack of three floor levels or more, what is the minimum distance downstream from the base of the stack where a discharge pipe may connect?",
+   "expected": "2.5 m",
+   "ground": {
+    "doc": "3500.2-2018_V3  Plumbing and drainage - Sanitary plumbing and drainage-已解锁.pdf",
+    "designation": "AS 3500.2:2018",
+    "page": 83,
+    "values": [
+     "2.5 m"
+    ],
+    "quote": "For stacks of three floor levels or more— (i) no connection shall be made closer than 2.5 m downstream or 1 m upstream of the base of the stack;",
+    "clause": "6.8.1"
+   },
+   "id": 252
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.2:2018, for a building with a stack serving two floor levels or less, what is the minimum distance upstream from the base of the stack that a discharge pipe may connect?",
+   "expected": "500 mm",
+   "ground": {
+    "doc": "3500.2-2018_V3  Plumbing and drainage - Sanitary plumbing and drainage-已解锁.pdf",
+    "designation": "AS 3500.2:2018",
+    "page": 83,
+    "values": [
+     "500 mm"
+    ],
+    "quote": "For stacks of two floor levels or less— (i) no connection shall be made closer than 500 mm downstream or upstream of the base of the stack;",
+    "clause": "6.8.1"
+   },
+   "id": 253
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.2:2018, Clause 9.2.5, where the distance between the invert of the drain or graded pipe and the lowest floor level is exceeded, that floor shall be counted as an additional floor level — what is that distance?",
+   "expected": "2.4 m",
+   "ground": {
+    "doc": "3500.2-2018_V3  Plumbing and drainage - Sanitary plumbing and drainage-已解锁.pdf",
+    "designation": "AS 3500.2:2018",
+    "page": 123,
+    "values": [
+     "2.4 m"
+    ],
+    "quote": "Where the distance between the invert of the drain or graded pipe and the lowest floor level exceeds 2.4 m, that floor shall be counted as an additional floor level.",
+    "clause": "9.2.5"
+   },
+   "id": 254
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.2:2018, when counting the maximum number of floor levels a stack passes through from where it connects to the drain or graded pipe to the highest fixture floor, at what invert-to-lowest-floor distance does the lowest floor get counted as an extra floor level?",
+   "expected": "2.4 m",
+   "ground": {
+    "doc": "3500.2-2018_V3  Plumbing and drainage - Sanitary plumbing and drainage-已解锁.pdf",
+    "designation": "AS 3500.2:2018",
+    "page": 123,
+    "values": [
+     "2.4 m"
+    ],
+    "quote": "Where the distance between the invert of the drain or graded pipe and the lowest floor level exceeds 2.4 m, that floor shall be counted as an additional floor level.",
+    "clause": "9.2.5"
+   },
+   "id": 255
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.2:2018, Clause 9.5.11.2, what is the maximum length of the fixture discharge pipe from a basin to the point of connection to the common discharge pipe?",
+   "expected": "1 m",
+   "ground": {
+    "doc": "3500.2-2018_V3  Plumbing and drainage - Sanitary plumbing and drainage-已解锁.pdf",
+    "designation": "AS 3500.2:2018",
+    "page": 128,
+    "values": [
+     "1 m"
+    ],
+    "quote": "The fixture discharge pipe from each basin to the point of connection to the common discharge pipe shall be— (a) DN 40; (b) not longer than 1 m;",
+    "clause": "9.5.11.2"
+   },
+   "id": 256
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.2:2018, when installing unvented pluggable basins, what is the maximum distance between the centre-lines of adjacent traps?",
+   "expected": "2 m",
+   "ground": {
+    "doc": "3500.2-2018_V3  Plumbing and drainage - Sanitary plumbing and drainage-已解锁.pdf",
+    "designation": "AS 3500.2:2018",
+    "page": 128,
+    "values": [
+     "2 m"
+    ],
+    "quote": "The distance between the centre-lines of adjacent traps and between the near face of the stack and the centre-line of the nearest trap shall not exceed 2 m.",
+    "clause": "9.5.11.4"
+   },
+   "id": 257
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.2:2018, Clause 9.8.7.2, what is the maximum fixture unit loading allowed to discharge to a waste stack of up to DN 100 with steep offsets, where the fixtures are unvented in accordance with Item (g)?",
+   "expected": "120 fixture units",
+   "ground": {
+    "doc": "3500.2-2018_V3  Plumbing and drainage - Sanitary plumbing and drainage-已解锁.pdf",
+    "designation": "AS 3500.2:2018",
+    "page": 140,
+    "values": [
+     "120"
+    ],
+    "quote": "Where the fixtures are unvented in accordance with Item (g), the maximum fixture unit loading to discharge to the stack shall not exceed 120 fixture units.",
+    "clause": "9.8.7.2"
+   },
+   "id": 258
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.2:2018, Clause 9.9.5, what is the maximum number of consecutive floor levels a DN 100 stack may serve when a graded offset is installed?",
+   "expected": "10",
+   "ground": {
+    "doc": "3500.2-2018_V3  Plumbing and drainage - Sanitary plumbing and drainage-已解锁.pdf",
+    "designation": "AS 3500.2:2018",
+    "page": 145,
+    "values": [
+     "10"
+    ],
+    "quote": "The height of the stack shall not exceed 10 consecutive floor levels.",
+    "clause": "9.9.5"
+   },
+   "id": 259
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.2:2018, for a DN 100 stack with a graded offset between the base and the highest connection, what is the minimum distance between the centre-lines of the vertical sections?",
+   "expected": "2 m",
+   "ground": {
+    "doc": "3500.2-2018_V3  Plumbing and drainage - Sanitary plumbing and drainage-已解锁.pdf",
+    "designation": "AS 3500.2:2018",
+    "page": 145,
+    "values": [
+     "2 m"
+    ],
+    "quote": "The minimum distance between the centre-lines of the vertical sections of the stack shall be 2 m.",
+    "clause": "9.9.5"
+   },
+   "id": 260
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.2:2018, Clause 12.8.4, what is the minimum height above the highest working level of the holding tank at which the invert of each waste inlet shall be located?",
+   "expected": "100 mm",
+   "ground": {
+    "doc": "3500.2-2018_V3  Plumbing and drainage - Sanitary plumbing and drainage-已解锁.pdf",
+    "designation": "AS 3500.2:2018",
+    "page": 166,
+    "values": [
+     "100 mm"
+    ],
+    "quote": "The invert of each waste inlet shall be located at least 100 mm above the highest working level of the holding tank.",
+    "clause": "12.8.4"
+   },
+   "id": 261
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "For a holding tank vent in AS 3500.2:2018, what is the minimum vent size and how far above the waste inlet must the vent be positioned?",
+   "expected": "DN 50 and 100 mm",
+   "ground": {
+    "doc": "3500.2-2018_V3  Plumbing and drainage - Sanitary plumbing and drainage-已解锁.pdf",
+    "designation": "AS 3500.2:2018",
+    "page": 166,
+    "values": [
+     "DN 50",
+     "100 mm"
+    ],
+    "quote": "The holding tank shall be provided with a vent having a minimum size of DN 50 and shall conform with the venting requirements for waste fixtures. The vent shall be positioned a minimum of 100 mm above the waste inlet.",
+    "clause": "12.8.6"
+   },
+   "id": 262
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.2:2018, Clause 15.1, when testing a sanitary fixture by subjecting it to normal use, what minimum water seal must the trap of that fixture retain after the test under normal operating conditions?",
+   "expected": "not less than 25 mm",
+   "ground": {
+    "doc": "3500.2-2018_V3  Plumbing and drainage - Sanitary plumbing and drainage-已解锁.pdf",
+    "designation": "AS 3500.2:2018",
+    "page": 177,
+    "values": [
+     "25 mm"
+    ],
+    "quote": "the residual water seal in the trap of the fixture concerned or in any other trap connected to the same system shall, under normal operating conditions, retain a water seal of not less than 25 mm.",
+    "clause": "15.1"
+   },
+   "id": 263
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.2:2018, when carrying out a hydrostatic test on a sanitary drainage pipe, to what height above the soffit level at the highest point of the section being tested must the pipe be filled with water?",
+   "expected": "not less than 1 m above the soffit level at the highest point of the section being tested",
+   "ground": {
+    "doc": "3500.2-2018_V3  Plumbing and drainage - Sanitary plumbing and drainage-已解锁.pdf",
+    "designation": "AS 3500.2:2018",
+    "page": 177,
+    "values": [
+     "1 m"
+    ],
+    "quote": "for sanitary drainage, to a height of not less than 1 m above the soffit level at the highest point of the section being tested;",
+    "clause": "15.2"
+   },
+   "id": 264
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.3:2018, Clause 4.7.2.3, what is the minimum lap for eaves gutters?",
+   "expected": "25 mm",
+   "ground": {
+    "doc": "3500.3-2018  Plumbing and drainage - Stormwater drainage.pdf",
+    "designation": "AS 3500.3:2018",
+    "page": 52,
+    "values": [
+     "25 mm"
+    ],
+    "quote": "The laps for eaves gutters shall be not less than 25 mm.",
+    "clause": "4.7.2.3"
+   },
+   "id": 265
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "For box gutter fasteners under AS 3500.3:2018, what is the maximum spacing and minimum edge distance?",
+   "expected": "40 mm centres and 10 mm from edges",
+   "ground": {
+    "doc": "3500.3-2018  Plumbing and drainage - Stormwater drainage.pdf",
+    "designation": "AS 3500.3:2018",
+    "page": 52,
+    "values": [
+     "40 mm",
+     "10 mm"
+    ],
+    "quote": "The laps for box gutter fasteners shall be spaced at not more than 40 mm centres and not less than 10 mm from the edges of the joint.",
+    "clause": "4.7.2.3"
+   },
+   "id": 266
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.3:2018, Clause 4.9.4, for a metal box gutter with discontinuous support brackets, what is the maximum interval between support brackets?",
+   "expected": "750 mm",
+   "ground": {
+    "doc": "3500.3-2018  Plumbing and drainage - Stormwater drainage.pdf",
+    "designation": "AS 3500.3:2018",
+    "page": 54,
+    "values": [
+     "750 mm"
+    ],
+    "quote": "are located at stop ends, both ends of sumps, rainheads and intervals not greater than 750 mm.",
+    "clause": "4.9.4"
+   },
+   "id": 267
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.3:2018, when metal box gutters have continuous support, what minimum percentage of the sole width must the support provide direct evenly distributed contact to?",
+   "expected": "25%",
+   "ground": {
+    "doc": "3500.3-2018  Plumbing and drainage - Stormwater drainage.pdf",
+    "designation": "AS 3500.3:2018",
+    "page": 54,
+    "values": [
+     "25%"
+    ],
+    "quote": "continuous, where the support extends across the sole width for the full length of the gutter and provides a direct evenly distributed contact to not less than 25% of the sole width",
+    "clause": "4.9.4"
+   },
+   "id": 268
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.3:2018, Clause 5.4.10.2, what blockage factor shall be used for on-grade pits?",
+   "expected": "0.8",
+   "ground": {
+    "doc": "3500.3-2018  Plumbing and drainage - Stormwater drainage.pdf",
+    "designation": "AS 3500.3:2018",
+    "page": 64,
+    "values": [
+     "0.8"
+    ],
+    "quote": "Blockage factors are variable, but a value of 0.8 (reducing capacities to 80% of values given by design aids) shall be used for on-grade pits.",
+    "clause": "5.4.10.2"
+   },
+   "id": 269
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.3:2018, when designing site stormwater pipe drains, what is the maximum allowable full-pipe velocity?",
+   "expected": "2.0 m/s",
+   "ground": {
+    "doc": "3500.3-2018  Plumbing and drainage - Stormwater drainage.pdf",
+    "designation": "AS 3500.3:2018",
+    "page": 64,
+    "values": [
+     "2.0 m/s"
+    ],
+    "quote": "The full-pipe velocity shall not exceed 2.0 m/s.",
+    "clause": "5.4.11.2"
+   },
+   "id": 270
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.3:2018, Clause 6.3.5.2, what is the minimum bedding thickness required where a site stormwater drain is laid on an earth foundation?",
+   "expected": "75 mm",
+   "ground": {
+    "doc": "3500.3-2018  Plumbing and drainage - Stormwater drainage.pdf",
+    "designation": "AS 3500.3:2018",
+    "page": 77,
+    "values": [
+     "75 mm"
+    ],
+    "quote": "Earth foundations shall be not less than 75 mm thick.",
+    "clause": "6.3.5.2"
+   },
+   "id": 271
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Using AS 3500.3:2018, when a site stormwater drain is laid on rock or shale with the gradient steeper than 1:5 and a cement mortar bedding is used, what minimum mortar depth must be provided below the bottom of the pipe?",
+   "expected": "50 mm",
+   "ground": {
+    "doc": "3500.3-2018  Plumbing and drainage - Stormwater drainage.pdf",
+    "designation": "AS 3500.3:2018",
+    "page": 77,
+    "values": [
+     "50 mm"
+    ],
+    "quote": "be a minimum depth of 50 mm measured below the bottom of the pipe;",
+    "clause": "6.3.5.2"
+   },
+   "id": 272
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.3:2018, Clause 7.4.1, what is the maximum spacing for inspection openings on site stormwater drains (other than single dwellings)?",
+   "expected": "30 m",
+   "ground": {
+    "doc": "3500.3-2018  Plumbing and drainage - Stormwater drainage.pdf",
+    "designation": "AS 3500.3:2018",
+    "page": 82,
+    "values": [
+     "30 m"
+    ],
+    "quote": "even spacings not more than 30 m apart",
+    "clause": "7.4.1"
+   },
+   "id": 273
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "For a site stormwater drain with a nominal pipe size of DN 200, what is the minimum nominal size of the inspection opening according to AS 3500.3:2018?",
+   "expected": "DN 150",
+   "ground": {
+    "doc": "3500.3-2018  Plumbing and drainage - Stormwater drainage.pdf",
+    "designation": "AS 3500.3:2018",
+    "page": 82,
+    "values": [
+     "DN 150"
+    ],
+    "quote": "for nominal pipe sizes greater than DN 150, not less than DN 150",
+    "clause": "7.4.2"
+   },
+   "id": 274
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.3:2018, for a pit without a sump in a site stormwater drain, what is the minimum fall between the inverts of the inlet and outlet pipes?",
+   "expected": "20 mm",
+   "ground": {
+    "doc": "3500.3-2018  Plumbing and drainage - Stormwater drainage.pdf",
+    "designation": "AS 3500.3:2018",
+    "page": 85,
+    "values": [
+     "20 mm"
+    ],
+    "quote": "Pits without a sump, as shown in Figure 7.5.3(a), shall have the floor graded to fall at least 20 mm between the inverts of the inlet and outlet pipes.",
+    "clause": "7.5.3"
+   },
+   "id": 275
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.3:2018, Clause 7.5.3, what is the minimum fall required between pipe inverts for a sump pit in a site stormwater drain?",
+   "expected": "20 mm",
+   "ground": {
+    "doc": "3500.3-2018  Plumbing and drainage - Stormwater drainage.pdf",
+    "designation": "AS 3500.3:2018",
+    "page": 85,
+    "values": [
+     "20 mm"
+    ],
+    "quote": "Sump pits shall have a flat floor, but a fall of at least 20 mm between pipe inverts, as shown in Figure 7.5.3(b).",
+    "clause": "7.5.3"
+   },
+   "id": 276
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.3:2018, for a non-reinforced concrete pit wall with a wall length of 1.2 m, what minimum wall thickness applies to the top section where the maximum depth H1 is 1.8 m?",
+   "expected": "175 mm",
+   "ground": {
+    "doc": "3500.3-2018  Plumbing and drainage - Stormwater drainage.pdf",
+    "designation": "AS 3500.3:2018",
+    "page": 87,
+    "values": [
+     "1.2 m",
+     "1.8 m",
+     "175 mm"
+    ],
+    "quote": "For a non-reinforced concrete wall of length (L) = 1.2 m, and maximum depths of 1.8 m (H1) and 2.4 m (H 2) the thicknesses are 175 mm (T1) and 200 mm (T2), respectively.",
+    "clause": "7.5.5.1"
+   },
+   "id": 277
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.3:2018, for a non-reinforced concrete pit wall with a wall length of 1.2 m, what minimum wall thickness applies to the bottom section where the maximum depth H2 is 2.4 m?",
+   "expected": "200 mm",
+   "ground": {
+    "doc": "3500.3-2018  Plumbing and drainage - Stormwater drainage.pdf",
+    "designation": "AS 3500.3:2018",
+    "page": 87,
+    "values": [
+     "1.2 m",
+     "2.4 m",
+     "200 mm"
+    ],
+    "quote": "For a non-reinforced concrete wall of length (L) = 1.2 m, and maximum depths of 1.8 m (H1) and 2.4 m (H 2) the thicknesses are 175 mm (T1) and 200 mm (T2), respectively.",
+    "clause": "7.5.5.1"
+   },
+   "id": 278
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.3:2018, Clause 7.10.2(a)(iii), what is the minimum allowable orifice diameter for an orifice plate used as a hydraulic control in an underground OSD system?",
+   "expected": "25 mm",
+   "ground": {
+    "doc": "3500.3-2018  Plumbing and drainage - Stormwater drainage.pdf",
+    "designation": "AS 3500.3:2018",
+    "page": 92,
+    "values": [
+     "25 mm"
+    ],
+    "quote": "the orifice diameter is not less than 25 mm.",
+    "clause": "7.10.2"
+   },
+   "id": 279
+  },
+  {
+   "cat": "D superseded edition",
+   "q": "For an underground stormwater detention tank with an open storage zone, what is the minimum slope required for the tank floor towards the outlet to minimise ponding and debris accumulation, as per AS 3500.3:2018?",
+   "expected": "1:140",
+   "ground": {
+    "doc": "3500.3-2018  Plumbing and drainage - Stormwater drainage.pdf",
+    "designation": "AS 3500.3:2018",
+    "page": 92,
+    "values": [
+     "1:140"
+    ],
+    "quote": "Tank floors shall be graded at a minimum slope of 1:140 towards the outlet, to minimize ponding and depositing of debris.",
+    "clause": "7.10.2"
+   },
+   "id": 280
+  },
+  {
+   "cat": "F trap: clause does not exist",
+   "q": "Under AS/NZS 3500.1:2021, Clause 54.9.9, what is the minimum clearance required?",
+   "expected": "Not found in the knowledge base",
+   "trap": "not_found",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "absent_clause": "54.9.9"
+   },
+   "id": 281
+  },
+  {
+   "cat": "F trap: clause does not exist",
+   "q": "Under AS/NZS 3500.1:2021, Clause 55.9.5, what is the minimum clearance required?",
+   "expected": "Not found in the knowledge base",
+   "trap": "not_found",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "absent_clause": "55.9.5"
+   },
+   "id": 282
+  },
+  {
+   "cat": "F trap: clause does not exist",
+   "q": "Under AS/NZS 3500.1:2021, Clause 56.4.9, what is the minimum clearance required?",
+   "expected": "Not found in the knowledge base",
+   "trap": "not_found",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "absent_clause": "56.4.9"
+   },
+   "id": 283
+  },
+  {
+   "cat": "F trap: clause does not exist",
+   "q": "Under AS/NZS 3500.1:2021, Clause 57.4.3, what is the minimum clearance required?",
+   "expected": "Not found in the knowledge base",
+   "trap": "not_found",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "absent_clause": "57.4.3"
+   },
+   "id": 284
+  },
+  {
+   "cat": "F trap: false premise",
+   "q": "AS/NZS 3500.1:2021 Clause 5.16.1 requires 300 mm here, doesn't it? (Under AS/NZS 3500.1:2021, Clause 5.16.1, what is the minimum separation required between two or more water services installed in a private easement?)",
+   "expected": "100 mm",
+   "trap": "false_premise",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 58,
+    "values": [
+     "100 mm"
+    ],
+    "quote": "Where two or more water services are installed in a private easement, they shall not cross or be closer than 100 mm to each other.",
+    "clause": "5.16.1",
+    "wrong": "300 mm"
+   },
+   "id": 285
+  },
+  {
+   "cat": "F trap: false premise",
+   "q": "AS/NZS 3500.1:2021 Clause 5.5.2.1 requires 30 mm here, doesn't it? (Under AS/NZS 3500.1:2021, when notching wooden wall studs, what is the maximum notch depth into the stud breadth?)",
+   "expected": "10 mm",
+   "trap": "false_premise",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 44,
+    "values": [
+     "10 mm"
+    ],
+    "quote": "Notch into stud breadth Max. 10 mm",
+    "clause": "5.5.2.1",
+    "wrong": "30 mm"
+   },
+   "id": 286
+  },
+  {
+   "cat": "F trap: false premise",
+   "q": "AS/NZS 3500.1:2021 Clause 4.6.3.2 requires 900 mm here, doesn't it? (Under AS/NZS 3500.1:2021, Clause 4.6.3.2(b)(i), what is the minimum height above the highest outlet at which a pressure type vacuum breaker (PVB) shall be located?)",
+   "expected": "not less than 300 mm",
+   "trap": "false_premise",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 35,
+    "values": [
+     "300 mm"
+    ],
+    "quote": "Pressure type vacuum breaker (PVB) — PVBs shall — (i) be located not less than 300 mm above the highest outlet;",
+    "clause": "4.6.3.2",
+    "wrong": "900 mm"
+   },
+   "id": 287
+  },
+  {
+   "cat": "F trap: false premise",
+   "q": "AS/NZS 3500.1:2021 Clause 3.3.2 requires 150 kPa here, doesn't it? (Under AS/NZS 3500.1:2021, Clause 3.3.2, what is the minimum working pressure required at the furthermost or most disadvantaged fixture or outlet, at the flow rate specified in Table 3.2.1?)",
+   "expected": "50 kPa (5 m head)",
+   "trap": "false_premise",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 26,
+    "values": [
+     "50 kPa",
+     "5 m"
+    ],
+    "quote": "The minimum working pressure at the furthermost or most disadvantaged fixture or outlet shall be not less than 50 kPa (5 m head), at the flow rate specified in Table 3.2.1.",
+    "clause": "3.3.2",
+    "wrong": "150 kPa"
+   },
+   "id": 288
+  },
+  {
+   "cat": "F trap: false premise",
+   "q": "AS/NZS 3500.1:2021 Clause 7.2 requires 450 mm here, doesn't it? (Under AS/NZS 3500.1:2021, Clause 7.2, what is the minimum height above finished ground level that Type A irrigation system outlets and piping must be installed at, where they are not subject to ponding or back-pressure and do not involve injection systems?)",
+   "expected": "150 mm",
+   "trap": "false_premise",
+   "ground": {
+    "doc": "AS NZS 3500.1-2021.pdf",
+    "designation": "AS/NZS 3500.1:2021",
+    "page": 63,
+    "values": [
+     "150 mm"
+    ],
+    "quote": "Type A systems — All permanently open outlets and piping more than 150 mm above finished \nground level, not subject to ponding or back-pressure and not involving injection systems.",
+    "clause": "7.2",
+    "wrong": "450 mm"
+   },
+   "id": 289
+  },
+  {
+   "cat": "F trap: clause does not exist",
+   "q": "Under AS/NZS 3500.2:2021, Clause 19.2.8, what is the minimum clearance required?",
+   "expected": "Not found in the knowledge base",
+   "trap": "not_found",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "absent_clause": "19.2.8"
+   },
+   "id": 290
+  },
+  {
+   "cat": "F trap: clause does not exist",
+   "q": "Under AS/NZS 3500.2:2021, Clause 20.9.4, what is the minimum clearance required?",
+   "expected": "Not found in the knowledge base",
+   "trap": "not_found",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "absent_clause": "20.9.4"
+   },
+   "id": 291
+  },
+  {
+   "cat": "F trap: clause does not exist",
+   "q": "Under AS/NZS 3500.2:2021, Clause 21.2.3, what is the minimum clearance required?",
+   "expected": "Not found in the knowledge base",
+   "trap": "not_found",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "absent_clause": "21.2.3"
+   },
+   "id": 292
+  },
+  {
+   "cat": "F trap: clause does not exist",
+   "q": "Under AS/NZS 3500.2:2021, Clause 22.2.2, what is the minimum clearance required?",
+   "expected": "Not found in the knowledge base",
+   "trap": "not_found",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "absent_clause": "22.2.2"
+   },
+   "id": 293
+  },
+  {
+   "cat": "F trap: false premise",
+   "q": "AS/NZS 3500.2:2021 Clause 6.5.2 requires 210 mm here, doesn't it? (Under AS/NZS 3500.2:2021, Clause 6.5.2, what minimum water seal shall traps installed in a pressurized chamber retain when the maximum pressure within the chamber is applied?)",
+   "expected": "70 mm",
+   "trap": "false_premise",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 85,
+    "values": [
+     "70 mm"
+    ],
+    "quote": "Traps that are installed in a pressurized chamber shall retain a water seal of not less than 70 mm when the maximum pressure within the chamber is applied.",
+    "clause": "6.5.2",
+    "wrong": "210 mm"
+   },
+   "id": 294
+  },
+  {
+   "cat": "F trap: false premise",
+   "q": "AS/NZS 3500.2:2021 Clause 6.10.4 requires 15° here, doesn't it? (Under AS/NZS 3500.2:2021, Clause 6.10.4, what is the maximum permitted deviation from vertical when installing an air admittance valve upright?)",
+   "expected": "Within 5° of the vertical",
+   "trap": "false_premise",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 99,
+    "values": [
+     "5°"
+    ],
+    "quote": "installed upright within 5° of the vertical as shown in Figure 6.10.4;",
+    "clause": "6.10.4",
+    "wrong": "15°"
+   },
+   "id": 295
+  },
+  {
+   "cat": "F trap: false premise",
+   "q": "AS/NZS 3500.2:2021 Clause 3.6.7 requires 300 mm here, doesn't it? (Under AS/NZS 3500.2:2021, Clause 3.6.7, where an underground drain crosses a service, what is the minimum vertical separation that must be maintained between them?)",
+   "expected": "Not less than 100 mm",
+   "trap": "false_premise",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 33,
+    "values": [
+     "100 mm"
+    ],
+    "quote": "have a vertical separation of not less than 100 mm; and",
+    "clause": "3.6.7",
+    "wrong": "300 mm"
+   },
+   "id": 296
+  },
+  {
+   "cat": "F trap: false premise",
+   "q": "AS/NZS 3500.2:2021 Clause 16.10.3 requires 240 mm here, doesn't it? (Under AS/NZS 3500.2:2021, Clause 16.10.3, how far above the soffit of the horizontal vacuum pipe it connects to must a vacuum lift pipe rise?)",
+   "expected": "A minimum of 80 mm above the soffit",
+   "trap": "false_premise",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 201,
+    "values": [
+     "80 mm"
+    ],
+    "quote": "rise a minimum of 80 mm above soffit of the horizontal vacuum pipe it is connecting to",
+    "clause": "16.10.3",
+    "wrong": "240 mm"
+   },
+   "id": 297
+  },
+  {
+   "cat": "F trap: false premise",
+   "q": "AS/NZS 3500.2:2021 Clause 9.8.5 requires 1350 mm here, doesn't it? (Under AS/NZS 3500.2:2021, Clause 9.8.5, for a DN 100 stack of one floor with the top section graded, what is the minimum distance from the lower vertical section of the stack at which a fixture discharge pipe may connect to the graded section?)",
+   "expected": "450 mm",
+   "trap": "false_premise",
+   "ground": {
+    "doc": "AS NZS 3500.2-2021.pdf",
+    "designation": "AS/NZS 3500.2:2021",
+    "page": 146,
+    "values": [
+     "450 mm"
+    ],
+    "quote": "The connection of a fixture discharge pipe to the graded section of the stack shall be not less than 450 mm from the lower vertical section of the stack",
+    "clause": "9.8.5",
+    "wrong": "1350 mm"
+   },
+   "id": 298
+  },
+  {
+   "cat": "F trap: clause does not exist",
+   "q": "Under AS/NZS 3500.3:2021, Clause 32.9.5, what is the minimum clearance required?",
+   "expected": "Not found in the knowledge base",
+   "trap": "not_found",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "absent_clause": "32.9.5"
+   },
+   "id": 299
+  },
+  {
+   "cat": "F trap: clause does not exist",
+   "q": "Under AS/NZS 3500.3:2021, Clause 33.5.6, what is the minimum clearance required?",
+   "expected": "Not found in the knowledge base",
+   "trap": "not_found",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "absent_clause": "33.5.6"
+   },
+   "id": 300
+  },
+  {
+   "cat": "F trap: clause does not exist",
+   "q": "Under AS/NZS 3500.3:2021, Clause 34.9.2, what is the minimum clearance required?",
+   "expected": "Not found in the knowledge base",
+   "trap": "not_found",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "absent_clause": "34.9.2"
+   },
+   "id": 301
+  },
+  {
+   "cat": "F trap: clause does not exist",
+   "q": "Under AS/NZS 3500.3:2021, Clause 35.3.9, what is the minimum clearance required?",
+   "expected": "Not found in the knowledge base",
+   "trap": "not_found",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "absent_clause": "35.3.9"
+   },
+   "id": 302
+  },
+  {
+   "cat": "F trap: false premise",
+   "q": "AS/NZS 3500.3:2021 Clause 6.4.1 requires 900 mm here, doesn't it? (Under AS/NZS 3500.3:2021, Clause 6.4.1, clean-out points for subsoil pipes or geocomposite drains must extend vertically to the top of paved surfaces or within what distance of an unpaved finished surface?)",
+   "expected": "Within 300 mm",
+   "trap": "false_premise",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 87,
+    "values": [
+     "300 mm"
+    ],
+    "quote": "that extend vertically to the top of paved surfaces or within 300 mm of an unpaved finished surface; and",
+    "clause": "6.4.1",
+    "wrong": "900 mm"
+   },
+   "id": 303
+  },
+  {
+   "cat": "F trap: false premise",
+   "q": "AS/NZS 3500.3:2021 Clause 7.10.2 requires 4 here, doesn't it? (Under AS/NZS 3500.3:2021, Clause 7.10.2(iv), where a discharge control pit is included in a storage, what is the minimum depth of the sump below the centre of the orifice?)",
+   "expected": "A minimum of 1.5 times the diameter of the orifice of the outlet",
+   "trap": "false_premise",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 102,
+    "values": [
+     "1.5"
+    ],
+    "quote": "a discharge control pit is included in the storage, this shall contain a sump set a minimum of 1.5 times the diameter of the orifice of the outlet below the centre of the orifice.",
+    "clause": "7.10.2",
+    "wrong": "4"
+   },
+   "id": 304
+  },
+  {
+   "cat": "F trap: false premise",
+   "q": "AS/NZS 3500.3:2021 Clause 4.3.2 requires 2.4000000000000004 here, doesn't it? (Under AS/NZS 3500.3:2021, using Table 4.3.2, for a copper box gutter with base metal thickness 0.80 mm, what is the maximum length between expansion joints where one end is fixed and one end is free to move?)",
+   "expected": "15 m",
+   "trap": "false_premise",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 52,
+    "values": [
+     "0.80",
+     "15"
+    ],
+    "quote": "Copper\n17 × 10−6\n0.60\n9\n18\n50\n \n \n0.80\n15\n30\n \n",
+    "clause": "4.3.2",
+    "wrong": "2.4000000000000004"
+   },
+   "id": 305
+  },
+  {
+   "cat": "F trap: false premise",
+   "q": "AS/NZS 3500.3:2021 Clause 6.3.6 requires 75 mm here, doesn't it? (Under AS/NZS 3500.3:2021, Clause 6.3.6, for site stormwater drains under buildings, what is the minimum thickness of overlay between the top of the pipe and the underside of a reinforced concrete slab?)",
+   "expected": "25 mm",
+   "trap": "false_premise",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 86,
+    "values": [
+     "25 mm"
+    ],
+    "quote": "the thickness of overlay between the top of the pipe and the underside of a reinforced concrete slab shall be not less than 25 mm",
+    "clause": "6.3.6",
+    "wrong": "75 mm"
+   },
+   "id": 306
+  },
+  {
+   "cat": "F trap: false premise",
+   "q": "AS/NZS 3500.3:2021 Clause 7.5.3 requires 60 mm here, doesn't it? (Under AS/NZS 3500.3:2021, Clause 7.5.3, for a pit without a sump in a site stormwater drain, what is the minimum fall the floor shall be graded between the inverts of the inlet and outlet pipes?)",
+   "expected": "At least 20 mm",
+   "trap": "false_premise",
+   "ground": {
+    "doc": "AS NZS 3500.3-2021.pdf",
+    "designation": "AS/NZS 3500.3:2021",
+    "page": 94,
+    "values": [
+     "20 mm"
+    ],
+    "quote": "Pits without a sump, as shown in Figure 7.5.3 (a), shall have the floor graded to fall at least 20 mm between the inverts of the inlet and outlet pipes.",
+    "clause": "7.5.3",
+    "wrong": "60 mm"
+   },
+   "id": 307
+  },
+  {
+   "cat": "F trap: edition not held",
+   "q": "Under AS/NZS 3500.1:2025, a rainwater tank supply pipe running exposed along a wall or buried in the ground must carry \"RAINWATER\" markings — what is the maximum interval between those markings?",
+   "expected": "AS/NZS 3500.1:2025 is not in the knowledge base",
+   "trap": "not_held",
+   "ground": {
+    "designation": "AS/NZS 3500.1:2025",
+    "held": "AS/NZS 3500.1:2021"
+   },
+   "id": 308
+  },
+  {
+   "cat": "F trap: edition not held",
+   "q": "Under AS/NZS 3500.1:2025, an underground water service of DN 80 has to run past another underground service. What minimum separation must be maintained between them?",
+   "expected": "AS/NZS 3500.1:2025 is not in the knowledge base",
+   "trap": "not_held",
+   "ground": {
+    "designation": "AS/NZS 3500.1:2025",
+    "held": "AS/NZS 3500.1:2021"
+   },
+   "id": 309
+  },
+  {
+   "cat": "F trap: edition not held",
+   "q": "Under AS/NZS 3500.1:2025, a plumber is installing a water storage tank with an interior depth greater than 2 m — what access provision is required?",
+   "expected": "AS/NZS 3500.1:2025 is not in the knowledge base",
+   "trap": "not_held",
+   "ground": {
+    "designation": "AS/NZS 3500.1:2025",
+    "held": "AS/NZS 3500.1:2021"
+   },
+   "id": 310
+  },
+  {
+   "cat": "F trap: edition not held",
+   "q": "Under AS/NZS 3500.2:2025, where concrete pads are used to support drains, what is the minimum thickness of the concrete pad?",
+   "expected": "AS/NZS 3500.2:2025 is not in the knowledge base",
+   "trap": "not_held",
+   "ground": {
+    "designation": "AS/NZS 3500.2:2025",
+    "held": "AS/NZS 3500.2:2021"
+   },
+   "id": 311
+  },
+  {
+   "cat": "F trap: edition not held",
+   "q": "Under AS/NZS 3500.2:2025, Clause 3.5.2, within an easement, what minimum clearance must be maintained between an open channel, pipeline or conduit and a drain?",
+   "expected": "AS/NZS 3500.2:2025 is not in the knowledge base",
+   "trap": "not_held",
+   "ground": {
+    "designation": "AS/NZS 3500.2:2025",
+    "held": "AS/NZS 3500.2:2021"
+   },
+   "id": 312
+  },
+  {
+   "cat": "F trap: edition not held",
+   "q": "Under AS/NZS 3500.2:2025, Clause 3.10.4, where a fixture discharge pipe is the same size as the unvented branch drain it connects to, what is the maximum height of each vertical jump-up, and what is the minimum length of graded pipe required between them?",
+   "expected": "AS/NZS 3500.2:2025 is not in the knowledge base",
+   "trap": "not_held",
+   "ground": {
+    "designation": "AS/NZS 3500.2:2025",
+    "held": "AS/NZS 3500.2:2021"
+   },
+   "id": 313
+  },
+  {
+   "cat": "F trap: edition not held",
+   "q": "Under AS/NZS 3500.3:2025, for a sump pit in a site stormwater drain, how much fall is required between the pipe inverts, and what floor arrangement is required?",
+   "expected": "AS/NZS 3500.3:2025 is not in the knowledge base",
+   "trap": "not_held",
+   "ground": {
+    "designation": "AS/NZS 3500.3:2025",
+    "held": "AS/NZS 3500.3:2021"
+   },
+   "id": 314
+  },
+  {
+   "cat": "F trap: edition not held",
+   "q": "For a stormwater pump-out wet well designed to AS/NZS 3500.3:2025, what is the minimum wet well storage required between the high and low working levels?",
+   "expected": "AS/NZS 3500.3:2025 is not in the knowledge base",
+   "trap": "not_held",
+   "ground": {
+    "designation": "AS/NZS 3500.3:2025",
+    "held": "AS/NZS 3500.3:2021"
+   },
+   "id": 315
+  },
+  {
+   "cat": "F trap: edition not held",
+   "q": "Under AS/NZS 3500.3:2025, Clause 3.7.8, what is the minimum diameter for a downpipe, or the minimum size for a rectangular downpipe?",
+   "expected": "AS/NZS 3500.3:2025 is not in the knowledge base",
+   "trap": "not_held",
+   "ground": {
+    "designation": "AS/NZS 3500.3:2025",
+    "held": "AS/NZS 3500.3:2021"
+   },
+   "id": 316
+  }
+ ]
+}

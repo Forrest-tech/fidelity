@@ -131,3 +131,20 @@ def test_visual_check_every_page(tmp_path):
 
 def test_visual_check_can_be_disabled():
     assert R.visual_check("unused.pdf", 3, samples=0)["skipped"] == "disabled"
+
+
+@needs_ocr
+def test_the_sample_leaves_out_the_cover_of_a_long_document(tmp_path):
+    """AS/NZS 3500.1:2018's cover reads at 77% by OCR (large styled title) while its body pages read at 90-96%: a
+    sample that included the cover failed a good copy."""
+    cover = pymupdf.open(lying_pdf(str(tmp_path / "cover.pdf")))
+    doc = pymupdf.open()
+    doc.insert_pdf(cover)
+    for _ in range(6):
+        pg = doc.new_page()
+        for k, t in enumerate(LINES * 2):
+            pg.insert_text((60, 80 + k * 24), t, fontsize=13)
+    path = str(tmp_path / "seven.pdf")
+    doc.save(path)
+    v = R.visual_check(path, 7, log=lambda *_: None, samples=10 ** 9)
+    assert v["ok"] and 1 not in [r["page"] for r in v["sampled"]]

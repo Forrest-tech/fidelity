@@ -1,0 +1,502 @@
+[
+ {
+  "page": 37,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.1:2021, for a dual check valve with intermediate vent (DuCV) installed on a water supply, how far above the finished surface level must the vent port be located so the device is freely drained or over a tundish?"
+ },
+ {
+  "page": 37,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.1:2021, for a pipe interrupter device (PID), what is the minimum height above the finished surface level the device must be located so it can drain freely?"
+ },
+ {
+  "page": 41,
+  "why": "the quote does not state the answer",
+  "question": "Under AS/NZS 3500.1:2021, Clause 5.3.3.6, what is the minimum separation between an underground water service pipe of DN 65 or smaller and any other service (other than consumer gas piping and electrical or communication service)?"
+ },
+ {
+  "page": 59,
+  "why": "the quote does not state the answer",
+  "question": "Under AS/NZS 3500.1:2021, when pipework has to be run across a metal roof, what minimum waterproof insulation thickness applies where the insulating material has a thermal conductivity of 0.04 W/m.K for a DN 15 pipe?"
+ },
+ {
+  "page": 102,
+  "why": "a value without a figure",
+  "question": "Under AS/NZS 3500.1:2021, in Table A.3, what is the internal diameter of a DN 50 polyolefin pipe in SDR 11?"
+ },
+ {
+  "page": 102,
+  "why": "a value without a figure",
+  "question": "Under AS/NZS 3500.1:2021, in Table A.4, what is the internal diameter of a DN 20 PVC-U pipe of PN12?"
+ },
+ {
+  "page": 106,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.1:2021, using Table C.1 pipe sizing for a maximum velocity of 3 m/s, what is the probable simultaneous flow rate for a DN 40 pipe with an index length of 10 m at a pressure drop of 4 m head?"
+ },
+ {
+  "page": 106,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.1:2021, for a DN 100 pipe with an index length of 160 m at a pressure drop of 6 m head, what is the maximum probable simultaneous flow rate given in Table C.1?"
+ },
+ {
+  "page": 107,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.1:2021, Table C.1, for a DN 50 pipe with an index length of 80 m at a pressure drop of 10 m head, what is the probable simultaneous flow rate in L/s?"
+ },
+ {
+  "page": 107,
+  "why": "the quote is not on the page",
+  "question": "Under AS/NZS 3500.1:2021, a DN 100 pipe is sized at a pressure drop of 8 m head with an index length of 100 m. What probable simultaneous flow rate in L/s may it carry?"
+ },
+ {
+  "page": 108,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.1:2021, Table C.1, for a DN 50 pipe with an index length of 80 m and a pressure drop of 15 m head, what is the probable simultaneous flow rate?"
+ },
+ {
+  "page": 108,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.1:2021, using Table C.1, a DN 25 pipe has an index length of 30 m and a pressure drop of 15 m head. What probable simultaneous flow rate applies?"
+ },
+ {
+  "page": 113,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.1:2021, when sizing a pipe section with a probable simultaneous flow rate of 0.48 L/s using the 10 m head pressure drop table and an index length of 80 m, what is the nominal pipe size in DN?"
+ },
+ {
+  "page": 113,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.1:2021, in the pipe sizing example, what is the index length when the sum of the pipe section lengths is 67 m and the distance from the last pipe section to the most remote fixture is 11 m?"
+ },
+ {
+  "page": 30,
+  "why": "the question does not name the standard",
+  "question": "For a DN 150 drain, what is the minimum thickness of a reinforced concrete anchor block?"
+ },
+ {
+  "page": 38,
+  "why": "the quote does not state the answer",
+  "question": "In AS/NZS 3500.2:2021, for a ground-floor toilet block with 10 or more water closet pans each separately connected to a vented drain on a DN 100 drain, where the branch drain connections are 2 m apart or less, what size vent is required for the first 10 pans?"
+ },
+ {
+  "page": 47,
+  "why": "the question does not name the standard",
+  "question": "For a common effluent drainage system, what is the permissible size range for the drain connecting a septic tank to the common effluent drain?"
+ },
+ {
+  "page": 56,
+  "why": "a value without a figure",
+  "question": "In AS/NZS 3500.2:2021, when constructing an inspection shaft by extending a jump-up, what size must the shaft be?"
+ },
+ {
+  "page": 68,
+  "why": "the quote does not state the answer",
+  "question": "Under AS/NZS 3500.2:2021, in a trap primer arrangement with a mechanical trap priming device, what is the minimum air gap required and what is the minimum dimension shown from the connection of the charge pipe on the floor waste gully riser?"
+ },
+ {
+  "page": 72,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.2:2021, Clause (c), what is the required grade for the floor of an inspection chamber?"
+ },
+ {
+  "page": 72,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.2:2021, Clause (d), what is the minimum centre-line radius for formed junctions and bends in channels?"
+ },
+ {
+  "page": 76,
+  "why": "the question does not name the standard",
+  "question": "For a junction installed in a vertical plane connecting a branch drain to a graded drain, what is the maximum upstream angle allowed for the junction?"
+ },
+ {
+  "page": 81,
+  "why": "the question does not name the standard",
+  "question": "When backfilling a drain, what is the maximum size of soil lumps allowed in excavated material used for final backfill?"
+ },
+ {
+  "page": 84,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.2:2021, in Table 6.3(A), what is the minimum size of trap outlet and fixture discharge pipe DN for a single shower?"
+ },
+ {
+  "page": 84,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.2:2021, in Table 6.3(A), what is the fixture unit rating for a pot or utility sink (PS)?"
+ },
+ {
+  "page": 88,
+  "why": "the quote does not state the answer",
+  "question": "Under AS/NZS 3500.2:2021, a square or ball junction is used on a stack and the discharge pipe from the fixture is less than 500 mm in length from the stack. Where a P-trap is fitted to the fixture, at what minimum grade must the discharge pipe be laid?"
+ },
+ {
+  "page": 124,
+  "why": "the question does not name the standard",
+  "question": "For a graded offset on a stack that extends not more than five floor levels above the offset, what is the minimum distance from the bend within which no connection shall be made?"
+ },
+ {
+  "page": 124,
+  "why": "the question does not name the standard",
+  "question": "When foaming is likely to occur, what is the minimum distance from the bend of a graded offset within which no connection shall be made?"
+ },
+ {
+  "page": 136,
+  "why": "a value without a figure",
+  "question": "Under AS/NZS 3500.2:2021, Clause 9.5.4, how many bends in the horizontal plane are permitted in a fixture discharge pipe other than those from basins and bidets?"
+ },
+ {
+  "page": 139,
+  "why": "the question does not name the standard",
+  "question": "For water closet pans connected to a common discharge pipe, what is the maximum allowable length of the fixture discharge pipe for S-trap pans and P-trap pans?"
+ },
+ {
+  "page": 140,
+  "why": "a value without a figure",
+  "question": "For a range of wall-hung urinals under AS/NZS 3500.2:2021, what is the maximum number of wall-hung urinals that may be connected, and what maximum length applies to the common discharge pipe?"
+ },
+ {
+  "page": 144,
+  "why": "the quote does not state the answer",
+  "question": "Under AS/NZS 3500.2:2021, where a DN 80 stack with the top section graded runs in a domestic or residential building, what is the smallest size permitted for the graded section or its vent after any reduction along its length toward the vent?"
+ },
+ {
+  "page": 145,
+  "why": "the question does not name the standard",
+  "question": "For a DN 100 stack in a domestic building, where the top section is graded and the stack serves up to three floors, what is the minimum distance a fixture discharge pipe connection must be from the lower vertical section, measured from the inlet of the lower bend?"
+ },
+ {
+  "page": 147,
+  "why": "a value without a figure",
+  "question": "Under AS/NZS 3500.2:2021, Clause 9.8.6, when multiple fixtures on the floor above a graded offset are connected by a common discharge pipe into or below the graded section of the offset, what is the maximum number of floors above the graded offset permitted where the stack loading is a maximum of 90 fixture units?"
+ },
+ {
+  "page": 147,
+  "why": "a value without a figure",
+  "question": "Under AS/NZS 3500.2:2021, a DN 100 stack has a graded offset, and multiple fixtures on the floor above are connected by a common discharge pipe into or below the graded section. What are the maximum number of floors and maximum fixture unit loading permitted for this arrangement?"
+ },
+ {
+  "page": 148,
+  "why": "the question does not name the standard",
+  "question": "For a waste stack DN 80 or smaller with a graded offset, what is the minimum distance above the upper offset bend within which no branch may connect to the stack, and to what value can this be reduced for a DN 80 stack with offset when the height between the highest connection and the upper offset bend does not exceed three floor levels?"
+ },
+ {
+  "page": 151,
+  "why": "a value without a figure",
+  "question": "Under AS/NZS 3500.2:2021, Clause 9.8.8, what is the maximum height, measured between the base of the stack and the highest floor level upon which a fixture is connected, for a DN 65 waste stack receiving kitchen sinks and laundry troughs?"
+ },
+ {
+  "page": 151,
+  "why": "a value without a figure",
+  "question": "Under AS/NZS 3500.2:2021, Clause 9.8.9, what is the maximum number of waste fixtures (basins, showers, or kitchen sinks) that may be connected to the top DN 50 vertical section of a stack?"
+ },
+ {
+  "page": 153,
+  "why": "the quote is not on the page",
+  "question": "Under AS/NZS 3500.2:2021, on a DN 100 stack serving 10 consecutive floor levels above the upper offset bend with a high fixture unit loading, what is the maximum permitted fixture unit loading and the minimum distance between the upper offset bend and the connection of the fixture discharge pipe?"
+ },
+ {
+  "page": 154,
+  "why": "a value without a figure",
+  "question": "Under AS/NZS 3500.2:2021, when a steep offset is installed below the lowest connection to a stack of not less than DN 100, to what value may the minimum distance between the fixture connection and the upper offset bend be reduced, provided no more than three floor levels are served, loading does not exceed 30 fixture units, and no laundry trough is connected?"
+ },
+ {
+  "page": 156,
+  "why": "a value without a figure",
+  "question": "Under AS/NZS 3500.2:2021, Clause 9.9.6, what is the maximum number of consecutive floor levels that the vertical section of a stack above an upper offset bend shall not exceed?"
+ },
+ {
+  "page": 161,
+  "why": "the quote does not state the answer",
+  "question": "On a copper pipe stack, where an expansion joint is installed at an offset, how much clear space free of restraint must be provided at the joint, in millimetres?"
+ },
+ {
+  "page": 161,
+  "why": "the quote is not on the page",
+  "question": "For a copper stack with expansion joints, what is the minimum clear free-of-restraint dimension given for the lower section, in millimetres?"
+ },
+ {
+  "page": 171,
+  "why": "the quote is not on the page",
+  "question": "On a graded stack offset with a pressure relief bypass under AS/NZS 3500.2:2021, what is the maximum distance the relief bypass run may be?"
+ },
+ {
+  "page": 183,
+  "why": "the question does not name the standard",
+  "question": "For a slab type urinal wall up to 5 m in length, what is the minimum size of the trap and discharge pipe when connected directly to a soil stack or drain?"
+ },
+ {
+  "page": 194,
+  "why": "the quote does not state the answer",
+  "question": "Under AS/NZS 3500.2:2021, where vacuum drainage pipework changes direction, what minimum bend radius applies relative to the pipe diameter?"
+ },
+ {
+  "page": 203,
+  "why": "the question does not name the standard",
+  "question": "In a vacuum drainage system with a DN 40 to DN 50 vertical lift and a second stage lift above 900 mm, what is the maximum height allowed for the second stage lift above the vacuum pan?"
+ },
+ {
+  "page": 212,
+  "why": "the quote is not on the page",
+  "question": "Under AS/NZS 3500.2:2021, in the reduced velocity aerated stack system, what is the maximum length of graded discharge pipe for a DN 40 trap and waste serving a bain-marie or water boiler?"
+ },
+ {
+  "page": 212,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.2:2021, Table B.1, for a basin with a DN 40 trap and DN 65 waste discharging into a floor waste gully, what is the maximum length of the graded discharge pipe?"
+ },
+ {
+  "page": 213,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.2:2021, in Table B.1, what fixture unit rating applies to a DN 40 trap and waste connected to a floor waste gully?"
+ },
+ {
+  "page": 213,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.2:2021, what fixture unit rating does Table B.1 assign to a domestic food waste disposal unit with a DN 50 trap and waste (Australia only) when connected to a disconnector gully?"
+ },
+ {
+  "page": 214,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.2:2021, Table B.1, for a commercial food waste fixture with a DN 50 trap and DN 50 waste, what is the maximum length for a disconnector gully?"
+ },
+ {
+  "page": 214,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.2:2021, Table B.1, for a floor waste gully trap with a DN 100 outlet, what is the maximum length for a single stack system?"
+ },
+ {
+  "page": 215,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.2:2021, for a floor waste gully serving a DN 40 trap and waste, what is the maximum fixture load in fixture units?"
+ },
+ {
+  "page": 215,
+  "why": "the clause is not printed on the page",
+  "question": "In AS/NZS 3500.2:2021, when using a disconnector gully for a DN 40 trap and DN 65 waste, what is the maximum fixture load in fixture units?"
+ },
+ {
+  "page": 216,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.2:2021, Table B.1, for a DN 40 trap and waste discharging from a floor waste gully, what is the maximum fixture unit loading permitted?"
+ },
+ {
+  "page": 216,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.2:2021, a slab urinal up to 5 m in length is being connected with a reduced velocity aerated stack system — what maximum fixture unit loading applies to that minimum DN 65 trap and waste?"
+ },
+ {
+  "page": 217,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.2:2021, in Table B.1, what is the maximum length for a DN 50 trap and waste serving a floor waste gully when connected to a single stack system?"
+ },
+ {
+  "page": 217,
+  "why": "the clause is not printed on the page",
+  "question": "For an industrial laundry discharging to a graded channel and 225 mm silt trap with DN 100 outlet, what maximum length does AS/NZS 3500.2:2021 Table B.1 allow when using a disconnector gully?"
+ },
+ {
+  "page": 219,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.2:2021, Table B.1, what fixture unit loading applies to a single stack serving a combination oven or steamer with a DN 50 trap and waste?"
+ },
+ {
+  "page": 219,
+  "why": "the clause is not printed on the page",
+  "question": "In AS/NZS 3500.2:2021, for a wok burner bank where each burner counts as approximately one fixture unit, what minimum trap and waste size is required?"
+ },
+ {
+  "page": 222,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.2:2021, in Table E.1, what is the maximum inflow to a single vacuum buffer with a buffer volume of 50 L?"
+ },
+ {
+  "page": 222,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.2:2021, in Table E.1, what is the maximum inflow to a single vacuum buffer with a buffer volume of 100 L?"
+ },
+ {
+  "page": 32,
+  "why": "the question does not name the standard",
+  "question": "When a spreader is used for stormwater from a higher catchment area, what minimum width either side of the point of discharge must a corrugated metal roof be sealed for the full length of side laps in Australia?"
+ },
+ {
+  "page": 32,
+  "why": "the question does not name the standard",
+  "question": "Where a spreader is used for stormwater from a higher catchment area, what minimum width either side of the point of discharge must a tiled roof in Australia be sarked and extended down to the eaves gutter?"
+ },
+ {
+  "page": 43,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.3:2021, when sizing a box gutter by the general method, at what design flow is a position of box gutter, expansion joints and outlets selected from Figure H.1?"
+ },
+ {
+  "page": 43,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.3:2021, when determining design flows for box gutters using Figure H.1, what AEP and rainfall duration are used for the rainfall intensity?"
+ },
+ {
+  "page": 56,
+  "why": "the quote does not state the answer",
+  "question": "Under AS/NZS 3500.3:2021, Clause 4.5.3(a), what is the minimum nominal gradient recommended in reactive soil conditions to achieve an effective gradient not flatter than 1:500?"
+ },
+ {
+  "page": 67,
+  "why": "the quote is not on the page",
+  "question": "Under AS/NZS 3500.3:2021, Clause 5.4.4, when using the general method for design of surface water drainage systems, what time of concentration shall be used for a site in Australia?"
+ },
+ {
+  "page": 67,
+  "why": "the quote is not on the page",
+  "question": "Under AS/NZS 3500.3:2021, using the general method for design of surface water drainage systems, what time of concentration applies to a drainage design for a site in New Zealand?"
+ },
+ {
+  "page": 76,
+  "why": "the question does not name the standard",
+  "question": "For a surcharge outlet in a stormwater drainage system, what is the required minimum distance above an unpaved surface or level with a paved finished surface?"
+ },
+ {
+  "page": 80,
+  "why": "the clause is not printed on the page",
+  "question": "For an underground stormwater drain running parallel to an electrical supply cable, what minimum separation applies if the cable is marked with orange marker tape and has mechanical protection?"
+ },
+ {
+  "page": 80,
+  "why": "a value is not on the page",
+  "question": "What is the required separation between an underground stormwater drain and an electrical earthing electrode for an electrical supply not exceeding 1 000 V?"
+ },
+ {
+  "page": 81,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.3:2021, Clause 6.2.6, what is the minimum angle at which an underground stormwater drain must cross another service?"
+ },
+ {
+  "page": 81,
+  "why": "the clause is not printed on the page",
+  "question": "For an underground stormwater drain crossing another service, what is the minimum vertical separation required?"
+ },
+ {
+  "page": 84,
+  "why": "a value without a figure",
+  "question": "Under AS/NZS 3500.3:2021, Clause 6.3.2, where a site stormwater drain passes through the wall of a pit or arrester more than 1 m deep, how many flexible joints must be located on the drain within 800 mm of the outer face of the structure, and how far apart may they be?"
+ },
+ {
+  "page": 96,
+  "why": "the quote does not state the answer",
+  "question": "For a non-reinforced concrete wall in a stormwater pit, what is the minimum wall thickness for a wall length of 1.2 m and a maximum depth of 1.8 m, according to AS/NZS 3500.3:2021?"
+ },
+ {
+  "page": 96,
+  "why": "the quote is not on the page",
+  "question": "Under AS/NZS 3500.3:2021, for a non-reinforced concrete wall in a pit, what is the minimum allowable wall thickness for any wall length and depth combination?"
+ },
+ {
+  "page": 101,
+  "why": "the question does not name the standard",
+  "question": "For an on-site stormwater detention system, what is the minimum clearance required between ponding and overflow levels and any non-habitable floor levels?"
+ },
+ {
+  "page": 109,
+  "why": "the question does not name the standard",
+  "question": "For a siphonic roof drainage system, what is the minimum design flow that must be calculated for each inlet?"
+ },
+ {
+  "page": 138,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.3:2021, for an eaves gutter overflow arrangement with a high front and minimum gap to the fascia, what is the minimum gap required between the front of the gutter and the fascia?"
+ },
+ {
+  "page": 138,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.3:2021, for a concealed eaves gutter with a tail overflow, what is the minimum dimension of the tail?"
+ },
+ {
+  "page": 143,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.3:2021, in the downpipe subcatchment table, what is the plan area (Ahs-c) for subcatchment D?"
+ },
+ {
+  "page": 143,
+  "why": "the quote is not on the page",
+  "question": "In AS/NZS 3500.3:2021, when sizing vertical downpipes for a roof with four subcatchments, what eaves gutter area (As-c) is tabulated for subcatchment C?"
+ },
+ {
+  "page": 146,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.3:2021, when flat eaves gutters have no high points to define catchment areas, what catchment area is used for a middle downpipe such as DP-2 between DP-1 and DP-3?"
+ },
+ {
+  "page": 147,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.3:2021, using Table 3.5.2, what alternative sizes of vertical downpipe are acceptable for the selected gutter gradients and eaves gutter sizes?"
+ },
+ {
+  "page": 147,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.3:2021, Clause G.2.3.2, what minimum height of fascia above the gutter overflow is adopted for the worked solution?"
+ },
+ {
+  "page": 181,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.3:2021, in the worked example calculation for a pumped system in Brisbane, with a contributing area of 1 000 m2, a 10% AEP and a storm period of 120 min, what rainfall intensity is used?"
+ },
+ {
+  "page": 181,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS/NZS 3500.3:2021, in the pumped system example for a Brisbane site with a 1 000 m2 contributing area and a 2 h storm, what stormwater volume is calculated?"
+ },
+ {
+  "page": 33,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS 3500.1:2018, a beverage dispenser dual-check valve (BDDC) is being installed. How high above the finished surface level must the vent port be located to ensure the device can drain freely?"
+ },
+ {
+  "page": 33,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS 3500.1:2018, when installing a pipe interrupter device (PID), what is the minimum height above the finished surface level required so the device can drain freely?"
+ },
+ {
+  "page": 101,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS 3500.1:2018, Table C1, for a DN 10 pipe with an index length of 5 m and a pressure drop of 8 m head, what probable simultaneous flow rate applies?"
+ },
+ {
+  "page": 101,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS 3500.1:2018, using Table C1 for a DN 100 pipe with an index length of 160 m, what probable simultaneous flow rate applies at a pressure drop of 8 m head?"
+ },
+ {
+  "page": 55,
+  "why": "the question does not name the standard",
+  "question": "For an overflow gully installed in a paved area, what is the minimum height between the top of the gully riser and the finished surface level, and what special requirement applies?"
+ },
+ {
+  "page": 56,
+  "why": "the quote is not on the page",
+  "question": "Under AS 3500.2:2018, when connecting a trapped waste pipe to a floor waste gully, what is the maximum length allowed for that trapped waste pipe?"
+ },
+ {
+  "page": 140,
+  "why": "the question does not name the standard",
+  "question": "For a waste stack up to DN 100 with a steep offset between the highest and lowest connections, what is the minimum distance from the upper bend that must be kept free of connections above the offset when the offset is 60° or more to the horizontal and the stack extends through five floors or less above it?"
+ },
+ {
+  "page": 62,
+  "why": "the question does not name the standard",
+  "question": "For a residential development in New Zealand, what rainfall duration range is used when determining stormwater design flows?"
+ },
+ {
+  "page": 62,
+  "why": "a value without a figure",
+  "question": "Under AS 3500.3:2018, Clause 5.4.8, what is the unit for the design flow of stormwater Q?"
+ },
+ {
+  "page": 168,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS 3500.3:2018, Clause K4.3.1, what is the rainfall intensity for a 5 min duration for an ARI of two years?"
+ },
+ {
+  "page": 168,
+  "why": "the clause is not printed on the page",
+  "question": "Under AS 3500.3:2018, Clause K4.3.2, what is the roughness coefficient k for FRC pipes?"
+ }
+]

@@ -16,6 +16,9 @@ UNREADABLE_MARK = "⚠️[formula/symbols not readable in source text layer — 
 CLAUSE_ID = r"(?:[A-J]\d{1,2}[GPDVOF]\d{1,2}|S\d{1,2}C\d{1,2}[a-z]?|H\d{1,2}[GPDVOF]\d{1,2})"
 CLAUSE_ID_RE = re.compile(r"\b(" + CLAUSE_ID + r")\b")
 STATE_RE = r"(?:ACT|NSW|NT|QLD|SA|TAS|VIC|WA)"
+# Australian/NZ Standards number their clauses 1.2, 5.3.3.3, and appendix clauses A2.1 / B3.2.1. Only a heading that
+# starts with such a number and goes on with a title counts (body text has decimals like "1.5 m" everywhere).
+AS_CLAUSE_RE = re.compile(r"^((?:\d{1,2}|[A-Z]\d{1,2})(?:\.\d{1,3}){1,4})\.?\s+(?=[A-Z(])")
 
 
 def key(s: str) -> str:
@@ -39,6 +42,9 @@ class TocEntry:
     @property
     def clause_id(self):
         m = re.match(r"^(?:" + STATE_RE + r" )?(" + CLAUSE_ID + r")\b", self.title)
+        if m:
+            return m.group(1)
+        m = AS_CLAUSE_RE.match(self.title)      # an Australian Standard's numbered clause: "5.3.3.3 Communication…"
         return m.group(1) if m else None
 
 
@@ -70,8 +76,50 @@ _FALLBACK_HEAD = re.compile(
     r"^(Section [A-Z]\b|Part [A-Z]\d+\b|Specification \d+\b|Schedule \d+\b|" + CLAUSE_ID + r"\b)")
 
 
+_AS_SECTION = re.compile(r"^(?:SECTION|Section|APPENDIX|Appendix)\s+(\d{1,2}|[A-Z])\b(?=\s+\S)")
+_AS_BARE_APPENDIX = re.compile(r"^(?:APPENDIX|Appendix)\s+[A-Z]$")
+
+
 def fallback_toc(pages):
-    """No usable bookmarks: take bold rows that look like NCC headings."""
+    """No usable bookmarks: bold rows that look like NCC headings, or else like an Australian Standard's."""
+    out = _fallback_ncc(pages)
+    return out if len(out) >= 5 else (_fallback_as(pages) or out)
+
+
+def _fallback_as(pages):
+    """`Section 5 Installation of …` / `Appendix A …` (level 1), `5.3 …` (2), `5.3.3 …` and deeper (3). Used only
+    when the NCC patterns find almost nothing, and only when at least two numbered sections are found."""
+    found = []
+    for pg in pages:
+        rows = [it for it in pg.items if isinstance(it, Row)]
+        for i, it in enumerate(rows):
+            if not (it.all_bold and len(it.text) < 160):
+                continue
+            t = it.text.strip()
+            if _AS_BARE_APPENDIX.match(t) and i + 1 < len(rows) and rows[i + 1].all_bold:
+                # "Appendix A" with its title on the next line: fold that row into the heading, as bookmarks do
+                it.spans = it.spans + [type(it.spans[0])(" ", False, False, 0)] + rows[i + 1].spans
+                rows[i + 1].kind = "consumed"
+                lv = 1
+            elif _AS_SECTION.match(t):
+                lv = 1
+            elif (m := AS_CLAUSE_RE.match(t)) and len(t) > len(m.group(1)) + 2:
+                lv = 2 if m.group(1).count(".") == 1 else 3
+            else:
+                continue
+            found.append((lv, it, pg.number))
+    if sum(1 for lv, _, _ in found if lv == 1) < 2:
+        return []
+    out = []
+    for lv, it, page in found:
+        e = TocEntry(lv, it.text, page, len(out), row=it)
+        it.kind, it.toc = "heading", e
+        out.append(e)
+    return out
+
+
+def _fallback_ncc(pages):
+    """Bold rows that look like NCC headings."""
     out = []
     cur_code = None
     for pg in pages:
@@ -205,7 +253,7 @@ def match_headings(pages, entries):
                 for i in range(start, len(rows)):
                     if rows[i].page > e.page + 1:
                         break
-                    for w in (2, 3):
+                    for w in (2, 3, 4):   # 4: "(normative)" + "Appendix H" + a title wrapped over two lines
                         win = rows[i:i + w]
                         if len(win) < w or any(x.page != win[0].page or x.kind != "row" for x in win):
                             continue
