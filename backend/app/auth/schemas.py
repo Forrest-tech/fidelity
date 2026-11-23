@@ -7,6 +7,7 @@ from .models import Role
 
 class UserRead(schemas.BaseUser[uuid.UUID]):
     role: Role
+    approval: str | None = None
 
 
 class UserCreate(schemas.BaseUserCreate):

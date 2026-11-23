@@ -7,6 +7,7 @@ import { EmptyState, ErrorState, Loading } from "./components/ui";
 import { AppShell } from "./layout/AppShell";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { LoginPage } from "./pages/LoginPage";
+import { SignupPage } from "./pages/SignupPage";
 import { DistillPage } from "./pages/DistillPage";
 import { DocumentsPage } from "./pages/DocumentsPage";
 import { JobsPage } from "./pages/JobsPage";
@@ -45,6 +46,7 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignupPage />} />
       <Route
         element={
           <RequireAuth>

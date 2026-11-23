@@ -8,8 +8,12 @@ const OIDC = "http://127.0.0.1:8767";
 const ACCOUNT = /^(Account menu|账号菜单)$/;
 
 const signInButton = (page: Page) => page.getByRole("button", { name: /^(Sign in|登\s?录)$/ });
-// what a person waits for before pressing Sign in (it takes a moment after the page opens or after a failed try)
-const checked = (page: Page) => expect(page.getByRole("status", { name: "Bot check" })).toContainText("Bot check passed", { timeout: 30_000 });
+// "I'm not a robot": tick the box and wait for the green tick, as a person does
+async function tick(page: Page) {
+  const box = page.getByRole("checkbox", { name: /^(I'm not a robot|我不是机器人)$/ });
+  await box.click();
+  await expect(box).toHaveAttribute("aria-checked", "true", { timeout: 30_000 });
+}
 const as = (page: Page, q: string) => page.request.get(`${OIDC}/__as?${q}`);
 
 test.describe("sign-in page", () => {
@@ -20,8 +24,11 @@ test.describe("sign-in page", () => {
     await expect(page.getByText("or", { exact: true })).toBeVisible();
     await expect(page.getByLabel("Email")).toBeFocused(); // ready to type at once
     await expect(page.getByLabel("Password")).toHaveAttribute("type", "password");
-    // the bot check runs by itself: nothing to click, no puzzle
-    await expect(page.getByRole("status", { name: "Bot check" })).toContainText("Bot check passed", { timeout: 30_000 });
+    // the familiar "I'm not a robot" box: unticked at first, a green tick after one click, no puzzle
+    const box = page.getByRole("checkbox", { name: "I'm not a robot" });
+    await expect(box).toHaveAttribute("aria-checked", "false");
+    await tick(page);
+    await expect(page.getByRole("link", { name: "Create an account" })).toBeVisible();
   });
 
   test("LOGIN-02 empty and malformed input is caught on the page, without a request", async ({ page }) => {
@@ -45,10 +52,14 @@ test.describe("sign-in page", () => {
     await page.goto("/login");
     await page.getByLabel("Email").fill("reviewer@example.com");
     await page.getByLabel("Password").fill("not-the-password");
+    await tick(page);
     await signInButton(page).click();
     await expect(page.getByRole("alert")).toContainText("Wrong email or password");
     await expect(page).toHaveURL(/\/login/);
+    // the check works once: the box is cleared and is ticked again for the next try
+    await expect(page.getByRole("checkbox", { name: "I'm not a robot" })).toHaveAttribute("aria-checked", "false");
     await page.getByLabel("Password").fill(PW);
+    await tick(page);
     await signInButton(page).click();
     await expect(page.getByRole("button", { name: ACCOUNT })).toBeVisible({ timeout: 20_000 });
   });
@@ -59,7 +70,10 @@ test.describe("sign-in page", () => {
     await page.keyboard.type("  viewer@example.com ");
     await page.getByLabel("Password").focus();
     await page.keyboard.type(PW);
-    await page.keyboard.press("Enter");
+    await page.getByRole("checkbox", { name: "I'm not a robot" }).focus();
+    await page.keyboard.press("Space");                    // the box is ticked from the keyboard
+    await expect(page.getByRole("checkbox", { name: "I'm not a robot" })).toHaveAttribute("aria-checked", "true", { timeout: 30_000 });
+    await page.getByLabel("Password").press("Enter");
     await expect(page.getByRole("button", { name: ACCOUNT })).toBeVisible({ timeout: 20_000 });
   });
 
@@ -68,6 +82,7 @@ test.describe("sign-in page", () => {
     await expect(page).toHaveURL(/\/login/);
     await page.getByLabel("Email").fill("reviewer@example.com");
     await page.getByLabel("Password").fill(PW);
+    await tick(page);
     await signInButton(page).click();
     await expect(page.getByRole("heading", { level: 1, name: "Results" })).toBeVisible({ timeout: 20_000 });
   });
@@ -77,12 +92,13 @@ test.describe("sign-in page", () => {
     await page.route("**/api/v1/auth/login", (r) => r.abort("internetdisconnected"));
     await page.getByLabel("Email").fill("reviewer@example.com");
     await page.getByLabel("Password").fill(PW);
+    await tick(page);
     await signInButton(page).click();
     await expect(page.getByRole("alert")).toContainText("Check your connection");
     await expect(page.getByLabel("Email")).toHaveValue("reviewer@example.com");
     await page.unroute("**/api/v1/auth/login");
     await page.route("**/api/v1/auth/login", (r) => r.fulfill({ status: 500, body: "{}" }));
-    await checked(page);
+    await tick(page);
     await page.getByLabel("Password").press("Enter"); // the second try from the keyboard
     await expect(page.getByRole("alert")).toContainText("Check your connection");
   });
@@ -122,11 +138,11 @@ test.describe("sign in with the company identity provider (OpenID Connect)", () 
     await expect(page.getByText("reviewer@example.com")).toBeVisible();
   });
 
-  test("LOGIN-11 someone without a Fidelity account is told what to do, and stays signed out", async ({ page }) => {
+  test("LOGIN-11 someone without a Fidelity account becomes a request for approval, and stays signed out", async ({ page }) => {
     await as(page, "email=stranger@example.org&verified=1");
     await page.goto("/login");
     await page.getByRole("button", { name: "Continue with Company SSO" }).click();
-    await expect(page.getByRole("alert")).toContainText("not registered in Fidelity");
+    await expect(page.getByRole("alert")).toContainText("with an administrator");
     await expect(page).toHaveURL(/\/login$/); // the error code is not left in the address
     await page.goto("/");
     await expect(page).toHaveURL(/\/login/);
@@ -154,11 +170,64 @@ test.describe("office network", () => {
     const base = new URL(info.project.use.baseURL ?? "http://127.0.0.1:8765");
     await page.goto(`http://fidelity.lan:${base.port}/login`);
     expect(await page.evaluate(() => window.isSecureContext)).toBe(false);
-    await expect(page.getByRole("status", { name: "Bot check" })).toContainText("Bot check passed", { timeout: 30_000 });
     await page.getByLabel("Email").fill("viewer@example.com");
     await page.getByLabel("Password").fill(PW);
+    await tick(page);
     await signInButton(page).click();
     await expect(page.getByRole("button", { name: ACCOUNT })).toBeVisible({ timeout: 20_000 });
     await browser.close();
+  });
+});
+
+test.describe("sign-up", () => {
+  test("LOGIN-14 pressing Sign in without ticking the box asks for it, without a request", async ({ page }) => {
+    await page.goto("/login");
+    let posted = 0;
+    page.on("request", (r) => r.url().endsWith("/auth/login") && posted++);
+    await page.getByLabel("Email").fill("reviewer@example.com");
+    await page.getByLabel("Password").fill(PW);
+    await signInButton(page).click();
+    await expect(page.getByRole("alert")).toContainText("Tick “I'm not a robot” first");
+    await expect(page.getByRole("checkbox", { name: "I'm not a robot" })).toBeFocused();
+    expect(posted).toBe(0);
+  });
+
+  test("LOGIN-15 anyone can ask for an account; it waits for an administrator, who approves it", async ({ page, browser }) => {
+    const email = `new-${Date.now()}@example.net`;
+    await page.goto("/login");
+    await page.getByRole("link", { name: "Create an account" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Create your account" })).toBeVisible();
+    await page.getByLabel("Email").fill(email);
+    await page.getByLabel("Password", { exact: true }).fill("a-new-long-password");
+    await page.getByLabel("Confirm password").fill("a-new-long-password");
+    await tick(page);
+    await page.getByRole("button", { name: "Create account" }).click();
+    await expect(page.getByText("Request sent")).toBeVisible({ timeout: 20_000 });
+    // before approval: the right password says the account is waiting
+    await page.getByRole("link", { name: "Back to sign in" }).click();
+    await page.getByLabel("Email").fill(email);
+    await page.getByLabel("Password").fill("a-new-long-password");
+    await tick(page);
+    await signInButton(page).click();
+    await expect(page.getByRole("alert")).toContainText("waiting for an administrator");
+    // an administrator approves it as a reviewer
+    const ctx = await browser.newContext();
+    const admin = await ctx.newPage();
+    await admin.goto(new URL("/login", page.url()).toString());
+    await admin.getByLabel("Email").fill("admin@example.com");
+    await admin.getByLabel("Password").fill(PW);
+    await tick(admin);
+    await signInButton(admin).click();
+    await admin.goto(new URL("/settings/users", page.url()).toString());
+    const row = admin.getByRole("listitem").filter({ hasText: email });
+    await row.getByRole("combobox").click();
+    await admin.getByRole("option", { name: "Reviewer" }).click();
+    await row.getByRole("button", { name: "Approve" }).click();
+    await expect(admin.getByText(`${email} can now sign in`)).toBeVisible({ timeout: 15_000 });
+    await ctx.close();
+    // now the person signs in
+    await tick(page);
+    await signInButton(page).click();
+    await expect(page.getByRole("button", { name: ACCOUNT })).toBeVisible({ timeout: 20_000 });
   });
 });

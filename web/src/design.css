@@ -322,6 +322,25 @@ table.fx-t tr:last-child td { border-bottom: 0; }
 .fx-auth-forgot.ant-btn { padding: 0; height: auto; font-size: 13px; }
 .fx-auth-foot { margin: 18px 0 0; text-align: center; color: var(--muted); font-size: 13px; }
 .fx-auth-secure { margin: 18px 0 0; color: var(--muted); font-size: 12px; display: flex; gap: 6px; align-items: center; }
+/* "I'm not a robot" — the check people know from other sites (components/Captcha.tsx) */
+.fx-human { margin: 2px 0; }
+.fx-human-row { display: flex; align-items: center; gap: 12px; max-width: 320px; min-height: 64px; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--sunken); box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+.fx-human-invalid .fx-human-row { border-color: var(--bad); }
+.fx-human-box { width: 26px; height: 26px; flex: none; border: 2px solid var(--muted); border-radius: 3px; background: var(--surface);
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: border-color .15s; }
+.fx-human-box:hover { border-color: var(--fg); }
+.fx-human-box:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.fx-human-solving .fx-human-box { border-color: transparent; background: transparent; cursor: default; }
+.fx-human-ready .fx-human-box { border-color: transparent; background: transparent; cursor: default; }
+.fx-human-tick { color: var(--ok); font-size: 26px; font-weight: 700; line-height: 1; }
+.fx-human-spin { width: 24px; height: 24px; border-radius: 50%; border: 3px solid var(--accent-soft); border-top-color: var(--accent); animation: fx-spin .8s linear infinite; }
+@keyframes fx-spin { to { transform: rotate(360deg); } }
+.fx-human-label { flex: 1; font-size: 14px; cursor: pointer; user-select: none; }
+.fx-human-brand { display: flex; flex-direction: column; align-items: flex-end; font-size: 10px; color: var(--muted); line-height: 1.3; }
+.fx-human-brand b { font-size: 11px; color: var(--fg); }
+.fx-human-note { margin-top: 6px; font-size: 12px; color: var(--bad); }
+@media (prefers-reduced-motion: reduce) { .fx-human-spin { animation-duration: 2.4s; } }
 .fx-captcha { display: flex; align-items: center; gap: 8px; min-height: 22px; font-size: 12px; color: var(--muted); }
 .fx-captcha-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--idle); flex: none; }
 .fx-captcha-solving .fx-captcha-dot { background: var(--run); animation: fx-pulse 1s ease-in-out infinite; }
@@ -341,3 +360,6 @@ table.fx-t tr:last-child td { border-bottom: 0; }
 }
 /* visually hidden, still read by screen readers (page headings of screens whose design has none) */
 .fx-vh { position: absolute !important; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+.fx-auth-foot a.fx-auth-signup { color: var(--accent); font-weight: 600; text-decoration: none; }
+.fx-auth-foot a.fx-auth-signup:hover { text-decoration: underline; }

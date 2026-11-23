@@ -74,7 +74,7 @@ def creds(email="sec-reviewer@example.com", pw=PW, **extra):
 # ------------------------------------------------------------------ bot protection
 def test_options_report_captcha_and_no_providers_by_default(captcha_on):
     j = client().get("/api/v1/auth/options").json()
-    assert j == {"providers": [], "captcha": True}
+    assert j == {"providers": [], "captcha": True, "signup": True}
 
 
 def test_login_without_captcha_is_refused_when_on(captcha_on):
@@ -301,12 +301,23 @@ def test_second_sign_in_reuses_the_link(provider):
     assert asyncio.run(n()) == 1
 
 
-def test_unknown_person_is_refused_with_a_reason(provider):
+def test_unknown_person_is_refused_with_a_reason_when_sign_up_is_off(provider, monkeypatch):
+    monkeypatch.setenv("FIDELITY_SIGNUP", "off")
     provider.email, provider.account = "stranger@elsewhere.test", "acc-stranger"
     c = client()
     r = c.get("/api/v1/auth/oauth/oidc/callback", params={"code": "abc", "state": start(c)})
     assert r.headers["location"] == "/login?error=oauth_no_account"
     assert c.get("/api/v1/me").status_code == 401
+
+
+def test_unknown_person_signing_in_with_a_provider_becomes_a_request_for_approval(provider):
+    provider.email, provider.account = "stranger2@elsewhere.test", "acc-stranger2"
+    c = client()
+    r = c.get("/api/v1/auth/oauth/oidc/callback", params={"code": "abc", "state": start(c)})
+    assert r.headers["location"] == "/login?error=oauth_pending"
+    assert c.get("/api/v1/me").status_code == 401
+    r = c.get("/api/v1/auth/oauth/oidc/callback", params={"code": "abc", "state": start(c)})   # again: still waiting
+    assert r.headers["location"] == "/login?error=oauth_pending"
 
 
 def test_allowed_domain_creates_a_viewer(provider, monkeypatch):

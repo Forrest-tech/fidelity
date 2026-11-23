@@ -22,6 +22,9 @@ class OAuthAccount(SQLAlchemyBaseOAuthAccountTableUUID, Base):
 
 class User(SQLAlchemyBaseUserTableUUID, Base):
     role: Mapped[Role] = mapped_column(Enum(Role), default=Role.viewer, nullable=False)
+    # "pending": signed up and waiting for an administrator (the account stays switched off until approved);
+    # None for everyone an administrator added or approved.
+    approval: Mapped[str | None] = mapped_column(String(20), nullable=True, default=None)
     oauth_accounts: Mapped[list[OAuthAccount]] = relationship("OAuthAccount", lazy="selectin")
 
 

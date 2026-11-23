@@ -27,6 +27,9 @@ async def login(request: Request, credentials: OAuth2PasswordRequestForm = Depen
     if reason:
         raise HTTPException(status_code=400, detail=reason)
     user = await user_manager.authenticate(credentials)
+    if user is not None and not user.is_active and getattr(user, "approval", None) == "pending":
+        # the right password for an account that waits for approval: say so (it reveals nothing to a stranger)
+        raise HTTPException(status_code=403, detail="ACCOUNT_PENDING")
     if user is None or not user.is_active:
         guard.login_failed(ip, account)
         await guard.audit(None, "login_failed", ip)
@@ -56,11 +59,14 @@ async def challenge():
 
 @router.get("/auth/options", tags=["auth"])
 async def auth_options():
-    """What the sign-in page offers: the configured providers and whether the captcha is required."""
-    return {"providers": oauth.providers_public(), "captcha": captcha.enabled()}
+    """What the sign-in page offers: the configured providers, whether the captcha is required, and sign-up."""
+    from . import signup
+    return {"providers": oauth.providers_public(), "captcha": captcha.enabled(), "signup": signup.enabled()}
 
 
 router.include_router(oauth.router)
+from . import signup as _signup  # noqa: E402
+router.include_router(_signup.router)
 # User management is admin-only.
 router.include_router(
     fastapi_users.get_users_router(UserRead, UserUpdate),

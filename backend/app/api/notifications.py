@@ -29,6 +29,16 @@ def _who(user) -> str:
     return getattr(user, "email", "") or ""
 
 
+def _pending_signups() -> int:
+    """People who asked for an account and wait for an administrator (run on a fresh loop: this route is sync)."""
+    import asyncio
+    try:
+        from ..auth.signup import pending_count
+        return asyncio.run(pending_count())
+    except Exception:                                    # noqa: BLE001 - notifications never break the page
+        return 0
+
+
 def _items(user) -> list:
     since = time.time() - KEEP_DAYS * 86400
     out = []
@@ -82,6 +92,10 @@ def _items(user) -> list:
         except Exception:                                     # noqa: BLE001 - notifications never break the page
             pass
     if getattr(user, "role", None) and getattr(user.role, "value", user.role) == "admin":
+        n = _pending_signups()
+        if n:
+            out.append({"key": f"signup:{n}", "type": "signup", "tone": "warn", "n": n, "at": time.time(),
+                        "to": "/settings/users"})
         try:
             from ..ops import health as H
             for a in H.alerts():                          # disk, memory, backups, failing runs (requirements v2, S-5)
