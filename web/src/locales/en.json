@@ -431,7 +431,7 @@
         "minutes": "{{n}} minutes"
       },
       "ocrProtected": "Copy-protected PDFs",
-      "ocrProtectedLong": "Read PDFs that forbid copying their text from images of their pages (both OCR engines, checked like a scan; the images are never saved). Only for content the company is licensed to use."
+      "ocrProtectedLong": "Read PDFs that forbid copying their text through their own text layer (the publisher's exact text), checked against images of their pages like any PDF. Only for content the company is licensed to use."
     },
     "users": {
       "title": "Users",

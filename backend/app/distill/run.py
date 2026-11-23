@@ -235,12 +235,17 @@ def _protected_entry(name, rel_path, rel_dir, source_prefix, out_root, h, tri, l
             "report": {"status": "METADATA", "triage": tri}}
 
 
-def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=print, publish_protected=False):
+def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=print, publish_protected=False,
+                read_protected=False):
     name = os.path.splitext(os.path.basename(rel_path))[0]
     rel_dir = os.path.dirname(rel_path)
     t0 = time.time()
     h_before = dropbox_content_hash(pdf_path)
     tri = triage_pdf(pdf_path)
+    copy_restricted = False
+    if tri["class"] == "protected" and read_protected and tri.get("copy_only"):
+        log("  copying text is restricted: reading its text layer, checked against images of its pages (ADR 0006)")
+        tri, copy_restricted = {**tri, "class": "text"}, True
     if tri["class"] == "protected" and publish_protected:
         return _protected_entry(name, rel_path, rel_dir, source_prefix, out_root, h_before, tri, log)
     if tri["class"] != "text":
@@ -413,7 +418,7 @@ def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=prin
               f"source_file_hash: {h_before}",
               f"parser: {PIPELINE_VERSION}/pymupdf",
               f"audit_status: {'auto_verified' if trusted else 'pending_review'}",
-              f"flags: [{', '.join(x for x in (['unreadable_formula'] if nflag else []) + (['instruction_like'] if instr_flag(body) else []) if x)}]",
+              f"flags: [{', '.join(x for x in (['unreadable_formula'] if nflag else []) + (['instruction_like'] if instr_flag(body) else []) + (['copy_restricted_source'] if copy_restricted else []) if x)}]",
               f"verified: {_yaml_str(verdict + (f'; {nflag} formula(s) in this file marked ⚠️ are not readable — check the source page' if nflag else ''))}",
               f"layout: {_yaml_str(layout)}",
               "---", ""]

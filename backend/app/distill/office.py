@@ -137,15 +137,15 @@ def distill_any(path, rel_path, out_root, source_prefix, cache_dir, log=print, p
         from .drawing import distill_drawing
         return distill_drawing(path, rel_path, out_root, source_prefix, cache_dir, log=log)
     if path.lower().endswith(".pdf"):
-        from .triage import reads_as_scan
+        from .triage import reads_protected_text
         tri = triage_pdf(path)
         cls = tri["class"]
         if cls == "scan":
             return distill_scan(path, rel_path, out_root, source_prefix, cache_dir, log=log)
-        if cls == "protected" and reads_as_scan(tri):
-            # copying its text is not allowed, but it opens: each page is rendered in memory, read by both OCR
-            # engines and checked like a scan; no page image is ever written to disk
-            return distill_scan(path, rel_path, out_root, source_prefix, cache_dir, log=log, via="page_images")
+        if cls == "protected" and reads_protected_text(tri):
+            # copying its text is not allowed, but it opens: its own text layer is read and checked against images of
+            # its pages, like any text PDF (ADR 0006)
+            return R.distill_pdf(path, rel_path, out_root, source_prefix, cache_dir, log=log, read_protected=True)
         if cls == "drawing":
             from .drawing import distill_drawing
             return distill_drawing(path, rel_path, out_root, source_prefix, cache_dir, log=log)
