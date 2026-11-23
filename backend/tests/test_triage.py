@@ -148,3 +148,35 @@ def test_verification_is_reused_from_stage_cache(tmp_path, monkeypatch):
     monkeypatch.setattr(R, "VERIFY_VERSION", "other")           # a new verifier version invalidates the cache
     with pytest.raises(AssertionError):
         R.distill_pdf(pdf, "Cached 2025.pdf", str(tmp_path / "out3"), "/2025", cache, log=lambda *_: None)
+
+
+def _copy_restricted(tmp_path):
+    perm = int(pymupdf.PDF_PERM_ACCESSIBILITY | pymupdf.PDF_PERM_PRINT)      # may be opened and printed, not copied
+    return text_pdf(str(tmp_path / "cr.pdf"), encryption=pymupdf.PDF_ENCRYPT_AES_256, owner_pw="owner", user_pw="",
+                    permissions=perm)
+
+
+def test_a_copy_only_restriction_is_told_apart_from_a_password(tmp_path, monkeypatch):
+    from app.distill.triage import reads_as_scan
+    t = triage_pdf(_copy_restricted(tmp_path))
+    assert t["class"] == "protected" and t.get("copy_only") is True
+    pw = triage_pdf(text_pdf(str(tmp_path / "pw2.pdf"), encryption=pymupdf.PDF_ENCRYPT_AES_256, user_pw="s", owner_pw="o"))
+    assert pw["class"] == "protected" and not pw.get("copy_only")
+    monkeypatch.setenv("FIDELITY_OCR_PROTECTED", "0")
+    assert reads_as_scan(t) is False                       # switched off: listed as before
+    monkeypatch.setenv("FIDELITY_OCR_PROTECTED", "1")
+    assert reads_as_scan(t) is True
+    assert reads_as_scan(pw) is False                      # a password is never worked around
+
+
+def test_a_copy_restricted_pdf_is_read_from_page_images_when_switched_on(tmp_path, monkeypatch):
+    from app.distill import office, scan
+    seen = {}
+    monkeypatch.setattr(scan, "distill_scan", lambda *a, **k: seen.update(k) or {"verdict": "REVIEW", "via": k.get("via")})
+    p = _copy_restricted(tmp_path)
+    monkeypatch.setenv("FIDELITY_OCR_PROTECTED", "1")
+    assert office.distill_any(p, "cr.pdf", str(tmp_path / "out"), "", str(tmp_path / "c"))["via"] == "page_images"
+    monkeypatch.setenv("FIDELITY_OCR_PROTECTED", "0")
+    seen.clear()
+    r = office.distill_any(p, "cr.pdf", str(tmp_path / "out"), "", str(tmp_path / "c"))
+    assert not seen and r["verdict"] == "SKIP" and r["triage"]["class"] == "protected"

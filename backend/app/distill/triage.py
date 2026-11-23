@@ -33,7 +33,8 @@ def triage_pdf(path: str) -> dict:
         if doc.needs_pass:
             return {"class": "protected", "reason": "password required"}
         if not (doc.permissions & pymupdf.PDF_PERM_COPY):   # unencrypted files report all permissions
-            return {"class": "protected", "reason": "copying of text is not permitted by the file's permissions"}
+            return {"class": "protected", "reason": "copying of text is not permitted by the file's permissions",
+                    "copy_only": True}         # it opens and shows its pages; only copying its text is refused
         n = doc.page_count
         if n == 0:
             return {"class": "unsupported", "reason": "no pages"}
@@ -63,6 +64,28 @@ def triage_pdf(path: str) -> dict:
         return {"class": "text", "reason": "text layer present", **info}
     finally:
         doc.close()
+
+
+def ocr_protected_enabled() -> bool:
+    """Settings → Defaults: read copy-restricted PDFs from images of their pages (the owner's decision of 2026-11-22;
+    the company is licensed for this content). FIDELITY_OCR_PROTECTED=1/0 overrides the setting."""
+    import json
+    import os
+    env = os.environ.get("FIDELITY_OCR_PROTECTED")
+    if env is not None:
+        return env.lower() in ("1", "on", "true", "yes")
+    from .. import config
+    try:
+        with open(os.path.join(config.DATA_DIR, "app_settings.json"), encoding="utf-8") as f:
+            return bool((json.load(f).get("room_defaults") or {}).get("ocr_protected"))
+    except (OSError, ValueError):
+        return False
+
+
+def reads_as_scan(tri: dict) -> bool:
+    """A scan, or a copy-restricted PDF read from images of its pages when that is switched on."""
+    return tri.get("class") == "scan" or (tri.get("class") == "protected" and bool(tri.get("copy_only"))
+                                          and ocr_protected_enabled())
 
 
 def _picture_share(page) -> float:

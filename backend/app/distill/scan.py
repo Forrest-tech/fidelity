@@ -46,7 +46,8 @@ def _images(path):
                 yield i, frame.convert("L").copy()
 
 
-def distill_scan(path, rel_path, out_root, source_prefix, cache_dir, log=print, engines=None, max_pages=400):
+def distill_scan(path, rel_path, out_root, source_prefix, cache_dir, log=print, engines=None, max_pages=400,
+                 via="scan"):
     t0 = time.time()
     name = os.path.splitext(os.path.basename(rel_path))[0]
     rel_dir = os.path.dirname(rel_path)
@@ -71,7 +72,8 @@ def distill_scan(path, rel_path, out_root, source_prefix, cache_dir, log=print, 
                   for p in pages],
         "review_pages": [p.page for p in review],
         "instruction_like": {"count": len(instr), "examples": instr[:20]},
-        "triage": {"class": "scan", "reason": "OCR route"},
+        "triage": ({"class": "protected", "reason": "copying text not allowed: read from images of its pages"}
+                   if via == "page_images" else {"class": "scan", "reason": "OCR route"}),
         "source_unchanged": {"ok": R.dropbox_content_hash(path) == h, "content_hash": h},
         "seconds": round(time.time() - t0, 1),
     }
@@ -97,7 +99,7 @@ def distill_scan(path, rel_path, out_root, source_prefix, cache_dir, log=print, 
           f"source_relative_path: {R._yaml_str(rel_path.replace(os.sep, '/'))}", f"source_file_hash: {h}",
           f"parser: {R.PIPELINE_VERSION}/ocr:{'+'.join(e.name for e in engines) or 'none'}",
           f"audit_status: {'auto_verified' if ok else 'pending_review'}",
-          f"flags: [ocr{', ocr_review' if review else ''}{', instruction_like' if instr else ''}]",
+          f"flags: [ocr{', from_page_images' if via == 'page_images' else ''}{', ocr_review' if review else ''}{', instruction_like' if instr else ''}]",
           f"verified: {R._yaml_str('PASS (two OCR engines agree on every page)' if ok else 'REVIEW - ' + str(len(review)) + ' page(s) need a human check')}",
           "---", ""]
     base = os.path.join(out_root, rel_dir) if ok else os.path.join(out_root, "_pending", rel_dir)

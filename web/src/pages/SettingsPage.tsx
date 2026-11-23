@@ -38,7 +38,7 @@ const ITEMS: Item[] = [
 function Defaults() {
   const { t } = useTranslation();
   const qc = useQueryClient();
-  const q = useQuery({ queryKey: ["defaults"], queryFn: () => api<{ threshold: number; number_guard: boolean; mode: "distill" | "upload"; weights: Record<string, number> }>("/app-settings/defaults") });
+  const q = useQuery({ queryKey: ["defaults"], queryFn: () => api<{ threshold: number; number_guard: boolean; mode: "distill" | "upload"; ocr_protected?: boolean; weights: Record<string, number> }>("/app-settings/defaults") });
   const [thr, setThr] = useState<string | null>(null);
   const save = useMutation({
     mutationFn: (b: Record<string, unknown>) => api("/app-settings/defaults", { ...json(b), method: "PUT" }),
@@ -68,6 +68,11 @@ function Defaults() {
             <span style={{ width: 160 }}><b>{t("pages.settings.numberGuard")}</b></span>
             <input type="checkbox" className="fx-cb" checked={d.number_guard} onChange={(e) => save.mutate({ number_guard: e.target.checked })} />
             <span className="fx-tiny fx-muted">{t("pages.distill.numberGuardLong")}</span>
+          </label>
+          <label className="fx-row">
+            <span style={{ width: 160 }}><b>{t("pages.settings.ocrProtected")}</b></span>
+            <input type="checkbox" className="fx-cb" checked={!!d.ocr_protected} onChange={(e) => save.mutate({ ocr_protected: e.target.checked })} />
+            <span className="fx-tiny fx-muted">{t("pages.settings.ocrProtectedLong")}</span>
           </label>
           <div className="fx-row fx-wrap">
             <b style={{ width: 160 }}>{t("pages.distill.afterDistill")}</b>

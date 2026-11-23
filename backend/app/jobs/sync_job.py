@@ -366,6 +366,11 @@ def _supervise(job, proc, p, report):
     return code, "".join(lines)
 
 
+def _ocr_protected() -> bool:
+    from ..distill.triage import ocr_protected_enabled
+    return ocr_protected_enabled()
+
+
 def write_known(room_id):
     """Tell the run which files of the room already have a result on the web side (see sync._known)."""
     def _rows():
@@ -375,7 +380,8 @@ def write_known(room_id):
             # (it was skipped as "unchanged" and stayed failed for good)
             return [r[0] for r in con.execute(
                 "SELECT rel FROM room_file WHERE room_id=? AND outcome IS NOT NULL "
-                "AND NOT (outcome='unprocessable' AND COALESCE(reason,'') IN ('download','network'))", (room_id,))]
+                "AND NOT (outcome='unprocessable' AND COALESCE(reason,'') IN ('download','network'))"
+                + (" AND NOT (outcome='unprocessable' AND reason='protected')" if _ocr_protected() else ""), (room_id,))]
         finally:
             con.close()
     try:
