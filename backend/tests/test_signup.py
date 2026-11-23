@@ -33,6 +33,13 @@ async def _user(email):
         return (await s.execute(select(User).where(User.email == email))).scalar_one_or_none()
 
 
+async def _audit_for(email):
+    from app.auth.models import AuditLog
+    async with SessionLocal() as s:
+        rows = (await s.execute(select(AuditLog).where(AuditLog.target.contains(email)))).scalars().all()
+        return [(r.action, r.user_id) for r in rows]
+
+
 @pytest.fixture(scope="module", autouse=True)
 def admin():
     from app import db
@@ -136,6 +143,7 @@ def test_a_declined_request_is_removed_and_the_address_may_ask_again():
     uid = next(p["id"] for p in a.get("/api/v1/admin/signups").json()["pending"] if p["email"] == "decline-me@example.com")
     assert a.post(f"/api/v1/admin/signups/{uid}/decline").status_code == 200
     assert asyncio.run(_user("decline-me@example.com")) is None
+    assert asyncio.run(_audit_for("decline-me@example.com"))          # the request stays in the audit trail
     assert signup(client("10.0.1.8"), "decline-me@example.com").status_code == 201
 
 

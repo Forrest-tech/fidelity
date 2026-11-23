@@ -111,6 +111,13 @@ async def decline(user_id: str, request: Request, admin: User = Depends(require_
     import uuid
     user = await _pending_user(user_manager, uuid.UUID(user_id))
     email = user.email
+    # the audit trail stays; its entries no longer point at the account being removed (PostgreSQL enforces the link)
+    from sqlalchemy import update
+    from .models import AuditLog
+    session = user_manager.user_db.session
+    await session.execute(update(AuditLog).where(AuditLog.user_id == user.id)
+                          .values(user_id=None, target=AuditLog.target + " (" + email + ")"))
+    await session.commit()
     await user_manager.user_db.delete(user)            # the address may ask again later
     await guard.audit(admin.id, "signup_declined", email)
     return {"declined": email}
