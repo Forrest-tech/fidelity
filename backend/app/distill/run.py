@@ -387,6 +387,11 @@ def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=prin
     trusted = rep["status"] == "PASS"
     base_dir = os.path.join(out_root, rel_dir) if trusted else os.path.join(out_root, "_pending", rel_dir)
     doc_dir = base_dir if single else os.path.join(base_dir, name)   # single file lives beside its siblings
+    if not single and os.path.isdir(longpath(doc_dir)):
+        # A re-run replaces the whole folder: files from an earlier run (an older chapter layout) must not stay
+        # behind, or publishing would send them to the library next to the new ones (seen 2026-11-23).
+        import shutil
+        shutil.rmtree(longpath(doc_dir))
     os.makedirs(doc_dir, exist_ok=True)
     verdict = "PASS" if trusted else "FAIL — not trusted"
     as_style = bool(clause_file) and not any(S.CLAUSE_ID_RE.fullmatch(k) for k in clause_file)

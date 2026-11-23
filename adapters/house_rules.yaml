@@ -17,7 +17,8 @@ log_timezone_label: Toronto local time (America/Toronto, ET)
 folder_descriptions:
   Code: standards text (e.g. AS/NZS 3500 series)
   NCC2022: NCC / PCA volumes (2022 edition)
-  "2025": NCC 2025 volumes and drafts
+  "2025": NCC 2025 volumes and drafts (distilled, one file per Part)
+  AS 3500: AS/NZS 3500 series, one folder per edition year (distilled, one file per clause group)
   n2_Technical: technical memos, manufacturer documents, defect reports
   n0_Web_Reference: snapshots of NSW Fair Trading, Sydney Water, ABCB, ABCB NCC, Jemena web pages
 

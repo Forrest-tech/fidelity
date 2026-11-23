@@ -126,6 +126,9 @@ def summarise(lib: dict) -> dict:
         "drafts": [d for d in docs if d["status"].upper().startswith("DRAFT")],
         "unreadable_formulas": [d for d in docs if "unreadable_formula" in d["flags"]],
         "pending_review": [d for d in docs if "pending_review" in d["audit"]],
+        "pending_by_folder": collections.Counter(
+            d["path"].split("/")[0] if "/" in d["path"] else "." for d in docs if "pending_review" in d["audit"]
+        ).most_common(),
         "protected": [d for d in docs if "protected" in d["flags"] or "metadata_only" in d["flags"]],
         "ocr": [d for d in docs if "ocr" in d["flags"]],
         "jurisdictions": sorted({d["jurisdiction"] for d in docs if d["jurisdiction"]}),
