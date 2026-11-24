@@ -302,11 +302,11 @@ function SystemHealth() {
       </div>
       <section className="fx-card fx-stack" style={{ padding: 14, gap: 8 }} aria-label={t("pages.settings.sys.releases")}>
         <h3 style={{ margin: 0, fontSize: 14 }}>{t("pages.settings.sys.releases")}</h3>
-        {!rel.data?.releases.length ? (
+        {!rel.data?.releases?.length ? (
           <div className="fx-tiny fx-muted">{t("pages.settings.sys.noReleases")}</div>
         ) : (
           <ul className="fx-tiny" style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 4 }}>
-            {rel.data.releases.map((r) => (
+            {(rel.data.releases ?? []).map((r) => (
               <li key={r.run}>
                 <b>{t("pages.settings.sys.releaseN", { n: r.release })}</b> · {r.at.slice(0, 10)} ·{" "}
                 {t("pages.settings.sys.releaseTotals", { added: r.totals.added, replaced: r.totals.replaced, withdrawn: r.totals.withdrawn })}
