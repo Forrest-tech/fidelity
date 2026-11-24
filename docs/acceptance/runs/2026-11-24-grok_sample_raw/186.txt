@@ -1,0 +1,1 @@
+GRADE {"status":"answered","values":["1:200"],"edition_used":"AS/NZS 3500.3:2021","citations":[{"document":"AS NZS 3500.3-2021 · 008 4.1 Scope of section – 4.9 [4.1–4.9.6] p52-64.md","page":57,"quote":"Gradients shall be not flatter than 1:200 for sole widths equal to or less than 600 mm wide."}]}

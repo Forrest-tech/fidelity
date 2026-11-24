@@ -1,0 +1,2 @@
+ANSWER AS/NZS 3500.3:2018 has been superseded by the 2021 edition
+GRADE {"status":"answered","values":["0.8"],"edition_used":"AS/NZS 3500.3:2018","citations":[{"document":"AS/NZS 3500.3:2018","page":64,"quote":"Blockage factors are variable, but a value of 0.8 (reducing capacities to 80% of values given by design aids) shall be used for on-grade pits."}]}

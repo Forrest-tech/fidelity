@@ -1,0 +1,156 @@
+{
+ "seed": 20261124,
+ "note": "Grok sample for requirements v3 V-1 (stratified, fixed seed)",
+ "questions": [
+  {
+   "id": 223,
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 8.3.7, what is the maximum height the high-level alarm may be set above the invert of the inlet pipe in a wet well?"
+  },
+  {
+   "id": 55,
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 3.5.2, within an easement, what minimum clearance must be maintained between an open channel, pipeline or conduit and a drain?"
+  },
+  {
+   "id": 186,
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 4.5.4, what is the minimum gradient for a box gutter with a sole width equal to or less than 600 mm?"
+  },
+  {
+   "id": 1,
+   "cat": "A",
+   "q": "Under AS/NZS 3500.1:2021, Clause 2.7.5, what is the maximum diameter of the low carbon stainless steel filler rods that shall be used for welded joints in stainless steel pipework larger than DN 25?"
+  },
+  {
+   "id": 10,
+   "cat": "A",
+   "q": "Under AS/NZS 3500.1:2021, Clause 4.6.3.3, what is the minimum height the vent port of a dual-check valve with atmospheric port (DCAP) must be located above the finished surface level?"
+  },
+  {
+   "id": 216,
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 7.8, what is the minimum thickness and minimum upward extension of the concrete footing supporting the bend at the base of a jump-up in a site stormwater drain?"
+  },
+  {
+   "id": 190,
+   "cat": "A",
+   "q": "Under AS/NZS 3500.3:2021, Clause 4.9.4, for a metal box gutter with a discontinuous support system, what is the maximum interval at which support brackets shall be located (apart from stop ends and both ends of sumps and rainheads)?"
+  },
+  {
+   "id": 46,
+   "cat": "A",
+   "q": "Under AS/NZS 3500.1:2021, Clause 11.5.3, what is the maximum height at which the operating control of a manually operated cistern shall be positioned, measured from floor level?"
+  },
+  {
+   "id": 165,
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 16.11.2, what is the maximum height of an open type vacuum reforming pocket?"
+  },
+  {
+   "id": 127,
+   "cat": "A",
+   "q": "Under AS/NZS 3500.2:2021, Clause 9.8.7.1(b), what is the minimum distance between the centre-lines of the vertical sections of a waste stack each side of a graded offset?"
+  },
+  {
+   "id": 136,
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, for a reduced velocity aerator stack system with interconnected stack vents, what is the maximum number of DN 100 stacks that may be interconnected, and what is the maximum size vent terminating through the roof?"
+  },
+  {
+   "id": 43,
+   "cat": "B",
+   "q": "Under AS/NZS 3500.1:2021, what is the minimum height above finished surface level at which an external non-drinking water hose tap outlet may be installed without a removable handle?"
+  },
+  {
+   "id": 211,
+   "cat": "B",
+   "q": "Under AS/NZS 3500.3:2021, for a sump pit in a site stormwater drain, how much fall is required between the pipe inverts, and what floor arrangement is required?"
+  },
+  {
+   "id": 118,
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, what is the maximum length of a vertical dropper on a fixture discharge pipe where the fixture is not a basin or bidet?"
+  },
+  {
+   "id": 113,
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, when sizing branch vents, what is the minimum DN for a branch vent that connects to a DN 40 group vent?"
+  },
+  {
+   "id": 215,
+   "cat": "B",
+   "q": "Under AS/NZS 3500.3:2021, for a stormwater pit with tapered upper walls, how far above the invert of the outlet pipe must the taper start, and what are the minimum access shaft diameter and maximum access shaft length?"
+  },
+  {
+   "id": 154,
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, what is the maximum VLU that a DN 50 vacuum main is permitted to serve?"
+  },
+  {
+   "id": 69,
+   "cat": "B",
+   "q": "Under AS/NZS 3500.2:2021, when a disconnector gully is installed inside a building, what is the minimum grade for the vent pipe that branches from the riser?"
+  },
+  {
+   "id": 21,
+   "cat": "B",
+   "q": "In AS/NZS 3500.1:2021, for stainless steel piping larger than DN 25, when using flanged joints, what is the minimum thickness of the gasket required?"
+  },
+  {
+   "id": 278,
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.3:2018, for a non-reinforced concrete pit wall with a wall length of 1.2 m, what minimum wall thickness applies to the bottom section where the maximum depth H2 is 2.4 m?"
+  },
+  {
+   "id": 232,
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.1:2018, Clause 5.2.9, what is the minimum angle at which an underground water service shall cross another underground service?"
+  },
+  {
+   "id": 269,
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.3:2018, Clause 5.4.10.2, what blockage factor shall be used for on-grade pits?"
+  },
+  {
+   "id": 267,
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.3:2018, Clause 4.9.4, for a metal box gutter with discontinuous support brackets, what is the maximum interval between support brackets?"
+  },
+  {
+   "id": 235,
+   "cat": "D superseded edition",
+   "q": "Under AS 3500.1:2018, when pipework penetrates a concrete slab on ground, what minimum thickness of impermeable flexible lagging must be provided for the full depth of the slab penetration?"
+  },
+  {
+   "id": 22,
+   "cat": "E",
+   "q": "Under AS/NZS 3500.1:2021, Table 5.10, what is the minimum depth of cover for buried water pipes not subject to vehicular loading, excluding fire services?"
+  },
+  {
+   "id": 173,
+   "cat": "E",
+   "q": "Under AS/NZS 3500.2:2021, when vacuum testing a DN 300 vacuum drainage pipe over a 250 m test length, what is the minimum test duration?"
+  },
+  {
+   "id": 309,
+   "cat": "F trap: edition not held",
+   "q": "Under AS/NZS 3500.1:2025, an underground water service of DN 80 has to run past another underground service. What minimum separation must be maintained between them?"
+  },
+  {
+   "id": 299,
+   "cat": "F trap: clause does not exist",
+   "q": "Under AS/NZS 3500.3:2021, Clause 32.9.5, what is the minimum clearance required?"
+  },
+  {
+   "id": 282,
+   "cat": "F trap: clause does not exist",
+   "q": "Under AS/NZS 3500.1:2021, Clause 55.9.5, what is the minimum clearance required?"
+  },
+  {
+   "id": 315,
+   "cat": "F trap: edition not held",
+   "q": "For a stormwater pump-out wet well designed to AS/NZS 3500.3:2025, what is the minimum wet well storage required between the high and low working levels?"
+  }
+ ]
+}

@@ -1,0 +1,1 @@
+GRADE {"status":"answered","values":["300 mm"],"edition_used":"AS/NZS 3500.1:2021","citations":[{"document":"AS NZS 3500.1-2021 · 007 4.1 Scope of section – 4.6 [4.1–4.6.3.3] p28-38.md","page":36,"quote":"have the vent port located not less than 300 mm above the finished surface level so that the device is freely drained or over a tundish."}]}

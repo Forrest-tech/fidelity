@@ -186,8 +186,12 @@ Drafts use the same layout under their own folders (see Drafts held).
 Answer:   <answer based on the library text>
 Source:   <file path>, <clause>, <page or section>
 Status:   verified / pending review
-Edition:  <standard and year>; Jurisdiction: <NSW / VIC / national>
+Edition:  <standard and year> — current, or SUPERSEDED by <newer edition>; Jurisdiction: <NSW / VIC / national>
+Note:     Decision support only — not a substitute for a licensed practitioner's judgement.
+📁 Saved: <logs>/<file name>
 ```
+Every line is required, in this order. **Edition** comes from the file's front matter: when `edition_status` is
+`superseded`, write "SUPERSEDED by" and the `superseded_by` edition — also when the user asked for that older edition.
 For web snapshots add: `Web reference: <organisation> — <page title> / URL / retrieved <date> ⚠️ may have changed`.
 When nothing is found: `Answer: Not found in the knowledge base. Searched: <terms>`.
 

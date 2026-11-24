@@ -1,0 +1,1 @@
+GRADE {"status":"answered","values":["100 mm"],"edition_used":"AS/NZS 3500.2:2021","citations":[{"document":"AS NZS 3500.2-2021 · 009 3.1 Scope of section – 3.18 [3.1–3.18] p27-47.md","page":31,"quote":"In an easement, a minimum clearance of 100 mm shall be maintained between an open channel, pipeline or conduit and the drain."}]}

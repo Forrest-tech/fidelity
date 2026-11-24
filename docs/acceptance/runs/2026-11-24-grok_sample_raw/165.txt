@@ -1,0 +1,1 @@
+GRADE {"status":"answered","values":["900 mm"],"edition_used":"AS/NZS 3500.2:2021","citations":[{"document":"AS NZS 3500.2-2021 · 025 16.1 Scope of section – 16.15 [16.1–16.15.3] p192-209.md","page":204,"quote":"Open type vacuum reforming pockets shall — (a) be constructed of 45° bend and 45° junction; (b) have a maximum height of 900 mm;"}]}

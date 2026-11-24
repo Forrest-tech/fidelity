@@ -1,0 +1,1 @@
+GRADE {"status":"answered","values":["100"],"edition_used":"AS/NZS 3500.2:2021","citations":[{"document":"AS NZS 3500.2-2021 · 030 Appendix E Sizing vacuum drainage pipes and buffers p222-224.md","page":223,"quote":"Table E.3 — Mains and branch lines sizing | Nominal size of vacuum pipeline DN | Maximum vacuum loading units (VLUs) | 50 65 80 | 100 400 600 |"}]}

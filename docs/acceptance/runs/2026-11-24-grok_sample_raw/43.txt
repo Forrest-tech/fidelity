@@ -1,0 +1,1 @@
+GRADE {"status":"answered","values":["1200 mm"],"edition_used":"AS/NZS 3500.1:2021","citations":[{"document":"AS NZS 3500.1-2021 · 013 9.1 Scope of section – 9.8 [9.1–9.8.2] p78-84.md","page":81,"quote":"have a removable handle, except where the outlet is installed 1 200 mm or more above the finished surface level"}]}

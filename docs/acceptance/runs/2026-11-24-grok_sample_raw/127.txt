@@ -1,0 +1,1 @@
+GRADE {"status":"answered","values":["1 m"],"edition_used":"AS/NZS 3500.2:2021","citations":[{"document":"AS NZS 3500.2-2021 · 017 9.1 Scope of section – 9.8 [9.1–9.8.10] p126-152.md","page":148,"quote":"The distance between the centre-lines of the vertical sections of a stack each side of the graded offset shall be not less than 1 m."}]}

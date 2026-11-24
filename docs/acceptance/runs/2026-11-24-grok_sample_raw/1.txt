@@ -1,0 +1,1 @@
+GRADE {"status":"answered","values":["2 mm"],"edition_used":"AS/NZS 3500.1:2021","citations":[{"document":"AS/NZS 3500.1:2021","page":21,"quote":"Welded joints in stainless steel pipework larger than DN 25 shall be made using filler rods of low carbon stainless steel not greater than 2 mm in diameter."}]}

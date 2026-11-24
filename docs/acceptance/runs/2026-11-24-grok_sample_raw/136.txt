@@ -1,0 +1,1 @@
+GRADE {"status":"answered","values":["5","DN 300"],"edition_used":"AS/NZS 3500.2:2021","citations":[{"document":"AS/NZS 3500.2:2021","page":168,"quote":"The number of interconnected stacks shall not exceed 5 × DN 100 stacks or 4 × DN 125 stack, with a maximum size vent of DN 300 terminating through the roof."}]}
