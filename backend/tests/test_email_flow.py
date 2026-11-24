@@ -245,7 +245,9 @@ def test_administrators_are_told_at_once_when_someone_confirms_a_sign_up(outbox)
     ((_s, text),) = mails(outbox, "newcomer@else.example")
     assert c.post("/api/v1/auth/verify-email", json={"token": link_token(text, "/verify-email")}).json() == {"status": "pending"}
     got = [m for m in _wait_mail(outbox, ADMIN) if "newcomer@else.example" in m[0]]
-    assert got, mails(outbox, ADMIN)
+    assert got, {"mails to admin": mails(outbox, ADMIN), "people": asyncio.run(notify_mail._people_async()),
+                 "admin wants mail": notify_mail.wants_mail(ADMIN), "mail configured": mail.configured(),
+                 "all mails": sorted(os.listdir(outbox)) if os.path.isdir(outbox) else "no outbox"}
     subject, body = got[0]
     assert "waiting for approval" in subject and "/settings/users" in body
     import time
