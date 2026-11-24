@@ -379,7 +379,8 @@ def _pipeline(a, plan, src, src_name, out, cache, rledger, ledger, ev, live, wor
         started += 1
         print(f"\n[{started}] {rel}", flush=True)
         rel_local = os.path.join(src_name, *rel.strip("/").split("/"))
-        inflight[readers.submit(lp, rel_local, out, cache, a.publish_protected_metadata, rel)] = ("read", rel, f, (lp, cost))
+        inflight[readers.submit(lp, rel_local, out, cache, a.publish_protected_metadata, rel,
+                                rel in getattr(a, "older_editions", ()))] = ("read", rel, f, (lp, cost))
 
     def after_read(rel, f, r):
         results.append(r)
@@ -568,6 +569,13 @@ def _distill_run(a, src, dst, ev, live, workers, downloads, src_name, stamp, out
     pub = Publisher(dst.store, dest_root, stage_root, archive_root, stamp, os.path.join(a.work, "publish")) if dst else None
     pending = []       # (rel, content_hash, doc) staged this run, promoted together at the end
     ledger = Ledger(os.path.join(a.work, "ledger.json"), src.label)
+
+    # ---- editions a newer one in this input folder replaces: their files are joined into larger ones (plan C2)
+    from . import editions as ED
+    reg = ED.registry([{"rel": r_, "edition": ED.identify(r_)} for r_ in before])
+    a.older_editions = {x["rel"] for x in reg if (x.get("edition") or {}).get("status") == "superseded"}
+    if a.older_editions:
+        print(f"older editions (larger files): {len(a.older_editions)}", flush=True)
 
     # ---- which files this run reads (cheap: decided from the listing alone)
     known = _known(a.room_dir) if a.room_dir else None

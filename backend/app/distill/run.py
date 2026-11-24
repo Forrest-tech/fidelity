@@ -27,11 +27,16 @@ from .pdf_extract import EXTRACT_VERSION, extract_pdf, reader_warnings
 from .triage import scan_instructions, triage_pdf
 from .verify import verify_document
 
-PIPELINE_VERSION = "distill-0.2"
+PIPELINE_VERSION = "distill-0.3"   # 0.3: plan C2, clause groups joined into larger files
 FORMAT_VERSION = 2
 VERIFY_VERSION = "5"      # bump when the verification checks change (part of the stage-cache key)
 # Up to this many characters of Markdown a document is a single file; above it, a chapter folder.
 SINGLE_FILE_MAX_CHARS = int(os.environ.get("FIDELITY_SINGLE_FILE_MAX_CHARS", "100000"))
+# Plan C2 (owner, 2026-11-23): an Australian Standard's clause groups are joined into files of about 40 KB within each
+# Section (about 120 KB for an edition the library also holds a newer one of: asked about far less often). Measured on
+# the library: 3,201 files -> about 550, and the Section folder plus one file covers a question.
+MERGE_MAX_CHARS = int(os.environ.get("FIDELITY_MERGE_MAX_CHARS", "34000"))
+MERGE_MAX_CHARS_OLDER = int(os.environ.get("FIDELITY_MERGE_MAX_CHARS_OLDER", "110000"))
 
 
 def instr_flag(body: str) -> bool:
@@ -189,6 +194,18 @@ def chunk_path(c: S.Chunk, l1_order: dict, doc_name: str = "") -> str:
     else:
         t = "Front matter"
     t = readable_title(t)
+    merged = getattr(c, "merged", None)
+    if merged and len(merged) > 1:
+        # several clause groups in one file (plan C2): "5.1 Scope – 5.4"; the clause range follows in brackets.
+        # Named after its first numbered group, not the Section's short introduction in front of it.
+        first = next((m for m in merged if m.l2 is not None), None)
+        if first is not None and first is not merged[-1]:
+            t = readable_title(first.l2.title)
+        last = merged[-1]
+        lt = last.l2.title if last.l2 is not None else last.l1.title
+        num = S.AS_CLAUSE_RE.match(lt.strip() + " X")
+        tail = num.group(1) if num else _safe(readable_title(lt), 20)
+        t = f"{_safe(t, 40)} – {tail}"
     t = _safe(t, 64)          # fixed cap: keeps every path well under Windows/Dropbox limits
     ids = [e.clause_id for e in chunk_clauses(c) if e.clause_id]
     part = getattr(c, "part", None)
@@ -246,7 +263,7 @@ def _protected_entry(name, rel_path, rel_dir, source_prefix, out_root, h, tri, l
 
 
 def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=print, publish_protected=False,
-                read_protected=False):
+                read_protected=False, older_edition=False):
     name = os.path.splitext(os.path.basename(rel_path))[0]
     rel_dir = os.path.dirname(rel_path)
     t0 = time.time()
@@ -285,6 +302,12 @@ def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=prin
         structure_source = "heading-detection (bookmarks unusable)"
     unmatched = S.match_headings(pages, entries)
     chunks = S.build_chunks(pages)
+    ids = [e.clause_id for c in chunks for e in chunk_clauses(c) if e.clause_id]
+    if ids and not any(S.CLAUSE_ID_RE.fullmatch(i) for i in ids) and MERGE_MAX_CHARS > 0:
+        n_before = len(chunks)
+        chunks = S.merge_chunks(chunks, MERGE_MAX_CHARS_OLDER if older_edition else MERGE_MAX_CHARS)
+        log(f"  {n_before} clause groups joined into {len(chunks)} files"
+            + (" (older edition: larger files)" if older_edition else ""))
 
     status = doc_status(name)
     src_display = "/".join(x for x in [source_prefix.strip("/"), rel_path.replace(os.sep, "/")] if x)
@@ -396,8 +419,9 @@ def distill_pdf(pdf_path, rel_path, out_root, source_prefix, cache_dir, log=prin
     verdict = "PASS" if trusted else "FAIL — not trusted"
     as_style = bool(clause_file) and not any(S.CLAUSE_ID_RE.fullmatch(k) for k in clause_file)
     layout = ("One file for the whole document (small documents are not split)." if single else
-              ("This document's folder → one sub-folder per Section/Appendix → one file per numbered clause group. "
-               "Names show clause range and pages; clause 5.3.3.3 is in the file named '5.3 …' inside 'Section 5'."
+              ("This document's folder → one sub-folder per Section/Appendix → files of consecutive clause groups. "
+               "Names show the clause range and pages; clause 5.3.3.3 is in the file of 'Section 5' whose range "
+               "[first–last] includes it."
                if as_style else
                "This document's folder → one sub-folder per Section/Schedule → one file per Part. "
                "Names show clause range and pages; a clause ID gives its Part (D2D13 → Part D2, S5C11 → Specification 5).")
