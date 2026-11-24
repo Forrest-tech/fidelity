@@ -1402,5 +1402,8 @@
       "on": "Sending email is set up.",
       "off": "Not set up yet: sign-ups wait for an administrator and forgotten passwords are reset by an administrator."
     }
+  },
+  "table": {
+    "resize": "Resize column {{name}}"
   }
 }

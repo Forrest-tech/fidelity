@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type * as React from "react";
 import { useTranslation } from "react-i18next";
-import { Button as AntButton, Card as AntCard, Empty, Result, Spin, Tag, Typography } from "antd";
+import { Button as AntButton, Card as AntCard, Empty, Result, Spin, Tag, Tooltip, Typography } from "antd";
 
 export const cx = (...c: Array<string | false | undefined>) => c.filter(Boolean).join(" ");
 
@@ -171,4 +172,64 @@ export function TableBox({ label, children }: { label: string; children: ReactNo
     return () => obs.disconnect();
   }, [label]);
   return <div ref={ref}>{children}</div>;
+}
+
+// ------------------------------------------------------------------ table: resizable columns and cell tooltips
+/** A table header cell whose right edge can be dragged (or moved with ←/→ when focused) to change the column width.
+ * Used through antd Table's `components.header.cell` and each column's `onHeaderCell`. */
+export function ResizableTh({ width, onResize, minWidth = 48, label, children, ...rest }: React.ThHTMLAttributes<HTMLTableCellElement> & {
+  width?: number; onResize?: (w: number) => void; minWidth?: number; label?: string;
+}) {
+  const { t } = useTranslation();
+  if (!width || !onResize) return <th {...rest}>{children}</th>;
+  const start = (e: React.PointerEvent<HTMLSpanElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const x0 = e.clientX;
+    const w0 = width;
+    const el = e.currentTarget;
+    el.setPointerCapture?.(e.pointerId);
+    document.body.classList.add("fx-col-resizing");
+    const move = (ev: PointerEvent) => onResize(Math.max(minWidth, Math.round(w0 + ev.clientX - x0)));
+    const up = () => {
+      document.body.classList.remove("fx-col-resizing");
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+  return (
+    <th {...rest} style={{ ...rest.style, position: "relative" }}>
+      {children}
+      <span
+        className="fx-col-resize"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label={t("table.resize", { name: label ?? "" })}
+        aria-valuenow={width}
+        aria-valuemin={minWidth}
+        tabIndex={0}
+        onPointerDown={start}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+            e.preventDefault();
+            onResize(Math.max(minWidth, width + (e.key === "ArrowRight" ? 16 : -16)));
+          }
+        }}
+      />
+    </th>
+  );
+}
+
+/** A table cell's content cut to one line with "…", with its full text in a tooltip on hover or keyboard focus. */
+export function CellTip({ text, children }: { text?: string | null; children: ReactNode }) {
+  const body = <span className="fx-celltip">{children}</span>;
+  if (!text) return body;
+  return (
+    <Tooltip title={<span style={{ whiteSpace: "pre-line" }}>{text}</span>} mouseEnterDelay={0.25} placement="topLeft">
+      {body}
+    </Tooltip>
+  );
 }
