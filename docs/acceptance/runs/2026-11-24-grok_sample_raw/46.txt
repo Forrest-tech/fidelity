@@ -1,0 +1,1 @@
+GRADE {"status":"answered","values":["2 m"],"edition_used":"AS/NZS 3500.1:2021","citations":[{"document":"AS NZS 3500.1-2021","page":86,"quote":"Manually operated cisterns shall be installed so that the cistern’s operating control is positioned at a height of not more than 2 m, measured from the floor level."}]}

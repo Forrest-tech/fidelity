@@ -1,7 +1,7 @@
 {
- "generated": "2026-11-23",
+ "generated": "2026-11-24",
  "version": "1",
- "library_files": 4572,
+ "library_files": 2783,
  "documents": 1561,
  "packs": {
   "grok": "grok/au-compliance-kb.md",

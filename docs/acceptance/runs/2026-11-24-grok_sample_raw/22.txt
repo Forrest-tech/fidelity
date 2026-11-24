@@ -1,0 +1,1 @@
+GRADE {"status":"answered","values":["300 mm"],"edition_used":"AS/NZS 3500.1:2021","citations":[{"document":"AS NZS 3500.1-2021 — Plumbing and drainage, Part 1: Water services","page":56,"quote":"Not subject to vehicular loading (excluding fire services) | 300"}]}

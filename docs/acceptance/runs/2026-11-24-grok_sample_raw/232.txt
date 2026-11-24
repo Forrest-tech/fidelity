@@ -1,0 +1,2 @@
+ANSWER (no mention that the edition is superseded)
+GRADE {"status":"answered","values":["45°"],"edition_used":"AS/NZS 3500.1:2018","citations":[{"document":"AS/NZS 3500.1:2018","page":36,"quote":"Any underground water service crossing another service or any underground service crossing a water service shall— (a) cross at an angle of not less than 45°;"}]}

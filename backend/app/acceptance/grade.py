@@ -95,7 +95,11 @@ def grade_one(q: dict, a: dict, sources: dict[str, str]) -> dict:
         ok = refused and not invented
         return {**r, "pass": ok, "honesty_ok": ok, "why": "" if ok else "gave an answer to a question the library cannot answer"}
     src = sources.get(g.get("doc", ""))
-    values_ok = all(contains_value(said, v) for v in g.get("values", []))
+    # a figure the question itself gives ("DN 25", "600 mm") is not something the answer has to supply (2026-11-24:
+    # the Grok sample was marked wrong for not repeating the question's own figures in its final line)
+    asked = q.get("q") or q.get("question") or ""
+    needed = [v for v in g.get("values", []) if not contains_value(asked, v)] or g.get("values", [])
+    values_ok = all(contains_value(said, v) for v in needed)
     hit = any(x.get("source") == g.get("doc") and abs(x.get("page", 0) - g.get("page", 0)) <= 1 for x in a.get("retrieved", []))
     good_cites = [c for c in a.get("citations") or []
                   if _doc_matches(c.get("document", ""), g["designation"]) and abs(int(c.get("page") or 0) - g["page"]) <= 1

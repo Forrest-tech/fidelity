@@ -1,0 +1,1 @@
+GRADE {"status":"answered","values":["1.25 %"],"edition_used":"AS/NZS 3500.2:2021","citations":[{"document":"AS NZS 3500.2-2021","page":59,"quote":"a DN 50 vent pipe, branching from the riser pipe or a fitting, extends at a grade of not less than 1.25 % and terminates with a grating at an external wall of the"}]}

@@ -1,0 +1,2 @@
+SOURCES 3
+GRADE {"status":"answered","values":["100 mm"],"edition_used":"AS/NZS 3500.3:2021","citations":{"document":"AS NZS 3500.3-2021 · 012 8.1 Scope of section – 8.6 [8.1–8.6] p103-106.md","page":104,"quote":"The high-level alarm shall be set not higher than 100 mm above the invert of the inlet pipe, provided flooding of habitable or storage areas and vehicle garages is avoided."}}

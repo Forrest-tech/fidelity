@@ -29,13 +29,13 @@ description: AU compliance knowledge base (plumbing, drainage, fire, NCC, AS/NZS
 - If the Dropbox connector is unavailable, say so. Do not answer from general knowledge.
 
 ## 2. How the library is laid out
-The library has **4,572 `.md` files** for **1,561 source documents**. Top folders:
+The library has **2,783 `.md` files** for **1,561 source documents**. Top folders:
 - `2025/` — 610 files — NCC 2025 volumes and drafts (distilled, one file per Part)
-- `AS 3500/` — 2435 files — AS/NZS 3500 series, one folder per edition year (distilled, one file per clause group)
-- `Code/` — 30 files — standards text (e.g. AS/NZS 3500 series)
-- `NCC2022/` — 8 files — NCC / PCA volumes (2022 edition)
-- `n0_Web_Reference/` — 87 files — snapshots of NSW Fair Trading, Sydney Water, ABCB, ABCB NCC, Jemena web pages
-- `n2_Technical/` — 1402 files — technical memos, manufacturer documents, defect reports
+- `AS 3500/` — 646 files — AS/NZS 3500 series, one folder per edition year (distilled; per Section, files of consecutive clauses)
+- `Code/` — 30 files — standards text, older conversions (unverified, see house rules)
+- `NCC2022/` — 8 files — NCC / PCA volumes (2022 edition; older conversions, unverified)
+- `n0_Web_Reference/` — 87 files — snapshots of NSW Fair Trading, Sydney Water, ABCB, ABCB NCC, Jemena web pages (older conversions, unverified)
+- `n2_Technical/` — 1402 files — technical memos, manufacturer documents, defect reports (older conversions, unverified)
 
 Every source document is **either one file or one folder**, at the same place as the source:
 - **Small document** → one file named after the source: `X.pdf` → `X.pdf.md`.
@@ -46,9 +46,10 @@ Every source document is **either one file or one folder**, at the same place as
   A clause ID tells you its Part (D2D13 → Part D2; S5C11 → Specification 5). **Pick the one file whose name covers
   the clause or topic and read only that file.**
 - **Australian Standards** (e.g. AS/NZS 3500) → a folder per edition year (`AS 3500/2021/`) → the document folder →
-  one sub-folder per Section (`05 Section 5 Installation of cold water services/`) → one file per numbered clause
-  group, e.g. `AS NZS 3500.1-2021 · 038 5.3 Proximity to other services [5.3.1–5.3.5] p38-41.md`. Clause 5.3.3.3 is in
-  the file named `5.3 …` inside `Section 5`; appendices are files named `Appendix A …`.
+  one sub-folder per Section (`05 Section 5 Installation of cold water services/`) → a few files, each holding
+  consecutive clause groups, e.g. `AS NZS 3500.1-2021 · 012 5.1 Scope – 5.4 [5.1–5.4.3] p30-45.md`. The name shows the
+  clause range and pages: clause 5.3.3.3 is in the file of `Section 5` whose `[first–last]` range includes it. A
+  Section folder usually holds 1–3 files, so list it and fetch the one file. Appendices are named `Appendix A …`.
 - **State and territory variations** are in the `Schedule <n> <State>` sub-folders, named by Section with the clause
   range they change (e.g. `Section D Access and egress [D2D1–D4D1]` under `Schedule 5 New South Wales`).
 - **Defined terms** (italic in the text) are in the glossary files, named by letter range
@@ -98,7 +99,7 @@ Every source document is **either one file or one folder**, at the same place as
   from the original sheet.
 - Blank or missing text is "text not available for this page; check the original", **never** "no requirement".
 
-## 6. Library facts (generated 2026-11-23 from the library itself)
+## 6. Library facts (generated 2026-11-24 from the library itself)
 **Latest published edition held**
 - AS 2118.1: 2017 — `Code/Code/2118.1-2017 Automatic fire sprinkler systems.pdf.md`
 - AS 2118.2: 2010 — `Code/Code/AS 2118.2-2010 - Automatic fire sprinkler systems Part 2 Drencher systems.pdf.md`
@@ -194,70 +195,70 @@ Go straight to the sub-folder that covers the clause or page; list only that sub
 
 `AS 3500/1990/AS 3500.3-1990 National Plumbing and Drainage code/`
 - `(document root)` — p.1–45 · 7 files
-- `04 SECTION 1 SCOPE AND GENERAL/` — p.8–9 · 10 files
-- `05 SECTION 2 MATERIALS AND PRODUCTS/` — p.9–12 · 14 files
-- `06 SECTION 3 DESIGN/` — p.12–18 · 12 files
-- `07 SECTION 4 APPURTENANCES/` — p.18–25 · 10 files
-- `08 SECTION 5 EXCAVATION, BEDDING, SUPPORT AND BACK/` — p.25–31 · 9 files
-- `09 SECTION 6 PIPEWORK/` — p.31–34 · 9 files
-- `10 SECTION 7 PUMPED DISCHARGE/` — p.34–35 · 7 files
-- `11 SECTION 8 TESTING OF STORMWATER INSTALLATIONS/` — p.35–37 · 6 files
-- `14 APPENDIX C - CLASSIFICATION OF BUILDINGS AND STR/` — p.40–42 · 5 files
-- `15 APPENDIX D - SIMPLIFIED RATIONAL METHOD/` — p.42–44 · 4 files
+- `04 SECTION 1 SCOPE AND GENERAL/` — p.8–9 · 1 files
+- `05 SECTION 2 MATERIALS AND PRODUCTS/` — p.9–12 · 1 files
+- `06 SECTION 3 DESIGN/` — p.12–18 · 1 files
+- `07 SECTION 4 APPURTENANCES/` — p.18–25 · 1 files
+- `08 SECTION 5 EXCAVATION, BEDDING, SUPPORT AND BACK/` — p.25–31 · 1 files
+- `09 SECTION 6 PIPEWORK/` — p.31–34 · 1 files
+- `10 SECTION 7 PUMPED DISCHARGE/` — p.34–35 · 1 files
+- `11 SECTION 8 TESTING OF STORMWATER INSTALLATIONS/` — p.35–37 · 1 files
+- `14 APPENDIX C - CLASSIFICATION OF BUILDINGS AND STR/` — p.40–42 · 1 files
+- `15 APPENDIX D - SIMPLIFIED RATIONAL METHOD/` — p.42–44 · 1 files
 
 `AS 3500/2003/AS 3500.1 Plumbing and drainage - Water services/`
 - `(document root)` — p.1–114 · 6 files
-- `03 SECTION 1 SCOPE AND GENERAL/` — p.9–12 · 8 files
-- `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.12–17 · 11 files
-- `05 SECTION 3 SIZING OF WATER SERVICES/` — p.17–22 · 6 files
-- `06 SECTION 4 CROSS-CONNECTION CONTROL AND BACKFLOW/` — p.22–32 · 7 files
-- `07 SECTION 5 INSTALLATION OF COLD WATER SERVICES/` — p.32–50 · 24 files
-- `08 SECTION 6 FIRE SERVICES/` — p.50–52 · 9 files
-- `09 SECTION 7 IRRIGATION AND LAWN˚WATERING SYSTEMS/` — p.52–58 · 5 files
-- `10 SECTION 8 WATER STORAGE TANKS/` — p.58–67 · 10 files
-- `11 SECTION 9 NON-DRINKING WATER SERVICES/` — p.67–71 · 7 files
-- `12 SECTION 10 WATER FOR SANITARY FLUSHING/` — p.71–77 · 10 files
-- `13 SECTION 11 PUMPS/` — p.77–78 · 6 files
-- `14 SECTION 12 WATER REQUIREMENTS FOR HAEMODIALYSIS/` — p.78–79 · 6 files
-- `15 SECTION 13 INSTALLATION OF WATER METERS/` — p.79–81 · 8 files
-- `16 SECTION 14 INSTALLATION OF WATER SUPPLY SYSTEM F/` — p.81–83 · 5 files
-- `17 SECTION 15 MULTI-UNIT DEVELOPMENTS/` — p.83–84 · 6 files
-- `18 SECTION 16 TESTING AND COMMISSIONING/` — p.84–85 · 7 files
-- `21 APPENDIX C - SIZING METHOD FOR SUPPLY PIPING FOR/` — p.90–99 · 4 files
-- `22 APPENDIX D - SIZING OF PIPING FOR DWELLINGS/` — p.99–102 · 4 files
-- `23 APPENDIX E - EXAMPLES OF POTENTIAL CROSS-CONNECT/` — p.102–105 · 3 files
-- `25 APPENDIX G - STORAGE TANKS-INFLOW AND OVERFLOW/` — p.114–116 · 6 files
-- `26 APPENDIX H - CLEANING AND DISINFECTION OF STORAG/` — p.116–118 · 4 files
-- `27 APPENDIX I - DISINFECTION OF WATER SERVICES/` — p.118–120 · 6 files
+- `03 SECTION 1 SCOPE AND GENERAL/` — p.9–12 · 1 files
+- `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.12–17 · 1 files
+- `05 SECTION 3 SIZING OF WATER SERVICES/` — p.17–22 · 1 files
+- `06 SECTION 4 CROSS-CONNECTION CONTROL AND BACKFLOW/` — p.22–32 · 1 files
+- `07 SECTION 5 INSTALLATION OF COLD WATER SERVICES/` — p.32–50 · 1 files
+- `08 SECTION 6 FIRE SERVICES/` — p.50–52 · 1 files
+- `09 SECTION 7 IRRIGATION AND LAWN˚WATERING SYSTEMS/` — p.52–58 · 1 files
+- `10 SECTION 8 WATER STORAGE TANKS/` — p.58–67 · 1 files
+- `11 SECTION 9 NON-DRINKING WATER SERVICES/` — p.67–71 · 1 files
+- `12 SECTION 10 WATER FOR SANITARY FLUSHING/` — p.71–77 · 1 files
+- `13 SECTION 11 PUMPS/` — p.77–78 · 1 files
+- `14 SECTION 12 WATER REQUIREMENTS FOR HAEMODIALYSIS/` — p.78–79 · 1 files
+- `15 SECTION 13 INSTALLATION OF WATER METERS/` — p.79–81 · 1 files
+- `16 SECTION 14 INSTALLATION OF WATER SUPPLY SYSTEM F/` — p.81–83 · 1 files
+- `17 SECTION 15 MULTI-UNIT DEVELOPMENTS/` — p.83–84 · 1 files
+- `18 SECTION 16 TESTING AND COMMISSIONING/` — p.84–85 · 1 files
+- `21 APPENDIX C - SIZING METHOD FOR SUPPLY PIPING FOR/` — p.90–99 · 1 files
+- `22 APPENDIX D - SIZING OF PIPING FOR DWELLINGS/` — p.99–102 · 1 files
+- `23 APPENDIX E - EXAMPLES OF POTENTIAL CROSS-CONNECT/` — p.102–105 · 1 files
+- `25 APPENDIX G - STORAGE TANKS-INFLOW AND OVERFLOW/` — p.114–116 · 1 files
+- `26 APPENDIX H - CLEANING AND DISINFECTION OF STORAG/` — p.116–118 · 1 files
+- `27 APPENDIX I - DISINFECTION OF WATER SERVICES/` — p.118–120 · 1 files
 
 `AS 3500/2003/AS 3500.2 Plumbing and drainage - Sanitary plumbing and drainage/`
 - `(document root)` — p.1–164 · 7 files
-- `03 SECTION 1 SCOPE AND GENERAL/` — p.9–11 · 7 files
-- `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.11–15 · 9 files
-- `05 SECTION 3 DRAINAGE DESIGN/` — p.15–37 · 20 files
-- `06 SECTION 4 DRAINAGE SYSTEM/` — p.37–60 · 12 files
-- `07 SECTION 5 EXCAVATION BEDDING SUPPORT AND BACKFIL/` — p.60–64 · 7 files
-- `08 SECTION 6 GENERAL DESIGN REQUIREMENTS FOR SANITA/` — p.64–80 · 10 files
-- `09 SECTION 7 FULLY VENTED SYSTEMS AND FULLY VENTED/` — p.80–100 · 7 files
-- `10 SECTION 8 SINGLE STACK SYSTEMS AND SINGLE STACK/` — p.100–128 · 10 files
-- `11 SECTION 9 GENERAL INSTALLATION OF PIPEWORK/` — p.128–138 · 15 files
-- `12 SECTION 10 PUMPED DISCHARGE/` — p.138–142 · 12 files
-- `13 SECTION 11 FIXTURES AND APPLIANCES/` — p.142–149 · 29 files
-- `14 SECTION 12 MULTI-UNIT DEVELOPMENTS/` — p.149–150 · 3 files
-- `15 SECTION 13 TESTING OF SANITARY PLUMBING AND SANI/` — p.150–152 · 4 files
+- `03 SECTION 1 SCOPE AND GENERAL/` — p.9–11 · 1 files
+- `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.11–15 · 1 files
+- `05 SECTION 3 DRAINAGE DESIGN/` — p.15–37 · 1 files
+- `06 SECTION 4 DRAINAGE SYSTEM/` — p.37–60 · 1 files
+- `07 SECTION 5 EXCAVATION BEDDING SUPPORT AND BACKFIL/` — p.60–64 · 1 files
+- `08 SECTION 6 GENERAL DESIGN REQUIREMENTS FOR SANITA/` — p.64–80 · 1 files
+- `09 SECTION 7 FULLY VENTED SYSTEMS AND FULLY VENTED/` — p.80–100 · 1 files
+- `10 SECTION 8 SINGLE STACK SYSTEMS AND SINGLE STACK/` — p.100–128 · 1 files
+- `11 SECTION 9 GENERAL INSTALLATION OF PIPEWORK/` — p.128–138 · 1 files
+- `12 SECTION 10 PUMPED DISCHARGE/` — p.138–142 · 1 files
+- `13 SECTION 11 FIXTURES AND APPLIANCES/` — p.142–149 · 1 files
+- `14 SECTION 12 MULTI-UNIT DEVELOPMENTS/` — p.149–150 · 1 files
+- `15 SECTION 13 TESTING OF SANITARY PLUMBING AND SANI/` — p.150–152 · 1 files
 
 `AS 3500/2003/AS 3500.2-2003 Plumbing and Drainage - Sanitary Plumbing and Drainage Amended/`
 - `(document root)` — p.1–197 · 8 files
-- `03 SECTION 1 SCOPE AND GENERAL/` — p.10–13 · 8 files
-- `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.13–18 · 9 files
-- `05 SECTION 3 DRAINAGE DESIGN/` — p.18–43 · 21 files
-- `06 SECTION 4 DRAINAGE SYSTEM/` — p.43–69 · 12 files
-- `09 SECTION 7 FULLY VENTED SYSTEMS AND FULLY VENTED/` — p.95–115 · 7 files
-- `10 SECTION 8 SINGLE STACK SYSTEMS AND SINGLE STACK/` — p.115–143 · 10 files
-- `11 SECTION 9 GENERAL INSTALLATION OF PIPEWORK/` — p.143–160 · 22 files
-- `12 SECTION 10 PUMPED DISCHARGE/` — p.160–165 · 12 files
-- `13 SECTION 11 FIXTURES AND APPLIANCES/` — p.165–174 · 28 files
-- `14 SECTION 12 MULTI-UNIT DEVELOPMENTS/` — p.174–175 · 3 files
+- `03 SECTION 1 SCOPE AND GENERAL/` — p.10–13 · 1 files
+- `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.13–18 · 1 files
+- `05 SECTION 3 DRAINAGE DESIGN/` — p.18–43 · 1 files
+- `06 SECTION 4 DRAINAGE SYSTEM/` — p.43–69 · 1 files
+- `09 SECTION 7 FULLY VENTED SYSTEMS AND FULLY VENTED/` — p.95–115 · 1 files
+- `10 SECTION 8 SINGLE STACK SYSTEMS AND SINGLE STACK/` — p.115–143 · 1 files
+- `11 SECTION 9 GENERAL INSTALLATION OF PIPEWORK/` — p.143–160 · 1 files
+- `12 SECTION 10 PUMPED DISCHARGE/` — p.160–165 · 1 files
+- `13 SECTION 11 FIXTURES AND APPLIANCES/` — p.165–174 · 1 files
+- `14 SECTION 12 MULTI-UNIT DEVELOPMENTS/` — p.174–175 · 1 files
 
 `AS 3500/2003/AS 3500.3 Plumbing and Drainage - Stormwater Drainage/`
 - `(document root)` — p.1–177 · 7 files
@@ -282,169 +283,169 @@ Go straight to the sub-folder that covers the clause or page; list only that sub
 
 `AS 3500/2003/AS 3500.4 Plumbing and Drainage - Hot water supply systems/`
 - `(document root)` — p.1–130 · 10 files
-- `03 SECTION 1 SCOPE AND GENERAL/` — p.9–12 · 10 files
-- `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.12–16 · 10 files
-- `05 SECTION 3 CROSS-CONNECTION AND BACKFLOW PREVENTI/` — p.16–18 · 4 files
-- `06 SECTION 4 INSTALLATION OF COLD AND HEATED WATER/` — p.18–38 · 15 files
-- `07 SECTION 5 INSTALLATION OF WATER HEATERS-GENERAL/` — p.38–66 · 14 files
-- `08 SECTION 6 INSTALLATION OF SOLAR WATER HEATERS/` — p.66–77 · 12 files
-- `09 SECTION 7 ENERGY SOURCES/` — p.77–81 · 4 files
-- `10 SECTION 8 ENERGY EFFICIENCY/` — p.81–93 · 5 files
-- `12 SECTION 10 HEATED WATER SERVICES FOR PEOPLE WITH/` — p.94–95 · 3 files
-- `13 SECTION 11 TESTING AND COMMISSIONING/` — p.95–97 · 6 files
-- `14 SECTION 12 OPERATION AND MAINTENANCE/` — p.97–98 · 4 files
-- `16 APPENDIX B - WATER ANALYSIS/` — p.102–103 · 5 files
-- `20 APPENDIX F - RECOMMENDATIONS FOR THE INSTALLATIO/` — p.106–107 · 6 files
-- `21 APPENDIX G - RECOMMENDATIONS FOR THE INSTALLATIO/` — p.107–110 · 4 files
-- `22 APPENDIX H - SOLAR HOT WATER SYSTEMS SUGGESTED C/` — p.110–115 · 4 files
-- `23 APPENDIX I - ESTIMATION OF SHADING OF COLLECTORS/` — p.115–120 · 4 files
-- `26 APPENDIX L - AUSTRALIAN CLIMATE REGIONS/` — p.130–133 · 3 files
-- `27 APPENDIX M - NEW ZEALAND CLIMATE REGIONS/` — p.133–136 · 3 files
+- `03 SECTION 1 SCOPE AND GENERAL/` — p.9–12 · 1 files
+- `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.12–16 · 1 files
+- `05 SECTION 3 CROSS-CONNECTION AND BACKFLOW PREVENTI/` — p.16–18 · 1 files
+- `06 SECTION 4 INSTALLATION OF COLD AND HEATED WATER/` — p.18–38 · 1 files
+- `07 SECTION 5 INSTALLATION OF WATER HEATERS-GENERAL/` — p.38–66 · 1 files
+- `08 SECTION 6 INSTALLATION OF SOLAR WATER HEATERS/` — p.66–77 · 1 files
+- `09 SECTION 7 ENERGY SOURCES/` — p.77–81 · 1 files
+- `10 SECTION 8 ENERGY EFFICIENCY/` — p.81–93 · 1 files
+- `12 SECTION 10 HEATED WATER SERVICES FOR PEOPLE WITH/` — p.94–95 · 1 files
+- `13 SECTION 11 TESTING AND COMMISSIONING/` — p.95–97 · 1 files
+- `14 SECTION 12 OPERATION AND MAINTENANCE/` — p.97–98 · 1 files
+- `16 APPENDIX B - WATER ANALYSIS/` — p.102–103 · 1 files
+- `20 APPENDIX F - RECOMMENDATIONS FOR THE INSTALLATIO/` — p.106–107 · 1 files
+- `21 APPENDIX G - RECOMMENDATIONS FOR THE INSTALLATIO/` — p.107–110 · 1 files
+- `22 APPENDIX H - SOLAR HOT WATER SYSTEMS SUGGESTED C/` — p.110–115 · 1 files
+- `23 APPENDIX I - ESTIMATION OF SHADING OF COLLECTORS/` — p.115–120 · 1 files
+- `26 APPENDIX L - AUSTRALIAN CLIMATE REGIONS/` — p.130–133 · 1 files
+- `27 APPENDIX M - NEW ZEALAND CLIMATE REGIONS/` — p.133–136 · 1 files
 
 `AS 3500/2003/AS NZS 3500.2-2003 Amdt 3-2010 Plumbing and drainage - Sanitary plumbing and drainage/`
 - `(document root)` — p.1–76 · 5 files
 
 `AS 3500/2015/AS 3500.1-2015/`
 - `(document root)` — p.1–129 · 8 files
-- `03 SECTION 1 SCOPE AND GENERAL/` — p.9–12 · 9 files
-- `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.12–16 · 10 files
-- `05 SECTION 3 SIZING OF WATER SERVICES/` — p.16–21 · 6 files
-- `06 SECTION 4 CROSS-CONNECTION CONTROL AND BACKFLOW/` — p.21–31 · 7 files
-- `07 SECTION 5 INSTALLATION OF COLD WATER SERVICES/` — p.31–51 · 21 files
-- `08 SECTION 6 FIRE SERVICES/` — p.51–53 · 6 files
-- `09 SECTION 7 IRRIGATION AND LAWN WATERING SYSTEMS/` — p.53–59 · 5 files
-- `10 SECTION 8 WATER STORAGE TANKS/` — p.59–67 · 10 files
-- `11 SECTION 9 NON-DRINKING WATER SERVICES/` — p.67–72 · 6 files
-- `12 SECTION 10 TREATED GREYWATER SERVICES/` — p.72–73 · 5 files
-- `13 SECTION 11 WATER FOR SANITARY FLUSHING/` — p.73–78 · 10 files
-- `14 SECTION 12 INSTALLATION OF WATER SUPPLY TO SPECI/` — p.78–79 · 3 files
-- `15 SECTION 13 PUMPS/` — p.79–80 · 6 files
-- `16 SECTION 14 WATER REQUIREMENTS FOR HAEMODIALYSIS/` — p.80–81 · 5 files
-- `17 SECTION 15 PROPERTY WATER METERS/` — p.81–82 · 7 files
-- `18 SECTION 16 INSTALLATION OF WATER SUPPLY SYSTEM F/` — p.82–86 · 5 files
-- `19 SECTION 17 MULTI-UNIT DEVELOPMENTS/` — p.86–87 · 6 files
-- `20 SECTION 18 TESTING AND COMMISSIONING/` — p.87–88 · 7 files
-- `24 APPENDIX D - SIZING METHOD FOR SUPPLY PIPING FOR/` — p.94–103 · 4 files
-- `25 APPENDIX E - SIZING OF PIPING FOR DWELLINGS/` — p.103–106 · 4 files
-- `26 APPENDIX F - EXAMPLES OF POTENTIAL CROSS-CONNECT/` — p.106–109 · 3 files
-- `28 APPENDIX H - STORAGE TANKS-INFLOW AND OVERFLOW/` — p.118–120 · 6 files
-- `29 APPENDIX I - CLEANING AND DISINFECTION OF STORAG/` — p.120–122 · 4 files
-- `30 APPENDIX J - DISINFECTION OF WATER SERVICES/` — p.122–123 · 6 files
+- `03 SECTION 1 SCOPE AND GENERAL/` — p.9–12 · 1 files
+- `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.12–16 · 1 files
+- `05 SECTION 3 SIZING OF WATER SERVICES/` — p.16–21 · 1 files
+- `06 SECTION 4 CROSS-CONNECTION CONTROL AND BACKFLOW/` — p.21–31 · 1 files
+- `07 SECTION 5 INSTALLATION OF COLD WATER SERVICES/` — p.31–51 · 1 files
+- `08 SECTION 6 FIRE SERVICES/` — p.51–53 · 1 files
+- `09 SECTION 7 IRRIGATION AND LAWN WATERING SYSTEMS/` — p.53–59 · 1 files
+- `10 SECTION 8 WATER STORAGE TANKS/` — p.59–67 · 1 files
+- `11 SECTION 9 NON-DRINKING WATER SERVICES/` — p.67–72 · 1 files
+- `12 SECTION 10 TREATED GREYWATER SERVICES/` — p.72–73 · 1 files
+- `13 SECTION 11 WATER FOR SANITARY FLUSHING/` — p.73–78 · 1 files
+- `14 SECTION 12 INSTALLATION OF WATER SUPPLY TO SPECI/` — p.78–79 · 1 files
+- `15 SECTION 13 PUMPS/` — p.79–80 · 1 files
+- `16 SECTION 14 WATER REQUIREMENTS FOR HAEMODIALYSIS/` — p.80–81 · 1 files
+- `17 SECTION 15 PROPERTY WATER METERS/` — p.81–82 · 1 files
+- `18 SECTION 16 INSTALLATION OF WATER SUPPLY SYSTEM F/` — p.82–86 · 1 files
+- `19 SECTION 17 MULTI-UNIT DEVELOPMENTS/` — p.86–87 · 1 files
+- `20 SECTION 18 TESTING AND COMMISSIONING/` — p.87–88 · 1 files
+- `24 APPENDIX D - SIZING METHOD FOR SUPPLY PIPING FOR/` — p.94–103 · 1 files
+- `25 APPENDIX E - SIZING OF PIPING FOR DWELLINGS/` — p.103–106 · 1 files
+- `26 APPENDIX F - EXAMPLES OF POTENTIAL CROSS-CONNECT/` — p.106–109 · 1 files
+- `28 APPENDIX H - STORAGE TANKS-INFLOW AND OVERFLOW/` — p.118–120 · 1 files
+- `29 APPENDIX I - CLEANING AND DISINFECTION OF STORAG/` — p.120–122 · 1 files
+- `30 APPENDIX J - DISINFECTION OF WATER SERVICES/` — p.122–123 · 1 files
 
 `AS 3500/2015/AS 3500.2-2015/`
 - `(document root)` — p.1–197 · 8 files
-- `03 SECTION 1 SCOPE AND GENERAL/` — p.9–12 · 9 files
-- `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.12–17 · 9 files
-- `05 SECTION 3 DRAINAGE DESIGN/` — p.17–42 · 21 files
-- `06 SECTION 4 DRAINAGE SYSTEM/` — p.42–68 · 12 files
-- `07 SECTION 5 EXCAVATION BEDDING SUPPORT AND BACKFIL/` — p.68–72 · 7 files
-- `08 SECTION 6 GENERAL DESIGN REQUIREMENTS FOR SANITA/` — p.72–92 · 11 files
-- `09 SECTION 7 GREYWATER PLUMBING AND DRAINAGE SYSTEM/` — p.92–94 · 5 files
-- `10 SECTION 8 FULLY VENTED SYSTEMS AND FULLY VENTED/` — p.94–114 · 7 files
-- `11 SECTION 9 SINGLE STACK SYSTEMS AND SINGLE STACK/` — p.114–143 · 10 files
-- `12 SECTION 10 GENERAL INSTALLATION OF PIPEWORK/` — p.143–154 · 14 files
-- `13 SECTION 11 REDUCED VELOCITY AERATOR STACK SYSTEM/` — p.154–160 · 10 files
-- `14 SECTION 12 PUMPED DISCHARGE/` — p.160–164 · 10 files
-- `15 SECTION 13 FIXTURES AND APPLIANCES/` — p.164–172 · 28 files
-- `16 SECTION 14 MULTI-UNIT DEVELOPMENTS/` — p.172–173 · 3 files
-- `17 SECTION 15 TESTING OF SANITARY PLUMBING AND SANI/` — p.173–176 · 5 files
-- `22 APPENDIX E - CONDUCT OF INSPECTIONS BY THE USE O/` — p.190–191 · 3 files
+- `03 SECTION 1 SCOPE AND GENERAL/` — p.9–12 · 1 files
+- `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.12–17 · 1 files
+- `05 SECTION 3 DRAINAGE DESIGN/` — p.17–42 · 1 files
+- `06 SECTION 4 DRAINAGE SYSTEM/` — p.42–68 · 1 files
+- `07 SECTION 5 EXCAVATION BEDDING SUPPORT AND BACKFIL/` — p.68–72 · 1 files
+- `08 SECTION 6 GENERAL DESIGN REQUIREMENTS FOR SANITA/` — p.72–92 · 1 files
+- `09 SECTION 7 GREYWATER PLUMBING AND DRAINAGE SYSTEM/` — p.92–94 · 1 files
+- `10 SECTION 8 FULLY VENTED SYSTEMS AND FULLY VENTED/` — p.94–114 · 1 files
+- `11 SECTION 9 SINGLE STACK SYSTEMS AND SINGLE STACK/` — p.114–143 · 1 files
+- `12 SECTION 10 GENERAL INSTALLATION OF PIPEWORK/` — p.143–154 · 1 files
+- `13 SECTION 11 REDUCED VELOCITY AERATOR STACK SYSTEM/` — p.154–160 · 1 files
+- `14 SECTION 12 PUMPED DISCHARGE/` — p.160–164 · 1 files
+- `15 SECTION 13 FIXTURES AND APPLIANCES/` — p.164–172 · 1 files
+- `16 SECTION 14 MULTI-UNIT DEVELOPMENTS/` — p.172–173 · 1 files
+- `17 SECTION 15 TESTING OF SANITARY PLUMBING AND SANI/` — p.173–176 · 1 files
+- `22 APPENDIX E - CONDUCT OF INSPECTIONS BY THE USE O/` — p.190–191 · 1 files
 
 `AS 3500/2015/AS 3500.3-2015/`
 - `(document root)` — p.1–189 · 12 files
 
 `AS 3500/2015/AS 3500.4-2015/`
 - `(document root)` — p.1–129 · 10 files
-- `03 SECTION 1 SCOPE AND GENERAL/` — p.9–13 · 10 files
-- `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.13–17 · 9 files
-- `05 SECTION 3 CROSS-CONNECTION AND BACKFLOW PREVENTI/` — p.17–19 · 4 files
-- `06 SECTION 4 INSTALLATION OF COLD AND HEATED WATER/` — p.19–38 · 13 files
-- `07 SECTION 5 INSTALLATION OF WATER HEATERS-GENERAL/` — p.38–63 · 13 files
-- `08 SECTION 6 INSTALLATION OF SOLAR WATER HEATERS/` — p.63–72 · 7 files
-- `09 SECTION 7 UNCONTROLLED HEAT SOURCES/` — p.72–75 · 3 files
-- `10 SECTION 8 ENERGY EFFICIENCY/` — p.75–80 · 7 files
-- `11 SECTION 9 TESTING AND COMMISSIONING/` — p.80–82 · 6 files
-- `13 APPENDIX B - WATER ANALYSIS/` — p.85–86 · 3 files
-- `17 APPENDIX F - RECOMMENDATIONS FOR THE INSTALLATIO/` — p.89–91 · 8 files
-- `18 APPENDIX G - RECOMMENDATIONS FOR THE INSTALLATIO/` — p.91–94 · 4 files
-- `19 APPENDIX H - SOLAR HEATED WATER SUPPLY SYSTEMS-S/` — p.94–99 · 4 files
-- `20 APPENDIX I - ESTIMATION OF SHADING OF COLLECTORS/` — p.99–104 · 4 files
-- `23 APPENDIX L - AUSTRALIAN CLIMATE REGIONS/` — p.119–120 · 3 files
-- `24 APPENDIX M - NEW ZEALAND CLIMATE REGIONS/` — p.120–123 · 4 files
-- `25 APPENDIX N - OPERATION AND MAINTENANCE/` — p.123–124 · 4 files
+- `03 SECTION 1 SCOPE AND GENERAL/` — p.9–13 · 1 files
+- `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.13–17 · 1 files
+- `05 SECTION 3 CROSS-CONNECTION AND BACKFLOW PREVENTI/` — p.17–19 · 1 files
+- `06 SECTION 4 INSTALLATION OF COLD AND HEATED WATER/` — p.19–38 · 1 files
+- `07 SECTION 5 INSTALLATION OF WATER HEATERS-GENERAL/` — p.38–63 · 1 files
+- `08 SECTION 6 INSTALLATION OF SOLAR WATER HEATERS/` — p.63–72 · 1 files
+- `09 SECTION 7 UNCONTROLLED HEAT SOURCES/` — p.72–75 · 1 files
+- `10 SECTION 8 ENERGY EFFICIENCY/` — p.75–80 · 1 files
+- `11 SECTION 9 TESTING AND COMMISSIONING/` — p.80–82 · 1 files
+- `13 APPENDIX B - WATER ANALYSIS/` — p.85–86 · 1 files
+- `17 APPENDIX F - RECOMMENDATIONS FOR THE INSTALLATIO/` — p.89–91 · 1 files
+- `18 APPENDIX G - RECOMMENDATIONS FOR THE INSTALLATIO/` — p.91–94 · 1 files
+- `19 APPENDIX H - SOLAR HEATED WATER SUPPLY SYSTEMS-S/` — p.94–99 · 1 files
+- `20 APPENDIX I - ESTIMATION OF SHADING OF COLLECTORS/` — p.99–104 · 1 files
+- `23 APPENDIX L - AUSTRALIAN CLIMATE REGIONS/` — p.119–120 · 1 files
+- `24 APPENDIX M - NEW ZEALAND CLIMATE REGIONS/` — p.120–123 · 1 files
+- `25 APPENDIX N - OPERATION AND MAINTENANCE/` — p.123–124 · 1 files
 
 `AS 3500/2018/3500.1-2018  Plumbing and drainage - Water services-已解锁/`
 - `(document root)` — p.1–129 · 7 files
-- `03 SECTION 1 SCOPE AND GENERAL/` — p.9–15 · 9 files
-- `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.15–19 · 10 files
-- `05 SECTION 3 SIZING OF WATER SERVICES/` — p.19–24 · 6 files
-- `06 SECTION 4 CROSS-CONNECTION CONTROL AND BACKFLOW/` — p.24–34 · 7 files
-- `07 SECTION 5 INSTALLATION OF COLD WATER SERVICES/` — p.34–54 · 21 files
-- `08 SECTION 6 FIRE SERVICES/` — p.54–56 · 6 files
-- `09 SECTION 7 IRRIGATION AND LAWN WATERING SYSTEMS/` — p.56–62 · 5 files
-- `10 SECTION 8 WATER STORAGE TANKS/` — p.62–70 · 10 files
-- `11 SECTION 9 NON-DRINKING WATER SERVICES/` — p.70–76 · 9 files
-- `12 SECTION 10 TREATED GREYWATER SERVICES/` — p.76–77 · 5 files
-- `13 SECTION 11 WATER FOR SANITARY FLUSHING/` — p.77–82 · 10 files
-- `14 SECTION 12 INSTALLATION OF WATER SUPPLY TO SPECI/` — p.82–83 · 3 files
-- `15 SECTION 13 PUMPS/` — p.83–84 · 6 files
-- `16 SECTION 14 WATER REQUIREMENTS FOR HAEMODIALYSIS/` — p.84–85 · 5 files
-- `17 SECTION 15 PROPERTY WATER METERS/` — p.85–86 · 7 files
-- `18 SECTION 16 INSTALLATION OF WATER SUPPLY SYSTEM F/` — p.86–90 · 6 files
-- `19 SECTION 17 MULTI-UNIT DEVELOPMENTS/` — p.90–91 · 6 files
-- `20 SECTION 18 TESTING AND COMMISSIONING/` — p.91–92 · 7 files
-- `23 APPENDIX C - SIZING METHOD FOR SUPPLY PIPING FOR/` — p.96–105 · 4 files
-- `24 APPENDIX D - SIZING OF PIPING FOR DWELLINGS/` — p.105–108 · 4 files
-- `25 APPENDIX E - EXAMPLES OF POTENTIAL CROSS-CONNECT/` — p.108–110 · 3 files
-- `27 APPENDIX G - STORAGE TANKS-INFLOW AND OVERFLOW/` — p.119–121 · 6 files
-- `28 APPENDIX H - CLEANING AND DISINFECTION OF STORAG/` — p.121–123 · 4 files
-- `29 APPENDIX I - DISINFECTION OF WATER SERVICES/` — p.123–124 · 6 files
+- `03 SECTION 1 SCOPE AND GENERAL/` — p.9–15 · 1 files
+- `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.15–19 · 1 files
+- `05 SECTION 3 SIZING OF WATER SERVICES/` — p.19–24 · 1 files
+- `06 SECTION 4 CROSS-CONNECTION CONTROL AND BACKFLOW/` — p.24–34 · 1 files
+- `07 SECTION 5 INSTALLATION OF COLD WATER SERVICES/` — p.34–54 · 1 files
+- `08 SECTION 6 FIRE SERVICES/` — p.54–56 · 1 files
+- `09 SECTION 7 IRRIGATION AND LAWN WATERING SYSTEMS/` — p.56–62 · 1 files
+- `10 SECTION 8 WATER STORAGE TANKS/` — p.62–70 · 1 files
+- `11 SECTION 9 NON-DRINKING WATER SERVICES/` — p.70–76 · 1 files
+- `12 SECTION 10 TREATED GREYWATER SERVICES/` — p.76–77 · 1 files
+- `13 SECTION 11 WATER FOR SANITARY FLUSHING/` — p.77–82 · 1 files
+- `14 SECTION 12 INSTALLATION OF WATER SUPPLY TO SPECI/` — p.82–83 · 1 files
+- `15 SECTION 13 PUMPS/` — p.83–84 · 1 files
+- `16 SECTION 14 WATER REQUIREMENTS FOR HAEMODIALYSIS/` — p.84–85 · 1 files
+- `17 SECTION 15 PROPERTY WATER METERS/` — p.85–86 · 1 files
+- `18 SECTION 16 INSTALLATION OF WATER SUPPLY SYSTEM F/` — p.86–90 · 1 files
+- `19 SECTION 17 MULTI-UNIT DEVELOPMENTS/` — p.90–91 · 1 files
+- `20 SECTION 18 TESTING AND COMMISSIONING/` — p.91–92 · 1 files
+- `23 APPENDIX C - SIZING METHOD FOR SUPPLY PIPING FOR/` — p.96–105 · 1 files
+- `24 APPENDIX D - SIZING OF PIPING FOR DWELLINGS/` — p.105–108 · 1 files
+- `25 APPENDIX E - EXAMPLES OF POTENTIAL CROSS-CONNECT/` — p.108–110 · 1 files
+- `27 APPENDIX G - STORAGE TANKS-INFLOW AND OVERFLOW/` — p.119–121 · 1 files
+- `28 APPENDIX H - CLEANING AND DISINFECTION OF STORAG/` — p.121–123 · 1 files
+- `29 APPENDIX I - DISINFECTION OF WATER SERVICES/` — p.123–124 · 1 files
 
 `AS 3500/2018/3500.2-2018_V3  Plumbing and drainage - Sanitary plumbing and drainage-已解锁/`
 - `(document root)` — p.1–225 · 7 files
-- `03 SECTION 1 SCOPE AND GENERAL/` — p.10–16 · 9 files
-- `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.16–21 · 9 files
-- `05 SECTION 3 DRAINAGE DESIGN/` — p.21–46 · 21 files
-- `06 SECTION 4 DRAINAGE SYSTEM/` — p.46–71 · 12 files
-- `07 SECTION 5 EXCAVATION BEDDING SUPPORT AND BACKFIL/` — p.71–75 · 7 files
-- `08 SECTION 6 GENERAL DESIGN REQUIREMENTS FOR SANITA/` — p.75–96 · 12 files
-- `09 SECTION 7 GREYWATER PLUMBING AND DRAINAGE SYSTEM/` — p.96–98 · 5 files
-- `10 SECTION 8 FULLY VENTED SYSTEMS AND FULLY VENTED/` — p.98–118 · 7 files
-- `11 SECTION 9 SINGLE STACK SYSTEMS AND SINGLE STACK/` — p.118–147 · 10 files
-- `12 SECTION 10 GENERAL INSTALLATION OF PIPEWORK/` — p.147–158 · 13 files
-- `13 SECTION 11 REDUCED VELOCITY AERATOR STACK SYSTEM/` — p.158–164 · 10 files
-- `14 SECTION 12 PUMPED DISCHARGE/` — p.164–168 · 10 files
-- `15 SECTION 13 FIXTURES AND APPLIANCES/` — p.168–176 · 28 files
-- `16 SECTION 14 MULTI-UNIT DEVELOPMENTS/` — p.176–177 · 3 files
-- `17 SECTION 15 TESTING OF SANITARY PLUMBING AND SANI/` — p.177–180 · 5 files
-- `18 SECTION 16 VACUUM DRAINAGE DESIGN AND INSTALLATI/` — p.180–202 · 17 files
-- `22 APPENDIX D - CONDUCT OF INSPECTIONS BY THE USE O/` — p.213–214 · 3 files
-- `23 APPENDIX E - SIZING VACUUM DRAINAGE PIPES AND BU/` — p.214–216 · 2 files
-- `24 APPENDIX F - RENOVATION OF SANITARY PLUMBING AND/` — p.216–219 · 4 files
+- `03 SECTION 1 SCOPE AND GENERAL/` — p.10–16 · 1 files
+- `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.16–21 · 1 files
+- `05 SECTION 3 DRAINAGE DESIGN/` — p.21–46 · 1 files
+- `06 SECTION 4 DRAINAGE SYSTEM/` — p.46–71 · 1 files
+- `07 SECTION 5 EXCAVATION BEDDING SUPPORT AND BACKFIL/` — p.71–75 · 1 files
+- `08 SECTION 6 GENERAL DESIGN REQUIREMENTS FOR SANITA/` — p.75–96 · 1 files
+- `09 SECTION 7 GREYWATER PLUMBING AND DRAINAGE SYSTEM/` — p.96–98 · 1 files
+- `10 SECTION 8 FULLY VENTED SYSTEMS AND FULLY VENTED/` — p.98–118 · 1 files
+- `11 SECTION 9 SINGLE STACK SYSTEMS AND SINGLE STACK/` — p.118–147 · 1 files
+- `12 SECTION 10 GENERAL INSTALLATION OF PIPEWORK/` — p.147–158 · 1 files
+- `13 SECTION 11 REDUCED VELOCITY AERATOR STACK SYSTEM/` — p.158–164 · 1 files
+- `14 SECTION 12 PUMPED DISCHARGE/` — p.164–168 · 1 files
+- `15 SECTION 13 FIXTURES AND APPLIANCES/` — p.168–176 · 1 files
+- `16 SECTION 14 MULTI-UNIT DEVELOPMENTS/` — p.176–177 · 1 files
+- `17 SECTION 15 TESTING OF SANITARY PLUMBING AND SANI/` — p.177–180 · 1 files
+- `18 SECTION 16 VACUUM DRAINAGE DESIGN AND INSTALLATI/` — p.180–202 · 1 files
+- `22 APPENDIX D - CONDUCT OF INSPECTIONS BY THE USE O/` — p.213–214 · 1 files
+- `23 APPENDIX E - SIZING VACUUM DRAINAGE PIPES AND BU/` — p.214–216 · 1 files
+- `24 APPENDIX F - RENOVATION OF SANITARY PLUMBING AND/` — p.216–219 · 1 files
 
 `AS 3500/2018/3500.3-2018  Plumbing and drainage - Stormwater drainage/`
 - `(document root)` — p.1–193 · 8 files
-- `03 SECTION 1 SCOPE AND GENERAL/` — p.9–16 · 15 files
-- `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.16–23 · 27 files
-- `05 SECTION 3 ROOF DRAINAGE SYSTEMS-DESIGN/` — p.23–45 · 17 files
-- `06 SECTION 4 ROOF DRAINAGE SYSTEMS-INSTALLATION/` — p.45–56 · 19 files
-- `07 SECTION 5 SURFACE WATER DRAINAGE SYSTEMS-DESIGN/` — p.56–70 · 11 files
-- `08 SECTION 6 SURFACE AND SUBSOIL DRAINAGE SYSTEMS-I/` — p.70–81 · 9 files
-- `09 SECTION 7 SURFACE WATER AND SUBSOIL DRAINAGE SYS/` — p.81–94 · 21 files
-- `10 SECTION 8 PUMPED SYSTEMS/` — p.94–96 · 13 files
-- `11 SECTION 9 SITE TESTING/` — p.96–98 · 9 files
-- `12 SECTION 10 SIPHONIC DRAINAGE SYSTEMS/` — p.98–101 · 5 files
-- `15 APPENDIX C - STORMWATER DRAINAGE INSTALLATION PL/` — p.105–107 · 7 files
-- `16 APPENDIX D - GUIDELINES FOR DETERMINING RAINFALL/` — p.107–108 · 4 files
-- `17 APPENDIX E - RAINFALL INTENSITIES FOR AUSTRALIA/` — p.108–122 · 3 files
-- `18 APPENDIX F - RAINFALL INTENSITIES FOR NEW ZEALAN/` — p.122–127 · 3 files
-- `19 APPENDIX G - EXAMPLES OF OVERFLOW MEASURES FOR E/` — p.127–130 · 4 files
-- `20 APPENDIX H - GENERAL METHOD FOR DESIGN OF EAVES/` — p.130–140 · 4 files
-- `22 APPENDIX J - BOX GUTTER SYSTEMS-GENERAL METHOD-E/` — p.149–160 · 8 files
-- `23 APPENDIX K - SURFACE WATER DRAINAGE SYSTEMS-NOMI/` — p.160–171 · 8 files
-- `25 APPENDIX M - SUBSOIL DRAINAGE SYSTEMS-DESIGN/` — p.173–178 · 8 files
-- `26 APPENDIX N - GENERAL INFORMATION/` — p.178–183 · 17 files
-- `27 APPENDIX O - OPERATION OF SIPHONIC ROOF DRAINAGE/` — p.183–189 · 4 files
+- `03 SECTION 1 SCOPE AND GENERAL/` — p.9–16 · 1 files
+- `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.16–23 · 1 files
+- `05 SECTION 3 ROOF DRAINAGE SYSTEMS-DESIGN/` — p.23–45 · 1 files
+- `06 SECTION 4 ROOF DRAINAGE SYSTEMS-INSTALLATION/` — p.45–56 · 1 files
+- `07 SECTION 5 SURFACE WATER DRAINAGE SYSTEMS-DESIGN/` — p.56–70 · 1 files
+- `08 SECTION 6 SURFACE AND SUBSOIL DRAINAGE SYSTEMS-I/` — p.70–81 · 1 files
+- `09 SECTION 7 SURFACE WATER AND SUBSOIL DRAINAGE SYS/` — p.81–94 · 1 files
+- `10 SECTION 8 PUMPED SYSTEMS/` — p.94–96 · 1 files
+- `11 SECTION 9 SITE TESTING/` — p.96–98 · 1 files
+- `12 SECTION 10 SIPHONIC DRAINAGE SYSTEMS/` — p.98–101 · 1 files
+- `15 APPENDIX C - STORMWATER DRAINAGE INSTALLATION PL/` — p.105–107 · 1 files
+- `16 APPENDIX D - GUIDELINES FOR DETERMINING RAINFALL/` — p.107–108 · 1 files
+- `17 APPENDIX E - RAINFALL INTENSITIES FOR AUSTRALIA/` — p.108–122 · 1 files
+- `18 APPENDIX F - RAINFALL INTENSITIES FOR NEW ZEALAN/` — p.122–127 · 1 files
+- `19 APPENDIX G - EXAMPLES OF OVERFLOW MEASURES FOR E/` — p.127–130 · 1 files
+- `20 APPENDIX H - GENERAL METHOD FOR DESIGN OF EAVES/` — p.130–140 · 1 files
+- `22 APPENDIX J - BOX GUTTER SYSTEMS-GENERAL METHOD-E/` — p.149–160 · 1 files
+- `23 APPENDIX K - SURFACE WATER DRAINAGE SYSTEMS-NOMI/` — p.160–171 · 1 files
+- `25 APPENDIX M - SUBSOIL DRAINAGE SYSTEMS-DESIGN/` — p.173–178 · 1 files
+- `26 APPENDIX N - GENERAL INFORMATION/` — p.178–183 · 1 files
+- `27 APPENDIX O - OPERATION OF SIPHONIC ROOF DRAINAGE/` — p.183–189 · 1 files
 
 `AS 3500/2018/3500.4-2018  Plumbing and drainage - Heated water services (Amendment 1 included)/`
 - `(document root)` — p.1–153 · 11 files
@@ -463,55 +464,55 @@ Go straight to the sub-folder that covers the clause or page; list only that sub
 
 `AS 3500/2021/AS NZS 3500.1-2021/`
 - `(document root)` — p.1–132 · 11 files
-- `01 Section 1 Scope and general/` — p.13–16 · 9 files
-- `02 Section 2 Materials and products/` — p.16–23 · 9 files
-- `03 Section 3 Sizing of water services/` — p.23–28 · 6 files
-- `04 Section 4 Cross-connection control and backflow/` — p.28–38 · 7 files
-- `05 Section 5 Installation of cold water services/` — p.38–62 · 22 files
-- `06 Section 6 Fire services/` — p.62–63 · 6 files
-- `07 Section 7 Irrigation and lawn watering systems/` — p.63–69 · 5 files
-- `08 Section 8 Water storage tanks/` — p.69–78 · 10 files
-- `09 Section 9 Non-drinking water services/` — p.78–84 · 9 files
-- `10 Section 10 Treated greywater services/` — p.84–85 · 5 files
-- `11 Section 11 Water for sanitary flushing/` — p.85–90 · 10 files
-- `12 Section 12 Pumps/` — p.90–91 · 6 files
-- `13 Section 13 Water requirements for haemodialysis/` — p.91–92 · 5 files
-- `14 Section 14 Property water meters/` — p.92–94 · 7 files
-- `15 Section 15 Installation of water supply system f/` — p.94–98 · 5 files
-- `16 Section 16 Multi-unit developments/` — p.98–99 · 6 files
-- `17 Section 17 Testing and commissioning/` — p.99–100 · 7 files
+- `01 Section 1 Scope and general/` — p.13–16 · 1 files
+- `02 Section 2 Materials and products/` — p.16–23 · 1 files
+- `03 Section 3 Sizing of water services/` — p.23–28 · 1 files
+- `04 Section 4 Cross-connection control and backflow/` — p.28–38 · 1 files
+- `05 Section 5 Installation of cold water services/` — p.38–62 · 2 files
+- `06 Section 6 Fire services/` — p.62–63 · 1 files
+- `07 Section 7 Irrigation and lawn watering systems/` — p.63–69 · 1 files
+- `08 Section 8 Water storage tanks/` — p.69–78 · 1 files
+- `09 Section 9 Non-drinking water services/` — p.78–84 · 1 files
+- `10 Section 10 Treated greywater services/` — p.84–85 · 1 files
+- `11 Section 11 Water for sanitary flushing/` — p.85–90 · 1 files
+- `12 Section 12 Pumps/` — p.90–91 · 1 files
+- `13 Section 13 Water requirements for haemodialysis/` — p.91–92 · 1 files
+- `14 Section 14 Property water meters/` — p.92–94 · 1 files
+- `15 Section 15 Installation of water supply system f/` — p.94–98 · 1 files
+- `16 Section 16 Multi-unit developments/` — p.98–99 · 1 files
+- `17 Section 17 Testing and commissioning/` — p.99–100 · 1 files
 
 `AS 3500/2021/AS NZS 3500.2-2021/`
 - `(document root)` — p.1–238 · 13 files
-- `03 Section 1 Scope and general/` — p.17–20 · 9 files
-- `04 Section 2 Materials and products/` — p.20–27 · 10 files
-- `05 Section 3 Drainage design/` — p.27–53 · 21 files
-- `06 Section 4 Drainage system/` — p.53–79 · 12 files
-- `07 Section 5 Excavation bedding support and backfil/` — p.79–83 · 7 files
-- `08 Section 6 General design requirements for sanita/` — p.83–104 · 12 files
-- `09 Section 7 Greywater plumbing and drainage system/` — p.104–106 · 5 files
-- `10 Section 8 Fully vented systems and fully vented/` — p.106–126 · 7 files
-- `11 Section 9 Single stack systems and single stack/` — p.126–157 · 10 files
-- `12 Section 10 General installation of pipework/` — p.157–168 · 14 files
-- `13 Section 11 Reduced velocity aerator stack system/` — p.168–174 · 10 files
-- `14 Section 12 Pumped discharge/` — p.174–178 · 10 files
-- `15 Section 13 Fixtures and appliances/` — p.178–188 · 28 files
-- `16 Section 14 Multi-unit developments/` — p.188–189 · 3 files
-- `17 Section 15 Testing of sanitary plumbing and sani/` — p.189–192 · 5 files
-- `18 Section 16 Vacuum drainage design and installati/` — p.192–209 · 16 files
+- `03 Section 1 Scope and general/` — p.17–20 · 1 files
+- `04 Section 2 Materials and products/` — p.20–27 · 1 files
+- `05 Section 3 Drainage design/` — p.27–53 · 2 files
+- `06 Section 4 Drainage system/` — p.53–79 · 2 files
+- `07 Section 5 Excavation bedding support and backfil/` — p.79–83 · 1 files
+- `08 Section 6 General design requirements for sanita/` — p.83–104 · 1 files
+- `09 Section 7 Greywater plumbing and drainage system/` — p.104–106 · 1 files
+- `10 Section 8 Fully vented systems and fully vented/` — p.106–126 · 1 files
+- `11 Section 9 Single stack systems and single stack/` — p.126–157 · 2 files
+- `12 Section 10 General installation of pipework/` — p.157–168 · 1 files
+- `13 Section 11 Reduced velocity aerator stack system/` — p.168–174 · 1 files
+- `14 Section 12 Pumped discharge/` — p.174–178 · 1 files
+- `15 Section 13 Fixtures and appliances/` — p.178–188 · 1 files
+- `16 Section 14 Multi-unit developments/` — p.188–189 · 1 files
+- `17 Section 15 Testing of sanitary plumbing and sani/` — p.189–192 · 1 files
+- `18 Section 16 Vacuum drainage design and installati/` — p.192–209 · 1 files
 
 `AS 3500/2021/AS NZS 3500.3-2021/`
 - `(document root)` — p.1–202 · 18 files
-- `02 Section 1 Scope and general/` — p.11–18 · 8 files
-- `03 Section 2 Materials and products/` — p.18–25 · 14 files
-- `04 Section 3 Roof drainage systems — Design/` — p.25–52 · 9 files
-- `05 Section 4 Roof drainage systems — Installation/` — p.52–64 · 10 files
-- `06 Section 5 Surface water drainage systems — Desig/` — p.64–78 · 6 files
-- `07 Section 6 Surface and subsoil drainage systems —/` — p.78–90 · 5 files
-- `08 Section 7 Surface water and subsoil drainage sys/` — p.90–103 · 11 files
-- `09 Section 8 Pumped systems/` — p.103–106 · 7 files
-- `10 Section 9 Site Testing/` — p.106–108 · 5 files
-- `11 Section 10 Siphonic drainage systems/` — p.108–111 · 3 files
+- `02 Section 1 Scope and general/` — p.11–18 · 1 files
+- `03 Section 2 Materials and products/` — p.18–25 · 1 files
+- `04 Section 3 Roof drainage systems — Design/` — p.25–52 · 2 files
+- `05 Section 4 Roof drainage systems — Installation/` — p.52–64 · 1 files
+- `06 Section 5 Surface water drainage systems — Desig/` — p.64–78 · 1 files
+- `07 Section 6 Surface and subsoil drainage systems —/` — p.78–90 · 1 files
+- `08 Section 7 Surface water and subsoil drainage sys/` — p.90–103 · 1 files
+- `09 Section 8 Pumped systems/` — p.103–106 · 1 files
+- `10 Section 9 Site Testing/` — p.106–108 · 1 files
+- `11 Section 10 Siphonic drainage systems/` — p.108–111 · 1 files
 
 `as 3500/2021/AS 3500/`
 - `500.0-2021 Printed Converted to Searchable/` — p.1–136 · 8 files
@@ -522,7 +523,7 @@ Go straight to the sub-folder that covers the clause or page; list only that sub
 Drafts use the same layout under their own folders (see Drafts held).
 
 **Useful starting points**
-- AS/NZS 3500.2:2021 (sanitary plumbing & drainage): `AS 3500/2021/AS NZS 3500.2-2021/` (chapter folder, 192 files)
+- AS/NZS 3500.2:2021 (sanitary plumbing & drainage): `AS 3500/2021/AS NZS 3500.2-2021/` (chapter folder, 32 files)
 - NSW Note 2/2023 floor waste & fixtures: `n0_Web_Reference/NSW Fair Trading - Building Commission/01-note-2-2023-floor-waste-and-fixture-requirements.md`
 - NSW Note 1/2026 overflow relief gully: `n0_Web_Reference/NSW Fair Trading - Building Commission/02-note-1-2026-overflow-relief-gully-requirements.md`
 - NCC 2025 Vol 3 NSW Schedule C2 (NSW did not adopt the 600 mm cap; only WA did): `n0_Web_Reference/ABCB NCC (ncc.abcb.gov.au)/19-vt3-nsw-c2.md`
@@ -534,6 +535,9 @@ Drafts use the same layout under their own folders (see Drafts held).
 - NCC 2025 Volume Three (plumbing and drainage): `2025/NCC 2025 Volume Three/` (chapter folder, 112 files)
 
 ## 7. House rules
+- **Decision support** (requirements v3 L-1): end every answer with "Decision support only — not a substitute for a licensed practitioner's judgement." For structural, fire-safety or gas questions also say "Have a licensed practitioner confirm this before relying on it."
+- **Unverified folders** (requirements v3 C-2): `Code/`, `NCC2022/`, `n0_Web_Reference/` and `n2_Technical/` are older conversions whose source files are not available, so their text has not been checked against the original. When you cite them, add "(unverified copy)". For a document that is also in `2025/` or `AS 3500/`, use that distilled copy.
+- **Editions NCC calls up**: NCC 2025 calls up AS/NZS 3500 Parts 1–4 in their 2025 editions; the library holds 2021 and earlier. When a question concerns NCC 2025 compliance, say which edition you quote and that NCC 2025 calls up the 2025 edition.
 - **Jurisdiction**: confirm the project's state first. Victorian clauses must not be applied to NSW projects without "⚠️ cross-state, reference only". Jemena material is Victoria-only.
 - **NCC timing**: NCC 2025 was published 2026-05-01; NSW adopts it from 2027-05-01, so NCC 2022 currently applies in NSW.
 - **AS/NZS 3500.2**: the 2025 edition was published 2025-04-17. If the library's latest edition (see Library facts) is older, warn "library is one edition behind; check the 2025 edition".
@@ -545,8 +549,12 @@ Drafts use the same layout under their own folders (see Drafts held).
 Answer:   <answer based on the library text>
 Source:   <file path>, <clause>, <page or section>
 Status:   verified / pending review
-Edition:  <standard and year>; Jurisdiction: <NSW / VIC / national>
+Edition:  <standard and year> — current, or SUPERSEDED by <newer edition>; Jurisdiction: <NSW / VIC / national>
+Note:     Decision support only — not a substitute for a licensed practitioner's judgement.
+📁 Saved: <logs>/<file name>
 ```
+Every line is required, in this order. **Edition** comes from the file's front matter: when `edition_status` is
+`superseded`, write "SUPERSEDED by" and the `superseded_by` edition — also when the user asked for that older edition.
 For web snapshots add: `Web reference: <organisation> — <page title> / URL / retrieved <date> ⚠️ may have changed`.
 When nothing is found: `Answer: Not found in the knowledge base. Searched: <terms>`.
 
@@ -570,4 +578,4 @@ After **each** answer, create a new file in `<logs>`:
    ```
 The maintainers review these reports; confirmed errors are fixed and added to the regression test set.
 
-<!-- generated by fidelity adapters 1 for claude on 2026-11-23 from 4,572 library files; edit adapters/template.md.j2 or adapters/house_rules.yaml, not this file -->
+<!-- generated by fidelity adapters 1 for claude on 2026-11-24 from 2,783 library files; edit adapters/template.md.j2 or adapters/house_rules.yaml, not this file -->

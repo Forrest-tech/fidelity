@@ -164,3 +164,14 @@ def test_the_exact_page_score_counts_right_figures_cited_on_their_own_page(tmp_p
     assert r["pass"] and r["page_exact"]
     s = GR.summary([r])
     assert s["page_exact"]["exact"] == 1 and s["page_exact"]["value_right_page_wrong"] == 0
+
+
+def test_a_figure_the_question_gives_is_not_required_in_the_answer(tmp_path):
+    src = _table_pdf(tmp_path)
+    q = {"id": 2, "cat": "B", "q": "For paved surfaces exceeding 200 m2, what gradient applies to kerb channels?",
+         "ground": {"doc": "AS NZS 3500.3-2021.pdf", "designation": "AS/NZS 3500.3:2021", "page": 1, "values": ["1:150", "200 m2"]}}
+    a = {"status": "answered", "answer": "1:150", "values": ["1:150"],
+         "citations": [{"document": "AS/NZS 3500.3:2021", "page": 1, "quote": "Kerb channels: without concrete gutter 1:150"}]}
+    assert GR.grade_one(q, a, {"AS NZS 3500.3-2021.pdf": src})["pass"]
+    a["values"], a["answer"] = ["1:200"], "1:200"                       # the asked figure itself is still required
+    assert not GR.grade_one(q, a, {"AS NZS 3500.3-2021.pdf": src})["pass"]

@@ -1,0 +1,1 @@
+GRADE {"status":"answered","values":["2.5 m"],"edition_used":"AS/NZS 3500.2:2021","citations":[{"document":"AS NZS 3500.2-2021","page":136,"quote":"The maximum length of a vertical dropper on any fixture discharge pipe shall be 2.5 m, except for basins and bidets where"}]}

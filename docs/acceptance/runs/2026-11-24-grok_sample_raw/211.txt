@@ -1,0 +1,1 @@
+GRADE {"status":"answered","values":["≥20 mm fall between pipe inverts; flat floor"],"edition_used":"AS/NZS 3500.3:2021","citations":[{"document":"AS NZS 3500.3-2021","page":94,"quote":"Sump pits shall have a flat floor but a fall of at least 20 mm between pipe inverts, as shown in Figure 7.5.3 (b)."}]}
