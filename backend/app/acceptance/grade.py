@@ -40,8 +40,31 @@ def _piece_on_page(src: str, page: int, piece: str) -> bool:
                                for c in cells)
 
 
+_WORD = re.compile(r"[a-z]{3,}")
+
+
+def _words_on_page(src: str, page: int, quote: str) -> bool:
+    """Every number and at least 95 % of the content words of the quote are on that page (± 1). A table quoted as one
+    line ("Kerb channels: without concrete gutter with concrete gutter …") or with stray punctuation ("Table 6.6.1. .")
+    has its words in another order than the PDF's text layer; a figure that is not on the page still fails."""
+    q = norm(quote)
+    words, nums = _WORD.findall(q), numbers(quote)
+    if len(words) < 6:
+        return False
+    pages = pdf_pages(src)
+    for p in (page - 1, page, page + 1):
+        if 1 <= p <= len(pages):
+            h = norm(pages[p - 1])
+            hw, hn = set(_WORD.findall(h)), set(numbers(h))
+            if all(n in hn for n in nums) and sum(w in hw for w in words) >= 0.95 * len(words):
+                return True
+    return False
+
+
 def _quote_on_page(src: str, page: int, quote: str, cat: str) -> bool:
     if page_has(src, page, quote, spread=1):
+        return True
+    if _words_on_page(src, page, quote):
         return True
     pieces = _pieces(quote)
     if pieces and sum(len(p) for p in pieces) >= 30 and all(_piece_on_page(src, page, p) for p in pieces):
@@ -78,6 +101,8 @@ def grade_one(q: dict, a: dict, sources: dict[str, str]) -> dict:
                   if _doc_matches(c.get("document", ""), g["designation"]) and abs(int(c.get("page") or 0) - g["page"]) <= 1
                   and src and _quote_on_page(src, int(c.get("page") or 0), c.get("quote", ""), q["cat"])]
     citation_ok = bool(good_cites)
+    # requirements v3 V-2: the strict measure, the cited page is exactly the page the answer comes from
+    page_exact = any(int(c.get("page") or 0) == g["page"] for c in good_cites)
     status_ok = a.get("status") == "answered"
     if q["cat"].startswith("D"):                       # a superseded edition must be named as superseded
         status_ok = status_ok and bool(re.search(r"supersed|replaced|no longer current|not (?:the )?current",
@@ -89,7 +114,7 @@ def grade_one(q: dict, a: dict, sources: dict[str, str]) -> dict:
     why = [w for w, bad in (("figure wrong or missing", not values_ok), ("citation not on the cited source page", not citation_ok),
                             ("edition status not stated" if q["cat"].startswith("D") else "did not answer", not status_ok),
                             ("accepted the false premise", not premise_ok)) if bad]
-    return {**r, "pass": ok, "answer_ok": values_ok, "citation_ok": citation_ok, "status_ok": status_ok,
+    return {**r, "pass": ok, "answer_ok": values_ok, "citation_ok": citation_ok, "page_exact": page_exact, "status_ok": status_ok,
             "found_by_search": hit, "why": "; ".join(why),
             "blame": "" if ok else ("library search: the page was not among the excerpts" if not hit else "answer")}
 
@@ -115,7 +140,14 @@ def summary(rows: list[dict]) -> dict:
         c[0] += r["pass"]
         c[1] += 1
     traps = [r for r in rows if r["cat"].startswith("F")]
+    cited = [r for r in rows if "page_exact" in r and r.get("answer_ok")]
+    pk = sum(r["page_exact"] for r in cited)
+    plo, phi = wilson(pk, len(cited))
     return {"questions": n, "not_answered": skipped, "passed": k, "rate": round(k / n, 4) if n else 0, "ci95": [round(lo, 4), round(hi, 4)],
             "traps": [sum(r["pass"] for r in traps), len(traps)],
+            # v3 V-2: of the answers with the right figure, how many cite exactly the page it is on
+            "page_exact": {"of": len(cited), "exact": pk, "rate": round(pk / len(cited), 4) if cited else 0,
+                           "ci95": [round(plo, 4), round(phi, 4)],
+                           "value_right_page_wrong": sum(1 for r in cited if not r["citation_ok"])},
             "by_category": {c: {"passed": a, "of": b} for c, (a, b) in sorted(cats.items())},
             "blame": {b: sum(1 for r in rows if r.get("blame") == b) for b in {r.get("blame") for r in rows} if b}}
