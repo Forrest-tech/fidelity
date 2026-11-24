@@ -395,6 +395,37 @@ def _split(c, max_chars):
     return out
 
 
+def merge_chunks(chunks: list[Chunk], max_chars: int) -> list[Chunk]:
+    """Plan C2 (2026-11-23): fewer, larger files. Consecutive chunks of the same Section (or Schedule) are joined while
+    the joined text stays within `max_chars`, so an AI reads one file of related clauses instead of listing a folder
+    and fetching several small ones. A clause is never cut (chunks are joined whole), page markers stay in the text,
+    and front matter, a chunk without a Section, and an oversized part stay as they are. The joined chunk keeps the
+    first chunk's heading; `merged` holds the chunks it was made from (for its name)."""
+    out: list[Chunk] = []
+    size = 0
+    for c in chunks:
+        n = sum(_item_len(it) for _, _, it in c.items)
+        prev = out[-1] if out else None
+        joinable = (prev is not None and c.l1 is not None and prev.l1 is c.l1 and (c.l2 is not None or c.intro)
+                    and (prev.l2 is not None or prev.intro) and not getattr(c, "part", None)
+                    and not getattr(prev, "part", None) and size + n <= max_chars)
+        if joinable:
+            if not getattr(prev, "merged", None):
+                first = prev
+                prev = Chunk(first.l1, first.l2, list(first.items), intro=first.intro)
+                prev.merged = [first]
+                out[-1] = prev
+            prev.items.extend(c.items)
+            prev.merged.append(c)
+            size += n
+        else:
+            out.append(c)
+            size = n
+    for i, c in enumerate(out, 1):
+        c.seq = i
+    return out
+
+
 # ---------------------------------------------------------------- markdown
 
 _MARKER = re.compile(r"^(\((?:\d{1,3}|[a-z]{1,2}|[ivxl]{1,6}|[A-Z]{1,2})\)|•|▪|◦)\s*")

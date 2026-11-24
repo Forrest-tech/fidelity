@@ -174,7 +174,7 @@ def _init_worker(q):
     os.environ.setdefault("PYTHONUTF8", "1")
 
 
-def read_file(lp, rel_local, out, cache, publish_protected, rel):
+def read_file(lp, rel_local, out, cache, publish_protected, rel, older_edition=False):
     """Distill and verify one downloaded file (runs in a reader process or thread)."""
     from .office import distill_any
     q = _Q
@@ -185,7 +185,8 @@ def read_file(lp, rel_local, out, cache, publish_protected, rel):
         except Exception:                                  # noqa: BLE001 - progress must never fail a file
             pass
     log(START)
-    return distill_any(lp, rel_local, out, "", cache, log=log, publish_protected=publish_protected)
+    return distill_any(lp, rel_local, out, "", cache, log=log, publish_protected=publish_protected,
+                       older_edition=older_edition)
 
 
 class Readers:

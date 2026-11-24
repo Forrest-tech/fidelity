@@ -127,7 +127,8 @@ def _group(parts, limit):
     return groups
 
 
-def distill_any(path, rel_path, out_root, source_prefix, cache_dir, log=print, publish_protected=False):
+def distill_any(path, rel_path, out_root, source_prefix, cache_dir, log=print, publish_protected=False,
+                older_edition=False):
     """Entry point for every supported format."""
     from .scan import IMAGE_EXT, distill_scan
     from .triage import triage_pdf
@@ -145,13 +146,14 @@ def distill_any(path, rel_path, out_root, source_prefix, cache_dir, log=print, p
         if cls == "protected" and reads_protected_text(tri):
             # copying its text is not allowed, but it opens: its own text layer is read and checked against images of
             # its pages, like any text PDF (ADR 0006)
-            return R.distill_pdf(path, rel_path, out_root, source_prefix, cache_dir, log=log, read_protected=True)
+            return R.distill_pdf(path, rel_path, out_root, source_prefix, cache_dir, log=log, read_protected=True,
+                                 older_edition=older_edition)
         if cls == "drawing":
             from .drawing import distill_drawing
             return distill_drawing(path, rel_path, out_root, source_prefix, cache_dir, log=log)
     if path.lower().endswith(".pdf"):
         return R.distill_pdf(path, rel_path, out_root, source_prefix, cache_dir, log=log,
-                             publish_protected=publish_protected)
+                             publish_protected=publish_protected, older_edition=older_edition)
     return distill_document(path, rel_path, out_root, source_prefix, cache_dir, log=log)
 
 
