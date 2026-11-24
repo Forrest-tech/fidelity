@@ -266,9 +266,19 @@ class SafeWriter:
         for i in range(0, len(entries), 1000):
             part = entries[i:i + 1000]
             res = _retry(lambda: self.dbx.files_upload_session_finish_batch_v2(part), "commit")
-            bad = [e.commit.path for e, r in zip(part, res.entries) if r.is_failure() and not self._has(e.commit.path, e.cursor.offset)]
-            if bad:
-                raise RuntimeError(f"Dropbox did not take {len(bad)} file(s), e.g. {bad[0]}")
+            bad = [(e.commit.path, r.get_failure()) for e, r in zip(part, res.entries)
+                   if r.is_failure() and not self._has(e.commit.path, e.cursor.offset)]
+            # A batch commit can refuse files for a passing reason (another write holding the lock: seen 2026-11-24,
+            # 28 files of one document at once). Send each of those again on its own before giving up.
+            still = []
+            for path, why in bad:
+                try:
+                    _retry(lambda p=path: self.dbx.files_upload(items[p], p, mode=WriteMode.overwrite, mute=True),
+                           f"upload {path}")
+                except Exception as e:             # noqa: BLE001
+                    still.append((path, f"{why} / {type(e).__name__}: {e}"))
+            if still:
+                raise RuntimeError(f"Dropbox did not take {len(still)} file(s), e.g. {still[0][0]} ({str(still[0][1])[:200]})")
         self.written += list(items)
 
     def _has(self, path, size) -> bool:
