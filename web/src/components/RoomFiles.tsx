@@ -5,7 +5,7 @@ import { StageCell, type RunLive } from "./RunProgress";
 import { StateHelp } from "./StateHelp";
 import { Empty, Modal, Table } from "antd";
 import { api, json } from "../net/client";
-import { Bar, Seg } from "./ui";
+import { Bar, CellTip, ResizableTh, Seg } from "./ui";
 
 export type FileState = "pending" | "processing" | "ok" | "below" | "unprocessable" | "skipped" | "publishing" | "published";
 export const STATES: FileState[] = ["pending", "processing", "ok", "below", "unprocessable", "skipped", "publishing", "published"];
@@ -45,17 +45,26 @@ export interface Edition {
   newer_edition?: string;
 }
 
-export function EditionCell({ e }: { e?: Edition | null }) {
-  const { t } = useTranslation();
-  if (!e) return <span className="fx-muted">—</span>;
+type T = (k: string, o?: Record<string, unknown>) => string;
+
+/** The edition in words, with what to know about it (the cell's tooltip). */
+export function editionText(e: Edition | null | undefined, t: T): string {
+  if (!e) return "";
   const what = e.designation + (e.amendment != null ? ` ${t("pages.distill.edition.amd", { n: e.amendment })}` : "") + (e.consolidated ? ` ${t("pages.distill.edition.consolidated")}` : "");
-  const tip = [
+  return [
+    what,
     e.status === "superseded" ? t("pages.distill.edition.supersededBy", { by: e.superseded_by }) : e.status === "current" ? t("pages.distill.edition.currentLong") : "",
     e.called_up_by ? t("pages.distill.edition.calledUp", { clauses: e.called_up_by }) : "",
     e.newer_edition ? t("pages.distill.edition.newerLong", { ed: e.newer_edition }) : "",
   ].filter(Boolean).join("\n");
+}
+
+export function EditionCell({ e, plain }: { e?: Edition | null; plain?: boolean }) {
+  const { t } = useTranslation();
+  if (!e) return <span className="fx-muted">—</span>;
+  const what = e.designation + (e.amendment != null ? ` ${t("pages.distill.edition.amd", { n: e.amendment })}` : "") + (e.consolidated ? ` ${t("pages.distill.edition.consolidated")}` : "");
   return (
-    <span className="fx-row" style={{ gap: 6, minWidth: 0, flexWrap: "nowrap" }} title={[what, tip].filter(Boolean).join("\n")}>
+    <span className="fx-row" style={{ gap: 6, minWidth: 0, flexWrap: "nowrap" }} title={plain ? undefined : editionText(e, t)}>
       <span className="fx-tiny" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{what}</span>
       {e.called_up_by && <span className="fx-pill ok fx-tiny" style={{ flex: "none" }}>{t("pages.distill.edition.code")}</span>}
       {e.status === "superseded" && !e.called_up_by && <span className="fx-pill warn fx-tiny" style={{ flex: "none" }}>{t("pages.distill.edition.old")}</span>}
@@ -153,6 +162,15 @@ function loadOpen(room: string): Set<string> {
     return new Set();
   }
 }
+const widthKey = "fidelity.distill.colwidths";
+const DEFAULT_WIDTHS: Record<string, number> = { name: 340, edition: 240, size: 100, state: 240, accuracy: 150 };
+function loadWidths(): Record<string, number> {
+  try {
+    return { ...DEFAULT_WIDTHS, ...(JSON.parse(localStorage.getItem(widthKey) || "{}") as Record<string, number>) };
+  } catch {
+    return { ...DEFAULT_WIDTHS };
+  }
+}
 function loadPref(): { flat: boolean; compact: boolean } {
   try {
     return { flat: false, compact: true, ...(JSON.parse(localStorage.getItem(prefKey) || "{}") as object) };
@@ -202,6 +220,7 @@ export function RoomFiles({
   const [typed, setTyped] = useState("");
   const [open, setOpen] = useState<Set<string>>(() => loadOpen(roomId));
   const [pref, setPref] = useState(loadPref);
+  const [widths, setWidths] = useState(loadWidths);       // dragged column widths, remembered in this browser
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [flash, setFlash] = useState<string | null>(null);
   const [confirm, setConfirm] = useState(false);
@@ -257,6 +276,18 @@ export function RoomFiles({
       /* per-viewer convenience only */
     }
   }, [pref]);
+  useEffect(() => {
+    try {
+      localStorage.setItem(widthKey, JSON.stringify(widths));
+    } catch {
+      /* per-viewer convenience only */
+    }
+  }, [widths]);
+  // a column whose header edge can be dragged; `label` names the handle for screen readers
+  const sized = (key: string, label: string) => ({
+    width: widths[key],
+    onHeaderCell: () => ({ width: widths[key], label, onResize: (w: number) => setWidths((p) => ({ ...p, [key]: w })) }) as React.HTMLAttributes<HTMLElement>,
+  });
   useEffect(() => setSel(new Set()), [state, q]);
   // "/" focuses the file search of the open room
   useEffect(() => {
@@ -442,7 +473,8 @@ export function RoomFiles({
             rowKey="key"
             loading={loading}
             dataSource={rows}
-            scroll={{ x: 820, y: height }}
+            scroll={{ x: Math.max(820, Object.values(widths).reduce((a, b) => a + b, 0) + (canEdit ? 34 : 0) + 120), y: height }}
+            components={{ header: { cell: ResizableTh } }}
             aria-label={t("pages.distill.files")}
             rowClassName={(n, i) => [n.folder ? "fx-folder" : "", i === flashIndex ? "fx-flash" : "", pref.compact ? "fx-compact" : ""].join(" ")}
             columns={[
@@ -469,43 +501,47 @@ export function RoomFiles({
                 : []),
               {
                 title: t("pages.distill.colName"),
-                width: 340,
+                ...sized("name", t("pages.distill.colName")),
                 render: (_: unknown, n: Node) =>
                   n.folder ? (
-                    <span style={{ paddingLeft: n.depth * 18, display: "inline-flex", alignItems: "center", gap: 2 }}>
-                      <button className="fx-caret" aria-expanded={effective.has(n.key)} aria-label={t(effective.has(n.key) ? "pages.distill.collapse" : "pages.distill.expand", { name: n.name })} onClick={() => toggle(n.key)}>
-                        {effective.has(n.key) ? "▾" : "▸"}
-                      </button>
-                      <b>{n.name}</b>
-                    </span>
+                    <CellTip text={n.key}>
+                      <span style={{ paddingLeft: n.depth * 18, display: "inline-flex", alignItems: "center", gap: 2 }}>
+                        <button className="fx-caret" aria-expanded={effective.has(n.key)} aria-label={t(effective.has(n.key) ? "pages.distill.collapse" : "pages.distill.expand", { name: n.name })} onClick={() => toggle(n.key)}>
+                          {effective.has(n.key) ? "▾" : "▸"}
+                        </button>
+                        <b>{n.name}</b>
+                      </span>
+                    </CellTip>
                   ) : (
-                    <span style={{ paddingLeft: pref.flat ? 0 : n.depth * 18 + 18, display: "inline-block", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", verticalAlign: "bottom" }} title={n.file!.rel}>
-                      {n.name}
-                    </span>
+                    <CellTip text={n.file!.rel}>
+                      <span style={{ paddingLeft: pref.flat ? 0 : n.depth * 18 + 18 }}>{n.name}</span>
+                    </CellTip>
                   ),
               },
               {
                 title: t("pages.distill.colEdition"),
-                width: 240,
-                render: (_: unknown, n: Node) => (n.folder ? null : <EditionCell e={n.file!.edition} />),
+                ...sized("edition", t("pages.distill.colEdition")),
+                render: (_: unknown, n: Node) => (n.folder ? null : (
+                  <CellTip text={editionText(n.file!.edition, t)}><EditionCell e={n.file!.edition} plain /></CellTip>
+                )),
               },
               {
                 title: t("pages.distill.colSize"),
-                width: 100,
-                render: (_: unknown, n: Node) => (
-                  <span className="fx-num fx-muted">
-                    {n.folder ? t("pages.distill.fileCount", { count: n.counts!.total }) : n.file!.pages ? t("pages.distill.pageCount", { count: n.file!.pages }) : "—"}
-                  </span>
-                ),
+                ...sized("size", t("pages.distill.colSize")),
+                render: (_: unknown, n: Node) => {
+                  const s = n.folder ? t("pages.distill.fileCount", { count: n.counts!.total }) : n.file!.pages ? t("pages.distill.pageCount", { count: n.file!.pages }) : "";
+                  return <CellTip text={s}><span className="fx-num fx-muted">{s || "—"}</span></CellTip>;
+                },
               },
               {
                 title: t("pages.distill.colState"),
-                width: 240,
+                ...sized("state", t("pages.distill.colState")),
                 render: (_: unknown, n: Node) => {
                   if (n.folder) {
                     const k = n.counts!;
                     const parts = (["ok", "published", "below", "unprocessable", "skipped", "processing", "publishing"] as FileState[]).filter((s) => k[s]).map((s) => `${t(`pages.distill.state.${s}`)} ${k[s]}`);
-                    return <span className="fx-tiny fx-muted">{parts.join(" · ") || t("pages.distill.notStarted")}</span>;
+                    const s = parts.join(" · ") || t("pages.distill.notStarted");
+                    return <CellTip text={s}><span className="fx-tiny fx-muted">{s}</span></CellTip>;
                   }
                   const f = n.file!;
                   const act = progress?.active?.[f.rel];
@@ -519,30 +555,40 @@ export function RoomFiles({
                     : f.state === "unprocessable" && f.reason ? t(`pages.distill.reason.${f.reason}`, { defaultValue: f.reason })
                     : f.state === "below" && f.checks ? t("pages.distill.ruleChecks", { count: f.checks })
                     : f.state === "below" && f.diffs ? t("pages.distill.diffs", { count: f.diffs }) : undefined;
+                  const autoFixed = !f.checks && !!f.corrected ? t("pages.distill.autoFixed", { count: f.corrected }) : "";
+                  const tip = [
+                    `${t(`pages.distill.state.${f.state}`)}${detail ? ` · ${detail}` : ""}`,
+                    f.reason ? t(`pages.distill.reasonLong.${f.state === "skipped" && f.covered_by ? "covered" : f.reason}`, { defaultValue: "" }) : "",
+                    autoFixed,
+                  ].filter(Boolean).join("\n");
                   return (
-                    <span className="fx-row" style={{ gap: 6, minWidth: 0, maxWidth: "100%", flexWrap: "nowrap" }}>
-                      <StateTag state={f.state} detail={detail}
-                        title={[detail, f.reason ? t(`pages.distill.reasonLong.${f.state === "skipped" && f.covered_by ? "covered" : f.reason}`, { defaultValue: "" }) : ""].filter(Boolean).join("\n") || undefined} />
-                      {!f.checks && !!f.corrected && <span className="fx-tiny fx-muted">{t("pages.distill.autoFixed", { count: f.corrected })}</span>}
-                    </span>
+                    <CellTip text={tip}>
+                      <span className="fx-row" style={{ gap: 6, minWidth: 0, maxWidth: "100%", flexWrap: "nowrap" }}>
+                        <StateTag state={f.state} detail={detail} />
+                        {autoFixed && <span className="fx-tiny fx-muted">{autoFixed}</span>}
+                      </span>
+                    </CellTip>
                   );
                 },
               },
               {
                 title: t("pages.distill.colAccuracy"),
-                width: 150,
+                ...sized("accuracy", t("pages.distill.colAccuracy")),
                 render: (_: unknown, n: Node) => {
                   if (n.folder) {
                     const k = n.counts!;
                     const pct = k.total ? Math.round((100 * (k.total - k.pending - k.processing)) / k.total) : 0;
                     return (
-                      <span className="fx-row" style={{ gap: 6 }}>
-                        <Bar pct={pct} width={70} label={t("pages.distill.folderProgress", { name: n.name })} />
-                        <span className="fx-num fx-tiny">{pct}%</span>
-                      </span>
+                      <CellTip text={t("pages.distill.folderProgress", { name: n.name }) + `: ${pct}%`}>
+                        <span className="fx-row" style={{ gap: 6 }}>
+                          <Bar pct={pct} width={70} label={t("pages.distill.folderProgress", { name: n.name })} />
+                          <span className="fx-num fx-tiny">{pct}%</span>
+                        </span>
+                      </CellTip>
                     );
                   }
-                  return n.file!.accuracy == null ? <span className="fx-muted">—</span> : <b className="fx-num">{n.file!.accuracy}%</b>;
+                  const a = n.file!.accuracy;
+                  return a == null ? <span className="fx-muted">—</span> : <CellTip text={`${t("pages.distill.colAccuracy")}: ${a}%`}><b className="fx-num">{a}%</b></CellTip>;
                 },
               },
               {

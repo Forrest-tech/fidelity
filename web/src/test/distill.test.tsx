@@ -272,12 +272,42 @@ describe("distill page", () => {
     await u.click(await screen.findByRole("radio", { name: "Flat" }));
     const old = (await screen.findByText("AS/NZS 3500.1:2015")).parentElement as HTMLElement;
     expect(within(old).getByText("old")).toBeInTheDocument();
-    expect(old.getAttribute("title")).toMatch(/Superseded by AS\/NZS 3500\.1:2021/);
+    await u.hover(old);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(/Superseded by AS\/NZS 3500\.1:2021/);
+    await u.unhover(old);
     expect(screen.getAllByText("AS/NZS 3500.1:2021")).toHaveLength(2);
     expect(screen.getByText("Skipped · same edition used: AS NZS 3500.1-2021.pdf")).toBeInTheDocument();
     expect(await screen.findByText(/1 standards · 1 current editions · 1 older editions · 0 amendments · 1 extra copies not published/)).toBeInTheDocument();
     expect(screen.getByText("NCC 2025 calls up 1 editions this room does not hold: AS/NZS 3500.1:2025")).toBeInTheDocument();
     expect(within(screen.getAllByText("AS/NZS 3500.1:2021")[0].parentElement as HTMLElement).getByText("newer exists")).toBeInTheDocument();
+  });
+
+  it("columns can be made wider or narrower by dragging or with the arrow keys, and every cell shows its full text on hover", async () => {
+    api("reviewer", [room()]);
+    localStorage.removeItem("fidelity.distill.colwidths");
+    renderApp("/distill");
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    await u.click(await screen.findByRole("radio", { name: "Flat" }));
+    const handle = await screen.findByRole("separator", { name: "Resize column Name" });
+    expect(handle).toHaveAttribute("aria-valuenow", "340");
+    // drag the right edge of the Name column 60 px to the right
+    handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 500, pointerId: 1 }));
+    window.dispatchEvent(new PointerEvent("pointermove", { clientX: 560, pointerId: 1 }));
+    window.dispatchEvent(new PointerEvent("pointerup", { clientX: 560, pointerId: 1 }));
+    await waitFor(() => expect(screen.getByRole("separator", { name: "Resize column Name" })).toHaveAttribute("aria-valuenow", "400"));
+    // keyboard: narrower by one step; never below the minimum
+    screen.getByRole("separator", { name: "Resize column Name" }).focus();
+    await u.keyboard("{ArrowLeft}");
+    await waitFor(() => expect(screen.getByRole("separator", { name: "Resize column Name" })).toHaveAttribute("aria-valuenow", "384"));
+    expect(JSON.parse(localStorage.getItem("fidelity.distill.colwidths") || "{}").name).toBe(384);   // remembered
+    for (const col of ["Edition", "Files / pages", "State", "Progress / accuracy"]) expect(screen.getByRole("separator", { name: `Resize column ${col}` })).toBeInTheDocument();
+    // hover: the full path of a file, and the full status with its reason
+    const cell = (re: RegExp) => [...document.querySelectorAll<HTMLElement>(".fx-celltip")].find((el) => re.test(el.textContent || ""))!;
+    await u.hover(cell(/b\.pdf$/));
+    await waitFor(() => expect(screen.getAllByRole("tooltip").some((el) => (el.textContent || "").includes("/2003/amend/b.pdf"))).toBe(true), { timeout: 5000 });
+    await u.unhover(cell(/b\.pdf$/));
+    await u.hover(cell(/^Below threshold/));
+    await waitFor(() => expect(screen.getAllByRole("tooltip").some((el) => /Below threshold/.test(el.textContent || ""))).toBe(true), { timeout: 5000 });
   });
 
   it("withdraws a second published copy of an edition after a confirmation", async () => {
