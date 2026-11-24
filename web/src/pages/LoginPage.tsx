@@ -12,6 +12,7 @@ import type { CaptchaHandle } from "../components/Captcha";
 import { Loading } from "../components/ui";
 import { LANGS } from "../locales";
 import { useTheme } from "../layout/ThemeProvider";
+import { PASSWORD_MIN } from "../auth/password";
 
 interface AuthOptions {
   providers: Array<{ id: string; label: string }>;
@@ -213,7 +214,7 @@ export function LoginPage() {
         <Form.Item name="password" label={t("login.password")} htmlFor="login-password" extra={firstRun ? t("login.setupPasswordHint") : undefined}
           rules={[
             { required: true, message: t("login.passwordRequired") },
-            ...(firstRun ? [{ min: 10, message: t("login.setupPasswordShort") }] : []),
+            ...(firstRun ? [{ min: PASSWORD_MIN, message: t("login.setupPasswordShort") }] : []),
             { max: 1000, message: t("login.passwordRequired") },
           ]}>
           <Input.Password id="login-password" size="large" autoComplete={firstRun ? "new-password" : "current-password"}

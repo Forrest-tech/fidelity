@@ -43,7 +43,7 @@
     "setupConfirm": "确认密码",
     "setupSubmit": "创建管理员并登录",
     "setupMismatch": "两次输入的密码不一致。",
-    "setupPassword": "密码至少需要 10 个字符。",
+    "setupPassword": "密码至少需要 8 个字符。",
     "heading": "登录 Fidelity",
     "subheading": "使用工作账号，或邮箱和密码登录。",
     "continueWith": "使用 {{provider}} 登录",
@@ -78,8 +78,8 @@
       "oauth_pending": "已收到你的申请，正在等待管理员批准，批准后就能登录。"
     },
     "setupEmailHint": "这将是管理员的登录账号。",
-    "setupPasswordHint": "至少 10 个字符。",
-    "setupPasswordShort": "请至少使用 10 个字符。",
+    "setupPasswordHint": "至少 8 个字符。",
+    "setupPasswordShort": "请至少使用 8 个字符。",
     "confirmRequired": "请再次输入密码。",
     "captchaChecking": "正在进行人机验证…",
     "captchaReady": "已通过人机验证",
@@ -323,6 +323,7 @@
         "appearance": "外观与语言",
         "sections": "设置分类",
         "system": "系统状态",
+        "captcha": "真人验证",
         "email": "邮件"
       },
       "groups": {
@@ -384,7 +385,7 @@
       "pwCurrent": "当前密码",
       "pwNew": "新密码",
       "pwAgain": "再输一次新密码",
-      "pwRule": "至少 10 个字符。",
+      "pwRule": "至少 8 个字符。",
       "pwMismatch": "两次输入的新密码不一样。",
       "pwChanged": "密码已修改。",
       "pwChange": "修改密码",
@@ -442,7 +443,7 @@
       "role": "角色",
       "add": "添加用户",
       "create": "创建用户",
-      "passwordHint": "至少 10 个字符。",
+      "passwordHint": "至少 8 个字符。",
       "intro": "谁可以登录、能做什么、用什么方式登录。查看者只读；审核员还可以运行和修正；管理员还可以管理设置和用户。",
       "you": "你",
       "roleOf": "{{email}} 的角色",
@@ -463,7 +464,7 @@
       "err": {
         "exists": "已经有使用这个邮箱的用户。",
         "lastAdmin": "这是唯一启用的管理员。请先把其他人设为管理员。",
-        "password": "密码至少需要 10 个字符。",
+        "password": "密码至少需要 8 个字符。",
         "email": "请输入有效的邮箱地址。",
         "forbidden": "只有管理员可以修改用户。",
         "network": "无法保存，请检查网络后重试。"
@@ -1332,6 +1333,16 @@
     "tooMany": "这个网络的申请太多了，请稍后再试。",
     "closed": "这里暂不开放注册，请联系管理员为你添加账号。",
     "closedTitle": "暂不开放注册"
+  },
+  "captchaSettings": {
+    "hint": "登录、注册和找回密码页面上的“我不是机器人”验证。",
+    "provider": "验证方式",
+    "altcha": "内置（无需联网）",
+    "siteKey": "Turnstile 站点密钥（Site key）",
+    "secretKey": "Turnstile 私密密钥（Secret key）",
+    "onTurnstile": "已启用 Cloudflare Turnstile。连不上 Cloudflare 时会自动改用内置验证，不会把人挡在外面。",
+    "onAltcha": "正在使用内置验证（不依赖外部服务）。",
+    "howTo": "Cloudflare 控制台 → Turnstile → Add widget：主机名填同事访问 Fidelity 的地址，模式选 Managed，然后把 Site key 和 Secret key 复制到这里。"
   },
   "email": {
     "confirming": "正在确认邮箱…",

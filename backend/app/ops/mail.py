@@ -99,7 +99,9 @@ def send(to: str, subject: str, text: str, html: str | None = None) -> None:
     msg["From"] = formataddr((s["from_name"] or "Fidelity", s["from_address"] or "fidelity@localhost"))
     msg["To"] = to
     msg["Subject"] = subject
-    msg["Message-ID"] = make_msgid(domain=(s["from_address"].split("@")[-1] if "@" in s["from_address"] else None))
+    # an explicit domain: without one make_msgid() asks DNS for this machine's full name, which takes seconds on some
+    # networks (macOS CI) and made every message slow
+    msg["Message-ID"] = make_msgid(domain=(s["from_address"].split("@")[-1] if "@" in s["from_address"] else "fidelity.local"))
     msg.set_content(text)
     if html:
         msg.add_alternative(html, subtype="html")

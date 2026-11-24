@@ -207,7 +207,7 @@ describe("users (admin): change, switch off, set password", () => {
     const dialog = await screen.findByRole("dialog");
     await u.type(within(dialog).getByLabelText("New password"), "short");
     await u.click(within(dialog).getByRole("button", { name: "Set password" }));
-    expect(await within(dialog).findByText("Use at least 10 characters.")).toBeInTheDocument();
+    expect(await within(dialog).findByText("Use at least 8 characters.")).toBeInTheDocument();
     await u.clear(within(dialog).getByLabelText("New password"));
     await u.type(within(dialog).getByLabelText("New password"), "a-long-new-password");
     await u.click(within(dialog).getByRole("button", { name: "Set password" }));

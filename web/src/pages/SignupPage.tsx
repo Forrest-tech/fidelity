@@ -10,6 +10,7 @@ import { Captcha } from "../components/Captcha";
 import type { CaptchaHandle } from "../components/Captcha";
 import { Loading } from "../components/ui";
 import { AuthFrame, ProviderButtons } from "./LoginPage";
+import { PASSWORD_MIN } from "../auth/password";
 
 interface AuthOptions {
   providers: Array<{ id: string; label: string }>;
@@ -91,7 +92,7 @@ export function SignupPage() {
                 placeholder={t("login.emailPlaceholder")} prefix={<MailOutlined aria-hidden="true" className="fx-auth-icon" />} />
             </Form.Item>
             <Form.Item name="password" label={t("login.password")} htmlFor="signup-password" extra={t("login.setupPasswordHint")}
-              rules={[{ required: true, message: t("login.passwordRequired") }, { min: 10, message: t("login.setupPasswordShort") }, { max: 1000, message: t("login.passwordRequired") }]}>
+              rules={[{ required: true, message: t("login.passwordRequired") }, { min: PASSWORD_MIN, message: t("login.setupPasswordShort") }, { max: 1000, message: t("login.passwordRequired") }]}>
               <Input.Password id="signup-password" size="large" autoComplete="new-password" prefix={<LockOutlined aria-hidden="true" className="fx-auth-icon" />} />
             </Form.Item>
             <Form.Item name="confirm" label={t("login.setupConfirm")} htmlFor="signup-confirm" dependencies={["password"]}

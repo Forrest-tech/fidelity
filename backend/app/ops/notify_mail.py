@@ -85,6 +85,51 @@ def describe(it: dict) -> str:
     return t
 
 
+async def new_signup(email: str, state: str, request=None) -> int:
+    """Tell administrators at once that someone confirmed a sign-up (the digest would wait up to five minutes and
+    only mentions sign-ups still waiting at that moment). Sent in the background; the digest then skips it."""
+    from . import mail
+    if not mail.configured():
+        return 0
+    admins = [e for e, r in await _people_async() if r == "admin" and wants_mail(e)]
+    if not admins:
+        return 0
+    base = mail.site_url(request)
+    pending = state != "active"
+    n = 0
+    if pending:
+        from ..auth.signup import pending_count
+        n = await pending_count()
+    subject = (f"New sign-up waiting for approval: {email} / 新注册等待批准" if pending
+               else f"New user signed up: {email} / 新用户已注册")
+    text = (f"{email} has confirmed the address and " +
+            ("waits for an administrator. Approve or decline it here:" if pending else "can sign in now (as a viewer).") +
+            f"\n{base}/settings/users\n\n" +
+            f"{email} 已确认邮箱，" + ("正在等待管理员批准。在这里批准或拒绝：" if pending else "现在可以登录（只读用户）。") +
+            f"\n{base}/settings/users\n\nTurn these e-mails off: {base}/settings/notifications")
+
+    if pending:
+        # The digest's "n sign-ups wait" item is now known to these people. Written here, in the request, so the
+        # background sender never writes to the database at the same time as the request (SQLite "locked").
+        con = _con()
+        try:
+            con.executemany("INSERT INTO notification_mail(user_email, nkey, at) VALUES(?,?,?) "
+                            "ON CONFLICT(user_email, nkey) DO NOTHING", [(a, f"signup:{n}", time.time()) for a in admins])
+            con.commit()
+        finally:
+            con.close()
+
+    def send():                                     # SMTP can take seconds: the person confirming does not wait
+        for a in admins:
+            try:
+                mail.send(a, subject, text)
+            except Exception as e:                  # noqa: BLE001 - one bad address must not stop the others
+                print(f"[notify-mail] sign-up notice to {a}: {type(e).__name__}: {e}", flush=True)
+
+    threading.Thread(target=send, daemon=True, name="signup-notice").start()
+    return len(admins)
+
+
 def run_once() -> dict:
     from ..api import notifications as N
     from . import mail

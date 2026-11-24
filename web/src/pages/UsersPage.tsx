@@ -5,6 +5,7 @@ import { Alert, Button, Col, Form, Input, Modal, Row, Select, Switch, Table, Tag
 import { ApiError, api, json } from "../net/client";
 import { useAuth } from "../auth/AuthProvider";
 import { EmptyState, ErrorState, Loading, PageHeader, TableBox } from "../components/ui";
+import { PASSWORD_MIN } from "../auth/password";
 
 interface UserRow {
   id: string;
@@ -22,7 +23,7 @@ function userError(t: (k: string, o?: Record<string, unknown>) => string, e: unk
   const m = e.message;
   if (m.includes("ALREADY_EXISTS")) return t("pages.users.err.exists");
   if (m === "LAST_ADMIN") return t("pages.users.err.lastAdmin");
-  if (m.includes("PASSWORD") || /at least 10/.test(m)) return t("pages.users.err.password");
+  if (m.includes("PASSWORD") || /at least [0-9]+ char/.test(m)) return t("pages.users.err.password");
   if (e.status === 422) return t("pages.users.err.email");
   if (e.status === 403) return t("pages.users.err.forbidden");
   return t("pages.users.err.network");
@@ -226,7 +227,7 @@ export function UsersPage() {
                 extra={t("pages.users.passwordHint")}
                 rules={[
                   { required: true, message: t("login.passwordRequired") },
-                  { min: 10, message: t("login.setupPasswordShort") },
+                  { min: PASSWORD_MIN, message: t("login.setupPasswordShort") },
                 ]}
               >
                 <Input.Password id="new-user-password" autoComplete="new-password" />
@@ -270,7 +271,7 @@ export function UsersPage() {
             htmlFor="reset-password"
             rules={[
               { required: true, message: t("login.passwordRequired") },
-              { min: 10, message: t("login.setupPasswordShort") },
+              { min: PASSWORD_MIN, message: t("login.setupPasswordShort") },
             ]}
           >
             <Input.Password id="reset-password" autoComplete="new-password" autoFocus />
