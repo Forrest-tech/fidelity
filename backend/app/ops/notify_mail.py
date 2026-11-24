@@ -123,8 +123,8 @@ async def new_signup(email: str, state: str, request=None) -> int:
         for a in admins:
             try:
                 mail.send(a, subject, text)
-            except mail.MailError as e:
-                print(f"[notify-mail] sign-up notice to {a}: {e}", flush=True)
+            except Exception as e:                  # noqa: BLE001 - one bad address must not stop the others
+                print(f"[notify-mail] sign-up notice to {a}: {type(e).__name__}: {e}", flush=True)
 
     threading.Thread(target=send, daemon=True, name="signup-notice").start()
     return len(admins)

@@ -280,3 +280,21 @@ def test_an_eight_character_password_is_accepted(outbox):
     assert r.status_code == 201, r.text
     r = c.post("/api/v1/auth/signup", json={"email": "too.short@else.example", "password": "abc123", "altcha": proof(c)})
     assert r.status_code in (400, 422)
+
+
+def test_one_address_that_cannot_be_mailed_does_not_stop_the_others(outbox, monkeypatch):
+    """Found on macOS CI: with many administrators, an error for one address ended the sender before the rest."""
+    from app.ops import notify_mail
+    real = mail.send
+
+    def flaky(to, *a, **k):
+        if to != ADMIN:
+            raise ValueError("bad header")
+        return real(to, *a, **k)
+
+    async def admins():
+        return [("broken@example.com", "admin"), (ADMIN, "admin")]
+    monkeypatch.setattr(mail, "send", flaky)
+    monkeypatch.setattr(notify_mail, "_people_async", admins)
+    asyncio.run(notify_mail.new_signup("someone@else.example", "active"))
+    assert [m for m in _wait_mail(outbox, ADMIN) if "someone@else.example" in m[0]]
