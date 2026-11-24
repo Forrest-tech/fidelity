@@ -166,7 +166,7 @@ def test_a_scan_takes_two_points_so_scans_are_read_one_at_a_time(world, monkeypa
     cond, state = threading.Condition(), {"now": [], "max_text": 0, "scan_with_other": False}
     real_read = P.read_file
 
-    def read(lp, rel_local, out, cache, prot, rel):
+    def read(lp, rel_local, out, cache, prot, rel, older=False):
         with cond:
             state["now"].append(rel)
             if any(r in scans for r in state["now"]) and len(state["now"]) > 1:
@@ -176,7 +176,7 @@ def test_a_scan_takes_two_points_so_scans_are_read_one_at_a_time(world, monkeypa
             if rel not in scans:                          # hold a text file until a second one is read beside it (or 3 s)
                 cond.wait_for(lambda: state["max_text"] >= 2, timeout=3)
         try:
-            return real_read(lp, rel_local, out, cache, prot, rel)
+            return real_read(lp, rel_local, out, cache, prot, rel, older)
         finally:
             with cond:
                 state["now"].remove(rel)
@@ -198,11 +198,11 @@ def test_a_waiting_scan_is_passed_at_most_twice(world, monkeypatch):
     order, lock = [], threading.Lock()
     real_read = P.read_file
 
-    def read(lp, rel_local, out, cache, prot, rel):
+    def read(lp, rel_local, out, cache, prot, rel, older=False):
         with lock:
             order.append(rel)
         time.sleep(0.3 if rel != "/T2_scan.md" else 0.05)
-        return real_read(lp, rel_local, out, cache, prot, rel)
+        return real_read(lp, rel_local, out, cache, prot, rel, older)
 
     # two text files are being read when the scan is downloaded, so it has to wait for its points
     monkeypatch.setattr(P, "read_file", read)
