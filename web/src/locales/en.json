@@ -428,6 +428,10 @@
         "backingUp": "Backing up and checking…",
         "days": "{{n}} days",
         "hours": "{{n}} hours",
+        "releases": "Knowledge-base releases",
+        "noReleases": "No release yet: one is recorded each time accepted results are published.",
+        "releaseN": "Release {{n}}",
+        "releaseTotals": "added {{added}}, replaced {{replaced}}, withdrawn {{withdrawn}}",
         "metrics": "Monitoring: /api/v1/system/metrics serves Prometheus-format figures (administrator sign-in needed).",
         "backupSize": "{{mb}} MB · {{count}} files",
         "minutes": "{{n}} minutes"

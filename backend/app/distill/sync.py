@@ -230,6 +230,7 @@ def _publish_accepted(a, src, dst, ev, dest_root, stage_root, archive_root, live
               "published": [p[0] for p in pending], "failed": failed}
     if pending:
         replaces = {k: [k[:-len(".pdf.md")]] if k.endswith(".pdf.md") else [k + ".pdf.md"] for _, _, k, _ in pending}
+        pub.by = ", ".join(sorted({it.get("by") for _, it, _, _ in pending if it.get("by")}))   # for the release note
         pub.promote(replaces=replaces)
         for rel, it, key, n in pending:
             ledger.record(rel, it["content_hash"], R.PIPELINE_VERSION, "PASS", f"{dest_root}/{key}", n)
