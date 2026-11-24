@@ -72,6 +72,10 @@ def _transient(e) -> bool:
         pass
     if isinstance(e, (ConnectionError, TimeoutError, ssl.SSLError)):
         return True
+    # Windows "file in use by another process" (WinError 32): antivirus or the search indexer holding a file that was
+    # just downloaded. It lets go within seconds; a run failed on it once (failure-mode table, docs/quality/FMEA.md).
+    if isinstance(e, PermissionError) and getattr(e, "winerror", None) == 32:
+        return True
     name = type(e).__name__
     if name in ("InternalServerError", "RateLimitError"):  # dropbox.exceptions
         return True
