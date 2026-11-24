@@ -245,8 +245,14 @@ describe("distill page", () => {
     expect(screen.getByText("Skipped · same edition used: P-已解锁.pdf")).toHaveClass("p-idle");
     const prot = screen.getByText("Cannot be processed · copying text not allowed");
     expect(prot).toHaveClass("p-bad");
-    expect(prot.getAttribute("title")).toMatch(/forbid copying its text[\s\S]*unlocked copy of it in the same folder/);
-    expect(screen.getByText("Cannot be processed · network dropped").getAttribute("title")).toMatch(/next run tries it again/);
+    // the reason in full is in the cell's tooltip
+    const tipOf = async (el: HTMLElement, re: RegExp) => {
+      await u.hover(el);
+      await waitFor(() => expect(screen.getAllByRole("tooltip").some((t) => re.test(t.textContent || ""))).toBe(true), { timeout: 5000 });
+      await u.unhover(el);
+    };
+    await tipOf(prot, /forbid copying its text[\s\S]*unlocked copy of it in the same folder/);
+    await tipOf(screen.getByText("Cannot be processed · network dropped"), /next run tries it again/);
     // a skipped file points to the file that covers it instead of opening an empty result
     expect(screen.getByRole("button", { name: /^Show the file that covers .*P.pdf$/ })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Fix .*P\.pdf$/ })).not.toBeInTheDocument();
