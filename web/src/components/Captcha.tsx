@@ -230,9 +230,10 @@ const TurnstileBox = forwardRef<CaptchaHandle, { siteKey: string; onChange: (pay
  * (Settings → Human check), otherwise — and whenever Cloudflare cannot be reached — the self-hosted box above. */
 export const Captcha = forwardRef<CaptchaHandle, { onChange: (payload: string | null) => void; invalid?: boolean }>(function Captcha(props, ref) {
   const opts = useQuery({
-    queryKey: ["auth-options"],
-    queryFn: () => api<{ captcha_provider?: string; turnstile_site_key?: string | null }>("/auth/options"),
+    queryKey: ["captcha-provider"],             // its own key: the sign-in page reads the same answer differently
+    queryFn: async () => (await api<{ captcha_provider?: string; turnstile_site_key?: string | null } | undefined>("/auth/options")) ?? {},
     staleTime: 300_000,
+    retry: false,
   });
   const [fallback, setFallback] = useState(false);
   const unavailable = useCallback(() => setFallback(true), []);

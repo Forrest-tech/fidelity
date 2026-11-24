@@ -108,21 +108,23 @@ async def new_signup(email: str, state: str, request=None) -> int:
             f"{email} 已确认邮箱，" + ("正在等待管理员批准。在这里批准或拒绝：" if pending else "现在可以登录（只读用户）。") +
             f"\n{base}/settings/users\n\nTurn these e-mails off: {base}/settings/notifications")
 
-    def send():
+    if pending:
+        # The digest's "n sign-ups wait" item is now known to these people. Written here, in the request, so the
+        # background sender never writes to the database at the same time as the request (SQLite "locked").
         con = _con()
         try:
-            for a in admins:
-                try:
-                    mail.send(a, subject, text)
-                except mail.MailError as e:
-                    print(f"[notify-mail] sign-up notice to {a}: {e}", flush=True)
-                    continue
-                if pending:                         # the digest's "n sign-ups wait" item is now known to this person
-                    con.execute("INSERT INTO notification_mail(user_email, nkey, at) VALUES(?,?,?) "
-                                "ON CONFLICT(user_email, nkey) DO NOTHING", (a, f"signup:{n}", time.time()))
+            con.executemany("INSERT INTO notification_mail(user_email, nkey, at) VALUES(?,?,?) "
+                            "ON CONFLICT(user_email, nkey) DO NOTHING", [(a, f"signup:{n}", time.time()) for a in admins])
             con.commit()
         finally:
             con.close()
+
+    def send():                                     # SMTP can take seconds: the person confirming does not wait
+        for a in admins:
+            try:
+                mail.send(a, subject, text)
+            except mail.MailError as e:
+                print(f"[notify-mail] sign-up notice to {a}: {e}", flush=True)
 
     threading.Thread(target=send, daemon=True, name="signup-notice").start()
     return len(admins)

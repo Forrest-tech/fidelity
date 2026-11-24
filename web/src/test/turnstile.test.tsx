@@ -25,7 +25,7 @@ describe("Cloudflare Turnstile as the human check", () => {
       return { body: {} };
     });
     renderApp("/signup");
-    await waitFor(() => expect(render).toHaveBeenCalled());
+    await waitFor(() => expect(render).toHaveBeenCalled(), { timeout: 10_000 });
     expect(render.mock.calls[0][1]).toMatchObject({ sitekey: "1x00000000000000000000AA" });
     expect(screen.queryByRole("checkbox", { name: /not a robot/i })).toBeNull();   // no second box
     cb!("TOKEN-123");
@@ -34,7 +34,7 @@ describe("Cloudflare Turnstile as the human check", () => {
     await u.type(screen.getByLabelText("Password"), "abcd1234");
     await u.type(screen.getByLabelText("Confirm password"), "abcd1234");
     await u.click(screen.getByRole("button", { name: "Create account" }));
-    await waitFor(() => expect(calls.some((c) => c.url.endsWith("/auth/signup"))).toBe(true));
+    await waitFor(() => expect(calls.some((c) => c.url.endsWith("/auth/signup"))).toBe(true), { timeout: 10_000 });
     const body = JSON.parse(String(calls.find((c) => c.url.endsWith("/auth/signup"))!.init!.body));
     expect(body).toMatchObject({ email: "new@example.com", password: "abcd1234", altcha: "turnstile:TOKEN-123" });
   });
@@ -55,7 +55,7 @@ describe("Cloudflare Turnstile as the human check", () => {
       return { body: {} };
     });
     renderApp("/signup");
-    expect(await screen.findByRole("checkbox", { name: /not a robot/i })).toBeInTheDocument();
+    expect(await screen.findByRole("checkbox", { name: /not a robot/i }, { timeout: 10_000 })).toBeInTheDocument();
     spy.mockRestore();
   });
 

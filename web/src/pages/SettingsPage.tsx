@@ -414,6 +414,7 @@ function CaptchaSettings() {
       qc.setQueryData(["captcha-settings"], d);
       setDraft({});
       void qc.invalidateQueries({ queryKey: ["auth-options"] });
+      void qc.invalidateQueries({ queryKey: ["captcha-provider"] });
     },
   });
   if (q.isLoading) return <Loading />;
