@@ -18,7 +18,7 @@ STARTED = time.time()
 DISK_WARN, DISK_BAD = 3 * 1024 ** 3, 1.5 * 1024 ** 3
 MEM_WARN = 500 * 1024 ** 2
 BACKUP_MAX_AGE = 36 * 3600
-FAIL_RATE_WARN, FAIL_MIN = 0.2, 3
+FAIL_RATE_WARN, FAIL_MIN = 0.05, 2   # requirements v3 S-2: <= 5 % of runs fail, four weeks rolling
 
 
 def _version() -> str:
@@ -40,7 +40,7 @@ def version() -> str:
     return _VERSION
 
 
-def _runs(days: int = 7) -> dict:
+def _runs(days: int = 28) -> dict:
     since = time.time() - days * 86400
     con = db.trust_rw()
     try:
@@ -128,7 +128,7 @@ def metrics() -> str:
          ("fidelity_disk_free_bytes", "free bytes on the data disk", r["disk"]["free"]),
          ("fidelity_memory_available_bytes", "available memory", r["memory"]["available"] if r["memory"]["available"] is not None else -1),
          ("fidelity_runs_total", "room runs that ended in the last 7 days", r["runs"]["total"]),
-         ("fidelity_runs_failed", "room runs that failed or were interrupted in the last 7 days",
+         ("fidelity_runs_failed", "room runs that failed or were interrupted in the last 28 days",
           r["runs"]["failed"] + r["runs"]["interrupted"]),
          ("fidelity_jobs_queued", "jobs waiting", r["runs"]["queued"]),
          ("fidelity_jobs_running", "jobs running", r["runs"]["running"]),

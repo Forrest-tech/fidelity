@@ -370,3 +370,27 @@ def test_only_a_second_copy_of_a_published_edition_may_be_withdrawn():
     con.close()
     f = {x["rel"]: x for x in R.find_files(R.get_room(room["id"]))["files"]}["/2021/SS/AS-NZS_3500.1-2021 Printed.pdf"]
     assert f["state"] == "skipped"
+
+
+def test_accepting_everything_must_not_wave_through_flagged_places():
+    """Requirements v3 H-2 (2026-11-24: 504 suggestions were never looked at and 27 files went in with one click). A
+    qualifying file that still has places where the readings disagree is named before "accept all", and the person
+    has to say they checked them."""
+    room = _room()
+    con = db.trust_rw()
+    R.apply_event(con, room["id"], "j0", _file("/d.pdf", 99.7, diffs=4))   # a differing figure would hold it back anyway
+    con.commit()
+    con.close()
+    p = R.accept_preview(R.get_room(room["id"]))
+    assert p["flagged"] == {"files": 1, "places": 4, "examples": [{"rel": "/d.pdf", "places": 4}]}
+    with pytest.raises(R.RoomError) as e:
+        R.accept(room["id"], "wang", all_ok=True)
+    assert e.value.status == 409 and "1 of these files still have flagged places (4 in all)" in e.value.message
+    out = R.accept(room["id"], "wang", all_ok=True, checked_flagged=True)
+    assert out["count"] == 2                                            # /a.pdf and the checked /d.pdf
+
+
+def test_without_flagged_places_accept_all_needs_no_extra_step():
+    room = _room()
+    assert R.accept_preview(R.get_room(room["id"]))["flagged"]["files"] == 0
+    assert R.accept(room["id"], "wang", all_ok=True)["count"] == 1

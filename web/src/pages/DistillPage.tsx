@@ -72,6 +72,7 @@ interface Preview {
   publishing: number;
   has_dest: boolean;
   dest: string | null;
+  flagged?: { files: number; places: number; examples: { rel: string; places: number }[] };
 }
 interface Impact {
   new: number;
@@ -227,7 +228,11 @@ function AcceptPanel({ room, canEdit, onReview }: { room: Room; canEdit: boolean
   const qc = useQueryClient();
   const [thr, setThr] = useState(String(room.threshold));
   const [confirm, setConfirm] = useState(false);
+  const [checked, setChecked] = useState(false);          // v3 H-2: flagged places were looked at
   useEffect(() => setThr(String(room.threshold)), [room.threshold]);
+  useEffect(() => {
+    if (!confirm) setChecked(false);
+  }, [confirm]);
   const files = useQuery({ queryKey: ["room-files", room.id, "", ""], queryFn: () => loadFiles(room.id, "", "") });
   const preview = useQuery({ queryKey: ["accept-preview", room.id], queryFn: () => api<Preview>(`/rooms/${room.id}/accept-preview`) });
   const impact = useQuery({ queryKey: ["accept-impact", room.id], queryFn: () => api<Impact>(`/rooms/${room.id}/accept-impact`), enabled: confirm, retry: false, staleTime: 30000 });
@@ -236,7 +241,7 @@ function AcceptPanel({ room, canEdit, onReview }: { room: Room; canEdit: boolean
   };
   const save = useMutation({ mutationFn: (f: Record<string, unknown>) => api(`/rooms/${room.id}`, { ...json(f), method: "PATCH" }), onSuccess: refresh });
   const accept = useMutation({
-    mutationFn: () => api(`/rooms/${room.id}/accept`, json({ all_ok: true })),
+    mutationFn: () => api(`/rooms/${room.id}/accept`, json({ all_ok: true, checked_flagged: checked })),
     onSuccess: () => {
       setConfirm(false);
       refresh();
@@ -330,7 +335,7 @@ function AcceptPanel({ room, canEdit, onReview }: { room: Room; canEdit: boolean
         width={420}
         footer={[
           <button key="c" className="fx-btn" onClick={() => setConfirm(false)}>{t("pages.distill.cancel")}</button>,
-          <button key="ok" className="fx-btn pri" style={{ marginLeft: 8 }} disabled={accept.isPending} onClick={() => accept.mutate()}>{t("pages.distill.acceptConfirm")}</button>,
+          <button key="ok" className="fx-btn pri" style={{ marginLeft: 8 }} disabled={accept.isPending || (!!preview.data?.flagged?.files && !checked)} onClick={() => accept.mutate()}>{t("pages.distill.acceptConfirm")}</button>,
         ]}
       >
         <div className="fx-stack" style={{ gap: 10 }}>
@@ -349,6 +354,20 @@ function AcceptPanel({ room, canEdit, onReview }: { room: Room; canEdit: boolean
             </div>
             <span className="fx-tiny fx-muted">{t("pages.distill.compareHint")}</span>
           </div>
+          {!!preview.data?.flagged?.files && (
+            <div className="fx-errnote" role="alert" style={{ display: "grid", gap: 6 }}>
+              <b>{t("pages.distill.flaggedTitle", { files: preview.data.flagged.files, places: preview.data.flagged.places })}</b>
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                {preview.data.flagged.examples.map((x) => (
+                  <li key={x.rel} className="fx-tiny">{x.rel.split("/").pop()} — {t("pages.distill.flaggedPlaces", { count: x.places })}</li>
+                ))}
+              </ul>
+              <label className="fx-row fx-tiny" style={{ gap: 6 }}>
+                <input type="checkbox" className="fx-cb" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
+                <span>{t("pages.distill.flaggedChecked")}</span>
+              </label>
+            </div>
+          )}
           <div className="fx-tiny fx-muted">{t("pages.distill.rollbackHint")}</div>
         </div>
       </Modal>

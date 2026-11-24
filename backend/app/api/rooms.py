@@ -49,6 +49,7 @@ class AcceptIn(BaseModel):
     all_ok: bool = False
     rels: list[str] = []
     force: bool = False
+    checked_flagged: bool = False      # requirements v3 H-2: the person says they looked at the flagged places
 
 
 @router.get("/rooms")
@@ -146,7 +147,8 @@ def accept_preview(room_id: str):
 @router.post("/rooms/{room_id}/accept")
 def accept(room_id: str, body: AcceptIn, user=Depends(current_user)):
     """Accept results into the knowledge base: all that meet the threshold, or the files named (force = even below it)."""
-    return _guard(R.accept, room_id, getattr(user, "email", "") or "", body.rels, body.all_ok, body.force)
+    return _guard(R.accept, room_id, getattr(user, "email", "") or "", body.rels, body.all_ok, body.force,
+                  body.checked_flagged)
 
 
 @router.post("/rooms/{room_id}/restamp")
