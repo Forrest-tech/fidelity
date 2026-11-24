@@ -188,3 +188,49 @@ def test_bulk_upload_stays_inside_the_output_folder():
     w = D.SafeWriter(_BatchDbx(), "/Transfer_Md", ["/AS 3500"])
     with pytest.raises(D.IronRuleViolation):
         w.upload_many({"/Transfer_Md/ok.md": b"1", "/AS 3500/evil.md": b"2"})
+
+
+class _LockedBatch(_BatchDbx):
+    """Seen 2026-11-24: a batch commit refused all 28 files of one document (another write held the lock)."""
+    def __init__(self, single_fails=0):
+        super().__init__()
+        self.single_fails, self.singles = single_fails, []
+
+    def files_upload_session_finish_batch_v2(self, entries):
+        class R:
+            pass
+        r = R()
+        r.entries = [_Res(False) for _ in entries]
+        for e in r.entries:
+            e.get_failure = lambda: "too_many_write_operations"
+        return r
+
+    def files_get_metadata(self, path):
+        raise LookupError(path)
+
+    def files_upload(self, data, path, mode=None, mute=True):
+        if self.single_fails:
+            self.single_fails -= 1
+            raise RuntimeError("path/conflict")
+        self.singles.append(path)
+        self.files[path] = data
+
+
+def test_files_a_batch_commit_refused_are_sent_again_one_by_one(monkeypatch):
+    from app.distill import sync as SY
+    monkeypatch.setattr(SY, "_BACKOFF", (0, 0))
+    dbx = _LockedBatch()
+    w = D.SafeWriter(dbx, "/Transfer_Md", ["/AS 3500"], extra_roots=["/Transfer_Md_staging"])
+    items = {f"/Transfer_Md_staging/r1/doc/{i}.md": f"t{i}".encode() for i in range(4)}
+    w.upload_many(items)
+    assert dbx.files == items and len(dbx.singles) == 4
+
+
+def test_a_file_refused_again_fails_the_document_with_the_reason(monkeypatch):
+    from app.distill import sync as SY
+    monkeypatch.setattr(SY, "_BACKOFF", (0, 0))
+    dbx = _LockedBatch(single_fails=99)
+    w = D.SafeWriter(dbx, "/Transfer_Md", ["/AS 3500"], extra_roots=["/Transfer_Md_staging"])
+    with pytest.raises(RuntimeError) as e:
+        w.upload_many({"/Transfer_Md_staging/r1/doc/a.md": b"a"})
+    assert "too_many_write_operations" in str(e.value) and "path/conflict" in str(e.value)
