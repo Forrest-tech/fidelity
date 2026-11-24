@@ -129,3 +129,12 @@ def test_a_backup_restores_into_a_folder_whose_paths_pass_the_windows_limit(tmp_
     target = tmp_path / ("restore-target-" + "x" * 60)
     assert len(str(target / deep)) > 260
     assert deep in BK.restore_to(str(src), str(target))
+
+
+def test_run_failures_are_held_to_five_percent_over_four_weeks():
+    """Requirements v3 S-2: at most 5 % of runs may fail (four weeks rolling); one failure alone is not a trend."""
+    assert H._runs.__defaults__ == (28,)
+    warn = H.alerts(_report(runs={"total": 30, "failed": 2, "interrupted": 0, "failure_rate": 0.067}))
+    assert [a["kind"] for a in warn] == ["runs_failing"]
+    assert H.alerts(_report(runs={"total": 40, "failed": 1, "interrupted": 0, "failure_rate": 0.025})) == []
+    assert H.alerts(_report(runs={"total": 50, "failed": 2, "interrupted": 0, "failure_rate": 0.04})) == []

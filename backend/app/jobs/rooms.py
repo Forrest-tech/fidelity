@@ -678,19 +678,36 @@ class EventReader:
 
 
 # ------------------------------------------------------------------ accepting into the knowledge base
+def _flagged(r: dict) -> int:
+    """Places in a qualifying result a person should still look at (requirements v3 H-1): where the two readings
+    disagree, where a figure differs, automatic corrections and rule checks."""
+    try:
+        fixes = len(json.loads(r.get("corrections") or "[]"))
+    except (TypeError, ValueError):
+        fixes = 0
+    return int(r.get("diffs") or 0) + int(r.get("number_diffs") or 0) + fixes + int(r.get("rule_checks") or 0)
+
+
 def accept_preview(room: dict) -> dict:
-    """What "accept all that qualify" would do now."""
+    """What "accept all that qualify" would do now, and which of those files still carry flagged places."""
     rows = _files(room["id"])
     c = {"ok": 0, "below": 0, "published": 0, "publishing": 0}
+    risky = []
     for r in rows:
         st = derive_state(r, room)
         if st in c:
             c[st] += 1
+        if st == "ok" and _flagged(r):
+            risky.append((r["rel"], _flagged(r)))
+    risky.sort(key=lambda x: -x[1])
     return {**c, "has_dest": bool(room["dest"]), "dest": (room["dest"] or {}).get("link"), "threshold": room["threshold"],
-            "number_guard": room["number_guard"]}
+            "number_guard": room["number_guard"],
+            "flagged": {"files": len(risky), "places": sum(n for _, n in risky),
+                        "examples": [{"rel": rel, "places": n} for rel, n in risky[:5]]}}
 
 
-def accept(room_id: str, user: str, rels=None, all_ok: bool = False, force: bool = False) -> dict:
+def accept(room_id: str, user: str, rels=None, all_ok: bool = False, force: bool = False,
+           checked_flagged: bool = False) -> dict:
     """Send accepted results to the output folder.
 
     all_ok: every file that meets the threshold. rels: these files; one below the threshold needs force=True (a person
@@ -704,6 +721,11 @@ def accept(room_id: str, user: str, rels=None, all_ok: bool = False, force: bool
     chosen = []
     if all_ok:
         chosen = [r for r in rows.values() if derive_state(r, room) == "ok"]
+        flagged = [r for r in chosen if _flagged(r)]
+        if flagged and not checked_flagged:
+            # requirements v3 H-2: accepting everything at once must not wave through places nobody looked at
+            raise RoomError(409, f"{len(flagged)} of these files still have flagged places "
+                                 f"({sum(_flagged(r) for r in flagged)} in all): check them, then confirm that you did")
     for rel in rels or []:
         r = rows.get(rel)
         if r is None:

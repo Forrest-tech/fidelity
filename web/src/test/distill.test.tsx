@@ -419,7 +419,28 @@ describe("distill page", () => {
     await u.click(within(dialog).getByRole("button", { name: "Accept" }));
     await waitFor(() => {
       const c = calls.find((x) => x.url.endsWith("/rooms/r1/accept"));
-      expect(JSON.parse(String(c?.init?.body))).toEqual({ all_ok: true });
+      expect(JSON.parse(String(c?.init?.body))).toEqual({ all_ok: true, checked_flagged: false });
+    });
+  });
+
+  it("names the files that still have flagged places and accepts only after the person says they looked", async () => {
+    const calls = api("reviewer", [room()], (url) => (url.includes("/accept-preview")
+      ? { body: { ok: 1, below: 1, published: 0, publishing: 0, has_dest: true, dest: "/Transfer_Md",
+          flagged: { files: 1, places: 4, examples: [{ rel: "/2003/a.pdf", places: 4 }] } } } : undefined));
+    renderApp("/distill");
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    await u.click(await screen.findByRole("button", { name: "Accept 1 that qualify" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(/1 of these files still have flagged places \(4 in all\)/)).toBeInTheDocument();
+    expect(within(dialog).getByText("a.pdf — 4 flagged places")).toBeInTheDocument();
+    const go = within(dialog).getByRole("button", { name: "Accept" });
+    expect(go).toBeDisabled();
+    await u.click(within(dialog).getByRole("checkbox", { name: "I have looked at the flagged places of these files" }));
+    expect(go).toBeEnabled();
+    await u.click(go);
+    await waitFor(() => {
+      const c = calls.find((x) => x.url.endsWith("/rooms/r1/accept"));
+      expect(JSON.parse(String(c?.init?.body))).toEqual({ all_ok: true, checked_flagged: true });
     });
   });
 
