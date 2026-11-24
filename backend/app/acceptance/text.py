@@ -66,6 +66,10 @@ def page_has(path: str, page: int, text: str, spread: int = 0, min_ratio: float 
     for p in range(page - spread, page + spread + 1):
         if 1 <= p <= len(pages):
             h = norm(pages[p - 1])
-            if t in h or (len(t) >= 20 and fuzz.partial_ratio(t, h) >= min_ratio):
+            if t in h:
+                return True
+            # a near match forgives line breaks and hyphenation, never a figure: every number of the quote must be on
+            # the page (found 2026-11-24: "1:100" passed for a page that says "1:150")
+            if len(t) >= 20 and fuzz.partial_ratio(t, h) >= min_ratio and set(numbers(t)) <= set(numbers(h)):
                 return True
     return False

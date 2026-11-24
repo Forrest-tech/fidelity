@@ -3,6 +3,7 @@ question is kept only when its figures, quote and clause are on that page; the s
 import pymupdf
 
 from app.acceptance import generate as G
+from app.acceptance import grade as GR
 from app.acceptance.grade import grade_one, summary, wilson
 from app.acceptance.library import Search, Unit
 from app.acceptance.text import contains_value, norm
@@ -128,3 +129,38 @@ def test_quotes_of_the_library_markdown_count_but_forged_table_figures_do_not(tm
     assert grade_one(Q, _answer(citations=[{**_answer()["citations"][0], "quote": row}]), src)["pass"]
     forged = "The separation between any underground water service pipe ... cable | 100 mm | 750 mm"
     assert not grade_one(Q, _answer(citations=[{**_answer()["citations"][0], "quote": forged}]), src)["pass"]
+
+
+def _table_pdf(tmp_path):
+    doc = pymupdf.open()
+    pg = doc.new_page()
+    # a table as the PDF's text layer gives it: cell by cell, column after column
+    pg.insert_textbox(pymupdf.Rect(50, 50, 550, 800),
+                      "Table 7.2 Minimum gradients\nKerb channels:\nwithout concrete gutter\n1:150\n"
+                      "with concrete gutter or high-class surfacing\n1:200\nPaved surfaces exceeding 200 m2 forming "
+                      "part of a catchment area", fontsize=10)
+    p = tmp_path / "AS NZS 3500.3-2021.pdf"
+    doc.save(str(p))
+    return str(p)
+
+
+def test_a_table_quoted_as_one_line_is_found_on_its_page_but_a_wrong_figure_is_not(tmp_path):
+    """Requirements v3 V-2: a quote of table cells joined in another order (or with stray punctuation) is on the page
+    when all its figures and nearly all its words are; one figure that is not on the page fails it."""
+    src = _table_pdf(tmp_path)
+    ok = "Kerb channels: without concrete gutter 1:150 with concrete gutter or high-class surfacing 1:200. ."
+    assert GR._quote_on_page(src, 1, ok, "B")
+    assert not GR._quote_on_page(src, 1, ok.replace("1:150", "1:100"), "B")      # a figure that is not there
+    assert not GR._quote_on_page(src, 1, "Box gutters shall be fastened at 40 mm centres along each edge", "B")
+
+
+def test_the_exact_page_score_counts_right_figures_cited_on_their_own_page(tmp_path):
+    src = _table_pdf(tmp_path)
+    q = {"id": 1, "cat": "B", "ground": {"doc": "AS NZS 3500.3-2021.pdf", "designation": "AS/NZS 3500.3:2021",
+                                          "page": 1, "values": ["1:150"]}}
+    a = {"status": "answered", "answer": "Minimum 1:150.", "values": ["1:150"],
+         "citations": [{"document": "AS/NZS 3500.3:2021", "page": 1, "quote": "Kerb channels: without concrete gutter 1:150"}]}
+    r = GR.grade_one(q, a, {"AS NZS 3500.3-2021.pdf": src})
+    assert r["pass"] and r["page_exact"]
+    s = GR.summary([r])
+    assert s["page_exact"]["exact"] == 1 and s["page_exact"]["value_right_page_wrong"] == 0
