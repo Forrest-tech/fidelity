@@ -231,11 +231,14 @@ interface Health {
 }
 const GB = (b: number) => (b / 1024 ** 3).toFixed(1);
 
+interface Release { release: number; run: string; at: string; accepted_by: string; totals: { added: number; replaced: number; withdrawn: number } }
+
 function SystemHealth() {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["system-health"], queryFn: () => api<Health>("/system/health"), refetchInterval: 30000 });
   const backup = useMutation({ mutationFn: () => api("/system/backup", { method: "POST" }), onSuccess: () => void qc.invalidateQueries({ queryKey: ["system-health"] }) });
+  const rel = useQuery({ queryKey: ["system-releases"], queryFn: () => api<{ releases: Release[] }>("/system/releases?limit=5") });
   if (q.isLoading) return <Loading />;
   if (q.isError) return <ErrorState message={(q.error as Error).message} />;
   const h = q.data!;
@@ -297,6 +300,22 @@ function SystemHealth() {
           </div>
         </section>
       </div>
+      <section className="fx-card fx-stack" style={{ padding: 14, gap: 8 }} aria-label={t("pages.settings.sys.releases")}>
+        <h3 style={{ margin: 0, fontSize: 14 }}>{t("pages.settings.sys.releases")}</h3>
+        {!rel.data?.releases.length ? (
+          <div className="fx-tiny fx-muted">{t("pages.settings.sys.noReleases")}</div>
+        ) : (
+          <ul className="fx-tiny" style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 4 }}>
+            {rel.data.releases.map((r) => (
+              <li key={r.run}>
+                <b>{t("pages.settings.sys.releaseN", { n: r.release })}</b> · {r.at.slice(0, 10)} ·{" "}
+                {t("pages.settings.sys.releaseTotals", { added: r.totals.added, replaced: r.totals.replaced, withdrawn: r.totals.withdrawn })}
+                {r.accepted_by ? ` · ${r.accepted_by}` : ""}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
       <div className="fx-tiny fx-muted">{t("pages.settings.sys.metrics")}</div>
     </>
   );

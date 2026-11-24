@@ -428,6 +428,10 @@
         "backingUp": "正在备份并校验…",
         "days": "{{n}} 天",
         "hours": "{{n}} 小时",
+        "releases": "知识库发布记录",
+        "noReleases": "还没有发布记录：每次把接受的结果发布到知识库都会记一条。",
+        "releaseN": "第 {{n}} 版",
+        "releaseTotals": "新增 {{added}}，替换 {{replaced}}，撤下 {{withdrawn}}",
         "metrics": "监控：/api/v1/system/metrics 提供 Prometheus 格式的数据（需要管理员登录）。",
         "backupSize": "{{mb}} MB · {{count}} 个文件",
         "minutes": "{{n}} 分钟"

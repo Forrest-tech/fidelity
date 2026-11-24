@@ -21,6 +21,23 @@ def metrics():
     return H.metrics()
 
 
+@router.get("/system/releases", dependencies=[Depends(require_role())])
+def releases(limit: int = 10):
+    """The latest knowledge-base releases (requirements v3 R-1), newest first: what each added, replaced, withdrew."""
+    import glob
+    import json
+    import os
+    from .. import config
+    out = []
+    for p in sorted(glob.glob(os.path.join(config.DATA_DIR, "work", "releases", "*.json")), reverse=True)[:max(1, min(limit, 50))]:
+        try:
+            with open(p, encoding="utf-8") as f:
+                out.append(json.load(f))
+        except (OSError, ValueError):
+            continue
+    return {"releases": out}
+
+
 @router.post("/system/backup", dependencies=[Depends(require_role())])
 def backup_now():
     """Make and verify a backup now (it also runs by itself once a day)."""

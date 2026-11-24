@@ -13,7 +13,9 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import threading
+import time
 
 
 class PublishError(RuntimeError):
@@ -32,6 +34,7 @@ class Publisher:
         self.s, self.live, self.staging, self.archive, self.run = store, live.rstrip("/"), staging.rstrip("/"), archive.rstrip("/"), run_id
         self.manifest_path = os.path.join(manifest_dir, f"publish-{run_id}.json")
         self.docs = {}      # key -> {"files": {relpath: size}, "state": "staged|promoted|rolled_back", "archived": [..]}
+        self.by = ""        # who accepted what this run publishes (for the release note)
 
     # --- paths ------------------------------------------------------------------------
     def _staged(self, key):
@@ -53,6 +56,9 @@ class Publisher:
     def stage(self, key: str, files: dict):
         """files: {relative path inside the document (or '' for a single-file document): bytes}"""
         sizes = {rel: len(data) for rel, data in files.items()}
+        clauses = sum(len([c for c in m.group(1).split(b",") if c.strip()])
+                      for data in files.values()
+                      for m in [re.search(rb"^clauses: \[(.*)\]\s*$", data[:4000], re.M)] if m)
         paths = {self._staged(key) + (f"/{rel}" if rel else ""): data for rel, data in files.items()}
         if hasattr(self.s, "upload_many"):                 # Dropbox: parallel sessions, one commit
             self.s.upload_many(paths)
@@ -60,7 +66,7 @@ class Publisher:
             for dest, data in paths.items():
                 self.s.upload(dest, data)
         with _STAGE_LOCK:                      # documents are staged from several upload threads at once
-            self.docs[key] = {"files": sizes, "state": "staged", "archived": []}
+            self.docs[key] = {"files": sizes, "state": "staged", "archived": [], "clauses": clauses}
             self._save()
 
     # --- validate ---------------------------------------------------------------------
@@ -104,6 +110,44 @@ class Publisher:
             d["state"] = "promoted"
             self._save()
         self._tidy_staging()
+        self.release_note()
+
+    # --- release note (requirements v3 R-1) ------------------------------------------------
+    def release_note(self) -> dict | None:
+        """One numbered release of the knowledge base per publishing run: what was added, replaced or withdrawn, with
+        files and clauses, who accepted it, and how to undo it. Written next to the publish records."""
+        changed = [(k, d) for k, d in self.docs.items() if d.get("state") in ("promoted", "withdrawn")]
+        if not changed:
+            return None
+        rel_dir = os.path.join(os.path.dirname(self.manifest_path.rstrip(os.sep)), "..", "releases")
+        rel_dir = os.path.normpath(rel_dir)
+        os.makedirs(rel_dir, exist_ok=True)
+        existing = [f for f in os.listdir(rel_dir) if re.match(r"^\d{4}-.*\.json$", f)]
+        if any(f.endswith(f"-{self.run}.json") for f in existing):
+            return None                                              # this run already has its note
+        n = len(existing) + 1
+        docs = []
+        for k, d in sorted(changed):
+            before = sum(len(t.get("tokens") or []) for t in d.get("trashed", [])) + len(d.get("archived", []))
+            change = "withdrawn" if d["state"] == "withdrawn" else ("replaced" if before else "added")
+            docs.append({"key": k, "change": change, "files_before": before, "files": len(d.get("files") or {}),
+                         "clauses": d.get("clauses", 0)})
+        note = {"release": n, "run": self.run, "at": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "library": self.live,
+                "accepted_by": self.by, "documents": docs,
+                "totals": {c: sum(1 for x in docs if x["change"] == c) for c in ("added", "replaced", "withdrawn")},
+                "undo": f"python -m app.distill.sync --dest-link <library> --rollback {self.run}"}
+        base = os.path.join(rel_dir, f"{n:04d}-{self.run}")
+        with open(base + ".json", "w", encoding="utf-8") as f:
+            json.dump(note, f, ensure_ascii=False, indent=1)
+        lines = [f"# Library release {n} ({note['at'][:10]})", "",
+                 f"Library: `{self.live}` · run `{self.run}` · accepted by {self.by or '—'}", "",
+                 f"Added {note['totals']['added']} · replaced {note['totals']['replaced']} · withdrawn {note['totals']['withdrawn']}",
+                 "", "| Document | Change | Files (before → now) | Clauses |", "|---|---|---|---|"]
+        lines += [f"| {x['key']} | {x['change']} | {x['files_before']} → {x['files']} | {x['clauses']} |" for x in docs]
+        lines += ["", f"Undo this release: `{note['undo']}`", ""]
+        with open(base + ".md", "w", encoding="utf-8", newline="\n") as f:
+            f.write("\n".join(lines))
+        return note
 
     def _history(self) -> bool:
         return hasattr(self.s, "revisions") and hasattr(self.s, "restore")

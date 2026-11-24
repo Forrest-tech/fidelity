@@ -1,3 +1,4 @@
+import json
 """Staging, promote and rollback (F-18) against an in-memory store."""
 import pytest
 
@@ -247,3 +248,39 @@ def test_an_old_undo_record_still_restores_from_the_archive_folder(tmp_path):
     pub.docs = {"2025/Doc": {"files": {"a.md": 3}, "state": "promoted", "archived": ["2025/Doc"]}}
     pub.rollback()
     assert st.files["/kb/2025/Doc/a.md"] == b"old"
+
+
+def test_each_publishing_run_writes_a_numbered_release_note(tmp_path):
+    """Requirements v3 R-1: what this release added, replaced and withdrew, with files and clauses, who accepted it
+    and how to undo it."""
+    s = FakeStore()
+    one = Publisher(s, "/kb", "/kb_staging", "/kb_archive", "run1", str(tmp_path / "publish"))
+    fm = b'---\nclauses: [5.1, 5.2, 5.3]\n---\nbody'
+    one.stage("AS 3500/2021/doc", {"a.md": fm, "b.md": b'---\nclauses: [6.1]\n---\nx'})
+    one.by = "wang@example.com"
+    one.promote()
+    two = Publisher(s, "/kb", "/kb_staging", "/kb_archive", "run2", str(tmp_path / "publish"))
+    two.stage("AS 3500/2021/doc", {"a.md": fm})
+    two.stage("2025/new", {"": b"single file"})
+    two.promote()
+    rel = tmp_path / "releases"
+    names = sorted(p.name for p in rel.iterdir())
+    assert names == ["0001-run1.json", "0001-run1.md", "0002-run2.json", "0002-run2.md"]
+    r1 = json.loads((rel / "0001-run1.json").read_text(encoding="utf-8"))
+    assert r1["release"] == 1 and r1["accepted_by"] == "wang@example.com"
+    assert r1["documents"] == [{"key": "AS 3500/2021/doc", "change": "added", "files_before": 0, "files": 2, "clauses": 4}]
+    r2 = json.loads((rel / "0002-run2.json").read_text(encoding="utf-8"))
+    assert r2["totals"] == {"added": 1, "replaced": 1, "withdrawn": 0} and "--rollback run2" in r2["undo"]
+    assert "| AS 3500/2021/doc | replaced |" in (rel / "0002-run2.md").read_text(encoding="utf-8")
+    assert two.release_note() is None                                   # one note per run
+
+
+def test_the_system_page_lists_releases_newest_first(tmp_path, monkeypatch):
+    from app import config
+    from app.api import system as SYS
+    rel = tmp_path / "work" / "releases"
+    rel.mkdir(parents=True)
+    for n in (1, 2, 3):
+        (rel / f"{n:04d}-r{n}.json").write_text(json.dumps({"release": n, "run": f"r{n}"}), encoding="utf-8")
+    monkeypatch.setattr(config, "DATA_DIR", str(tmp_path))
+    assert [r["release"] for r in SYS.releases(limit=2)["releases"]] == [3, 2]
