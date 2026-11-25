@@ -123,3 +123,74 @@ def test_ncc_documents_are_not_joined():
     """NCC files are already one per Part; joining applies to Australian Standards only."""
     ids = ["D2D1", "D2D2"]
     assert all(S.CLAUSE_ID_RE.fullmatch(i) for i in ids)
+
+
+# ------------------------------------------------------------------ 2026-11-25: two documents held back at review
+def test_a_line_drawn_out_of_order_is_read_in_x_order_with_its_scripts_marked():
+    """AS 3500.3:2003 Equation 5.4.6 drew "0.233)" right to left and read "C = m (.0013310 I − .0233)"."""
+    from app.distill import pdf_extract as P
+    raw = {"spans": [{"size": 11, "flags": 0, "font": "Times", "chars": [
+        {"c": c, "origin": (x, 371.6)} for c, x in ((")", 328.0), ("3", 322.8), ("3", 317.3), ("2", 311.8), (".", 309.1), ("0", 303.6))]}]}
+    assert "".join(s.text for s in P._reordered_spans(raw)) == "0.233)"
+    assert not P._drawn_out_of_order({"dir": (0, -1), "spans": [{"text": "Licensed to", "origin": (20, 0), "bbox": (11, 0, 30, 9)}]})
+    S = P.Span
+    eq = [S("C", False, False, 11, 371.6), S("p", False, False, 7, 374.4), S(" = m (0.0133", False, False, 11, 371.6),
+          S("10", False, False, 7, 366.6), S("I", False, False, 11, 371.6), S("60", False, False, 7, 374.4),
+          S(" − 0.233) . . . 5.4.6", False, False, 11, 371.6)]
+    assert "".join(s.text for s in P._mark_scripts(eq)) == "C<sub>p</sub> = m (0.0133 <sup>10</sup>I<sub>60</sub> − 0.233) . . . 5.4.6"
+
+
+class _Row:
+    def __init__(self, cells, bbox):
+        self.cells, self.bbox = cells, bbox
+
+
+class _Table:
+    def __init__(self, rows, bbox):
+        self.rows, self.bbox = rows, bbox
+
+
+class _Page:
+    rotation = 0
+
+    def __init__(self, words):
+        self.words = words
+
+    def get_text(self, kind):
+        return self.words
+
+
+def _stc_table():
+    """AS/NZS 3500.4:2018 Table 6.5.1.2(A) as the grid finder returned it: labels and the last column as None."""
+    xs = [(80, 160), (160, 220), (220, 280), (280, 340), (340, 400), (400, 460), (460, 516)]
+    cell = lambda j, y: (xs[j][0], y, xs[j][1], y + 12)           # noqa: E731
+    trows = [_Row([None, cell(1, 130), None, None, None, None, None], (80, 130, 516, 142)),
+             _Row([cell(j, 150) for j in range(7)], (80, 150, 516, 162)),
+             _Row([None] + [cell(j, 170) for j in range(1, 6)] + [None], (80, 170, 516, 182))]
+    rows = [[None, "Orientation west from true north", None, None, None, None, None],
+            ["(Note 3)", "90° to >75°", "75° to >60°", "60° to >45°", ">45° to 60°", ">60° to 75°", ">75° to 90°"],
+            [None, "10", "10", "9", "10", "10", None]]
+    w = lambda x0, y, t: (x0, y, x0 + 5 * len(t), y + 10, t)      # noqa: E731
+    words = [w(165, 131, "Orientation"), w(225, 131, "west"), w(250, 131, "from"), w(272, 131, "true"), w(294, 131, "north"),
+             w(345, 131, "Orientation"), w(405, 131, "east"), w(430, 131, "from"), w(452, 131, "true"), w(474, 131, "north"),
+             w(85, 171, "1"), w(92, 171, "or"), w(104, 171, "2"), w(111, 171, "bedrooms"),
+             w(190, 171, "10"), w(250, 171, "10"), w(310, 171, "9"), w(370, 171, "10"), w(430, 171, "10"), w(485, 171, "10")]
+    return _Page(words), _Table(trows, (80, 125, 516, 185)), rows
+
+
+def test_a_table_that_lost_figures_gets_its_cells_back_from_the_page():
+    from app.distill import pdf_extract as P
+    page, t, rows = _stc_table()
+    out = P._fill_missing(page, t, rows)
+    assert out[2] == ["1 or 2 bedrooms", "10", "10", "9", "10", "10", "10"]
+    assert out[0][4] == "Orientation east from true north" and out[0][2] is None     # spanning heading stays one
+
+
+def test_a_table_with_all_its_figures_or_on_a_turned_page_is_left_alone():
+    from app.distill import pdf_extract as P
+    page, t, rows = _stc_table()
+    page.words = [w for w in page.words if w[0] > 120 and not (w[0] > 480 and w[4] == "10")]   # nothing lost: no change
+    assert P._fill_missing(page, t, rows) == rows
+    page, t, rows = _stc_table()
+    page.rotation = 90
+    assert P._fill_missing(page, t, rows) == rows

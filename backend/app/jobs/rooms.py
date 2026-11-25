@@ -496,7 +496,7 @@ def queue_view() -> dict:
                        for i, r in enumerate(queued)]}
 
 
-def submit_run(room_id: str, force: bool = False) -> str:
+def submit_run(room_id: str, force: bool = False, only: str | None = None) -> str:
     from .queue import queue
     room = get_room(room_id)
     if room["archived"]:
@@ -511,8 +511,10 @@ def submit_run(room_id: str, force: bool = False) -> str:
     # A room's run only distills (results stay on this machine). Sending results to the output folder is a separate
     # step, accept(), so a result is never published without having been judged, and nothing is distilled twice.
     # "parallel": the queue may give the run several slots (files read at once); "unit_points" is one file's share
-    p = {"source_link": target(room["source"]), "dry_run": True, "force": bool(force), "room_id": room_id,
+    p = {"source_link": target(room["source"]), "dry_run": True, "force": bool(force or only), "room_id": room_id,
          "parallel": True, "unit_points": room["points"] or 1}
+    if only:                                          # read these files again (a fix to the reader), the rest stays
+        p["only"] = only[:500]
     jid = queue.submit("dropbox_sync", json.dumps(p), "queued", room_id=room_id, priority=room["priority"],
                        points=room["points"] or 1, dest_key=None)
     con = db.trust_rw()
