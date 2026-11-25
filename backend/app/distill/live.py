@@ -214,3 +214,46 @@ def subfolders(path: str = "", dbx=None) -> dict:
         except dropbox.exceptions.ApiError:
             pass
     return {"path": display, "folders": folders}
+
+
+def inspect_link(raw: str, dbx=None, limit: int = 5000) -> dict:
+    """A Dropbox shared link someone else gave us, read before it becomes a room's input (read-only calls only).
+
+    Reports what a run would read: the folder's name, how many files, how many of a kind the distiller handles, and
+    the total size. A link to a folder in the connected account itself is reported with its path, which runs use
+    instead (requirements v3 S-4). The output folder is never a link: it must be a folder in the connected account."""
+    import time
+
+    from .office import SUPPORTED
+    from urllib.parse import urlparse
+    kind, *_ = D.parse_link(raw or "")
+    if kind != "link" or urlparse((raw or "").strip()).netloc.lower() not in ("www.dropbox.com", "dropbox.com"):
+        raise LiveError(422, "paste a Dropbox shared link (https://www.dropbox.com/scl/fo/…)")
+    if dbx is None:
+        try:
+            dbx = D.client("reader")
+        except (OSError, ValueError, RuntimeError) as e:
+            raise LiveError(409, "Dropbox is not connected; connect it in Settings") from e
+    try:
+        link = D.canonical(dbx, raw)
+        root = D.link_root(dbx, link)
+        name = getattr(dbx.sharing_get_shared_link_metadata(link), "name", "") or "shared folder"
+    except SystemExit as e:                                  # a sub-folder link of a folder shared with us
+        raise LiveError(422, str(e)) from e
+    except Exception as e:                                   # noqa: BLE001 - removed, expired or not a folder link
+        raise LiveError(404, "Dropbox cannot open this link: it may have been removed, expired or need a "
+                             f"password ({type(e).__name__})") from e
+    files = supported = size = 0
+    started, complete = time.time(), True
+    try:
+        for f in D.list_shared_folder(dbx, link):
+            files += 1
+            size += f.get("size") or 0
+            supported += f["rel"].lower().endswith(SUPPORTED)
+            if files >= limit or time.time() - started > 12:
+                complete = False
+                break
+    except Exception as e:                                   # noqa: BLE001
+        raise LiveError(404, f"Dropbox cannot list this link's files ({type(e).__name__})") from e
+    return {"link": link, "name": name, "in_account": bool(root), "path": root or None, "files": files,
+            "supported": supported, "size_mb": round(size / 1e6, 1), "complete": complete}

@@ -224,3 +224,63 @@ def test_comparing_needs_an_output_folder(clean):
     with pytest.raises(R.RoomError) as e:
         R.compare_file(room, "/a.pdf")
     assert e.value.status == 422
+
+
+# ------------------------------------------------------------------ a shared link from another account as the input
+LINK = "https://www.dropbox.com/scl/fo/abc/def?rlkey=k1&st=x&e=1&dl=0"
+
+
+def _link_dbx(monkeypatch, root="", files=()):
+    from app.distill import dropbox_io as D
+    monkeypatch.setattr(D, "canonical", lambda dbx, raw: "https://www.dropbox.com/scl/fo/abc/def?rlkey=k1")
+    monkeypatch.setattr(D, "link_root", lambda dbx, link: root)
+    monkeypatch.setattr(D, "list_shared_folder", lambda dbx, link: iter(files))
+    return types.SimpleNamespace(sharing_get_shared_link_metadata=lambda link: types.SimpleNamespace(name="Australian Standards"))
+
+
+def test_a_link_from_another_account_is_read_and_counted_before_use(monkeypatch):
+    files = [{"rel": "/gas/5601.1.pdf", "size": 2_000_000}, {"rel": "/gas/setup.exe", "size": 1_000_000},
+             {"rel": "/water/notes.docx", "size": 500_000}]
+    info = L.inspect_link(LINK, dbx=_link_dbx(monkeypatch, files=files))
+    assert info["link"] == "https://www.dropbox.com/scl/fo/abc/def?rlkey=k1"       # tracking parameters dropped
+    assert (info["name"], info["in_account"], info["files"], info["supported"]) == ("Australian Standards", False, 3, 2)
+    assert info["size_mb"] == 3.5 and info["complete"]
+
+
+def test_a_link_into_our_own_account_reports_its_path(monkeypatch):
+    info = L.inspect_link(LINK, dbx=_link_dbx(monkeypatch, root="/as 3500"))
+    assert info["in_account"] and info["path"] == "/as 3500"
+
+
+def test_only_dropbox_shared_links_are_inspected(monkeypatch):
+    for bad in ("/AS 3500", "https://evil.example/scl/fo/x", ""):
+        with pytest.raises(L.LiveError) as e:
+            L.inspect_link(bad, dbx=_link_dbx(monkeypatch))
+        assert e.value.status == 422
+
+
+def test_a_dead_link_says_so(monkeypatch):
+    from app.distill import dropbox_io as D
+
+    def gone(dbx, raw):
+        raise RuntimeError("shared_link_not_found")
+    dbx = _link_dbx(monkeypatch)
+    monkeypatch.setattr(D, "canonical", gone)
+    with pytest.raises(L.LiveError) as e:
+        L.inspect_link(LINK, dbx=dbx)
+    assert e.value.status == 404 and "removed" in e.value.message
+
+
+def test_a_room_takes_the_external_link_as_input_and_runs_from_it(monkeypatch):
+    from app.distill import dropbox_io as D
+    from app.jobs.queue import queue
+    import json
+    db.init_trust()
+    monkeypatch.setattr(D, "client", lambda role="writer": object())
+    monkeypatch.setattr(D, "canonical", lambda dbx, raw: raw)
+    monkeypatch.setattr(D, "link_root", lambda dbx, link: "")      # someone else's folder: no path in our account
+    r = R.create_room(None, "t@example.com")
+    r = R.update_room(r["id"], {"source": "https://www.dropbox.com/scl/fo/abc/def?rlkey=k1"})
+    assert r["source"]["link"].startswith("https://www.dropbox.com/scl/fo/") and "path" not in r["source"]
+    p = json.loads(queue.get(R.submit_run(r["id"]))["rel"])
+    assert p["source_link"] == "https://www.dropbox.com/scl/fo/abc/def?rlkey=k1"

@@ -117,6 +117,31 @@ describe("distill page", () => {
     expect(sessionStorage.getItem("fidelity.draftRoom")).toBeNull();
   });
 
+  it("takes a shared link from someone else's Dropbox as the input after checking it; the output picker has no link box", async () => {
+    sessionStorage.clear();
+    const LINK = "https://www.dropbox.com/scl/fo/abc/def?rlkey=k1";
+    const calls = api("reviewer", [], (url) => (url.includes("/folders/link?") ? {
+      body: { link: LINK, name: "Australian Standards", in_account: false, path: null, files: 165, supported: 153, size_mb: 739.7, complete: false },
+    } : undefined));
+    renderApp("/distill");
+    expect(await screen.findByText("No rooms yet.")).toBeInTheDocument();
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    await u.click(screen.getByRole("button", { name: /New room/ }));
+    const draft = await screen.findByRole("region", { name: "New room (not saved)" });
+    await u.click(within(draft).getByRole("button", { name: /Choose a folder for Input/ }));
+    const box = await screen.findByLabelText(/Or paste a Dropbox shared link/);
+    await u.type(box, LINK + "&st=x&dl=0");
+    await u.click(screen.getByRole("button", { name: "Check" }));
+    expect(await screen.findByText("Found: Australian Standards", {}, { timeout: 10_000 })).toBeInTheDocument();
+    expect(screen.getByText(/At least 165 files, 153 of them can be distilled/)).toBeInTheDocument();
+    expect(calls.some((c) => c.url.includes("/folders/link?url=" + encodeURIComponent(LINK + "&st=x&dl=0")))).toBe(true);
+    await u.click(screen.getByRole("button", { name: "Use this link as the input" }));
+    await waitFor(() => expect(within(screen.getByRole("region", { name: "New room (not saved)" })).getByLabelText(/^Input/)).toHaveValue(LINK));
+    await u.click(within(screen.getByRole("region", { name: "New room (not saved)" })).getByRole("button", { name: /Choose a folder for Output/ }));
+    await screen.findByText("Use this folder");
+    expect(screen.queryByLabelText(/Or paste a Dropbox shared link/)).toBeNull();
+  });
+
   it("says before the room is filled in when no cloud storage is connected, and who can fix it", async () => {
     sessionStorage.clear();
     for (const [role, hint] of [["reviewer", "Ask an administrator to connect one."], ["admin", "Connect one in Settings → Cloud storage."]] as const) {
