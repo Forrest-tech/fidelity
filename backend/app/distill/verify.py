@@ -17,7 +17,8 @@ from collections import Counter, defaultdict
 
 import pymupdf
 
-from .pdf_extract import clean_text, is_hf, is_watermark_line, to_view, UNREADABLE_RE, formula_span
+from .pdf_extract import (clean_text, is_hf, is_watermark_line, to_view, UNREADABLE_RE, formula_span,
+                          _drawn_out_of_order, _reordered_spans)
 
 PAGE_MARK = re.compile(r"^<!-- unit: p\d+ \| src: p\.(\d+)(?: \| printed: [^|]+?)? \| chars: \d+ \| flags: [^>]*?-->\s*$", re.M)
 NUM_RE = re.compile(r"\d+(?:[.,]\d+)*")
@@ -100,11 +101,15 @@ def source_pages(pdf_path, hf_set, band=0.07):
     for page in doc:
         h = page.rect.height
         keep = []
-        for b in page.get_text("dict")["blocks"]:
-            for ln in b.get("lines", []):
+        raw = None
+        for bi, b in enumerate(page.get_text("dict")["blocks"]):
+            for li, ln in enumerate(b.get("lines", [])):
                 if is_watermark_line(ln):
                     continue
                 t = "".join(s["text"] for s in ln["spans"])
+                if _drawn_out_of_order(ln):               # read it as the reader does: in x order ("d^1.5", not "5.1")
+                    raw = raw or page.get_text("rawdict")
+                    t = "".join(s.text for s in _reordered_spans(raw["blocks"][bi]["lines"][li]))
                 _, y0, _, y1 = to_view(page, ln["bbox"])
                 if (y0 < h * band or y1 > h * (1 - band)) and (is_hf(t, y0, hf_set)
                                                             or t.strip() == str(page.number + 1)):

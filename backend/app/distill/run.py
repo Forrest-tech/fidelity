@@ -29,7 +29,7 @@ from .verify import verify_document
 
 PIPELINE_VERSION = "distill-0.3"   # 0.3: plan C2, clause groups joined into larger files
 FORMAT_VERSION = 2
-VERIFY_VERSION = "5"      # bump when the verification checks change (part of the stage-cache key)
+VERIFY_VERSION = "6"      # bump when the verification checks change (part of the stage-cache key); 6: x-order lines
 # Up to this many characters of Markdown a document is a single file; above it, a chapter folder.
 SINGLE_FILE_MAX_CHARS = int(os.environ.get("FIDELITY_SINGLE_FILE_MAX_CHARS", "100000"))
 # Plan C2 (owner, 2026-11-23): an Australian Standard's clause groups are joined into files of about 40 KB within each
