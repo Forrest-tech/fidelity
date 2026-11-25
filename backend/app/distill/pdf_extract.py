@@ -183,7 +183,7 @@ def is_watermark_line(ln) -> bool:
     return abs(dx) > 0.2 and abs(dy) > 0.2
 
 
-EXTRACT_VERSION = "4"      # part of the extraction cache key: bump when extraction behaviour changes
+EXTRACT_VERSION = "5"      # part of the extraction cache key: bump when extraction behaviour changes (5: 2026-11-25 reading order, scripts, lost table cells)
 
 
 def to_view(page, bbox):
