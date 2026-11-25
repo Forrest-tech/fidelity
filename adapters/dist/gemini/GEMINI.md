@@ -58,9 +58,9 @@ After **each** answer, create a new file in `<logs>`:
 - **Cross-check**: standards text comes first; web snapshots and manufacturer documents are supporting only. For NSW questions also check `n0_Web_Reference/NSW Fair Trading - Building Commission/` and the state amendments in `n0_Web_Reference/ABCB NCC (ncc.abcb.gov.au)/`.
 
 ## 5. How the library is laid out
-The library has **3,101 `.md` files** for **1,751 source documents**. Top folders:
+The library has **2,807 `.md` files** for **1,751 source documents**. Top folders:
 - `2025/` — 610 files — NCC 2025 volumes and drafts (distilled, one file per Part)
-- `AS 3500/` — 774 files — AS/NZS 3500 series, one folder per edition year (distilled; per Section, files of consecutive clauses)
+- `AS 3500/` — 480 files — AS/NZS 3500 series, one folder per edition year (distilled; per Section, files of consecutive clauses)
 - `Code/` — 30 files — standards text, older conversions (unverified, see house rules)
 - `NCC2022/` — 8 files — NCC / PCA volumes (2022 edition; older conversions, unverified)
 - `n0_Web_Reference/` — 87 files — snapshots of NSW Fair Trading, Sydney Water, ABCB, ABCB NCC, Jemena web pages (older conversions, unverified)
@@ -335,24 +335,24 @@ Go straight to the sub-folder that covers the clause or page; list only that sub
 
 `AS 3500/2003/AS 3500.3 Plumbing and Drainage - Stormwater Drainage/`
 - `(document root)` — p.1–177 · 7 files
-- `03 SECTION 1 SCOPE AND GENERAL/` — p.8–15 · 8 files
-- `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.15–22 · 15 files
-- `05 SECTION 3 ROOF DRAINAGE SYSTEMS-DESIGN/` — p.22–43 · 9 files
-- `06 SECTION 4 ROOF DRAINAGE SYSTEMS-INSTALLATIONS/` — p.43–55 · 17 files
-- `07 SECTION 5 SURFACE DRAINAGE SYSTEMS-DESIGN/` — p.55–70 · 6 files
-- `09 SECTION 7 SURFACE AND SUBSOIL DRAINAGE SYSTEMS-I/` — p.71–82 · 5 files
-- `10 SECTION 8 SURFACE AND SUBSOIL DRAINAGE SYSTEMS-A/` — p.82–95 · 12 files
-- `11 SECTION 9 PUMPED SYSTEMS/` — p.95–97 · 7 files
-- `12 SECTION 10 SITE TESTING/` — p.97–99 · 5 files
-- `13 APPENDIX A - REFERENCED AND RELATED DOCUMENTS/` — p.99–103 · 3 files
-- `15 APPENDIX C - STORMWATER DRAINAGE INSTALLATION PL/` — p.104–106 · 6 files
-- `16 APPENDIX D - GUIDELINES FOR DETERMINING RAINFALL/` — p.106–108 · 3 files
-- `17 APPENDIX E - RAINFALL INTENSITIES FOR AUSTRALIA-/` — p.108–126 · 4 files
-- `18 APPENDIX F - RAINFALL INTENSITIES FOR NEW ZEALAN/` — p.126–135 · 4 files
-- `19 APPENDIX H - GENERAL METHOD FOR DESIGN OF EAVES/` — p.135–145 · 3 files
-- `21 APPENDIX J - BOX GUTTER SYSTEMS-GENERAL METHOD-E/` — p.154–164 · 4 files
-- `22 APPENDIX K - SURFACE DRAINAGE SYSTEMS-NOMINAL AN/` — p.164–175 · 5 files
-- `24 APPENDIX M - SUBSOIL DRAINAGE SYSTEMS-DESIGN/` — p.177–184 · 6 files
+- `03 SECTION 1 SCOPE AND GENERAL/` — p.8–15 · 1 files
+- `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.15–22 · 1 files
+- `05 SECTION 3 ROOF DRAINAGE SYSTEMS-DESIGN/` — p.22–43 · 1 files
+- `06 SECTION 4 ROOF DRAINAGE SYSTEMS-INSTALLATIONS/` — p.43–55 · 1 files
+- `07 SECTION 5 SURFACE DRAINAGE SYSTEMS-DESIGN/` — p.55–70 · 1 files
+- `09 SECTION 7 SURFACE AND SUBSOIL DRAINAGE SYSTEMS-I/` — p.71–82 · 1 files
+- `10 SECTION 8 SURFACE AND SUBSOIL DRAINAGE SYSTEMS-A/` — p.82–95 · 1 files
+- `11 SECTION 9 PUMPED SYSTEMS/` — p.95–97 · 1 files
+- `12 SECTION 10 SITE TESTING/` — p.97–99 · 1 files
+- `13 APPENDIX A - REFERENCED AND RELATED DOCUMENTS/` — p.99–103 · 1 files
+- `15 APPENDIX C - STORMWATER DRAINAGE INSTALLATION PL/` — p.104–106 · 1 files
+- `16 APPENDIX D - GUIDELINES FOR DETERMINING RAINFALL/` — p.106–108 · 1 files
+- `17 APPENDIX E - RAINFALL INTENSITIES FOR AUSTRALIA-/` — p.108–126 · 1 files
+- `18 APPENDIX F - RAINFALL INTENSITIES FOR NEW ZEALAN/` — p.126–135 · 1 files
+- `19 APPENDIX H - GENERAL METHOD FOR DESIGN OF EAVES/` — p.135–145 · 1 files
+- `21 APPENDIX J - BOX GUTTER SYSTEMS-GENERAL METHOD-E/` — p.154–164 · 1 files
+- `22 APPENDIX K - SURFACE DRAINAGE SYSTEMS-NOMINAL AN/` — p.164–175 · 1 files
+- `24 APPENDIX M - SUBSOIL DRAINAGE SYSTEMS-DESIGN/` — p.177–184 · 1 files
 
 `AS 3500/2003/AS 3500.4 Plumbing and Drainage - Hot water supply systems/`
 - `(document root)` — p.1–130 · 10 files
@@ -522,25 +522,25 @@ Go straight to the sub-folder that covers the clause or page; list only that sub
 
 `AS 3500/2018/3500.4-2018  Plumbing and drainage - Heated water services (Amendment 1 included)/`
 - `(document root)` — p.1–153 · 11 files
-- `03 SECTION 1 SCOPE AND GENERAL/` — p.9–18 · 23 files
-- `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.18–22 · 17 files
-- `05 SECTION 3 CROSS-CONNECTION AND BACKFLOW PREVENTI/` — p.22–24 · 7 files
-- `06 SECTION 4 INSTALLATION OF COLD AND HEATED WATER/` — p.24–42 · 25 files
-- `07 SECTION 5 INSTALLATION OF WATER HEATERS-GENERAL/` — p.42–67 · 25 files
-- `08 SECTION 6 INSTALLATION OF SOLAR WATER HEATERS/` — p.67–79 · 13 files
-- `09 SECTION 7 UNCONTROLLED HEAT SOURCES/` — p.79–82 · 5 files
-- `10 SECTION 8 ENERGY EFFICIENCY/` — p.82–87 · 13 files
-- `11 SECTION 9 TESTING AND COMMISSIONING/` — p.87–91 · 13 files
-- `12 SECTION 10 SIZING AND INSTALLATION OF CIRCULATOR/` — p.91–97 · 21 files
-- `13 APPENDIX A - WATER ANALYSIS/` — p.97–98 · 3 files
-- `17 APPENDIX E - RECOMMENDATIONS FOR THE INSTALLATIO/` — p.102–104 · 9 files
-- `18 APPENDIX F - RECOMMENDATIONS FOR THE INSTALLATIO/` — p.104–107 · 5 files
-- `19 APPENDIX G - SOLAR HEATED WATER SUPPLY SYSTEMS-S/` — p.107–112 · 4 files
-- `20 APPENDIX H - ESTIMATION OF SHADING OF COLLECTORS/` — p.112–117 · 4 files
-- `23 APPENDIX K - AUSTRALIAN CLIMATE REGIONS/` — p.132–133 · 3 files
-- `24 APPENDIX L - NEW ZEALAND CLIMATE REGIONS/` — p.133–136 · 4 files
-- `25 APPENDIX M - OPERATION AND MAINTENANCE/` — p.136–137 · 4 files
-- `26 APPENDIX N - PROVISION FOR EXPANSION AND CONTRAC/` — p.137–145 · 11 files
+- `03 SECTION 1 SCOPE AND GENERAL/` — p.9–18 · 1 files
+- `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.18–22 · 1 files
+- `05 SECTION 3 CROSS-CONNECTION AND BACKFLOW PREVENTI/` — p.22–24 · 1 files
+- `06 SECTION 4 INSTALLATION OF COLD AND HEATED WATER/` — p.24–42 · 1 files
+- `07 SECTION 5 INSTALLATION OF WATER HEATERS-GENERAL/` — p.42–67 · 1 files
+- `08 SECTION 6 INSTALLATION OF SOLAR WATER HEATERS/` — p.67–79 · 1 files
+- `09 SECTION 7 UNCONTROLLED HEAT SOURCES/` — p.79–82 · 1 files
+- `10 SECTION 8 ENERGY EFFICIENCY/` — p.82–87 · 1 files
+- `11 SECTION 9 TESTING AND COMMISSIONING/` — p.87–91 · 1 files
+- `12 SECTION 10 SIZING AND INSTALLATION OF CIRCULATOR/` — p.91–97 · 1 files
+- `13 APPENDIX A - WATER ANALYSIS/` — p.97–98 · 1 files
+- `17 APPENDIX E - RECOMMENDATIONS FOR THE INSTALLATIO/` — p.102–104 · 1 files
+- `18 APPENDIX F - RECOMMENDATIONS FOR THE INSTALLATIO/` — p.104–107 · 1 files
+- `19 APPENDIX G - SOLAR HEATED WATER SUPPLY SYSTEMS-S/` — p.107–112 · 1 files
+- `20 APPENDIX H - ESTIMATION OF SHADING OF COLLECTORS/` — p.112–117 · 1 files
+- `23 APPENDIX K - AUSTRALIAN CLIMATE REGIONS/` — p.132–133 · 1 files
+- `24 APPENDIX L - NEW ZEALAND CLIMATE REGIONS/` — p.133–136 · 1 files
+- `25 APPENDIX M - OPERATION AND MAINTENANCE/` — p.136–137 · 1 files
+- `26 APPENDIX N - PROVISION FOR EXPANSION AND CONTRAC/` — p.137–145 · 1 files
 
 `AS 3500/2018/AS 3500.0 Plumbing and drainage - Glossary of terms/`
 - `(document root)` — p.1–72 · 7 files
@@ -617,4 +617,4 @@ Drafts use the same layout under their own folders (see Drafts held).
 - NCC 2025 Volume Two (Class 1 and 10 buildings): `2025/NCC 2025 Volume Two/` (chapter folder, 92 files)
 - NCC 2025 Volume Three (plumbing and drainage): `2025/NCC 2025 Volume Three/` (chapter folder, 112 files)
 
-<!-- generated by fidelity adapters 1 for gemini on 2026-11-25 from 3,101 library files; edit adapters/template.md.j2 or adapters/house_rules.yaml, not this file -->
+<!-- generated by fidelity adapters 1 for gemini on 2026-11-25 from 2,807 library files; edit adapters/template.md.j2 or adapters/house_rules.yaml, not this file -->
