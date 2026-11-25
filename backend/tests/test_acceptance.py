@@ -175,3 +175,17 @@ def test_a_figure_the_question_gives_is_not_required_in_the_answer(tmp_path):
     assert GR.grade_one(q, a, {"AS NZS 3500.3-2021.pdf": src})["pass"]
     a["values"], a["answer"] = ["1:200"], "1:200"                       # the asked figure itself is still required
     assert not GR.grade_one(q, a, {"AS NZS 3500.3-2021.pdf": src})["pass"]
+
+
+def test_listing_every_size_does_not_pass_but_the_main_figure_in_other_words_does(tmp_path):
+    """V-4 found it: "DN 32, DN 40, DN 50 …" contains the right size without choosing it."""
+    src = _pdf(tmp_path)
+    q = {"id": 3, "cat": "A", "q": "What separation applies to a communication cable?",
+         "ground": {"doc": "AS NZS 3500.1-2021.pdf", "designation": "AS/NZS 3500.1:2021", "page": 2, "values": ["100 mm"]}}
+    cite = [{"document": "AS/NZS 3500.1:2021", "page": 2, "quote": "The separation between any underground water service "
+             "pipe and a communication cable shall be at least 100 mm."}]
+    shotgun = {"status": "answered", "answer": "", "values": ["50 mm", "100 mm", "600 mm"], "citations": cite}
+    r = GR.grade_one(q, shotgun, {"AS NZS 3500.1-2021.pdf": src})
+    assert not r["pass"] and "main figure" in r["why"]
+    for first in (["0.1 m (100 mm)"], ["100 mm", "600 mm for gas"]):
+        assert GR.grade_one(q, {**shotgun, "values": first}, {"AS NZS 3500.1-2021.pdf": src})["pass"], first

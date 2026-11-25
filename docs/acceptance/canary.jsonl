@@ -1,0 +1,1 @@
+{"model": "deepseek:deepseek-reasoner", "n": 50, "passed": 49, "failed_ids": [182], "missing": 0, "rate": 0.98, "centre": null, "lcl": null, "below_lcl": false, "at": "2026-11-24T19:29:01-05:00"}

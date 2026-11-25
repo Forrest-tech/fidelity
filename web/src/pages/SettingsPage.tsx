@@ -12,9 +12,10 @@ import { CloudStorage, GoogleDrive } from "../components/CloudStorage";
 import { AiSettings } from "../components/AiSettings";
 import { CorrectionsPage } from "./CorrectionsPage";
 import { UsersPage } from "./UsersPage";
+import { SpotCheck } from "../components/SpotCheck";
 import { PASSWORD_MIN } from "../auth/password";
 
-type Section = "storage" | "ai" | "captcha" | "defaults" | "queue" | "corrections" | "archive" | "users" | "notifications" | "audit" | "system" | "email" | "account" | "appearance";
+type Section = "storage" | "ai" | "captcha" | "defaults" | "queue" | "corrections" | "archive" | "spot" | "users" | "notifications" | "audit" | "system" | "email" | "account" | "appearance";
 interface Item {
   key: Section;
   group: "connect" | "distill" | "team" | "personal";
@@ -29,6 +30,7 @@ const ITEMS: Item[] = [
   { key: "queue", group: "distill" },
   { key: "corrections", group: "distill" },
   { key: "archive", group: "distill" },
+  { key: "spot", group: "distill" },
   { key: "users", group: "team", admin: true },
   { key: "notifications", group: "team" },
   { key: "audit", group: "team", admin: true },
@@ -561,6 +563,7 @@ const BODY: Record<Section, () => ReactNode> = {
   queue: () => <Queue />,
   corrections: () => <CorrectionsPage />,
   archive: () => <Archive />,
+  spot: () => <SpotCheck />,
   users: () => <UsersPage />,
   notifications: () => <Notifications />,
   audit: () => <Audit />,

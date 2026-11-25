@@ -37,6 +37,9 @@ from app.ops import mail as _mail  # noqa: E402
 _mail.PATH = os.path.join(_TMP, "email_settings.json")
 from app.auth import captcha as _captcha  # noqa: E402
 _captcha._settings_path = lambda: os.path.join(_TMP, "captcha_settings.json")
+# and the Dropbox authorisation: a test must never reach the owner's Dropbox (rooms resolve shared links, S-4)
+from app.distill import dropbox_io as _dropbox_io  # noqa: E402
+_dropbox_io.AUTH_PATH = os.path.join(_TMP, "dropbox_auth.json")
 
 
 def _reset_postgres():

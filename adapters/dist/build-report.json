@@ -1,8 +1,8 @@
 {
  "generated": "2026-11-24",
  "version": "1",
- "library_files": 2783,
- "documents": 1561,
+ "library_files": 3101,
+ "documents": 1751,
  "packs": {
   "grok": "grok/au-compliance-kb.md",
   "claude": "claude/au-compliance-kb/SKILL.md",

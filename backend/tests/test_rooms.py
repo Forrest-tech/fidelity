@@ -91,6 +91,51 @@ def test_running_a_room_needs_its_input_and_for_upload_its_output():
         R.submit_run(r["id"])
 
 
+LINK = "https://www.dropbox.com/scl/fo/abc123/def456?rlkey=k1&dl=0"
+
+
+def _fake_dropbox(monkeypatch, path="/as 3500"):
+    from app.distill import dropbox_io as D
+    calls = []
+    monkeypatch.setattr(D, "client", lambda role="writer": calls.append(role) or object())
+    monkeypatch.setattr(D, "canonical", lambda dbx, raw: raw)
+    monkeypatch.setattr(D, "link_root", lambda dbx, url: path)
+    return calls
+
+
+def test_a_shared_link_is_kept_with_its_account_path_and_runs_use_the_path(monkeypatch):
+    """S-4: five failed runs came from removed or replaced shared links; a run must not depend on the link alone."""
+    _fake_dropbox(monkeypatch)
+    r = _room(source=LINK)
+    assert r["source"] == {"kind": "dropbox", "link": LINK, "path": "/as 3500"}
+    jid = R.submit_run(r["id"])
+    assert json.loads(queue.get(jid)["rel"])["source_link"] == "/as 3500"
+
+
+def test_a_folder_path_or_website_address_needs_no_dropbox_call(monkeypatch):
+    calls = _fake_dropbox(monkeypatch)
+    assert R.update_room(_room()["id"], {"source": "/AS 3500"})["source"]["path"] == "/AS 3500"
+    home = "https://www.dropbox.com/home/AS%203500?di=left_nav_browse"
+    assert R.update_room(_room()["id"], {"source": home})["source"]["path"] == "/AS 3500"
+    assert calls == []
+
+
+def test_a_link_outside_the_account_or_unreachable_dropbox_keeps_the_link(monkeypatch):
+    _fake_dropbox(monkeypatch, path="")                    # shared with us, not in this account: no path exists
+    r = _room(source=LINK)
+    assert "path" not in r["source"]
+    assert json.loads(queue.get(R.submit_run(r["id"]))["rel"])["source_link"] == LINK
+
+
+def test_a_room_saved_before_the_path_was_known_gets_it_before_the_next_run(monkeypatch):
+    r = _room(source=LINK)                                 # Dropbox out of reach (no authorisation in the tests)
+    assert "path" not in r["source"]
+    _fake_dropbox(monkeypatch)
+    jid = R.submit_run(r["id"])
+    assert json.loads(queue.get(jid)["rel"])["source_link"] == "/as 3500"
+    assert R.get_room(r["id"])["source"]["path"] == "/as 3500"   # kept, so a later dead link changes nothing
+
+
 # ------------------------------------------------------------------ states
 def test_state_follows_the_threshold_without_a_rerun():
     r = _room(source=SRC)
