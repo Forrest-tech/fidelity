@@ -440,3 +440,12 @@ def test_duplicates_and_protected_files_with_an_unlocked_copy_are_skipped_not_fa
     assert files["/2018/3500.3-2018 Stormwater.pdf"]["state"] == "unprocessable"      # no unlocked copy: a person acts
     c = R.counts(room)
     assert (c["skipped"], c["unprocessable"], c["ok"]) == (2, 1, 2) and c["finished"] == 5
+
+
+def test_a_run_can_read_just_some_files_again():
+    r = _room(source=SRC, mode="distill")
+    p = json.loads(queue.get(R.submit_run(r["id"], only="Stormwater Drainage.pdf|(Amendment 1 included).pdf"))["rel"])
+    assert p["only"] == "Stormwater Drainage.pdf|(Amendment 1 included).pdf" and p["force"]
+    from app.jobs import sync_job as S
+    cmd = S.command(p)
+    assert cmd[cmd.index("--only") + 1] == p["only"]

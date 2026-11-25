@@ -43,6 +43,7 @@ class RoomPatch(BaseModel):
 
 class RunIn(BaseModel):
     force: bool = False
+    only: str | None = None            # read again just the files whose name contains this ('a|b': either), e.g. after a fix
 
 
 class AcceptIn(BaseModel):
@@ -94,7 +95,7 @@ def delete(room_id: str):
 
 @router.post("/rooms/{room_id}/run")
 def run(room_id: str, body: RunIn | None = None):
-    jid = _guard(R.submit_run, room_id, bool(body and body.force))
+    jid = _guard(R.submit_run, room_id, bool(body and body.force), (body.only or "").strip() or None if body else None)
     return {"job": jid, "queue": R.queue_view()}
 
 

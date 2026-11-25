@@ -137,3 +137,21 @@ def test_a_long_pending_review_list_is_summarised_by_folder(tmp_path):
     g = (out / "grok" / "au-compliance-kb.md").read_text(encoding="utf-8")
     assert "**Documents with pending-review parts**: 25 documents, by folder: `n2_Technical/` 20, `Code/` 5." in g
     assert "doc7;" not in g
+
+
+def test_every_edition_held_is_listed_with_its_folder_even_when_case_differs(tmp_path):
+    """2026-11-25: Grok said AS 3500.1:2018 was not held (its folder is named "3500.1-2018 …"), and a source path in
+    lower case put a document folder at "as 3500/2021/AS 3500/"."""
+    root = tmp_path / "lib"
+    d = root / "AS 3500" / "2018" / "3500.1-2018  Water services-unlocked" / "05 Section 5"
+    d.mkdir(parents=True)
+    for n in (1, 2):
+        (d / f"3500.1-2018 · 00{n} part p{n}.md").write_text(fm(
+            document="3500.1-2018", std_id="AS/NZS 3500.1", std_year="2018", status="Published edition",
+            edition="AS/NZS 3500.1:2018", edition_status="superseded", superseded_by="AS/NZS 3500.1:2021",
+            audit_status="auto_verified", flags="[]", source_filename="3500.1-2018  Water services-unlocked.pdf",
+            source_relative_path="as 3500/2018/3500.1-2018  Water services-unlocked.pdf"), encoding="utf-8")
+    s = F.summarise(F.scan(str(root)))
+    assert s["editions_held"] == [{"edition": "AS/NZS 3500.1:2018", "edition_status": "superseded",
+                                   "superseded_by": "AS/NZS 3500.1:2021",
+                                   "path": "AS 3500/2018/3500.1-2018  Water services-unlocked/"}]

@@ -1,0 +1,2 @@
+ANSWER Not found in the knowledge base. Searched: Clause 32.9.5, "32.9.5", minimum clearance. AS/NZS 3500.3:2021 has sections only up to Section 10; there is no Clause 32.9.5. (40 sources)
+GRADE {"status":"not_found","values":[],"edition_used":"AS/NZS 3500.3:2021","citations":[]}

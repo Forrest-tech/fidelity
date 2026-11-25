@@ -505,7 +505,7 @@ def main(argv=None):
     ap.add_argument("--work", default=os.path.join(D.DATA_DIR, "work"))
     ap.add_argument("--dry-run", action="store_true", help="distill and verify, upload nothing")
     ap.add_argument("--force", action="store_true", help="re-distill even if the ledger says the file is up to date")
-    ap.add_argument("--only", default=None, help="only files whose name contains this text")
+    ap.add_argument("--only", default=None, help="only files whose name contains this text ('a|b': either)")
     ap.add_argument("--publish-protected-metadata", action="store_true",
                     help="publish a metadata-only entry for protected files (they are always listed in the report)")
     ap.add_argument("--rollback", default=None, metavar="RUN", help="undo a published run: restore the previous versions (from Dropbox deleted files, or the old archive folder)")
@@ -593,7 +593,7 @@ def _distill_run(a, src, dst, ev, live, workers, downloads, src_name, stamp, out
             ev.emit("file", rel=rel, kind=kind_of(rel), outcome="unprocessable", reason="unsupported",
                     detail=SC.REASONS["unsupported"])
             continue
-        if a.only and a.only not in name:
+        if a.only and not any(o and o in name for o in a.only.split("|")):
             continue
         first = seen_hash.get(f["content_hash"])
         if first:                                   # F-26: duplicate sources are detected by content hash

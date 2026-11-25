@@ -1,0 +1,2 @@
+ANSWER Not found in the knowledge base. Searched: "55.9.5", "Clause 55.9.5", "55.9", "minimum clearance", "clearance" within AS NZS 3500.1-2021; Section 5 of that standard only extends to clause 5.21. (32 sources)
+GRADE {"status":"not_found","values":[],"edition_used":"AS/NZS 3500.1:2021","citations":[]}

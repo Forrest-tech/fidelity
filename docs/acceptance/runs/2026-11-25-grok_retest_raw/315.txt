@@ -1,0 +1,2 @@
+ANSWER Not found in the knowledge base for AS/NZS 3500.3:2025 (the library records it as a newer edition, not held). For reference only, labelled as the 2021 edition: Clause 8.3.6.
+GRADE {"status":"not_held","values":[],"edition_used":"AS/NZS 3500.3:2021 (2025 not held)","citations":[{"document":"AS NZS 3500.3-2021 · 012 8.1 Scope of section – 8.6 [8.1–8.6] p103-106.md","page":103,"quote":"newer_edition: AS/NZS 3500.3:2025 (called up by NCC 2025; not held in this library)"}]}

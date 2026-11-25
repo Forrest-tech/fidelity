@@ -1,0 +1,4 @@
+ANSWER 750 mm. Edition: AS/NZS 3500.3:2018 — SUPERSEDED by AS/NZS 3500.3:2021; Jurisdiction: national
+SOURCE AS 3500/2018/3500.3-2018 … · 007 4.1 SCOPE OF SECTION – 4.9 [4.1–4.9.6] p45-56.md, Clause 4.9.4, p.54
+NOTE Decision support only — not a substitute for a licensed practitioner's judgement. | Saved: /Library_Installation_Chat_Logs/2026-11-25_1223_AS3500.3-2018_4.9.4_box_gutter_discontinuous_brackets.md
+GRADE {"status":"answered","values":["750 mm"],"edition_used":"AS/NZS 3500.3:2018 — SUPERSEDED by AS/NZS 3500.3:2021","citations":[{"document":"AS/NZS 3500.3:2018","page":54,"quote":"discontinuous, where the support brackets extend across the sole width of the gutter and are located at stop ends, both ends of sumps, rainheads and intervals not greater than 750 mm."}]}

@@ -1,0 +1,4 @@
+ANSWER 0.8 (reducing capacities to 80% of values given by design aids). Edition: AS/NZS 3500.3:2018 — SUPERSEDED by AS/NZS 3500.3:2021; Jurisdiction: national
+SOURCE AS 3500/2018/3500.3-2018 … · 008 5.1 SCOPE OF SECTION – 5.5 [5.1–5.5] p56-70.md, Clause 5.4.10.2, p.64
+NOTE Decision support only — not a substitute for a licensed practitioner's judgement. | Saved: /Library_Installation_Chat_Logs/2026-11-25_1227_AS3500.3-2018_5.4.10.2_on-grade_pits_blockage_factor.md
+GRADE {"status":"answered","values":["0.8"],"edition_used":"AS/NZS 3500.3:2018 — SUPERSEDED by AS/NZS 3500.3:2021","citations":[{"document":"AS/NZS 3500.3:2018","page":64,"quote":"Blockage factors are variable, but a value of 0.8 (reducing capacities to 80% of values given by design aids) shall be used for on-grade pits."}]}

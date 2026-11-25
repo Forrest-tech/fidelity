@@ -6,6 +6,7 @@ stages can cite pages exactly and the verifier can check coverage per page.
 """
 from __future__ import annotations
 
+import collections
 import re
 from collections import Counter
 from dataclasses import dataclass, field
@@ -58,6 +59,7 @@ class Span:
     italic: bool
     bold: bool
     size: float
+    y: float = 0.0                # baseline (origin y); tells a raised or lowered small span from the line's own text
 
 
 @dataclass
@@ -196,17 +198,84 @@ def to_view(page, bbox):
     return (r.x0, r.y0, r.x1, r.y1)
 
 
+def _drawn_out_of_order(ln) -> bool:
+    """Some PDFs draw a line's characters out of reading order (AS 3500.3:2003 p.59 draws "0.233)" right to left, so
+    equation 5.4.6 read "m (.0013310 I − .0233)"). A span's origin is its first DRAWN character; when that is not its
+    leftmost character, the order in the text layer is not the reading order."""
+    if abs(ln.get("dir", (1, 0))[1]) > 0.01:            # rotated text (side-of-page licence lines) is not a reading line
+        return False
+    return any(abs(s["origin"][0] - s["bbox"][0]) > 1.5 for s in ln["spans"] if s["text"].strip())
+
+
+def _reordered_spans(raw_line) -> list:
+    """The line's characters in x order, regrouped into spans of the same size and style."""
+    chars = sorted(((c["origin"][0], c["c"], c["origin"][1], s) for s in raw_line["spans"] for c in s["chars"]),
+                   key=lambda t: t[0])
+    out = []
+    for _, ch, y, s in chars:
+        key = (_is_italic(s), _is_bold(s), s["size"], round(y, 1))
+        if out and (out[-1][0] == key):
+            out[-1][1].append(ch)
+        else:
+            out.append((key, [ch]))
+    return [Span(clean_text("".join(cs)), it, bo, size, y) for (it, bo, size, y), cs in out]
+
+
+_EQUATION = re.compile(r"\.\s*\.\s*\.\s*[A-Z]?\d+(?:\.\d+)+\s*$")     # a numbered equation: "… . . . 5.4.6"
+
+
+def _mark_scripts(spans: list) -> list:
+    """In a numbered equation, small text above or below the line's baseline is a superscript or subscript. Flattened,
+    "C_p = m (0.0133 ¹⁰I₆₀ − 0.233)" reads "Cp = m (0.013310 I60 − 0.233)" — a different number. Marked, it reads
+    "C<sub>p</sub> = m (0.0133 <sup>10</sup>I<sub>60</sub> − 0.233)"."""
+    body = [s for s in spans if s.text.strip() and s.size]
+    if not body:
+        return spans
+    big = max(s.size for s in body)
+    base = [s.y for s in body if s.size >= 0.9 * big]
+    y0 = sorted(base)[len(base) // 2]
+    out = []
+    for s in spans:
+        if s.text.strip() and s.size and s.size < 0.8 * big and abs(s.y - y0) > 0.08 * big:
+            tag = "sup" if s.y < y0 else "sub"
+            lead = " " if tag == "sup" and out and out[-1].text[-1:].isdigit() else ""
+            out.append(Span(f"{lead}<{tag}>{s.text.strip()}</{tag}>", s.italic, s.bold, s.size, s.y))
+        else:
+            out.append(s)
+    return out
+
+
+def _script_of(spans, group, bbox, gb) -> bool:
+    """A small raised or lowered piece (subscript "p", superscript "10") belongs to the line it overlaps, although its
+    centre sits more than 3 pt off that line's centre; or the other way round, the line belongs to a group that so far
+    holds only such small pieces."""
+    size = lambda sp: max((x.size for x in sp if x.text.strip()), default=0)       # noqa: E731
+    mine, theirs = size(spans), max(size(sp) for _, sp in group)
+    if not mine or not theirs or 0.8 * max(mine, theirs) <= min(mine, theirs):
+        return False
+    small = spans if mine < theirs else [x for _, sp in group for x in sp]
+    if len("".join(x.text for x in small).strip()) > 4:      # scripts are short; a small caption beside text is not one
+        return False
+    overlap = min(bbox[3], gb[3]) - max(bbox[1], gb[1])
+    return overlap >= 0.5 * min(bbox[3] - bbox[1], gb[3] - gb[1])
+
+
 def _page_lines(page):
     out = []
     d = page.get_text("dict")
-    for b in d["blocks"]:
+    raw = None
+    for bi, b in enumerate(d["blocks"]):
         if b.get("type") != 0:
             continue
-        for ln in b["lines"]:
+        for li, ln in enumerate(b["lines"]):
             if is_watermark_line(ln):
                 continue                                  # e.g. diagonal "DRAFT" watermark
-            spans = [Span(clean_text(s["text"]), _is_italic(s), _is_bold(s), s["size"])
-                     for s in ln["spans"]]
+            if _drawn_out_of_order(ln):
+                raw = raw or page.get_text("rawdict")     # character positions, only for pages that need them
+                spans = _reordered_spans(raw["blocks"][bi]["lines"][li])
+            else:
+                spans = [Span(clean_text(s["text"]), _is_italic(s), _is_bold(s), s["size"], s["origin"][1])
+                         for s in ln["spans"]]
             if not "".join(s.text for s in spans).strip():
                 continue
             out.append((to_view(page, ln["bbox"]), spans))
@@ -283,6 +352,84 @@ def _numbers_intact(page, bbox, rows) -> bool:
     return not (got - have)
 
 
+_NUMERIC = re.compile(r"^[−-]?\d+(?:[.,]\d+)?\s*(?:%|mm|m|kPa|L|°C?)?$")
+
+
+def _is_data_row(r) -> bool:
+    vals = [c.strip() for c in r if c and c.strip()]
+    return bool(vals) and sum(bool(_NUMERIC.match(v)) for v in vals) >= 0.5 * len(vals)
+
+
+def _fill_missing(page, t, rows):
+    """Cells the grid finder returns as None ("merged") although the page has text there. Found 2026-11-25 in
+    AS/NZS 3500.4:2018 Table 6.5.1.2(A): the row labels ("1 or 2 bedrooms") and the whole ">75° to 90°" column came back
+    empty, and the values 14 and 32 ended up as loose text under the table. Each run of None cells in a row gets the
+    words lying in it, grouped into phrases (words closer than a space); a phrase goes into the cell where it starts,
+    so a heading spanning three columns stays one heading and the cells after it stay None (continuation)."""
+    if getattr(page, "rotation", 0):
+        return rows                                       # word and cell coordinates disagree on a turned page
+    try:
+        trows = t.rows
+    except Exception:                                     # noqa: BLE001 - older PyMuPDF: leave the table as found
+        return rows
+    ncol = max((len(r) for r in rows), default=0)
+    cols = []
+    for j in range(ncol):
+        xs = [r.cells[j] for r in trows if j < len(r.cells) and r.cells[j]]
+        cols.append((min(c[0] for c in xs), max(c[2] for c in xs)) if xs else None)
+    if not any(c is None for r in rows for c in r) or any(c is None for c in cols):
+        return rows
+    words = page.get_text("words")
+    # only a table that lost figures is filled: the page has more numbers inside the table's frame than its cells hold
+    num = re.compile(r"\d+(?:\.\d+)?")
+    x0, y0, x1, y1 = t.bbox
+    on_page = collections.Counter(n for w in words if x0 <= (w[0] + w[2]) / 2 <= x1 and y0 <= (w[1] + w[3]) / 2 <= y1
+                                  for n in num.findall(w[4]))
+    in_cells = collections.Counter(n for r in rows for c in r if c for n in num.findall(c))
+    if not (on_page - in_cells):
+        return rows
+    out = [list(r) for r in rows]
+    for i, (r, tr) in enumerate(zip(out, trows)):
+        y0, y1 = tr.bbox[1], tr.bbox[3]
+        j = 0
+        while j < len(r):
+            if r[j] is not None:
+                j += 1
+                continue
+            k = j
+            while k < len(r) and r[k] is None:
+                k += 1
+            x0, x1 = cols[j][0], cols[k - 1][1]
+            ws = sorted((w for w in words if x0 <= (w[0] + w[2]) / 2 <= x1 and y0 <= (w[1] + w[3]) / 2 <= y1),
+                        key=lambda w: (round((w[1] + w[3]) / 2 / 3), w[0]))
+            phrases = []
+            for w in ws:
+                if phrases and w[0] - phrases[-1][2] < 0.6 * (w[3] - w[1]) and abs(w[1] - phrases[-1][1]) < 3:
+                    phrases[-1] = (phrases[-1][0], phrases[-1][1], w[2], phrases[-1][3] + " " + w[4])
+                elif phrases and any(cols[c][0] <= (w[0] + w[2]) / 2 <= cols[c][1] and
+                                     cols[c][0] <= phrases[-1][0] + 1 <= cols[c][1] for c in range(j, k)):
+                    phrases[-1] = (phrases[-1][0], phrases[-1][1], w[2], phrases[-1][3] + " " + w[4])    # same cell, next line
+                else:
+                    phrases.append((w[0], w[1], w[2], w[4]))
+            data_row = _is_data_row(r)
+            for px0, _, px1, text in phrases:
+                left = r[j - 1] if j else None
+                if not data_row and left and left.endswith(clean_text(text)) and len(left) > len(clean_text(text)):
+                    continue                              # the tail of the heading to the left, spilling over
+                span = [c for c in range(j, k) if cols[c][0] - 1 <= px0 <= cols[c][1] or px0 <= cols[c][0] <= px1]
+                if not span:
+                    continue
+                one_col = len(span) == 1
+                # a data row takes values that sit inside one column; a heading row only takes a lone missing cell, a
+                # first-column label, or a heading that starts after the merged part ends (">45° … east from true north")
+                ok = one_col if data_row else ((one_col and (k - j == 1 or j == 0)) or span[0] > j)
+                if ok:
+                    c = span[0]
+                    r[c] = clean_text(text) if r[c] is None else r[c] + " " + clean_text(text)
+            j = k
+    return out
+
+
 def _tables(page):
     out = []
     try:
@@ -292,7 +439,7 @@ def _tables(page):
     for t in found:
         if t.row_count < 2 or t.col_count < 2:
             continue
-        rows = t.extract()
+        rows = _fill_missing(page, t, t.extract())
         filled = sum(1 for r in rows for c in r if c and c.strip())
         if filled < 3:
             continue
@@ -370,7 +517,8 @@ def extract_page(page, hf_set, band=0.07, cached=None) -> Page:
         if groups:
             g = groups[-1]
             gb = _union([x[0] for x in g])
-            if abs(cy - (gb[1] + gb[3]) / 2) <= 3 and all(bbox[0] >= x[0][2] - 1 or bbox[2] <= x[0][0] + 1 for x in g):
+            apart = all(bbox[0] >= x[0][2] - 1 or bbox[2] <= x[0][0] + 1 for x in g)
+            if apart and (abs(cy - (gb[1] + gb[3]) / 2) <= 3 or _script_of(spans, g, bbox, gb)):
                 g.append((bbox, spans))
                 continue
         groups.append([(bbox, spans)])
@@ -390,6 +538,8 @@ def extract_page(page, hf_set, band=0.07, cached=None) -> Page:
             if gap > thr and not spans[-1].text.endswith(" ") and not sp[0].text.startswith(" "):
                 spans.append(Span(" ", False, False, 0))
             spans.extend(sp)
+        if _EQUATION.search("".join(x.text for x in spans)):
+            spans = _mark_scripts(spans)
         rows.append(Row(pg.number, _union([x[0] for x in g]), spans))
     for r in rows:
         for i, b in enumerate(pg.boxes):
