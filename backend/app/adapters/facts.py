@@ -88,6 +88,7 @@ def scan(root: str) -> dict:
                 "std_id": fm.get("std_id", ""), "std_year": fm.get("std_year", ""),
                 "std_kind": fm.get("std_kind", ""), "status": fm.get("status", ""),
                 "edition_status": fm.get("edition_status", ""), "jurisdiction": fm.get("jurisdiction", ""),
+                "edition": fm.get("edition", ""), "superseded_by": fm.get("superseded_by", ""),
                 "files": [], "flags": set(), "audit": set()})
             d["files"].append(rel)
             d["flags"] |= _flags(fm)
@@ -100,8 +101,11 @@ def scan(root: str) -> dict:
             # the document folder sits beside where the source sits: <source dir>/<document folder>/...
             src_dir = os.path.dirname(key).replace(os.sep, "/")
             first = d["files"][0]
-            rest = first[len(src_dir) + 1:] if src_dir and first.startswith(src_dir + "/") else first
-            path = (src_dir + "/" if src_dir else "") + rest.split("/")[0] + "/"
+            # front matter keeps the source path in lower case ("as 3500/2021/…"); the library keeps the source's
+            # case ("AS 3500/2021/…"): compare without case and keep the library's spelling
+            inside = bool(src_dir) and first.lower().startswith(src_dir.lower() + "/")
+            rest = first[len(src_dir) + 1:] if inside else first
+            path = (first[:len(src_dir)] + "/" if inside else "") + rest.split("/")[0] + "/"
             layout = "folder"
         out_docs.append({**d, "source_relative_path": key, "path": path, "layout": layout,
                          "n_files": len(d["files"]), "flags": sorted(d["flags"]), "audit": sorted(d["audit"]),
@@ -123,6 +127,12 @@ def summarise(lib: dict) -> dict:
         "top_folders": lib["top_folders"],
         "folders": [d for d in docs if d["layout"] == "folder"],
         "latest_editions": [latest[k] for k in sorted(latest)],
+        # every edition the library holds, with the folder to open (2026-11-25: Grok said AS 3500.1:2018 was not
+        # held because its folder is named "3500.1-2018 …" without "AS" and a file-name search missed it)
+        "editions_held": sorted(({"edition": d["edition"], "edition_status": d["edition_status"],
+                                  "superseded_by": d["superseded_by"], "path": d["path"]}
+                                 for d in docs if d["edition"] and not d["status"].upper().startswith("DRAFT")),
+                                key=lambda e: (e["edition"].split(":")[0], e["edition"], e["path"])),
         "drafts": [d for d in docs if d["status"].upper().startswith("DRAFT")],
         "unreadable_formulas": [d for d in docs if "unreadable_formula" in d["flags"]],
         "pending_review": [d for d in docs if "pending_review" in d["audit"]],

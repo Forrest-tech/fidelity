@@ -1,0 +1,4 @@
+ANSWER Not less than 45°. Edition: AS/NZS 3500.1:2018 — SUPERSEDED by AS/NZS 3500.1:2021; Jurisdiction: national
+SOURCE /Library_Installation/Md_Library/AS 3500/2018/3500.1-2018 Plumbing and drainage - Water services-已解锁/07 SECTION 5 INSTALLATION OF COLD WATER SERVICES/3500.1-2018 Plumbing and drainage - Water services-已解锁 · 008 5.1 SCOPE OF SECTION – 5.20 [5.1–5.20] p34-54.md, Clause 5.2.9, p.36
+NOTE Decision support only — not a substitute for a licensed practitioner's judgement. | Saved: /Library_Installation_Chat_Logs/2026-11-25_1219_AS3500.1-2018_5.2.9_crossover_angle.md
+GRADE {"status":"answered","values":["45°"],"edition_used":"AS/NZS 3500.1:2018 — SUPERSEDED by AS/NZS 3500.1:2021","citations":[{"document":"AS/NZS 3500.1:2018","page":36,"quote":"cross at an angle of not less than 45°"}]}

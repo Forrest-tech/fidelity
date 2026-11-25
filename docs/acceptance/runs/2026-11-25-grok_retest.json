@@ -1,0 +1,254 @@
+{
+ "summary": {
+  "questions": 9,
+  "not_answered": 0,
+  "passed": 9,
+  "rate": 1.0,
+  "ci95": [
+   0.7008,
+   1.0
+  ],
+  "traps": [
+   4,
+   4
+  ],
+  "page_exact": {
+   "of": 5,
+   "exact": 5,
+   "rate": 1.0,
+   "ci95": [
+    0.5655,
+    1.0
+   ],
+   "value_right_page_wrong": 0
+  },
+  "by_category": {
+   "D superseded edition": {
+    "passed": 5,
+    "of": 5
+   },
+   "F trap: clause does not exist": {
+    "passed": 2,
+    "of": 2
+   },
+   "F trap: edition not held": {
+    "passed": 2,
+    "of": 2
+   }
+  },
+  "blame": {}
+ },
+ "agreement_with_deepseek": "9/9",
+ "both_pass": 9,
+ "rows": [
+  {
+   "id": 232,
+   "cat": "D superseded edition",
+   "pass": true,
+   "deepseek_pass": true,
+   "page_exact": true,
+   "why": ""
+  },
+  {
+   "id": 235,
+   "cat": "D superseded edition",
+   "pass": true,
+   "deepseek_pass": true,
+   "page_exact": true,
+   "why": ""
+  },
+  {
+   "id": 267,
+   "cat": "D superseded edition",
+   "pass": true,
+   "deepseek_pass": true,
+   "page_exact": true,
+   "why": ""
+  },
+  {
+   "id": 269,
+   "cat": "D superseded edition",
+   "pass": true,
+   "deepseek_pass": true,
+   "page_exact": true,
+   "why": ""
+  },
+  {
+   "id": 278,
+   "cat": "D superseded edition",
+   "pass": true,
+   "deepseek_pass": true,
+   "page_exact": true,
+   "why": ""
+  },
+  {
+   "id": 282,
+   "cat": "F trap: clause does not exist",
+   "pass": true,
+   "deepseek_pass": true,
+   "page_exact": null,
+   "why": ""
+  },
+  {
+   "id": 299,
+   "cat": "F trap: clause does not exist",
+   "pass": true,
+   "deepseek_pass": true,
+   "page_exact": null,
+   "why": ""
+  },
+  {
+   "id": 309,
+   "cat": "F trap: edition not held",
+   "pass": true,
+   "deepseek_pass": true,
+   "page_exact": null,
+   "why": ""
+  },
+  {
+   "id": 315,
+   "cat": "F trap: edition not held",
+   "pass": true,
+   "deepseek_pass": true,
+   "page_exact": null,
+   "why": ""
+  }
+ ],
+ "answers": [
+  {
+   "id": 232,
+   "model": "grok (grok.com, everyday skill, live library)",
+   "status": "answered",
+   "answer": "Not less than 45°. Edition: AS/NZS 3500.1:2018 — SUPERSEDED by AS/NZS 3500.1:2021; Jurisdiction: national 45°",
+   "values": [
+    "45°"
+   ],
+   "citations": [
+    {
+     "document": "AS/NZS 3500.1:2018",
+     "page": 36,
+     "quote": "cross at an angle of not less than 45°"
+    }
+   ],
+   "edition_used": "AS/NZS 3500.1:2018 — SUPERSEDED by AS/NZS 3500.1:2021"
+  },
+  {
+   "id": 235,
+   "model": "grok (grok.com, everyday skill, live library)",
+   "status": "answered",
+   "answer": "Not less than 6 mm thickness of impermeable flexible material (or an impermeable plastics sleeve or conduit providing equivalent protection) for the full depth of the slab penetration. Edition: AS/NZS 3500.1:2018 — SUPERSEDED by AS/NZS 3500.1:2021; Jurisdiction: national 6 mm",
+   "values": [
+    "6 mm"
+   ],
+   "citations": [
+    {
+     "document": "AS/NZS 3500.1:2018",
+     "page": 43,
+     "quote": "Any pipework that penetrates the slab shall be at right angles to the surface of the slab, and shall be lagged for the full depth of the slab penetration with— (i) an impermeable flexible material of not less than 6 mm thickness; or (ii) impermeable plastics sleeve or conduit providing equivalent protection."
+    }
+   ],
+   "edition_used": "AS/NZS 3500.1:2018 — SUPERSEDED by AS/NZS 3500.1:2021"
+  },
+  {
+   "id": 267,
+   "model": "grok (grok.com, everyday skill, live library)",
+   "status": "answered",
+   "answer": "750 mm. Edition: AS/NZS 3500.3:2018 — SUPERSEDED by AS/NZS 3500.3:2021; Jurisdiction: national 750 mm",
+   "values": [
+    "750 mm"
+   ],
+   "citations": [
+    {
+     "document": "AS/NZS 3500.3:2018",
+     "page": 54,
+     "quote": "discontinuous, where the support brackets extend across the sole width of the gutter and are located at stop ends, both ends of sumps, rainheads and intervals not greater than 750 mm."
+    }
+   ],
+   "edition_used": "AS/NZS 3500.3:2018 — SUPERSEDED by AS/NZS 3500.3:2021"
+  },
+  {
+   "id": 269,
+   "model": "grok (grok.com, everyday skill, live library)",
+   "status": "answered",
+   "answer": "0.8 (reducing capacities to 80% of values given by design aids). Edition: AS/NZS 3500.3:2018 — SUPERSEDED by AS/NZS 3500.3:2021; Jurisdiction: national 0.8",
+   "values": [
+    "0.8"
+   ],
+   "citations": [
+    {
+     "document": "AS/NZS 3500.3:2018",
+     "page": 64,
+     "quote": "Blockage factors are variable, but a value of 0.8 (reducing capacities to 80% of values given by design aids) shall be used for on-grade pits."
+    }
+   ],
+   "edition_used": "AS/NZS 3500.3:2018 — SUPERSEDED by AS/NZS 3500.3:2021"
+  },
+  {
+   "id": 278,
+   "model": "grok (grok.com, everyday skill, live library)",
+   "status": "answered",
+   "answer": "200 mm (T2, bottom section; Figure 7.5.5.1 example L = 1.2 m, H1 = 1.8 m, H2 = 2.4 m gives 175 mm T1 and 200 mm T2). Edition: AS/NZS 3500.3:2018 — SUPERSEDED by AS/NZS 3500.3:2021; Jurisdiction: national (AU/NZ) 200 mm",
+   "values": [
+    "200 mm"
+   ],
+   "citations": [
+    {
+     "document": "AS/NZS 3500.3:2018",
+     "page": 87,
+     "quote": "Example: For a non-reinforced concrete wall of length (L) = 1.2 m, and maximum depths of 1.8 m (H1) and 2.4 m (H2) the thicknesses are 175 mm (T1) and 200 mm (T2), respectively. NOTE: T2 obtained from the graph applies to the thickness of the bottom section, and T1 to the thickness of top section."
+    }
+   ],
+   "edition_used": "AS/NZS 3500.3:2018 — SUPERSEDED by AS/NZS 3500.3:2021"
+  },
+  {
+   "id": 282,
+   "model": "grok (grok.com, everyday skill, live library)",
+   "status": "not_found",
+   "answer": "Not found in the knowledge base. Searched: \"55.9.5\", \"Clause 55.9.5\", \"55.9\", \"minimum clearance\", \"clearance\" within AS NZS 3500.1-2021; Section 5 of that standard only extends to clause 5.21. (32 sources) ",
+   "values": [],
+   "citations": [],
+   "edition_used": "AS/NZS 3500.1:2021"
+  },
+  {
+   "id": 299,
+   "model": "grok (grok.com, everyday skill, live library)",
+   "status": "not_found",
+   "answer": "Not found in the knowledge base. Searched: Clause 32.9.5, \"32.9.5\", minimum clearance. AS/NZS 3500.3:2021 has sections only up to Section 10; there is no Clause 32.9.5. (40 sources) ",
+   "values": [],
+   "citations": [],
+   "edition_used": "AS/NZS 3500.3:2021"
+  },
+  {
+   "id": 309,
+   "model": "grok (grok.com, everyday skill, live library)",
+   "status": "not_held",
+   "answer": "Not found in the knowledge base for AS/NZS 3500.1:2025 (that edition is not held). The held 2021 edition, Clause 5.3.3.6, gives 300 mm for a water service pipe greater than DN 65 (labelled as the 2021 edition). 300 mm (from 2021; >DN 65)",
+   "values": [
+    "300 mm (from 2021; >DN 65)"
+   ],
+   "citations": [
+    {
+     "document": "AS/NZS 3500.1:2021",
+     "page": 41,
+     "quote": "The separation between any underground water service pipe and any other service, other than consumer gas piping and electrical or communication service, shall be at least — (a) 100 mm for a water service pipe not greater than DN 65; or (b) 300 mm for a water service pipe greater than DN 65."
+    }
+   ],
+   "edition_used": "AS/NZS 3500.1:2021"
+  },
+  {
+   "id": 315,
+   "model": "grok (grok.com, everyday skill, live library)",
+   "status": "not_held",
+   "answer": "Not found in the knowledge base for AS/NZS 3500.3:2025 (the library records it as a newer edition, not held). For reference only, labelled as the 2021 edition: Clause 8.3.6. ",
+   "values": [],
+   "citations": [
+    {
+     "document": "AS NZS 3500.3-2021 · 012 8.1 Scope of section – 8.6 [8.1–8.6] p103-106.md",
+     "page": 103,
+     "quote": "newer_edition: AS/NZS 3500.3:2025 (called up by NCC 2025; not held in this library)"
+    }
+   ],
+   "edition_used": "AS/NZS 3500.3:2021 (2025 not held)"
+  }
+ ]
+}

@@ -36,3 +36,22 @@ older-edition questions: DeepSeek follows the "say it is superseded" rule, Grok 
 targets exactly that; the D questions are re-run on Grok to confirm it.
 
 Plan C2 effect on Grok: AS questions used 3 Dropbox sources in the first test, against 10–29 before C2.
+
+## Re-test 2026-11-25 (older editions and the 4 missing traps)
+
+The first re-test of Q232 still gave no edition line: the skill's answer format sat at character 39,700 of a 41 KB
+skill, behind a 29 KB library map, and Grok did not apply it. The skill was reordered (answer format, saving and house
+rules now come right after "search first"; the library map is the last section) and given an **Editions held** list
+with the folder of each edition — Grok had also said AS 3500.1:2018 was "not held", because that folder is named
+`3500.1-2018 …` without "AS". With that skill:
+
+| | Result |
+|---|---|
+| Category D, older editions (232, 235, 267, 269, 278) | **5/5** — each answer ends with `Edition: … — SUPERSEDED by …:2021`, exact page cited 5/5 |
+| Category F traps (282, 299 clause does not exist; 309, 315 edition not held) | **4/4** — "Not found" / "not held"; held 2021 figures given only labelled as the 2021 edition |
+| Answer block (Edition, Decision support note, 📁 Saved) | present in all 9 |
+
+Raw answers: `runs/2026-11-25-grok_retest_raw/`, graded: `runs/2026-11-25-grok_retest.json`.
+
+**All 30 sample questions together: 26/30 (95% interval 70–95%)** — categories A 10/10, B 6/9, D 5/5, E 1/2, F 4/4.
+The remaining 4 misses are the B/E items above (136, 215, 154, 173), asked under the earlier skill.
