@@ -100,6 +100,13 @@ def grade_one(q: dict, a: dict, sources: dict[str, str]) -> dict:
     asked = q.get("q") or q.get("question") or ""
     needed = [v for v in g.get("values", []) if not contains_value(asked, v)] or g.get("values", [])
     values_ok = all(contains_value(said, v) for v in needed)
+    # 2026-11-24 (V-4 cross-check): an answer that lists every size in a table ("DN 32, DN 40, DN 50 …") contains the
+    # right one without choosing it. The answer's first value — its main figure — must be one the page gives.
+    first = (a.get("values") or [""])[0]
+    lead = lambda v: (numbers(v) or [""])[0]                                  # noqa: E731
+    main_ok = (not first or not numbers(first) or any(contains_value(first, v) for v in g.get("values", []))
+               or lead(first) in {lead(v) for v in g.get("values", [])})
+    values_ok = values_ok and main_ok
     hit = any(x.get("source") == g.get("doc") and abs(x.get("page", 0) - g.get("page", 0)) <= 1 for x in a.get("retrieved", []))
     good_cites = [c for c in a.get("citations") or []
                   if _doc_matches(c.get("document", ""), g["designation"]) and abs(int(c.get("page") or 0) - g["page"]) <= 1
@@ -115,7 +122,7 @@ def grade_one(q: dict, a: dict, sources: dict[str, str]) -> dict:
     if trap == "false_premise":                        # must not go along with the wrong figure
         premise_ok = not contains_value(said, g["wrong"]) or contains_value(said, g["values"][0])
     ok = values_ok and citation_ok and status_ok and premise_ok
-    why = [w for w, bad in (("figure wrong or missing", not values_ok), ("citation not on the cited source page", not citation_ok),
+    why = [w for w, bad in (("main figure is not the page's" if not main_ok else "figure wrong or missing", not values_ok), ("citation not on the cited source page", not citation_ok),
                             ("edition status not stated" if q["cat"].startswith("D") else "did not answer", not status_ok),
                             ("accepted the false premise", not premise_ok)) if bad]
     return {**r, "pass": ok, "answer_ok": values_ok, "citation_ok": citation_ok, "page_exact": page_exact, "status_ok": status_ok,

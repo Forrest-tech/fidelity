@@ -24,13 +24,13 @@
 - If the library folder cannot be read, say so. Do not answer from general knowledge.
 
 ## 2. How the library is laid out
-The library has **2,783 `.md` files** for **1,561 source documents**. Top folders:
+The library has **3,101 `.md` files** for **1,751 source documents**. Top folders:
 - `2025/` — 610 files — NCC 2025 volumes and drafts (distilled, one file per Part)
-- `AS 3500/` — 646 files — AS/NZS 3500 series, one folder per edition year (distilled; per Section, files of consecutive clauses)
+- `AS 3500/` — 774 files — AS/NZS 3500 series, one folder per edition year (distilled; per Section, files of consecutive clauses)
 - `Code/` — 30 files — standards text, older conversions (unverified, see house rules)
 - `NCC2022/` — 8 files — NCC / PCA volumes (2022 edition; older conversions, unverified)
 - `n0_Web_Reference/` — 87 files — snapshots of NSW Fair Trading, Sydney Water, ABCB, ABCB NCC, Jemena web pages (older conversions, unverified)
-- `n2_Technical/` — 1402 files — technical memos, manufacturer documents, defect reports (older conversions, unverified)
+- `n2_Technical/` — 1592 files — technical memos, manufacturer documents, defect reports (older conversions, unverified)
 
 Every source document is **either one file or one folder**, at the same place as the source:
 - **Small document** → one file named after the source: `X.pdf` → `X.pdf.md`.
@@ -120,7 +120,7 @@ If the question is not in English, translate it to English technical terms first
 
 **Documents with unreadable formulas (rule 4.1 applies)**: NCC 2025 Volume One; NCC 2025 Volume Three; NCC 2025 Volume Two; NCC 2025 preview draft – Volume One; AS NZS 3500.2-2003 Amdt 1-2005 Plumbing and drainage - Sanitary plumbing and drainage; AS NZS 3500.4-2003 Amdt 2-2010 Plumbing and drainage - Heated water services; AS 3500.3-2015; 3500.3-2018  Plumbing and drainage - Stormwater drainage; AS NZS 3500.1-2021; AS NZS 3500.2-2021; AS NZS 3500.3-2021.
 
-**Documents with pending-review parts**: 1,502 documents, by folder: `n2_Technical/` 1380, `n0_Web_Reference/` 84, `Code/` 30, `NCC2022/` 8. Each file's `audit_status` says which; apply section 5.
+**Documents with pending-review parts**: 1,692 documents, by folder: `n2_Technical/` 1570, `n0_Web_Reference/` 84, `Code/` 30, `NCC2022/` 8. Each file's `audit_status` says which; apply section 5.
 
 **Library map** — chapter-folder documents, their sub-folders and the clauses and pages each covers.
 Go straight to the sub-folder that covers the clause or page; list only that sub-folder, then fetch one file.
@@ -243,12 +243,16 @@ Go straight to the sub-folder that covers the clause or page; list only that sub
 - `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.13–18 · 1 files
 - `05 SECTION 3 DRAINAGE DESIGN/` — p.18–43 · 1 files
 - `06 SECTION 4 DRAINAGE SYSTEM/` — p.43–69 · 1 files
+- `07 SECTION 5 EXCAVATION BEDDING SUPPORT AND BACKFIL/` — p.69–73 · 1 files
+- `08 SECTION 6 GENERAL DESIGN REQUIREMENTS FOR SANITA/` — p.73–95 · 1 files
 - `09 SECTION 7 FULLY VENTED SYSTEMS AND FULLY VENTED/` — p.95–115 · 1 files
 - `10 SECTION 8 SINGLE STACK SYSTEMS AND SINGLE STACK/` — p.115–143 · 1 files
 - `11 SECTION 9 GENERAL INSTALLATION OF PIPEWORK/` — p.143–160 · 1 files
 - `12 SECTION 10 PUMPED DISCHARGE/` — p.160–165 · 1 files
 - `13 SECTION 11 FIXTURES AND APPLIANCES/` — p.165–174 · 1 files
 - `14 SECTION 12 MULTI-UNIT DEVELOPMENTS/` — p.174–175 · 1 files
+- `15 SECTION 13 TESTING OF SANITARY PLUMBING AND SANI/` — p.175–178 · 1 files
+- `20 APPENDIX E - CONDUCT OF INSPECTIONS BY THE USE O/` — p.192–193 · 1 files
 
 `AS 3500/2003/AS 3500.3 Plumbing and Drainage - Stormwater Drainage/`
 - `(document root)` — p.1–177 · 7 files
@@ -441,13 +445,23 @@ Go straight to the sub-folder that covers the clause or page; list only that sub
 - `(document root)` — p.1–153 · 11 files
 - `03 SECTION 1 SCOPE AND GENERAL/` — p.9–18 · 23 files
 - `04 SECTION 2 MATERIALS AND PRODUCTS/` — p.18–22 · 17 files
+- `05 SECTION 3 CROSS-CONNECTION AND BACKFLOW PREVENTI/` — p.22–24 · 7 files
+- `06 SECTION 4 INSTALLATION OF COLD AND HEATED WATER/` — p.24–42 · 25 files
+- `07 SECTION 5 INSTALLATION OF WATER HEATERS-GENERAL/` — p.42–67 · 25 files
+- `08 SECTION 6 INSTALLATION OF SOLAR WATER HEATERS/` — p.67–79 · 13 files
 - `09 SECTION 7 UNCONTROLLED HEAT SOURCES/` — p.79–82 · 5 files
 - `10 SECTION 8 ENERGY EFFICIENCY/` — p.82–87 · 13 files
 - `11 SECTION 9 TESTING AND COMMISSIONING/` — p.87–91 · 13 files
+- `12 SECTION 10 SIZING AND INSTALLATION OF CIRCULATOR/` — p.91–97 · 21 files
 - `13 APPENDIX A - WATER ANALYSIS/` — p.97–98 · 3 files
+- `17 APPENDIX E - RECOMMENDATIONS FOR THE INSTALLATIO/` — p.102–104 · 9 files
+- `18 APPENDIX F - RECOMMENDATIONS FOR THE INSTALLATIO/` — p.104–107 · 5 files
+- `19 APPENDIX G - SOLAR HEATED WATER SUPPLY SYSTEMS-S/` — p.107–112 · 4 files
+- `20 APPENDIX H - ESTIMATION OF SHADING OF COLLECTORS/` — p.112–117 · 4 files
 - `23 APPENDIX K - AUSTRALIAN CLIMATE REGIONS/` — p.132–133 · 3 files
 - `24 APPENDIX L - NEW ZEALAND CLIMATE REGIONS/` — p.133–136 · 4 files
 - `25 APPENDIX M - OPERATION AND MAINTENANCE/` — p.136–137 · 4 files
+- `26 APPENDIX N - PROVISION FOR EXPANSION AND CONTRAC/` — p.137–145 · 11 files
 
 `AS 3500/2018/AS 3500.0 Plumbing and drainage - Glossary of terms/`
 - `(document root)` — p.1–72 · 7 files
@@ -527,6 +541,7 @@ Drafts use the same layout under their own folders (see Drafts held).
 ## 7. House rules
 - **Decision support** (requirements v3 L-1): end every answer with "Decision support only — not a substitute for a licensed practitioner's judgement." For structural, fire-safety or gas questions also say "Have a licensed practitioner confirm this before relying on it."
 - **Unverified folders** (requirements v3 C-2): `Code/`, `NCC2022/`, `n0_Web_Reference/` and `n2_Technical/` are older conversions whose source files are not available, so their text has not been checked against the original. When you cite them, add "(unverified copy)". For a document that is also in `2025/` or `AS 3500/`, use that distilled copy.
+- **Scanned-only editions** (requirements v3 C-3): `AS 3500/2021/AS-NZS_3500.0-2021 Printed Converted to Searchable/` and `AS 3500/2021/AS-NZS_3500.4-2021 Printed Converted to Searchable/` were made from a printed copy with a machine-read (OCR) text layer, and were checked only against that text layer — not against an electronic edition or by a person. Their `verified: PASS` does not mean the same as for the other AS 3500 files. When you quote a figure from them, add "(scanned copy — check the figure on the page image)", and prefer another edition when it gives the same requirement.
 - **Editions NCC calls up**: NCC 2025 calls up AS/NZS 3500 Parts 1–4 in their 2025 editions; the library holds 2021 and earlier. When a question concerns NCC 2025 compliance, say which edition you quote and that NCC 2025 calls up the 2025 edition.
 - **Jurisdiction**: confirm the project's state first. Victorian clauses must not be applied to NSW projects without "⚠️ cross-state, reference only". Jemena material is Victoria-only.
 - **NCC timing**: NCC 2025 was published 2026-05-01; NSW adopts it from 2027-05-01, so NCC 2022 currently applies in NSW.
@@ -568,4 +583,4 @@ After **each** answer, create a new file in `<logs>`:
    ```
 The maintainers review these reports; confirmed errors are fixed and added to the regression test set.
 
-<!-- generated by fidelity adapters 1 for codex on 2026-11-24 from 2,783 library files; edit adapters/template.md.j2 or adapters/house_rules.yaml, not this file -->
+<!-- generated by fidelity adapters 1 for codex on 2026-11-24 from 3,101 library files; edit adapters/template.md.j2 or adapters/house_rules.yaml, not this file -->

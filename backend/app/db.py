@@ -259,6 +259,14 @@ CREATE TABLE IF NOT EXISTS correction_check (
   rule_id TEXT, room_id TEXT, rel TEXT, by_user TEXT, at REAL,
   PRIMARY KEY (rule_id, room_id, rel)
 );
+-- Weekly spot check (requirements v3 H-3): 20 published pages a week compared by a person with the source page.
+CREATE TABLE IF NOT EXISTS spot_check (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, week TEXT NOT NULL, n INTEGER NOT NULL,
+  lib_path TEXT NOT NULL, page INTEGER NOT NULL, text TEXT NOT NULL,
+  source TEXT, source_hash TEXT, document TEXT,
+  verdict TEXT, note TEXT, by_user TEXT, at REAL, created_at REAL NOT NULL,
+  UNIQUE (week, n)
+);
 """
 
 # Columns added to `job` after its first version (a worker/process id and heartbeat for run supervision,

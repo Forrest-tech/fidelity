@@ -316,6 +316,7 @@
         "queue": "Capacity and queue",
         "corrections": "Correction library",
         "archive": "Archive and retention",
+        "spot": "Spot check",
         "users": "Users and roles",
         "notifications": "Notifications",
         "audit": "Audit log",
@@ -1412,5 +1413,32 @@
   },
   "table": {
     "resize": "Resize column {{name}}"
+  },
+  "spot": {
+    "hint": "Each week 20 pages of the published library are drawn at random (fixed by the week, whoever opens it) and a person compares each with the same page of the original PDF. The error rate is judged by its upper 95% bound; the target is ≤ 1%.",
+    "firstDraw": "The first visit of the week draws the sample from Dropbox; it takes about half a minute.",
+    "week": "Week",
+    "none": "No sample page has been checked yet.",
+    "result": "{{checked}} pages checked, {{wrong}} wrong; upper 95% bound of the error rate {{upper}} (target ≤ {{target}}).",
+    "meets": "Target met",
+    "needMore": "{{n}} more clean pages are needed to show ≤ 1% statistically.",
+    "above": "Above target: look at the wrong pages",
+    "progress": "{{week}}: {{done}} of {{n}} pages checked",
+    "table": "This week's sample pages",
+    "file": "Library file",
+    "page": "Page",
+    "verdict": "Result",
+    "ok": "Correct",
+    "wrong": "Wrong",
+    "todo": "To check",
+    "source": "Original PDF: {{file}}, page {{page}}",
+    "sourceAlt": "Original PDF page {{page}}",
+    "library": "This page in the library",
+    "ask": "Compare word for word: figures, units, clause numbers and every table cell — do they match the original page?",
+    "note": "What is wrong",
+    "notePh": "e.g. Table 5.3, second row: the page says 150 mm, the library 100 mm",
+    "markOk": "Matches — next page",
+    "markWrong": "Wrong…",
+    "saveWrong": "Record the error — next page"
   }
 }

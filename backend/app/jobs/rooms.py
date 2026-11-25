@@ -50,6 +50,31 @@ def clean_location(v: str, what: str) -> dict:
     return {"kind": "gdrive" if G.is_gdrive(v) else "dropbox", "link": v}
 
 
+def with_path(loc: dict | None) -> dict | None:
+    """Requirements v3 S-4: a shared link is not the only record of a folder. Five failed runs came from links that
+    were removed or replaced, so a Dropbox shared link to a folder in the connected account is resolved once to that
+    folder's path, and runs use the path (path + account). A link to a folder outside the account (shared with us,
+    not added) has no path and keeps working as a link. Resolving needs Dropbox; when it cannot be reached the
+    location is kept as it is and resolved again before the next run."""
+    if not loc or loc.get("kind") != "dropbox" or loc.get("path"):
+        return loc
+    from ..distill import dropbox_io as D
+    kind, *rest = D.parse_link(loc["link"])
+    if kind == "path":
+        return {**loc, "path": rest[0]}
+    try:
+        dbx = D.client("reader")
+        path = D.link_root(dbx, D.canonical(dbx, loc["link"]))
+    except (Exception, SystemExit):                     # noqa: BLE001 - offline, link already dead, not ours
+        return loc
+    return {**loc, "path": path} if path else loc
+
+
+def target(loc: dict) -> str:
+    """What a run is given for a location: the account path when known, else the link."""
+    return loc.get("path") or loc["link"]
+
+
 def _loc(raw):
     if not raw:
         return None
@@ -141,8 +166,8 @@ def update_room(room_id: str, fields: dict) -> dict:
             if not v:
                 raise RoomError(422, "the name cannot be empty")
         elif k in ("source", "dest"):
-            new = clean_location(v if isinstance(v, str) else (v or {}).get("link", ""), k) if v else None
-            if new != room.get(k) and active_job(room_id):
+            new = with_path(clean_location(v if isinstance(v, str) else (v or {}).get("link", ""), k)) if v else None
+            if (new or {}).get("link") != (room.get(k) or {}).get("link") and active_job(room_id):
                 raise RoomError(409, "stop the current run before changing the input or output")
             v = json.dumps(new, ensure_ascii=False) if new else None
         elif k == "mode":
@@ -175,6 +200,22 @@ def update_room(room_id: str, fields: dict) -> dict:
     finally:
         con.close()
     return get_room(room_id)
+
+
+def ensure_paths(room: dict) -> dict:
+    """Rooms saved before S-4 (or while Dropbox was out of reach) get their paths now, before a run uses them."""
+    new = {k: with_path(room[k]) for k in ("source", "dest") if room.get(k)}
+    changed = {k: v for k, v in new.items() if v != room[k]}
+    if not changed:
+        return room
+    con = db.trust_rw()
+    try:
+        for k, v in changed.items():
+            con.execute(f"UPDATE room SET {k}=? WHERE id=?", (json.dumps(v, ensure_ascii=False), room["id"]))
+        con.commit()
+    finally:
+        con.close()
+    return {**room, **changed}
 
 
 def _check_overlap(fields: dict, room: dict):
@@ -466,10 +507,11 @@ def submit_run(room_id: str, force: bool = False) -> str:
         raise RoomError(422, "choose the output folder, or switch to \"distill only\"")
     if active_job(room_id):
         raise RoomError(409, "this room is already queued or running")
+    room = ensure_paths(room)
     # A room's run only distills (results stay on this machine). Sending results to the output folder is a separate
     # step, accept(), so a result is never published without having been judged, and nothing is distilled twice.
     # "parallel": the queue may give the run several slots (files read at once); "unit_points" is one file's share
-    p = {"source_link": room["source"]["link"], "dry_run": True, "force": bool(force), "room_id": room_id,
+    p = {"source_link": target(room["source"]), "dry_run": True, "force": bool(force), "room_id": room_id,
          "parallel": True, "unit_points": room["points"] or 1}
     jid = queue.submit("dropbox_sync", json.dumps(p), "queued", room_id=room_id, priority=room["priority"],
                        points=room["points"] or 1, dest_key=None)
@@ -803,12 +845,13 @@ def withdraw(room_id: str, rels: list) -> dict:
 
 def _queue_publish(room: dict, items: list, user: str | None) -> dict:
     from .queue import queue
+    room = ensure_paths(room)
     room_id = room["id"]
     plan = os.path.join(S.room_dir(room_id), f"publish-{uuid.uuid4().hex[:8]}.json")
     os.makedirs(os.path.dirname(plan), exist_ok=True)
     with open(plan, "w", encoding="utf-8") as f:
         json.dump({"items": items}, f, ensure_ascii=False)
-    p = {"source_link": room["source"]["link"], "dest_link": room["dest"]["link"], "publish_from": plan, "room_id": room_id}
+    p = {"source_link": target(room["source"]), "dest_link": target(room["dest"]), "publish_from": plan, "room_id": room_id}
     jid = queue.submit("dropbox_sync", json.dumps(p), "queued", room_id=room_id, priority=room["priority"], points=1,
                        dest_key=dest_key(room["dest"]))
     now = db.now()
@@ -870,7 +913,7 @@ def compare_file(room: dict, rel: str) -> dict:
         raise RoomError(422, "choose the output folder first")
     r = _result_row(room, rel)
     try:
-        live = L.open_live(room["dest"]["link"])
+        live = L.open_live(target(room["dest"]))
         out = L.compare(os.path.join(S.room_dir(room["id"]), "out", r["out_dir"]), AC.live_key(r["out_dir"]), live)
     except L.LiveError as e:
         raise RoomError(e.status, e.message)
@@ -885,6 +928,6 @@ def accept_impact(room: dict) -> dict:
         raise RoomError(422, "choose the output folder first")
     keys = [AC.live_key(r["out_dir"]) for r in _files(room["id"]) if derive_state(r, room) == "ok" and r["out_dir"]]
     try:
-        return L.impact(keys, L.open_live(room["dest"]["link"]))
+        return L.impact(keys, L.open_live(target(room["dest"])))
     except L.LiveError as e:
         raise RoomError(e.status, e.message)

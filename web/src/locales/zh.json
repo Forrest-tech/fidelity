@@ -316,6 +316,7 @@
         "queue": "算力与队列",
         "corrections": "纠正库",
         "archive": "归档与保留",
+        "spot": "抽查复核",
         "users": "用户与角色",
         "notifications": "通知",
         "audit": "审计日志",
@@ -1412,5 +1413,32 @@
   },
   "table": {
     "resize": "调整列宽：{{name}}"
+  },
+  "spot": {
+    "hint": "每周从已发布的库里随机抽 20 页（按周固定，谁来抽都一样），由人对照原 PDF 的同一页检查。错误率按 95% 置信上限判断，目标 ≤ 1%。",
+    "firstDraw": "本周第一次打开时要从 Dropbox 抽样，约需半分钟。",
+    "week": "周",
+    "none": "还没有人检查过抽样页。",
+    "result": "累计检查 {{checked}} 页，发现错误 {{wrong}} 页；错误率 95% 上限 {{upper}}（目标 ≤ {{target}}）。",
+    "meets": "已达标",
+    "needMore": "再检查 {{n}} 页无错误，才能在统计上证明 ≤ 1%。",
+    "above": "未达标：请查看出错的页",
+    "progress": "{{week}}：已检查 {{done}} / {{n}} 页",
+    "table": "本周抽样页",
+    "file": "库文件",
+    "page": "页",
+    "verdict": "结果",
+    "ok": "正确",
+    "wrong": "有错",
+    "todo": "待检查",
+    "source": "原 PDF：{{file}}，第 {{page}} 页",
+    "sourceAlt": "原 PDF 第 {{page}} 页",
+    "library": "库里这一页的文字",
+    "ask": "逐字对照：数字、单位、条款号、表格每一格是否和原页一致？",
+    "note": "错在哪里",
+    "notePh": "例如：表 5.3 第二行原页是 150 mm，库里写成 100 mm",
+    "markOk": "一致，下一页",
+    "markWrong": "有错…",
+    "saveWrong": "记录错误，下一页"
   }
 }
