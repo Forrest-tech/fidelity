@@ -128,8 +128,8 @@ def draw(week: str, lib=None) -> list[dict]:
                              fm.get("source_file_hash"), fm.get("document", ""), now))
                 if len(rows) == SIZE:
                     break
-            con.executemany("INSERT OR IGNORE INTO spot_check(week,n,lib_path,page,text,source,source_hash,document,"
-                            "created_at) VALUES(?,?,?,?,?,?,?,?,?)", rows)
+            con.executemany("INSERT INTO spot_check(week,n,lib_path,page,text,source,source_hash,document,"
+                            "created_at) VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT (week, n) DO NOTHING", rows)
             con.commit()
         return [dict(r) for r in con.execute("SELECT * FROM spot_check WHERE week=? ORDER BY n", (week,))]
     finally:
@@ -181,7 +181,8 @@ def summary() -> dict:
     """Per week and over all weeks: pages checked, found wrong, and the upper 95 % bound of the error rate."""
     con = _con()
     try:
-        rows = con.execute("SELECT week, COUNT(*) n, SUM(verdict IS NOT NULL) checked, SUM(verdict='wrong') wrong "
+        rows = con.execute("SELECT week, COUNT(*) AS n, SUM(CASE WHEN verdict IS NULL THEN 0 ELSE 1 END) AS checked, "
+                           "SUM(CASE WHEN verdict='wrong' THEN 1 ELSE 0 END) AS wrong "
                            "FROM spot_check GROUP BY week ORDER BY week DESC").fetchall()
     finally:
         con.close()
