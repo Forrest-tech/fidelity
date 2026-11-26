@@ -83,6 +83,12 @@ for _ in $(seq 1 120); do
   sleep 2
 done
 if curl -fsS "$URL/api/v1/health" >/dev/null 2>&1; then
+  # Keep the Mac from idle sleep while Docker Desktop runs: a long distilling run lost its connection to Dropbox for
+  # minutes on 2026-11-26 (likely the Mac idling to sleep, which pauses Docker's network). Closing the lid still sleeps.
+  DPID="$(pgrep -n -f 'com.docker.backend' || pgrep -n -x 'Docker Desktop' || true)"
+  if [ -n "$DPID" ] && ! pgrep -f "caffeinate -i -w $DPID" >/dev/null 2>&1; then
+    nohup caffeinate -i -w "$DPID" >/dev/null 2>&1 &
+  fi
   open "$URL"
   cat <<EOF
 
