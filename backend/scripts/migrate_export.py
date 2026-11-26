@@ -111,8 +111,11 @@ def export(out: str) -> dict:
 def main(argv=None):
     ap = argparse.ArgumentParser()
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M")
-    ap.add_argument("--out", default=os.path.join(os.path.expanduser("~"), "Desktop", f"fidelity-migration-{stamp}.zip"))
+    # not the Desktop: on Windows it is often a OneDrive folder, which would upload the secrets (found 2026-11-25)
+    ap.add_argument("--out", default=os.path.join(os.path.expanduser("~"), "fidelity-migration",
+                                                  f"fidelity-migration-{stamp}.zip"))
     a = ap.parse_args(argv)
+    os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     m = export(a.out)
     total = sum(f["size"] for f in m["files"])
     print(f"{len(m['files'])} files, {total / 1e6:.1f} MB -> {a.out}")

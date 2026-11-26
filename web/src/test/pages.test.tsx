@@ -345,6 +345,7 @@ describe("first-run setup and cloud storage", () => {
     const calls = mockApi((url, init) => {
       if (url.endsWith("/me")) return { body: ME("admin") };
       if (url.endsWith("/storage/dropbox/start")) return { body: { url: "https://www.dropbox.com/oauth2/authorize?x", expires_in: 600 } };
+      if (url.includes("/storage/dropbox/connect")) return { body: { url: "about:blank", redirect_uri: "http://127.0.0.1:8000/api/v1/storage/dropbox/callback" } };
       if (url.endsWith("/storage/dropbox") && !init?.method)
         return { body: { reader: { connected: true, app_key: "k1", account: { name: "Forrest", email: "f@example.com" } },
                          writer: { connected: false, app_key: "", account: null } } };
@@ -352,8 +353,13 @@ describe("first-run setup and cloud storage", () => {
     });
     renderApp("/settings/storage");
     expect(await screen.findByRole("heading", { level: 1, name: "Cloud storage" })).toBeInTheDocument();
-    expect(await screen.findByText("Connected as Forrest (f@example.com)")).toBeInTheDocument();
     const u = userEvent.setup({ pointerEventsCheck: 0 });
+    // one click first: the button asks the server for Dropbox's address (the browser then leaves for Dropbox)
+    await u.click(await screen.findByRole("button", { name: "Connect Dropbox" }));
+    await waitFor(() => expect(calls.some((c) => c.url.includes("/storage/dropbox/connect?role=both"))).toBe(true));
+    // the step-by-step way is still there, folded
+    await u.click(screen.getByText("Other way: enter the App key and code by hand"));
+    expect(await screen.findByText("Connected as Forrest (f@example.com)")).toBeInTheDocument();
     const writer = screen.getByText("Write access (output folders)").closest("section")!;
     await u.click(within(writer).getByLabelText("Dropbox App key"));
     await u.paste("testappkey00001");

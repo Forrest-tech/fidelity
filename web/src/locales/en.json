@@ -290,7 +290,17 @@
         "help2": "On the Permissions tab tick files.metadata.read, files.content.read, sharing.read, account_info.read (and files.content.write for the write access), then Submit.",
         "help3": "Copy the App key from the Settings tab into the field above. You can use one app for both accesses or a separate read-only app.",
         "connectedNoName": "Connected — works; reconnect once to show the account name",
-        "checking": "Checking…"
+        "checking": "Checking…",
+        "oneClick": {
+          "button": "Connect Dropbox",
+          "again": "Reconnect Dropbox",
+          "hint": "Opens Dropbox: sign in if asked, click Allow twice (read, then write), and you come back here. A phone prompt is your Dropbox account's two-step verification.",
+          "done": "Dropbox connected (read and write).",
+          "cancelled": "Cancelled on Dropbox; not connected.",
+          "expired": "The authorisation page waited too long; click again.",
+          "failed": "Not connected; click again, or use the manual way below.",
+          "manual": "Other way: enter the App key and code by hand"
+        }
       },
       "google": {
         "title": "Google Drive",

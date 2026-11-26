@@ -114,6 +114,28 @@ function Connection({ role, c, loading }: { role: Role; c: Conn | undefined; loa
   );
 }
 
+/** One click: the browser goes to Dropbox (sign in if needed, Allow twice: read, then write) and comes back. */
+function OneClick({ s }: { s: Status | undefined }) {
+  const { t } = useTranslation();
+  const go = useMutation({
+    mutationFn: () => api<{ url: string }>("/storage/dropbox/connect?role=both"),
+    onSuccess: (r) => window.location.assign(r.url),
+  });
+  const result = new URLSearchParams(window.location.search).get("dropbox");
+  const both = !!(s?.reader?.connected && s?.writer?.connected);
+  return (
+    <Space orientation="vertical" size={8} style={{ width: "100%" }}>
+      {result === "connected" && <Alert type="success" showIcon title={t("pages.settings.storage.oneClick.done")} />}
+      {result && result !== "connected" && <Alert type="warning" showIcon title={t(`pages.settings.storage.oneClick.${result}`, { defaultValue: t("pages.settings.storage.oneClick.failed") })} />}
+      <Button type="primary" size="large" onClick={() => go.mutate()} loading={go.isPending}>
+        {both ? t("pages.settings.storage.oneClick.again") : t("pages.settings.storage.oneClick.button")}
+      </Button>
+      <Typography.Text type="secondary" style={{ fontSize: 12 }}>{t("pages.settings.storage.oneClick.hint")}</Typography.Text>
+      {go.isError && <Alert type="info" showIcon title={(go.error as Error).message} />}
+    </Space>
+  );
+}
+
 export function CloudStorage() {
   const { t } = useTranslation();
   const q = useQuery({ queryKey: ["storage"], queryFn: () => api<Status>("/storage/dropbox") });
@@ -122,9 +144,21 @@ export function CloudStorage() {
       <Space orientation="vertical" size={16} style={{ width: "100%" }}>
         <Typography.Text type="secondary">{t("pages.settings.storage.intro")}</Typography.Text>
         {q.isError && <Alert type="error" showIcon title={(q.error as Error).message} />}
-        {(["reader", "writer"] as Role[]).map((r) => (
-          <Connection key={`${r}-${q.data?.[r]?.app_key ?? ""}`} role={r} c={q.data?.[r]} loading={q.isLoading} />
-        ))}
+        <OneClick s={q.data} />
+        <Collapse
+          size="small"
+          items={[{
+            key: "manual",
+            label: t("pages.settings.storage.oneClick.manual"),
+            children: (
+              <Space orientation="vertical" size={16} style={{ width: "100%" }}>
+                {(["reader", "writer"] as Role[]).map((r) => (
+                  <Connection key={`${r}-${q.data?.[r]?.app_key ?? ""}`} role={r} c={q.data?.[r]} loading={q.isLoading} />
+                ))}
+              </Space>
+            ),
+          }]}
+        />
         <Collapse
           size="small"
           ghost
