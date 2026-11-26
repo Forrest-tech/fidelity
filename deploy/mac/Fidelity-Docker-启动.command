@@ -65,6 +65,7 @@ fi
 
 # ---- 5. build and start
 say "构建并启动容器（第一次约 5–15 分钟，之后很快）… / Building and starting"
+docker compose config -q || fail "Docker Compose 读不懂 docker-compose.yml（版本 $(docker compose version --short 2>/dev/null)）。请更新 Docker Desktop 后再运行。"
 if ! docker compose up -d --build; then
   say "按本机芯片构建失败，改用 x86 模式重试（较慢）… / Retrying as linux/amd64"
   DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose up -d --build || fail "构建失败。请把上面的输出发给维护者。"
