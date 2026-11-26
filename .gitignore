@@ -59,3 +59,6 @@ tools/gitleaks/
 deploy/docker/fidelity.env
 .preview-dist/
 .preview-shots/
+
+# Docker backup copies when FIDELITY_BACKUP_HOST_DIR is not set
+backups/
