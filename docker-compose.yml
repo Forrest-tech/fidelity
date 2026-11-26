@@ -1,4 +1,5 @@
-# Fidelity in Docker. Settings: copy deploy/docker/fidelity.env.example to deploy/docker/fidelity.env.
+# Fidelity in Docker. Settings: copy deploy/docker/fidelity.env.example to deploy/docker/fidelity.env (required;
+# the Mac one-click script writes one), or create an empty file there to use the built-in SQLite.
 #   docker compose up -d --build        start (and rebuild after an update)
 #   docker compose logs -f              follow the log
 #   docker compose down                 stop (data stays in the volumes)
@@ -10,8 +11,9 @@ services:
     ports:
       - "127.0.0.1:8000:8000"          # this machine only; change to "8000:8000" for the office network
     env_file:
-      - path: deploy/docker/fidelity.env      # optional: without it the container uses SQLite in its volume
-        required: false
+      # plain string form: older Docker Compose (before 2.24) rejects the {path, required} form. The file must exist:
+      # the one-click start script writes it (SQLite); otherwise copy deploy/docker/fidelity.env.example.
+      - deploy/docker/fidelity.env
     extra_hosts:
       - "host.docker.internal:host-gateway"   # reach PostgreSQL / Ollama running on this machine
     volumes:
