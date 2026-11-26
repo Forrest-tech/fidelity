@@ -6,7 +6,8 @@
 import os, json
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # fidelity/
-DATA_DIR = os.path.join(BASE_DIR, "data")
+# FIDELITY_DATA_DIR: another data folder (an isolated test server, and the runs it starts, see a new installation)
+DATA_DIR = os.environ.get("FIDELITY_DATA_DIR") or os.path.join(BASE_DIR, "data")
 CONFIG_PATH = os.path.join(DATA_DIR, "config.json")
 TRUST_DB = os.path.join(DATA_DIR, "trust.db")
 CACHE_DIR = os.path.join(DATA_DIR, "cache")
