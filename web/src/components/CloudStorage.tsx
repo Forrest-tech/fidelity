@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Button, Card, Collapse, Form, Input, Popconfirm, Space, Tag, Typography } from "antd";
-import { api, json } from "../net/client";
+import { api, ApiError, json } from "../net/client";
 
 type Role = "reader" | "writer";
 interface Conn { connected: boolean; app_key: string; account: { name?: string; email?: string; error?: string } | null }
@@ -114,6 +114,38 @@ function Connection({ role, c, loading }: { role: Role; c: Conn | undefined; loa
   );
 }
 
+/** One click: the browser goes to Dropbox (sign in if needed, Allow twice: read, then write) and comes back. */
+function OneClick({ s }: { s: Status | undefined }) {
+  const { t } = useTranslation();
+  const [key, setKey] = useState("");
+  const go = useMutation({
+    mutationFn: () => api<{ url: string }>(`/storage/dropbox/connect?role=both${key.trim() ? `&key=${encodeURIComponent(key.trim())}` : ""}`),
+    onSuccess: (r) => window.location.assign(r.url),
+  });
+  const needsKey = go.error instanceof ApiError && go.error.status === 428;
+  const result = new URLSearchParams(window.location.search).get("dropbox");
+  const both = !!(s?.reader?.connected && s?.writer?.connected);
+  return (
+    <Space orientation="vertical" size={8} style={{ width: "100%" }}>
+      {result === "connected" && <Alert type="success" showIcon title={t("pages.settings.storage.oneClick.done")} />}
+      {result && result !== "connected" && <Alert type="warning" showIcon title={t(`pages.settings.storage.oneClick.${result}`, { defaultValue: t("pages.settings.storage.oneClick.failed") })} />}
+      <Button type="primary" size="large" onClick={() => go.mutate()} loading={go.isPending}>
+        {both ? t("pages.settings.storage.oneClick.again") : t("pages.settings.storage.oneClick.button")}
+      </Button>
+      <Typography.Text type="secondary" style={{ fontSize: 12 }}>{t("pages.settings.storage.oneClick.hint")}</Typography.Text>
+      {needsKey && (
+        <Space.Compact style={{ width: "100%", maxWidth: 520 }}>
+          <Input aria-label={t("pages.settings.storage.appKey")} placeholder={t("pages.settings.storage.oneClick.keyOnce")}
+            value={key} onChange={(e) => setKey(e.target.value)} autoComplete="off" spellCheck={false} />
+          <Button type="primary" disabled={!key.trim()} onClick={() => go.mutate()}>{t("pages.settings.storage.connect")}</Button>
+        </Space.Compact>
+      )}
+      {go.isError && !needsKey && <Alert type="info" showIcon title={(go.error as Error).message} />}
+      {needsKey && <Typography.Text type="secondary" style={{ fontSize: 12 }}>{t("pages.settings.storage.oneClick.keyWhy")}</Typography.Text>}
+    </Space>
+  );
+}
+
 export function CloudStorage() {
   const { t } = useTranslation();
   const q = useQuery({ queryKey: ["storage"], queryFn: () => api<Status>("/storage/dropbox") });
@@ -122,9 +154,21 @@ export function CloudStorage() {
       <Space orientation="vertical" size={16} style={{ width: "100%" }}>
         <Typography.Text type="secondary">{t("pages.settings.storage.intro")}</Typography.Text>
         {q.isError && <Alert type="error" showIcon title={(q.error as Error).message} />}
-        {(["reader", "writer"] as Role[]).map((r) => (
-          <Connection key={`${r}-${q.data?.[r]?.app_key ?? ""}`} role={r} c={q.data?.[r]} loading={q.isLoading} />
-        ))}
+        <OneClick s={q.data} />
+        <Collapse
+          size="small"
+          items={[{
+            key: "manual",
+            label: t("pages.settings.storage.oneClick.manual"),
+            children: (
+              <Space orientation="vertical" size={16} style={{ width: "100%" }}>
+                {(["reader", "writer"] as Role[]).map((r) => (
+                  <Connection key={`${r}-${q.data?.[r]?.app_key ?? ""}`} role={r} c={q.data?.[r]} loading={q.isLoading} />
+                ))}
+              </Space>
+            ),
+          }]}
+        />
         <Collapse
           size="small"
           ghost
