@@ -19,6 +19,23 @@ from ..distill import dropbox_io as D
 
 router = APIRouter(dependencies=[Depends(require_role())])          # administrators only
 ROLES = ("reader", "writer")
+# The Dropbox app key (a public PKCE client id, but kept out of the code): FIDELITY_DROPBOX_APP_KEY, else the key of
+# an existing connection (a migration package brings it), else the administrator enters it once on the page.
+CALLBACK_DBX = "/api/v1/storage/dropbox/callback"
+
+
+def app_key() -> str:
+    import os
+    env = os.environ.get("FIDELITY_DROPBOX_APP_KEY", "").strip()
+    if env:
+        return env
+    if _pending_key.get("key"):
+        return _pending_key["key"]
+    for r in ROLES:
+        a = D.load_auth().get(r)
+        if isinstance(a, dict) and a.get("app_key"):
+            return a["app_key"]
+    return ""
 FLOW_TTL = 600                                                        # an authorisation link is valid 10 minutes
 _flows: dict = {}
 _lock = threading.Lock()
@@ -66,7 +83,7 @@ def status(check: bool = True):
     for r in ROLES:
         a = data.get(r) if isinstance(data.get(r), dict) else None
         ok = bool(a and a.get("refresh_token"))
-        out[r] = {"connected": ok, "app_key": (a or {}).get("app_key", ""),
+        out[r] = {"connected": ok, "app_key": (a or {}).get("app_key", "") or app_key(),
                   "scopes": (a or {}).get("scopes", ""), "account": _account(r) if ok and check else None}
     return out
 
@@ -108,6 +125,82 @@ def finish(body: FinishIn):
                             + ". Codes work once and only for a few minutes — click Connect again.")
     D.save_role(role, key, res.refresh_token, res.scope)
     return {"connected": True, "account": _account(role)}
+
+
+# ---- one click: the browser goes to Dropbox and comes back by itself (no code to copy, no app key to type)
+from fastapi import Request as _Request  # noqa: E402
+from fastapi.responses import RedirectResponse as _Redirect  # noqa: E402
+
+_web_flows: dict = {}
+_pending_key: dict = {}                                   # a key typed on the page, used until a connection saves it
+
+
+def redirect_uri(request) -> str:
+    """Where Dropbox sends the browser back. Dropbox accepts http only for localhost / 127.0.0.1; any other address
+    must be https (the page then offers the copy-the-code way)."""
+    return str(request.base_url).rstrip("/") + CALLBACK_DBX
+
+
+def can_redirect(request) -> bool:
+    u = redirect_uri(request)
+    return u.startswith("https://") or u.startswith(("http://127.0.0.1", "http://localhost"))
+
+
+def _web_flow(role: str, request, session: dict):
+    import dropbox
+    return dropbox.DropboxOAuth2Flow(app_key(), redirect_uri(request), session, "dropbox-csrf", use_pkce=True,
+                                     token_access_type="offline",
+                                     scope=D.WRITE_SCOPES if role == "writer" else D.READ_SCOPES)
+
+
+@router.get("/storage/dropbox/connect")
+def connect(request: _Request, role: str = "both", key: str = ""):
+    """Start the one-click connection. `both` connects the read-only access first, then the write access: two
+    "Allow" clicks on Dropbox, the second without signing in again."""
+    if role not in ROLES + ("both",):
+        raise HTTPException(422, "role must be reader, writer or both")
+    if not can_redirect(request):
+        raise HTTPException(409, "one-click connect needs the page opened at http://127.0.0.1 or over https; "
+                                 "use the step-by-step way below")
+    key = key.strip()
+    if key:
+        if not re.fullmatch(r"[A-Za-z0-9]{8,32}", key):
+            raise HTTPException(422, "that does not look like a Dropbox App key (letters and digits, about 15 characters)")
+        _pending_key["key"] = key
+    if not app_key():
+        raise HTTPException(428, "enter the Dropbox App key once (Dropbox App Console > your app > Settings)")
+    first = "reader" if role in ("reader", "both") else "writer"
+    session: dict = {}
+    url = _web_flow(first, request, session).start()
+    with _lock:
+        _web_flows[session["dropbox-csrf"]] = (first, role == "both", session, time.time())
+    return {"url": url, "redirect_uri": redirect_uri(request)}
+
+
+@router.get("/storage/dropbox/callback")
+def callback(request: _Request, state: str = "", code: str = "", error: str = "", error_description: str = ""):
+    """Dropbox sends the browser here after Allow (or Cancel); the page then shows the result."""
+    back = "/settings/storage?dropbox="
+    csrf = state.split("|", 1)[0]
+    with _lock:
+        entry = _web_flows.pop(csrf, None)
+    if not entry or time.time() - entry[3] > FLOW_TTL:
+        return _Redirect(back + "expired")
+    role, then_writer, session, _ = entry
+    if error:
+        return _Redirect(back + ("cancelled" if error == "access_denied" else "failed"))
+    try:
+        res = _web_flow(role, request, session).finish({"state": state, "code": code})
+    except Exception:                                        # noqa: BLE001 - bad state, used code, wrong redirect
+        return _Redirect(back + "failed")
+    D.save_role(role, app_key(), res.refresh_token, res.scope)
+    if then_writer and role == "reader":                     # straight on to the write access
+        session2: dict = {}
+        url = _web_flow("writer", request, session2).start()
+        with _lock:
+            _web_flows[session2["dropbox-csrf"]] = ("writer", False, session2, time.time())
+        return _Redirect(url)
+    return _Redirect(back + "connected")
 
 
 @router.delete("/storage/dropbox/{role}")

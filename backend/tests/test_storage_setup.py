@@ -189,3 +189,81 @@ def test_google_disconnect_removes_only_that_role(login, gauth, monkeypatch):
     assert c.delete("/api/v1/storage/google/writer").json() == {"removed": True}
     data = json.loads(gauth.read_text(encoding="utf-8"))
     assert "writer" not in data and data["reader"]["refresh_token"] == "r"
+
+
+# ------------------------------------------------------------------ one click (browser goes to Dropbox and back)
+class FakeWebFlow:
+    """dropbox.DropboxOAuth2Flow stand-in: start() stores a CSRF token in the session; finish() checks it."""
+    n = 0
+
+    def __init__(self, key, redirect_uri, session, csrf_key, **kw):
+        self.key, self.redirect, self.session, self.csrf_key, self.kw = key, redirect_uri, session, csrf_key, kw
+
+    def start(self):
+        FakeWebFlow.n += 1
+        self.session[self.csrf_key] = f"csrf{FakeWebFlow.n}"
+        return f"https://www.dropbox.com/oauth2/authorize?state={self.session[self.csrf_key]}&redirect_uri={self.redirect}"
+
+    def finish(self, q):
+        if q["state"] != self.session[self.csrf_key] or q["code"] != "GOOD":
+            raise ValueError("bad state or code")
+        return type("R", (), {"refresh_token": f"RT-{self.session[self.csrf_key]}", "scope": " ".join(self.kw["scope"])})()
+
+
+def _state(url):
+    return url.split("state=")[1].split("&")[0]
+
+
+def _local(role="admin"):
+    """The Mac opens the app at http://127.0.0.1:8000: the one address (with localhost and https) Dropbox returns to."""
+    c = TestClient(app, base_url="http://127.0.0.1:8000")
+    assert c.post("/api/v1/auth/login", data={"username": f"st-{role}@example.com", "password": PW}).status_code in (200, 204)
+    return c
+
+
+def test_one_click_connects_read_then_write_and_comes_back(login, auth_file, monkeypatch):
+    import dropbox
+    monkeypatch.setattr(dropbox, "DropboxOAuth2Flow", FakeWebFlow)
+    monkeypatch.setattr(ST, "_pending_key", {})
+    login("admin")
+    c = _local()
+    r = c.get("/api/v1/storage/dropbox/connect?role=both")
+    assert r.status_code == 428                                         # a new server asks for the app key once
+    assert c.get("/api/v1/storage/dropbox/connect?role=both&key=bad!").status_code == 422
+    r = c.get("/api/v1/storage/dropbox/connect?role=both&key=companyappkey01")
+    assert r.status_code == 200 and r.json()["redirect_uri"].endswith("/api/v1/storage/dropbox/callback")
+    s1 = _state(r.json()["url"])
+    r = c.get(f"/api/v1/storage/dropbox/callback?state={s1}&code=GOOD", follow_redirects=False)
+    assert r.status_code in (302, 307) and r.headers["location"].startswith("https://www.dropbox.com/oauth2/")  # on to write
+    s2 = _state(r.headers["location"])
+    r = c.get(f"/api/v1/storage/dropbox/callback?state={s2}&code=GOOD", follow_redirects=False)
+    assert r.headers["location"] == "/settings/storage?dropbox=connected"
+    saved = json.loads(auth_file.read_text(encoding="utf-8"))
+    assert "files.content.write" not in saved["reader"]["scopes"] and "files.content.write" in saved["writer"]["scopes"]
+    assert saved["reader"]["app_key"] == saved["writer"]["app_key"] == "companyappkey01"
+    monkeypatch.setattr(ST, "_pending_key", {})
+    assert c.get("/api/v1/storage/dropbox/connect?role=both").status_code == 200   # then never again: it is saved
+
+
+def test_one_click_cancel_replay_and_unknown_state_change_nothing(login, auth_file, monkeypatch):
+    import dropbox
+    monkeypatch.setattr(dropbox, "DropboxOAuth2Flow", FakeWebFlow)
+    monkeypatch.setenv("FIDELITY_DROPBOX_APP_KEY", "envappkey000001")
+    login("admin")
+    c = _local()
+    s = _state(c.get("/api/v1/storage/dropbox/connect?role=reader").json()["url"])
+    r = c.get(f"/api/v1/storage/dropbox/callback?state={s}&error=access_denied", follow_redirects=False)
+    assert r.headers["location"].endswith("dropbox=cancelled")
+    r = c.get(f"/api/v1/storage/dropbox/callback?state={s}&code=GOOD", follow_redirects=False)   # used once only
+    assert r.headers["location"].endswith("dropbox=expired")
+    r = c.get("/api/v1/storage/dropbox/callback?state=forged&code=GOOD", follow_redirects=False)
+    assert r.headers["location"].endswith("dropbox=expired")
+    assert not auth_file.exists() or "reader" not in json.loads(auth_file.read_text(encoding="utf-8"))
+    assert _local("reviewer").get("/api/v1/storage/dropbox/connect").status_code == 403
+
+
+def test_one_click_needs_localhost_or_https(login, auth_file):
+    c = TestClient(app, base_url="http://10.0.0.5:8000")
+    assert c.post("/api/v1/auth/login", data={"username": "st-admin@example.com", "password": PW}).status_code in (200, 204)
+    r = c.get("/api/v1/storage/dropbox/connect")
+    assert r.status_code == 409 and "127.0.0.1" in r.json()["detail"]

@@ -290,7 +290,19 @@
         "help2": "在 Permissions 页勾选 files.metadata.read、files.content.read、sharing.read、account_info.read（写入权限还要勾选 files.content.write），然后点 Submit。",
         "help3": "从 Settings 页复制 App key，填到上面的输入框。两个权限可以用同一个应用，也可以另建一个只读应用。",
         "connectedNoName": "已连接，可正常使用；重新连接一次即可显示账号名称",
-        "checking": "正在检查…"
+        "checking": "正在检查…",
+        "oneClick": {
+          "button": "连接 Dropbox",
+          "again": "重新连接 Dropbox",
+          "hint": "会跳到 Dropbox：需要时登录，然后点两次“允许”（先读取、再写入），之后自动回到这里。手机验证来自你 Dropbox 账号的两步验证。",
+          "done": "Dropbox 已连接（读取和写入）。",
+          "cancelled": "已在 Dropbox 取消授权，没有连接。",
+          "expired": "授权页面停留太久已过期，请再点一次。",
+          "failed": "连接没有成功，请再点一次；仍不行时用下面的手动方式。",
+          "manual": "其他方式：手动输入 App key 和验证码",
+          "keyOnce": "Dropbox App key（只需填一次）",
+          "keyWhy": "这台服务器还不知道公司 Dropbox 应用的 App key：在 Dropbox App Console → 你的应用 → Settings 里复制，填一次即可；导入迁移包的服务器不需要。"
+        }
       },
       "google": {
         "title": "Google Drive",

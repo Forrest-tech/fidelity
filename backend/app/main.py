@@ -1,7 +1,18 @@
 # -*- coding: utf-8 -*-
 """FastAPI 入口。启动：uvicorn app.main:app --reload
 """
-from fastapi import FastAPI
+import sys
+
+# The server prints Chinese status lines. On a console that is not UTF-8 (Windows cp1252 without PYTHONUTF8) such a
+# print raised UnicodeEncodeError inside startup and the server did not start (found 2026-11-25): never let a log line
+# stop the server.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(errors="replace")
+    except (AttributeError, ValueError):
+        pass
+
+from fastapi import FastAPI  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware
 from .spa import SPAStaticFiles
 import os
