@@ -170,24 +170,32 @@ def test_dropbox_inputs_people_paste_are_understood():
     assert D.parse_link("https://www.dropbox.com/home/AS%203500?di=left_nav_browse") == ("path", "/AS 3500")
     assert D.parse_link("https://www.dropbox.com/home/Work/Transfer_Md") == ("path", "/Work/Transfer_Md")
     kind, base, sub = D.parse_link("https://www.dropbox.com/scl/fo/abc123/KEY456/AS%203500?dl=0&rlkey=r1&subfolder_nav_tracking=1")
-    assert (kind, base, sub) == ("link", "https://www.dropbox.com/scl/fo/abc123/KEY456?rlkey=r1", "/AS 3500")
+    assert (kind, base, sub) == ("link", "https://www.dropbox.com/scl/fo/abc123/KEY456/AS%203500?rlkey=r1", "/AS 3500")
     assert D.parse_link("https://www.dropbox.com/scl/fo/abc123/KEY456?rlkey=r1&dl=0")[1:] == ("https://www.dropbox.com/scl/fo/abc123/KEY456?rlkey=r1", "")
 
 
 def test_sub_folder_of_an_own_shared_folder_becomes_its_path():
     from app.distill import dropbox_io as D
+    asked = []
 
     class Dbx:
         def sharing_get_shared_link_metadata(self, url):
-            return type("M", (), {"path_lower": "/library"})()
-    assert D.canonical(Dbx(), "https://www.dropbox.com/scl/fo/a/b/AS%203500?rlkey=r") == "/library/AS 3500"
+            asked.append(url)
+            return type("M", (), {"path_lower": "/library/as 3500"})()
+    assert D.canonical(Dbx(), "https://www.dropbox.com/scl/fo/a/b/AS%203500?rlkey=r") == "/library/as 3500"
+    assert asked == ["https://www.dropbox.com/scl/fo/a/b/AS%203500?rlkey=r"]
     assert D.canonical(Dbx(), "https://www.dropbox.com/home/Transfer_Md") == "/Transfer_Md"
+
+
+def test_sub_folder_of_someone_elses_shared_folder_is_read_through_its_own_link():
+    """2026-11-25: a 'gas regulation' sub-folder link was refused; its whole address is a link to that sub-folder."""
+    from app.distill import dropbox_io as D
 
     class Foreign:
         def sharing_get_shared_link_metadata(self, url):
             return type("M", (), {"path_lower": None})()
-    with pytest.raises(SystemExit, match="Copy link"):
-        D.canonical(Foreign(), "https://www.dropbox.com/scl/fo/a/b/Sub?rlkey=r")
+    raw = "https://www.dropbox.com/scl/fo/a/b/gas%20regulation?dl=0&rlkey=r&subfolder_nav_tracking=1"
+    assert D.canonical(Foreign(), raw) == "https://www.dropbox.com/scl/fo/a/b/gas%20regulation?rlkey=r"
 
 
 def test_live_status_follows_files_stages_and_ocr_pages():
