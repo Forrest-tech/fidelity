@@ -77,9 +77,9 @@ def ocr_protected_enabled() -> bool:
     from .. import config
     try:
         with open(os.path.join(config.DATA_DIR, "app_settings.json"), encoding="utf-8") as f:
-            return bool((json.load(f).get("room_defaults") or {}).get("ocr_protected"))
+            return bool((json.load(f).get("room_defaults") or {}).get("ocr_protected", True))
     except (OSError, ValueError):
-        return False
+        return True                                       # not set: the owner's decision (on), see appsettings.DEFAULTS
 
 
 def reads_as_scan(tri: dict) -> bool:

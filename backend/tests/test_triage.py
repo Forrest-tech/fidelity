@@ -182,3 +182,18 @@ def test_a_copy_restricted_pdf_is_read_through_its_text_layer_when_switched_on(t
     monkeypatch.setenv("FIDELITY_OCR_PROTECTED", "0")
     r = office.distill_any(p, "cr2.pdf", str(tmp_path / "out2"), "", str(tmp_path / "c2"))
     assert r["verdict"] == "SKIP" and r["triage"]["class"] == "protected"   # switched off: listed as before
+
+
+def test_reading_copy_restricted_pdfs_is_on_unless_switched_off(tmp_path, monkeypatch):
+    """2026-11-26: a new installation (the Mac) had no settings file and refused every copy-restricted PDF; the owner
+    decided on 2026-11-22 that they are read."""
+    import json
+    from app import config
+    from app.distill import triage as T
+    monkeypatch.delenv("FIDELITY_OCR_PROTECTED", raising=False)
+    monkeypatch.setattr(config, "DATA_DIR", str(tmp_path))
+    assert T.ocr_protected_enabled()                                    # no settings file yet
+    (tmp_path / "app_settings.json").write_text(json.dumps({"room_defaults": {"threshold": 99}}), encoding="utf-8")
+    assert T.ocr_protected_enabled()                                    # settings saved before the switch existed
+    (tmp_path / "app_settings.json").write_text(json.dumps({"room_defaults": {"ocr_protected": False}}), encoding="utf-8")
+    assert not T.ocr_protected_enabled()                                # switched off on purpose
