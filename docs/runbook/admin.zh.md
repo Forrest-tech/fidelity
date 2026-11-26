@@ -141,6 +141,16 @@ python -m app.distill.sync --source-link <…> --dest-link <…>
 Docker 里的 OCR 引擎是 RapidOCR 和 Tesseract（CPU）。Apple Vision 只能在 macOS 本机运行，所以只有下面的本机安装
 方式才有；基准测试里它排第三，用 Docker 准确率损失很小。
 
+### 一键启动（Mac）
+1. 把项目放到 Mac 上：`git clone https://github.com/Forrest-tech/fidelity.git ~/fidelity`（会要求登录 GitHub）。
+2. 在 Finder 里打开 `~/fidelity/deploy/mac`，双击 **`Fidelity-Docker-启动.command`**。第一次如果提示"无法验证开发者"，
+   右键 → 打开 → 打开。脚本会：安装/启动 Docker Desktop、更新代码、生成设置文件（内置 SQLite）、构建并启动容器、
+   等服务就绪后打开 <http://127.0.0.1:8000>。第一次构建约 5–15 分钟。
+3. 在打开的页面创建管理员，然后：设置 → 网盘与本机目录连接 Dropbox（填 App key，原系统同一页面可看到）；
+   设置 → AI 填 DeepSeek 密钥；设置 → 邮件填 SMTP。
+4. 以后再双击同一个文件就是"更新 + 启动"；停止用 **`Fidelity-Docker-停止.command`**（数据保留在 Docker 卷里）。
+5. 同一个输出文件夹不要让两台服务器同时发布（例如 Windows 虚拟机和 Mac 同时往 Md_Library 发布）。
+
 ## Mac mini（第六阶段）
 1. 运行 `./deploy/mac/install.sh`：安装 Homebrew 软件（Python 3.11、Tesseract、Node、Ollama）、Python 环境
    （有 `deploy/mac/requirements-macos.lock` 时按锁定版本安装——从 CI 产物 `macos-benchmarks-and-lock` 下载）、
