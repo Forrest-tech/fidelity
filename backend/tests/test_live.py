@@ -284,3 +284,15 @@ def test_a_room_takes_the_external_link_as_input_and_runs_from_it(monkeypatch):
     assert r["source"]["link"].startswith("https://www.dropbox.com/scl/fo/") and "path" not in r["source"]
     p = json.loads(queue.get(R.submit_run(r["id"]))["rel"])
     assert p["source_link"] == "https://www.dropbox.com/scl/fo/abc/def?rlkey=k1"
+
+
+def test_the_links_people_paste_by_mistake_say_what_to_do(monkeypatch):
+    dbx = _link_dbx(monkeypatch)
+    cases = {"https://www.dropbox.com/scl/fi/abc/x.pdf?rlkey=r&dl=0": "file_link",
+             "https://www.dropbox.com/s/abc/x.pdf?dl=0": "file_link",
+             "https://www.dropbox.com/scl/fo/abc/def": "no_rlkey",
+             "https://docs.google.com/document/d/x": "not_link"}
+    for url, code in cases.items():
+        with pytest.raises(L.LiveError) as e:
+            L.inspect_link(url, dbx=dbx)
+        assert e.value.code == code, url

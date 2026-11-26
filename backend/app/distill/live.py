@@ -19,9 +19,9 @@ MAX_BYTES = 8_000_000                                        # larger files are 
 
 
 class LiveError(Exception):
-    def __init__(self, status: int, message: str):
+    def __init__(self, status: int, message: str, code: str = ""):
         super().__init__(message)
-        self.status, self.message = status, message
+        self.status, self.message, self.code = status, message, code   # code: the page shows it in its language
 
 
 # ------------------------------------------------------------------ the output folder (Dropbox)
@@ -227,13 +227,18 @@ def inspect_link(raw: str, dbx=None, limit: int = 5000) -> dict:
     from .office import SUPPORTED
     from urllib.parse import urlparse
     kind, *_ = D.parse_link(raw or "")
-    if kind != "link" or urlparse((raw or "").strip()).netloc.lower() not in ("www.dropbox.com", "dropbox.com"):
-        raise LiveError(422, "paste a Dropbox shared link (https://www.dropbox.com/scl/fo/…)")
+    u = urlparse((raw or "").strip())
+    if kind != "link" or u.netloc.lower() not in ("www.dropbox.com", "dropbox.com"):
+        raise LiveError(422, "paste a Dropbox shared link (https://www.dropbox.com/scl/fo/…)", "not_link")
+    if u.path.startswith(("/scl/fi/", "/s/")):              # what people paste most often by mistake (2026-11-25)
+        raise LiveError(422, "this is a link to one file; share the folder that holds the files instead", "file_link")
+    if u.path.startswith("/scl/fo/") and "rlkey=" not in u.query:
+        raise LiveError(422, "the link is incomplete (no rlkey=…); copy it again with Share > Copy link", "no_rlkey")
     if dbx is None:
         try:
             dbx = D.client("reader")
         except (OSError, ValueError, RuntimeError) as e:
-            raise LiveError(409, "Dropbox is not connected; connect it in Settings") from e
+            raise LiveError(409, "Dropbox is not connected; connect it in Settings", "not_connected") from e
     try:
         link = D.canonical(dbx, raw)
         root = D.link_root(dbx, link)
@@ -241,7 +246,7 @@ def inspect_link(raw: str, dbx=None, limit: int = 5000) -> dict:
     except SystemExit as e:                                  # a sub-folder link of a folder shared with us
         raise LiveError(422, str(e)) from e
     except Exception as e:                                   # noqa: BLE001 - removed, expired or not a folder link
-        raise LiveError(404, "Dropbox cannot open this link: it may have been removed, expired or need a "
+        raise LiveError(404, code="gone", message="Dropbox cannot open this link: it may have been removed, expired or need a "
                              f"password ({type(e).__name__})") from e
     files = supported = size = 0
     started, complete = time.time(), True
@@ -254,6 +259,6 @@ def inspect_link(raw: str, dbx=None, limit: int = 5000) -> dict:
                 complete = False
                 break
     except Exception as e:                                   # noqa: BLE001
-        raise LiveError(404, f"Dropbox cannot list this link's files ({type(e).__name__})") from e
+        raise LiveError(404, f"Dropbox cannot list this link's files ({type(e).__name__})", "list_failed") from e
     return {"link": link, "name": name, "in_account": bool(root), "path": root or None, "files": files,
             "supported": supported, "size_mb": round(size / 1e6, 1), "complete": complete}

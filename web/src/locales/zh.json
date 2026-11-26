@@ -979,7 +979,20 @@
         "inAccount": "这个文件夹就在你自己的 Dropbox 里：运行时会用路径 {{path}}",
         "external": "这个文件夹在别人的 Dropbox 里：运行时通过共享链接只读读取",
         "use": "用这个链接作为输入",
-        "orBrowse": "或在你自己的 Dropbox 里选择"
+        "orBrowse": "或在你自己的 Dropbox 里选择",
+        "err": {
+          "not_link": "请粘贴 Dropbox 共享链接（https://www.dropbox.com/scl/fo/…）。",
+          "file_link": "这是单个文件的链接。请分享装着这些文件的文件夹（在文件夹上点 共享 → 复制链接）。",
+          "no_rlkey": "链接不完整。请在 Dropbox 里重新点 共享 → 复制链接，把完整地址粘贴进来。",
+          "not_connected": "还没有连接 Dropbox：设置 → 网盘与本机目录。",
+          "gone": "Dropbox 打不开这个链接：可能已被删除、已过期或需要密码。请向对方要一个新链接。",
+          "list_failed": "文件夹能打开，但读不出文件列表。请再试一次；如果一直这样，请要一个新链接。"
+        }
+      },
+      "newFolder": {
+        "label": "或者在 {{where}} 里新建一个文件夹（第一次发布结果时自动创建）",
+        "placeholder": "新文件夹名称",
+        "use": "使用新文件夹"
       }
     },
     "corrections": {
