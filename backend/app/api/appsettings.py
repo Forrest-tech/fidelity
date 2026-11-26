@@ -14,7 +14,9 @@ from ..distill import scoring as SC
 
 router = APIRouter()
 PATH = os.path.join(config.DATA_DIR, "app_settings.json")
-DEFAULTS = {"threshold": 99.0, "number_guard": True, "mode": "distill", "ocr_protected": False}
+# ocr_protected on by default: the owner decided on 2026-11-22 that copy-restricted PDFs are read (the company is
+# licensed for this content). A new installation (the Mac, 2026-11-26) had it off and refused all such files.
+DEFAULTS = {"threshold": 99.0, "number_guard": True, "mode": "distill", "ocr_protected": True}
 
 
 def defaults() -> dict:

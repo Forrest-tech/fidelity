@@ -58,3 +58,6 @@ def _reset_postgres():
 
 
 _reset_postgres()
+# a run waits before trying files a dropped connection stopped once more; not in the tests
+from app.distill import sync as _sync  # noqa: E402
+_sync.NET_PAUSE = 0

@@ -151,6 +151,9 @@ jobs:
         run: |
           docker run -d --name f-sqlite -p 8000:8000 fidelity:ci
           bash deploy/docker/smoke_test.sh http://127.0.0.1:8000 f-sqlite || (docker logs f-sqlite; exit 1)
+          # a brand-new installation distils a text PDF, a copy-restricted PDF and a scan with the container's own
+          # settings, OCR models and libraries (2026-11-26: the Mac refused copy-restricted PDFs the VM read)
+          docker exec f-sqlite python scripts/docker_distill_e2e.py || (docker logs --tail 80 f-sqlite; exit 1)
           docker rm -f f-sqlite
       - name: Run against PostgreSQL outside the container
         run: |

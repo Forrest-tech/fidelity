@@ -275,6 +275,27 @@ def test_a_file_that_keeps_failing_is_reported_and_the_run_continues(world, monk
     assert run() == 0 and "/out/src/Guide.md.md" in store.files   # recorded as done, so the next run picks it up
 
 
+def test_a_file_stopped_by_a_longer_outage_is_tried_again_before_the_run_ends(world, monkeypatch, capsys):
+    """2026-11-26, the Mac in Docker: Dropbox could not be reached for minutes; two files failed as 'network dropped'
+    while the rest was fine. They are now tried once more at the end of the run."""
+    import requests
+    src, store, run = world
+    monkeypatch.setattr(SY, "_BACKOFF", (0, 0, 0))
+    real, calls = src.download, {"n": 0}
+
+    def outage(rel, entry, lp):
+        if rel == "/Guide.md":
+            calls["n"] += 1
+            if calls["n"] <= 4:                                   # the first attempt and its 3 retries all fail
+                raise requests.exceptions.ConnectTimeout("Connection to content.dropboxapi.com timed out")
+        real(rel, entry, lp)
+    src.download = outage
+    assert run() == 0
+    out = capsys.readouterr().out
+    assert "will try again at the end of the run" in out and "trying them once more" in out
+    assert "/out/src/Guide.md.md" in store.files and calls["n"] == 5
+
+
 def test_errors_that_are_not_network_errors_are_not_retried():
     calls = []
 

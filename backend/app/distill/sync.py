@@ -60,6 +60,7 @@ def save_state(work, state):
 # Seen on this machine for days in a row: the TLS connection to Dropbox drops now and then (SSLEOFError,
 # "UNEXPECTED_EOF_WHILE_READING"), sometimes for a minute or two. Wait up to about 3.5 minutes before giving up.
 _BACKOFF = (2, 5, 15, 30, 60, 90)
+NET_PAUSE = 120                   # seconds to wait before files a dropped connection stopped are tried once more
 
 
 def _transient(e) -> bool:
@@ -333,6 +334,8 @@ def _pipeline(a, plan, src, src_name, out, cache, rledger, ledger, ev, live, wor
     window = workers + 1               # files downloaded ahead of the readers, at most
     retried = set()
     started = 0
+    later = []                         # files a dropped connection stopped: tried once more at the end of the run
+    second = set()
 
     def failed(rel, e, step):
         err = _err(e)
@@ -407,6 +410,11 @@ def _pipeline(a, plan, src, src_name, out, cache, rledger, ledger, ev, live, wor
             now = _retry(lambda: src.identity(rel, f), "re-check")
         except Exception as e:                      # noqa: BLE001
             results.pop()
+            if _transient(e) and rel not in second:    # the reading is done: only the re-check is repeated later
+                second.add(rel)
+                later.append(("recheck", rel, f, r))
+                print(f"  connection lost while re-checking; will re-check again at the end of the run  [{rel}]", flush=True)
+                return
             failed(rel, e, "re-checking the source")
             return
         if (now["id"], now["rev"], now["size"]) != (f["id"], f["rev"], f["size"]):
@@ -427,7 +435,21 @@ def _pipeline(a, plan, src, src_name, out, cache, rledger, ledger, ev, live, wor
         live.done(rel, r["verdict"])
 
     try:
-        while todo or inflight or ready:
+        while todo or inflight or ready or later:
+            if later and not (todo or inflight or ready):
+                # 2026-11-26, the Mac in Docker: Dropbox could not be reached for a few minutes mid-run and two files
+                # failed as "network dropped" although the rest of the run was fine. Give the connection time, then
+                # try those files once more before the run ends.
+                print(f"\n{len(later)} file(s) stopped by a dropped connection; waiting {NET_PAUSE} s, then trying "
+                      "them once more", flush=True)
+                time.sleep(NET_PAUSE)
+                again, later[:] = list(later), []
+                for item in again:
+                    if item[0] == "download":
+                        todo.append((item[1], item[2]))
+                    else:
+                        after_read(item[1], item[2], item[3])
+                continue
             dispatch()
             while todo and ahead() < window:
                 start_download(*todo.popleft())
@@ -441,6 +463,12 @@ def _pipeline(a, plan, src, src_name, out, cache, rledger, ledger, ev, live, wor
                         fut.result()
                     except Exception as e:          # noqa: BLE001 - SystemExit (safety stops) is not caught
                         reserved -= f.get("size") or 0
+                        if _transient(e) and rel not in second:
+                            second.add(rel)
+                            later.append(("download", rel, f))
+                            print(f"  connection lost while downloading; will try again at the end of the run  [{rel}]",
+                                  flush=True)
+                            continue
                         failed(rel, e, "reading the file")
                         continue
                     cost = min(_cost(extra), budget)
