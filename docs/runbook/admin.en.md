@@ -152,6 +152,19 @@ Keeps the Mac's own environment untouched: everything runs in one container, dat
 In Docker the OCR engines are RapidOCR and Tesseract (CPU). Apple Vision needs macOS itself, so it is only
 available with the native install below; on the benchmark it ranked third, so Docker loses little accuracy.
 
+### One click (Mac)
+1. Put the project on the Mac: `git clone https://github.com/Forrest-tech/fidelity.git ~/fidelity` (asks for a GitHub sign-in).
+2. In Finder open `~/fidelity/deploy/mac` and double-click **`Fidelity-Docker-启动.command`** ("start"). If macOS says the
+   developer cannot be verified, right-click → Open → Open the first time. It installs/starts Docker Desktop, updates the
+   code, writes the settings file (built-in SQLite), builds and starts the container, waits until it answers and opens
+   <http://127.0.0.1:8000>. The first build takes about 5–15 minutes.
+3. On that page create the administrator, then Settings → Storage: connect Dropbox (App key, shown on the same page of
+   the existing server); Settings → AI: the DeepSeek key; Settings → Email: SMTP.
+4. Double-click the same file again to update and start; stop with **`Fidelity-Docker-停止.command`** (data stays in the
+   Docker volumes).
+5. Do not let two servers publish to the same output folder at the same time (e.g. the Windows VM and the Mac both into
+   Md_Library).
+
 ## Mac mini (Phase 6)
 1. `./deploy/mac/install.sh` — installs Homebrew packages (Python 3.11, Tesseract, Node, Ollama), the
    Python environment (locked versions when `deploy/mac/requirements-macos.lock` is present — download it
