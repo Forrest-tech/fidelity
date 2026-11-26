@@ -956,6 +956,18 @@
             "do": "Wait."
           }
         }
+      },
+      "link": {
+        "hint": "Or paste a Dropbox shared link someone gave you (read only; their files are never changed)",
+        "check": "Check",
+        "counting": "Reading the files behind the link (up to 12 s)…",
+        "found": "Found: {{name}}",
+        "counts": "{{files}} files, {{supported}} of them can be distilled, about {{mb}} MB",
+        "countsAtLeast": "At least {{files}} files, {{supported}} of them can be distilled, about {{mb}} MB (many files; not all counted)",
+        "inAccount": "This folder is in your own Dropbox: runs use its path {{path}}",
+        "external": "This folder is in someone else's Dropbox: runs read it through the shared link, read only",
+        "use": "Use this link as the input",
+        "orBrowse": "Or choose in your own Dropbox"
       }
     },
     "corrections": {

@@ -195,6 +195,15 @@ def folders(path: str = ""):
         raise HTTPException(e.status, e.message)
 
 
+@router.get("/folders/link", dependencies=[Depends(require_role(Role.reviewer))])
+def shared_link(url: str):
+    """What a Dropbox shared link from someone else's account holds, read before it is used as a room's input."""
+    try:
+        return L.inspect_link(url)
+    except L.LiveError as e:
+        raise HTTPException(e.status, e.message)
+
+
 @router.get("/rooms/{room_id}/tree")
 def tree(room_id: str, path: str = "", state: str | None = Query(None), q: str | None = Query(None)):
     """One level of the folder tree; folders carry roll-ups so a collapsed folder already shows its numbers."""

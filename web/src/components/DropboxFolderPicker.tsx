@@ -1,9 +1,65 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Alert, Breadcrumb, Button, Empty, Modal, Spin } from "antd";
+import { Alert, Breadcrumb, Button, Divider, Empty, Input, Modal, Spin } from "antd";
 import { FolderOutlined, RightOutlined } from "@ant-design/icons";
 import { api } from "../net/client";
+
+interface LinkInfo {
+  link: string;
+  name: string;
+  in_account: boolean;
+  path: string | null;
+  files: number;
+  supported: number;
+  size_mb: number;
+  complete: boolean;
+}
+
+/** A shared link from someone else's Dropbox: checked (read-only) before it is used as the input. */
+function SharedLink({ initial, onPick }: { initial: string; onPick: (link: string) => void }) {
+  const { t } = useTranslation();
+  const [url, setUrl] = useState(initial.startsWith("http") ? initial : "");
+  const [asked, setAsked] = useState("");
+  const check = useQuery({
+    queryKey: ["shared-link", asked],
+    queryFn: () => api<LinkInfo>(`/folders/link?url=${encodeURIComponent(asked)}`),
+    enabled: !!asked,
+    retry: false,
+  });
+  const info = check.data;
+  return (
+    <div className="fx-stack" style={{ gap: 6 }}>
+      <label className="fx-tiny fx-muted" htmlFor="shared-link">{t("pages.distill.link.hint")}</label>
+      <Input.Search
+        id="shared-link"
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
+        onSearch={(v) => setAsked(v.trim())}
+        enterButton={t("pages.distill.link.check")}
+        placeholder="https://www.dropbox.com/scl/fo/…"
+        loading={check.isFetching}
+        allowClear
+      />
+      {check.isFetching && <div className="fx-tiny fx-muted">{t("pages.distill.link.counting")}</div>}
+      {check.isError && <Alert type="error" showIcon title={(check.error as Error).message} />}
+      {info && !check.isFetching && (
+        <Alert
+          type="success"
+          showIcon
+          title={t("pages.distill.link.found", { name: info.name })}
+          description={
+            <>
+              <div>{t(info.complete ? "pages.distill.link.counts" : "pages.distill.link.countsAtLeast", { files: info.files, supported: info.supported, mb: info.size_mb })}</div>
+              <div className="fx-tiny fx-muted">{info.in_account ? t("pages.distill.link.inAccount", { path: info.path }) : t("pages.distill.link.external")}</div>
+              <Button type="primary" size="small" style={{ marginTop: 6 }} onClick={() => onPick(info.link)}>{t("pages.distill.link.use")}</Button>
+            </>
+          }
+        />
+      )}
+    </div>
+  );
+}
 
 interface Listing {
   path: string;
@@ -19,6 +75,7 @@ export function DropboxFolderPicker({
   title,
   value,
   warn,
+  allowLink,
   onPick,
   onClose,
 }: {
@@ -27,6 +84,8 @@ export function DropboxFolderPicker({
   value: string;
   /** a reason the folder shown cannot be chosen, if any */
   warn?: (path: string) => string | null;
+  /** the input may also be a shared link from another Dropbox account (the output never: it must be writable) */
+  allowLink?: boolean;
   onPick: (path: string) => void;
   onClose: () => void;
 }) {
@@ -62,6 +121,12 @@ export function DropboxFolderPicker({
         </Button>,
       ]}
     >
+      {allowLink && (
+        <>
+          <SharedLink initial={value} onPick={onPick} />
+          <Divider plain style={{ margin: "12px 0" }}>{t("pages.distill.link.orBrowse")}</Divider>
+        </>
+      )}
       <Breadcrumb
         style={{ marginBottom: 8 }}
         items={[

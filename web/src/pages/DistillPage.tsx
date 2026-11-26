@@ -488,6 +488,7 @@ function RoomBody({ room, canEdit, focusFile, focusState }: { room: Room; canEdi
         open={picking !== null}
         title={t(picking === "dest" ? "pages.distill.chooseOutput" : "pages.distill.chooseInput")}
         value={picking === "dest" ? dest : source}
+        allowLink={picking === "source"}
         warn={(p) => {
           const other = picking === "dest" ? source : dest;
           return isPath(other) && (isUnder(p, other) || isUnder(other, p)) ? t("pages.distill.overlap") : null;
@@ -605,6 +606,7 @@ function DraftRoom({ initial, restored, onSaved, onDiscard }: {
         open={picking !== null}
         title={t(picking === "dest" ? "pages.distill.chooseOutput" : "pages.distill.chooseInput")}
         value={picking === "dest" ? d.dest : d.source}
+        allowLink={picking === "source"}
         warn={(p) => {
           const other = picking === "dest" ? d.source : d.dest;
           return isPath(other) && (isUnder(p, other) || isUnder(other, p)) ? t("pages.distill.overlap") : null;

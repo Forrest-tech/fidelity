@@ -956,6 +956,18 @@
             "do": "稍等。"
           }
         }
+      },
+      "link": {
+        "hint": "或者：粘贴别人分享给你的 Dropbox 共享链接（只读取，不会改动对方的文件）",
+        "check": "检查",
+        "counting": "正在读取链接里的文件（最多 12 秒）…",
+        "found": "已找到：{{name}}",
+        "counts": "共 {{files}} 个文件，其中 {{supported}} 个可以蒸馏，约 {{mb}} MB",
+        "countsAtLeast": "至少 {{files}} 个文件，其中 {{supported}} 个可以蒸馏，约 {{mb}} MB（文件较多，没有全部统计）",
+        "inAccount": "这个文件夹就在你自己的 Dropbox 里：运行时会用路径 {{path}}",
+        "external": "这个文件夹在别人的 Dropbox 里：运行时通过共享链接只读读取",
+        "use": "用这个链接作为输入",
+        "orBrowse": "或在你自己的 Dropbox 里选择"
       }
     },
     "corrections": {
