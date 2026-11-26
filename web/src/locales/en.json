@@ -534,9 +534,15 @@
         "skipped": "Skipped"
       },
       "reason": {
-        "missing": "Figures on the page but not in the result: {{nums}}",
-        "lost": "{{n}} characters not read ({{pct}}% of this page read)",
-        "extra": "{{n}} characters not on the source page (read extra or wrong)"
+        "download": "download failed",
+        "unreadable": "cannot be read",
+        "protected": "copying text not allowed",
+        "resources": "out of memory or disk",
+        "source_changed": "source changed",
+        "unsupported": "file type not handled",
+        "duplicate": "duplicate",
+        "other": "error",
+        "network": "network dropped"
       },
       "input": "Input",
       "output": "Output folder",
@@ -987,6 +993,11 @@
         "label": "Or a new folder inside {{where}} (made when results are first published)",
         "placeholder": "New folder name",
         "use": "Use new folder"
+      },
+      "checkReason": {
+        "missing": "Figures on the page but not in the result: {{nums}}",
+        "lost": "{{n}} characters not read ({{pct}}% of this page read)",
+        "extra": "{{n}} characters not on the source page (read extra or wrong)"
       }
     },
     "corrections": {

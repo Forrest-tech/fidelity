@@ -81,11 +81,11 @@ const okS = (s?: Suggestion | null) => !!s && (s.status === "ok" || s.status ===
 export function reason(t: (k: string, o?: Record<string, unknown>) => string, detail?: string | null): string {
   const d = detail || "";
   let m = d.match(/^missing: (.+)$/);
-  if (m) return t("pages.distill.reason.missing", { nums: m[1] });
+  if (m) return t("pages.distill.checkReason.missing", { nums: m[1] });
   m = d.match(/^recall ([\d.]+), (\d+) characters missing$/);
-  if (m) return t("pages.distill.reason.lost", { n: m[2], pct: (Number(m[1]) * 100).toFixed(1) });
+  if (m) return t("pages.distill.checkReason.lost", { n: m[2], pct: (Number(m[1]) * 100).toFixed(1) });
   m = d.match(/^(\d+) characters not on the source page$/);
-  if (m) return t("pages.distill.reason.extra", { n: m[1] });
+  if (m) return t("pages.distill.checkReason.extra", { n: m[1] });
   return d;
 }
 

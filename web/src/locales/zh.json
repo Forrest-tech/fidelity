@@ -534,9 +534,15 @@
         "skipped": "已跳过"
       },
       "reason": {
-        "missing": "原页上有、结果里没有的数字：{{nums}}",
-        "lost": "有 {{n}} 个字符没读出来（这一页读出 {{pct}}%）",
-        "extra": "有 {{n}} 个字符在原页上找不到（可能多读或读错）"
+        "download": "下载失败",
+        "unreadable": "无法读取",
+        "protected": "禁止复制文字",
+        "resources": "内存或磁盘不足",
+        "source_changed": "源文件被改动",
+        "unsupported": "格式不支持",
+        "duplicate": "重复文件",
+        "other": "出错",
+        "network": "网络中断"
       },
       "input": "输入",
       "output": "输出文件夹",
@@ -987,6 +993,11 @@
         "label": "或者在 {{where}} 里新建一个文件夹（第一次发布结果时自动创建）",
         "placeholder": "新文件夹名称",
         "use": "使用新文件夹"
+      },
+      "checkReason": {
+        "missing": "原页上有、结果里没有的数字：{{nums}}",
+        "lost": "有 {{n}} 个字符没读出来（这一页读出 {{pct}}%）",
+        "extra": "有 {{n}} 个字符在原页上找不到（可能多读或读错）"
       }
     },
     "corrections": {
