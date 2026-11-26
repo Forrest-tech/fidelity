@@ -534,15 +534,9 @@
         "skipped": "Skipped"
       },
       "reason": {
-        "download": "download failed",
-        "unreadable": "cannot be read",
-        "protected": "copying text not allowed",
-        "resources": "out of memory or disk",
-        "source_changed": "source changed",
-        "unsupported": "file type not handled",
-        "duplicate": "duplicate",
-        "other": "error",
-        "network": "network dropped"
+        "missing": "Figures on the page but not in the result: {{nums}}",
+        "lost": "{{n}} characters not read ({{pct}}% of this page read)",
+        "extra": "{{n}} characters not on the source page (read extra or wrong)"
       },
       "input": "Input",
       "output": "Output folder",

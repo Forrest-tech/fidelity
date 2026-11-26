@@ -77,6 +77,18 @@ const okS = (s?: Suggestion | null) => !!s && (s.status === "ok" || s.status ===
 
 /** Screen 2 of the design: one file's places that need a look, on the left; the chosen place, its fix and "remember
  * this fix", on the right. A fix is kept as a rule; numbers only ever match with their exact context. */
+/** The checker writes its reasons in English ("missing: 2, 0, 5"); show them in the person's language. */
+export function reason(t: (k: string, o?: Record<string, unknown>) => string, detail?: string | null): string {
+  const d = detail || "";
+  let m = d.match(/^missing: (.+)$/);
+  if (m) return t("pages.distill.reason.missing", { nums: m[1] });
+  m = d.match(/^recall ([\d.]+), (\d+) characters missing$/);
+  if (m) return t("pages.distill.reason.lost", { n: m[2], pct: (Number(m[1]) * 100).toFixed(1) });
+  m = d.match(/^(\d+) characters not on the source page$/);
+  if (m) return t("pages.distill.reason.extra", { n: m[1] });
+  return d;
+}
+
 export function FixDrawer({ roomId, rel, canEdit, onClose, threshold }: { roomId: string; rel: string | null; canEdit: boolean; onClose: () => void; threshold?: number }) {
   const { t } = useTranslation();
   const qc = useQueryClient();
@@ -310,7 +322,7 @@ export function FixDrawer({ roomId, rel, canEdit, onClose, threshold }: { roomId
             </div>
           </>
         )}
-        {p.kind !== "reading" && p.kind !== "formula" && <div className="fx-snip">{p.detail}</div>}
+        {p.kind !== "reading" && p.kind !== "formula" && <div className="fx-snip">{reason(t, p.detail)}</div>}
         {p.kind === "formula" && p.formulas && p.page != null && (
           <div className="fx-stack" style={{ gap: 8 }}>
             {p.formulas.map((f) => (
@@ -379,7 +391,7 @@ export function FixDrawer({ roomId, rel, canEdit, onClose, threshold }: { roomId
                         tabIndex={0} onKeyDown={(e) => e.key === "Enter" && choose({ type: "place", p })} aria-label={`${t(`pages.distill.places.kind.${p.kind}`, { defaultValue: p.kind })} ${p.page ?? ""}`}>
                         <td><Pill tone={KIND_TONE[p.kind] ?? "idle"}>{t(`pages.distill.places.kind.${p.kind}`, { defaultValue: p.kind })}</Pill></td>
                         <td className="fx-num">{p.page ?? "—"}</td>
-                        <td style={{ wordBreak: "break-word" }}>{okS(p.suggestion) && <><Pill tone="ai">{t("pages.distill.fix2.aiSuggestion")}</Pill> </>}{p.kind === "reading" && p.candidates ? `${p.candidates[0]} / ${p.candidates[1]}` : p.detail}</td>
+                        <td style={{ wordBreak: "break-word" }}>{okS(p.suggestion) && <><Pill tone="ai">{t("pages.distill.fix2.aiSuggestion")}</Pill> </>}{p.kind === "reading" && p.candidates ? `${p.candidates[0]} / ${p.candidates[1]}` : reason(t, p.detail)}</td>
                         <td className="fx-muted fx-tiny">{placeStatus(p)}</td>
                       </tr>
                     ))}
