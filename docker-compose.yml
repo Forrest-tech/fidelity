@@ -19,6 +19,8 @@ services:
     volumes:
       - fidelity-data:/app/data              # Dropbox/Google connections, OCR models, glossary, work files
       - fidelity-appdata:/app/backend/data   # sign-in secret, job database (when not on PostgreSQL)
+      # a copy of every daily backup outside Docker, in a normal folder of this computer (FIDELITY_BACKUP_COPY_DIR)
+      - ${FIDELITY_BACKUP_HOST_DIR:-./backups}:/backup-copies
 volumes:
   fidelity-data:
   fidelity-appdata:

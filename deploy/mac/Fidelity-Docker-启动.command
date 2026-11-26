@@ -56,6 +56,11 @@ FIDELITY_VISUAL_SAMPLES=3
 EOF
 fi
 
+# backups: every daily backup is also copied to ~/FidelityBackups on this Mac (outside the Docker volumes)
+mkdir -p "$HOME/FidelityBackups"
+grep -q '^FIDELITY_BACKUP_COPY_DIR=' deploy/docker/fidelity.env || echo 'FIDELITY_BACKUP_COPY_DIR=/backup-copies' >> deploy/docker/fidelity.env
+export FIDELITY_BACKUP_HOST_DIR="$HOME/FidelityBackups"
+
 # ---- 4. port free?
 if lsof -nP -iTCP:8000 -sTCP:LISTEN 2>/dev/null | grep -qv com.docker; then
   if ! docker compose ps --status running 2>/dev/null | grep -q fidelity; then
