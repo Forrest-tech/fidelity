@@ -71,8 +71,8 @@ def ocr_protected_enabled() -> bool:
     the company is licensed for this content). FIDELITY_OCR_PROTECTED=1/0 overrides the setting."""
     import json
     import os
-    env = os.environ.get("FIDELITY_OCR_PROTECTED")
-    if env is not None:
+    env = (os.environ.get("FIDELITY_OCR_PROTECTED") or "").strip()
+    if env:                                               # an empty value means "not set", not "off"
         return env.lower() in ("1", "on", "true", "yes")
     from .. import config
     try:
