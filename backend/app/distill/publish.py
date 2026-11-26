@@ -125,7 +125,16 @@ class Publisher:
         existing = [f for f in os.listdir(rel_dir) if re.match(r"^\d{4}-.*\.json$", f)]
         if any(f.endswith(f"-{self.run}.json") for f in existing):
             return None                                              # this run already has its note
-        n = len(existing) + 1
+        # numbered per library: a publish to a test folder must not take the next number of the real library
+        # (found 2026-11-25 in the end-to-end test)
+        mine = 0
+        for f in existing:
+            try:
+                with open(os.path.join(rel_dir, f), encoding="utf-8") as fh:
+                    mine += json.load(fh).get("library", self.live) == self.live
+            except (OSError, ValueError):
+                continue
+        n = mine + 1
         docs = []
         for k, d in sorted(changed):
             before = sum(len(t.get("tokens") or []) for t in d.get("trashed", [])) + len(d.get("archived", []))

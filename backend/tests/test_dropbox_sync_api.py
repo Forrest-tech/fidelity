@@ -270,3 +270,20 @@ def test_live_status_writes_a_new_step_at_once_even_inside_the_throttle(tmp_path
     live.state["file"] = "marker"
     live.write()
     assert json.load(open(S.live_path("j1")))["file"] == "/a.pdf"
+
+
+def test_output_of_someone_elses_shared_folder_is_named_after_it():
+    """2026-11-25: results of a link outside the account landed in a folder called 'source'."""
+    from app.distill import dropbox_io as D
+
+    class Dbx:
+        def __init__(self, name):
+            self.n = name
+
+        def sharing_get_shared_link_metadata(self, url):
+            if self.n is None:
+                raise RuntimeError("shared_link_not_found")
+            return type("M", (), {"name": self.n})()
+    assert D.link_name(Dbx("gas regulation"), "https://www.dropbox.com/scl/fo/a/b?rlkey=r") == "gas regulation"
+    assert D.link_name(Dbx("a/b"), "x") == "a_b"
+    assert D.link_name(Dbx(None), "x") == "source"

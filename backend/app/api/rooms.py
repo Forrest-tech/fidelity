@@ -201,7 +201,8 @@ def shared_link(url: str):
     try:
         return L.inspect_link(url)
     except L.LiveError as e:
-        raise HTTPException(e.status, e.message)
+        # "code: message": the page shows the code in the person's language, the message stays for logs and scripts
+        raise HTTPException(e.status, f"{e.code}: {e.message}" if e.code else e.message)
 
 
 @router.get("/rooms/{room_id}/tree")

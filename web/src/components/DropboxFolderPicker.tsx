@@ -16,6 +16,13 @@ interface LinkInfo {
   complete: boolean;
 }
 
+/** The server answers "code: message"; a known code is shown in the person's language. */
+const LINK_ERRORS = ["not_link", "file_link", "no_rlkey", "not_connected", "gone", "list_failed"];
+function linkError(t: (k: string) => string, msg: string) {
+  const code = msg.split(":")[0].trim();
+  return LINK_ERRORS.includes(code) ? t(`pages.distill.link.err.${code}`) : msg;
+}
+
 /** A shared link from someone else's Dropbox: checked (read-only) before it is used as the input. */
 function SharedLink({ initial, onPick }: { initial: string; onPick: (link: string) => void }) {
   const { t } = useTranslation();
@@ -42,7 +49,7 @@ function SharedLink({ initial, onPick }: { initial: string; onPick: (link: strin
         allowClear
       />
       {check.isFetching && <div className="fx-tiny fx-muted">{t("pages.distill.link.counting")}</div>}
-      {check.isError && <Alert type="error" showIcon title={(check.error as Error).message} />}
+      {check.isError && <Alert type="error" showIcon title={linkError(t, (check.error as Error).message)} />}
       {info && !check.isFetching && (
         <Alert
           type="success"
@@ -76,6 +83,7 @@ export function DropboxFolderPicker({
   value,
   warn,
   allowLink,
+  allowNew,
   onPick,
   onClose,
 }: {
@@ -86,11 +94,14 @@ export function DropboxFolderPicker({
   warn?: (path: string) => string | null;
   /** the input may also be a shared link from another Dropbox account (the output never: it must be writable) */
   allowLink?: boolean;
+  /** the output may be a new folder: it is made by the first publish */
+  allowNew?: boolean;
   onPick: (path: string) => void;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
   const [path, setPath] = useState(startAt(value));
+  const [newName, setNewName] = useState("");
   useEffect(() => {
     if (open) setPath(startAt(value));
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -164,6 +175,22 @@ export function DropboxFolderPicker({
           </ul>
         )}
       </div>
+      {allowNew && list.data && (
+        <div style={{ marginTop: 10 }}>
+          <label className="fx-tiny fx-muted" htmlFor="new-folder">{t("pages.distill.newFolder.label", { where: shown })}</label>
+          <Input.Search
+            id="new-folder"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            enterButton={t("pages.distill.newFolder.use")}
+            placeholder={t("pages.distill.newFolder.placeholder")}
+            onSearch={(v) => {
+              const name = v.trim().replace(/[\/]+/g, " ");
+              if (name) onPick((shown === "/" ? "" : shown) + "/" + name);
+            }}
+          />
+        </div>
+      )}
     </Modal>
   );
 }

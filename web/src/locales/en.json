@@ -721,7 +721,7 @@
       "browseFor": "Choose a folder for {{what}}",
       "cancelQueue": "Leave the queue",
       "cancelRun": "Cancel the run",
-      "capacityAuto": "Automatic = worked out from memory and CPU. This machine gets {{n}} points; scanned files need OCR, which takes a lot of memory.",
+      "capacityAuto": "Automatic = worked out from memory and CPU. This machine's capacity: {{n}}; scanned files need OCR, which takes a lot of memory.",
       "capacityIs": "Capacity",
       "clear": "Clear",
       "clearSearch": "Clear the search",
@@ -979,7 +979,25 @@
         "inAccount": "This folder is in your own Dropbox: runs use its path {{path}}",
         "external": "This folder is in someone else's Dropbox: runs read it through the shared link, read only",
         "use": "Use this link as the input",
-        "orBrowse": "Or choose in your own Dropbox"
+        "orBrowse": "Or choose in your own Dropbox",
+        "err": {
+          "not_link": "Paste a Dropbox shared link (https://www.dropbox.com/scl/fo/…).",
+          "file_link": "This is a link to one file. Share the folder that holds the files (Share → Copy link on the folder).",
+          "no_rlkey": "The link is incomplete. In Dropbox use Share → Copy link again and paste the whole address.",
+          "not_connected": "Dropbox is not connected yet: Settings → Cloud storage.",
+          "gone": "Dropbox cannot open this link: it was removed, has expired or needs a password. Ask for a new link.",
+          "list_failed": "The folder opened but its files could not be listed. Try again; if it repeats, ask for a new link."
+        }
+      },
+      "newFolder": {
+        "label": "Or a new folder inside {{where}} (made when results are first published)",
+        "placeholder": "New folder name",
+        "use": "Use new folder"
+      },
+      "checkReason": {
+        "missing": "Figures on the page but not in the result: {{nums}}",
+        "lost": "{{n}} characters not read ({{pct}}% of this page read)",
+        "extra": "{{n}} characters not on the source page (read extra or wrong)"
       }
     },
     "corrections": {

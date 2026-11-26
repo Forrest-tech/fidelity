@@ -142,6 +142,27 @@ describe("distill page", () => {
     expect(screen.queryByLabelText(/Or paste a Dropbox shared link/)).toBeNull();
   });
 
+  it("says what to do with a file link, and the output picker can name a new folder", async () => {
+    sessionStorage.clear();
+    api("reviewer", [], (url) => (url.includes("/folders/link?") ? {
+      status: 422, body: { detail: "file_link: this is a link to one file; share the folder that holds the files instead" },
+    } : undefined));
+    renderApp("/distill");
+    expect(await screen.findByText("No rooms yet.")).toBeInTheDocument();
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    await u.click(screen.getByRole("button", { name: /New room/ }));
+    const draft = await screen.findByRole("region", { name: "New room (not saved)" });
+    await u.click(within(draft).getByRole("button", { name: /Choose a folder for Input/ }));
+    await u.type(await screen.findByLabelText(/Or paste a Dropbox shared link/), "https://www.dropbox.com/scl/fi/x/a.pdf?rlkey=r");
+    await u.click(screen.getByRole("button", { name: "Check" }));
+    expect(await screen.findByText(/This is a link to one file. Share the folder/, {}, { timeout: 10_000 })).toBeInTheDocument();
+    await u.click(screen.getByRole("button", { name: "Cancel" }));
+    await u.click(within(screen.getByRole("region", { name: "New room (not saved)" })).getByRole("button", { name: /Choose a folder for Output/ }));
+    await u.type(await screen.findByPlaceholderText("New folder name"), "Gas library");
+    await u.click(screen.getByRole("button", { name: "Use new folder" }));
+    await waitFor(() => expect(within(screen.getByRole("region", { name: "New room (not saved)" })).getByLabelText(/^Output/)).toHaveValue("/Gas library"));
+  });
+
   it("says before the room is filled in when no cloud storage is connected, and who can fix it", async () => {
     sessionStorage.clear();
     for (const [role, hint] of [["reviewer", "Ask an administrator to connect one."], ["admin", "Connect one in Settings → Cloud storage."]] as const) {

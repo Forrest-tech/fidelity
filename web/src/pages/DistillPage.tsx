@@ -109,7 +109,8 @@ function RoomPills({ room }: { room: Room }) {
   if (j?.status === "running") {
     const l = j.live;
     // a run that reports file by file shows its count beside this (RunBadge); one number, not two
-    if (l?.v) return <Pill tone="run">{t("run.running")}</Pill>;
+    // publishing says so here too, not "distilling" (end-to-end test, 2026-11-25)
+    if (l?.v) return <Pill tone="run">{l.stage === "publishing" ? t("run.publishing") : t("run.running")}</Pill>;
     return <Pill tone="run">{l?.total ? t("pages.distill.room.runningOf", { i: Math.max(0, (l.index ?? 1) - 1), n: l.total }) : t("pages.distill.room.running", { pct: Math.round(j.progress ?? 0) })}</Pill>;
   }
   if (j?.status === "queued") return <Pill tone="idle">{t("pages.distill.room.queued", { n: j.position ?? 1 })}</Pill>;
@@ -445,7 +446,7 @@ function RoomBody({ room, canEdit, focusFile, focusState }: { room: Room; canEdi
       <div className="fx-roomgrid">
         <Field id={`src-${room.id}`} label={t("pages.distill.inputRO")} loc={room.source} value={source} onChange={setSource} onPick={() => setPicking("source")} disabled={!canEdit || active} placeholder="/as 3500" />
         <div className="fx-muted fx-arrow" aria-hidden>→</div>
-        <Field id={`dst-${room.id}`} label={t("pages.distill.outputPlace")} loc={room.dest} value={dest} onChange={setDest} onPick={() => setPicking("dest")} disabled={!canEdit || active} placeholder="/Transfer_Md/as 3500" invalid={overlap} />
+        <Field id={`dst-${room.id}`} label={t("pages.distill.outputPlace")} loc={room.dest} value={dest} onChange={setDest} onPick={() => setPicking("dest")} disabled={!canEdit || active} placeholder="/Library_Installation/Md_Library" invalid={overlap} />
         <div />
         <div>
           <span className="fx-lab">{t("pages.distill.afterDistill")}</span>
@@ -489,6 +490,7 @@ function RoomBody({ room, canEdit, focusFile, focusState }: { room: Room; canEdi
         title={t(picking === "dest" ? "pages.distill.chooseOutput" : "pages.distill.chooseInput")}
         value={picking === "dest" ? dest : source}
         allowLink={picking === "source"}
+        allowNew={picking === "dest"}
         warn={(p) => {
           const other = picking === "dest" ? source : dest;
           return isPath(other) && (isUnder(p, other) || isUnder(other, p)) ? t("pages.distill.overlap") : null;
@@ -586,7 +588,7 @@ function DraftRoom({ initial, restored, onSaved, onDiscard }: {
             onPick={() => setPicking("source")} disabled={false} placeholder={t("pages.distill.eg", { p: "/as 3500" })} />
           <div className="fx-muted fx-arrow" aria-hidden>→</div>
           <Field id="dst-draft" label={t("pages.distill.outputPlace")} loc={null} value={d.dest} onChange={(v) => setD({ ...d, dest: v })}
-            onPick={() => setPicking("dest")} disabled={false} placeholder={t("pages.distill.egOut", { p: "/Transfer_Md/as 3500" })} invalid={overlap} />
+            onPick={() => setPicking("dest")} disabled={false} placeholder={t("pages.distill.egOut", { p: "/Library_Installation/Md_Library" })} invalid={overlap} />
           <div />
           <div>
             <span className="fx-lab">{t("pages.distill.afterDistill")}</span>
@@ -607,6 +609,7 @@ function DraftRoom({ initial, restored, onSaved, onDiscard }: {
         title={t(picking === "dest" ? "pages.distill.chooseOutput" : "pages.distill.chooseInput")}
         value={picking === "dest" ? d.dest : d.source}
         allowLink={picking === "source"}
+        allowNew={picking === "dest"}
         warn={(p) => {
           const other = picking === "dest" ? d.source : d.dest;
           return isPath(other) && (isUnder(p, other) || isUnder(other, p)) ? t("pages.distill.overlap") : null;
@@ -873,7 +876,7 @@ export function DistillPage() {
       )}
       {tab === "archived" && <Archived rooms={archivedRooms} canEdit={canEdit} />}
       <div className="fx-tiny fx-muted">
-        <Link to="/jobs">{t("pages.distill.runHistoryAll")}</Link> · <Link to="/sources">{t("pages.distill.oldPage")}</Link>
+        <Link to="/jobs">{t("pages.distill.runHistoryAll")}</Link>
       </div>
     </div>
     </LeaveGuard>

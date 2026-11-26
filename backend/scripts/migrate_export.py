@@ -5,7 +5,8 @@
 What goes in: the sign-in secret and user accounts, the job/room database (rooms, which files were distilled, spot
 checks, notifications), the rooms' results, the Dropbox / Google connections, AI and e-mail settings, the human-check
 settings, the glossary, and the publish records with release notes (so `--rollback <run>` still works there).
-What stays out: caches, downloaded source PDFs, logs, old work folders and the OCR models (the container fetches them).
+What stays out: caches, downloaded source PDFs, logs, old work folders, the OCR models (the container fetches them)
+and config.json (the old review tool's local folders: Windows paths that do not exist on another machine).
 
 The package holds secrets (Dropbox tokens, the AI key file, the SMTP password, the sign-in secret): copy it by USB,
 AirDrop or a local network share, never by e-mail, and delete it once imported. The SQLite files are copied with
@@ -34,7 +35,6 @@ FILES = [
     ("appdata", "secret.key"), ("appdata", "fidelity.db"), ("appdata", "trust.db"),
     ("appdata", "ai_keys.json"), ("appdata", "ai_secret.key"), ("appdata", "ai_settings.json"),
     ("appdata", "app_settings.json"), ("appdata", "email_settings.json"), ("appdata", "captcha_settings.json"),
-    ("appdata", "config.json"),
     ("data", "dropbox_auth.json"), ("data", "google_auth.json"), ("data", "glossary.json"),
     ("data", "ocr_selection.json"), ("data", "formula_approvals.json"),
     ("data", "work/ledger.json"),

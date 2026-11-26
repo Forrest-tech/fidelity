@@ -275,6 +275,18 @@ def test_each_publishing_run_writes_a_numbered_release_note(tmp_path):
     assert two.release_note() is None                                   # one note per run
 
 
+def test_release_numbers_count_per_library(tmp_path):
+    """A publish to a test folder must not take the real library's next number (2026-11-25)."""
+    s = FakeStore()
+    for run, live in (("r1", "/kb"), ("r2", "/test_out"), ("r3", "/kb")):
+        p = Publisher(s, live, live + "_staging", live + "_archive", run, str(tmp_path / "publish"))
+        p.stage("doc", {"a.md": b"x"})
+        p.promote()
+    notes = {json.loads(f.read_text(encoding="utf-8"))["run"]: json.loads(f.read_text(encoding="utf-8"))["release"]
+             for f in (tmp_path / "releases").glob("*.json")}
+    assert notes == {"r1": 1, "r2": 1, "r3": 2}
+
+
 def test_the_system_page_lists_releases_newest_first(tmp_path, monkeypatch):
     from app import config
     from app.api import system as SYS
