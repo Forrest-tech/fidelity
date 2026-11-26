@@ -116,6 +116,16 @@ def display_name(dbx, root: str) -> str:
     return name if name.lower() == fallback.lower() else fallback
 
 
+def link_name(dbx, link: str) -> str:
+    """The name of the folder a shared link opens, made safe as a folder name; "source" if Dropbox does not say."""
+    try:
+        name = getattr(dbx.sharing_get_shared_link_metadata(link), "name", "") or ""
+    except Exception:                                       # noqa: BLE001 - the run's own listing reports a dead link
+        name = ""
+    name = name.replace("/", "_").replace("\\", "_").strip().strip(".")
+    return name or "source"
+
+
 def link_root(dbx, url):
     """Path in the user's Dropbox that a shared link points to ('' if not theirs); a path is returned as is."""
     if is_path(url):
