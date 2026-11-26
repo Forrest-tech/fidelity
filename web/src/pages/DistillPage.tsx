@@ -109,7 +109,8 @@ function RoomPills({ room }: { room: Room }) {
   if (j?.status === "running") {
     const l = j.live;
     // a run that reports file by file shows its count beside this (RunBadge); one number, not two
-    if (l?.v) return <Pill tone="run">{t("run.running")}</Pill>;
+    // publishing says so here too, not "distilling" (end-to-end test, 2026-11-25)
+    if (l?.v) return <Pill tone="run">{l.stage === "publishing" ? t("run.publishing") : t("run.running")}</Pill>;
     return <Pill tone="run">{l?.total ? t("pages.distill.room.runningOf", { i: Math.max(0, (l.index ?? 1) - 1), n: l.total }) : t("pages.distill.room.running", { pct: Math.round(j.progress ?? 0) })}</Pill>;
   }
   if (j?.status === "queued") return <Pill tone="idle">{t("pages.distill.room.queued", { n: j.position ?? 1 })}</Pill>;
