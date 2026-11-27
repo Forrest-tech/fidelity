@@ -1244,7 +1244,11 @@
       "distilled": "Distilled · page {{n}}",
       "noSource": "The source file is not available: Dropbox is not connected, or the file changed after it was distilled. Connect Dropbox and open it again.",
       "noText": "No text was distilled from this page.",
-      "openText": "Text and fixes…"
+      "openText": "Text and fixes…",
+      "inResultN_one": "{{count}} in the result",
+      "inResultN_other": "{{count}} in the result",
+      "fewerInResult_one": "only {{count}} in the result: one or more lost",
+      "fewerInResult_other": "only {{count}} in the result: one or more lost"
     }
   },
   "shell": {

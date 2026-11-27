@@ -1244,7 +1244,11 @@
       "distilled": "蒸馏结果 · 第 {{n}} 页",
       "noSource": "拿不到原文件：Dropbox 没有连接，或者原文件在蒸馏之后改过。连接 Dropbox 后再打开即可。",
       "noText": "这一页没有蒸馏出文字。",
-      "openText": "查看文字与修正…"
+      "openText": "查看文字与修正…",
+      "inResultN_one": "结果里 {{count}} 处",
+      "inResultN_other": "结果里 {{count}} 处",
+      "fewerInResult_one": "结果里只有 {{count}} 处：少了",
+      "fewerInResult_other": "结果里只有 {{count}} 处：少了"
     }
   },
   "shell": {

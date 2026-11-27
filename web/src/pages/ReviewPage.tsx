@@ -15,7 +15,7 @@ import { loadFiles, type FileRow } from "../components/RoomFiles";
  * differences are all settled is no longer held back by the number guard. */
 
 interface RoomLite { id: string; name: string; threshold: number; number_guard: boolean; archived: boolean }
-interface Value { value: string; in_result: boolean; boxes: number[][] }
+interface Value { value: string; in_result: boolean; boxes: number[][]; result_count?: number; source_count?: number | null }
 interface PageItem { i: number; kind: string; detail: string; known: boolean; values: Value[] }
 interface PageView {
   rel: string; page: number; pages: number; has_source: boolean; distilled: string; source_text: string;
@@ -203,8 +203,10 @@ export function ReviewPage() {
                     <div className="fx-tiny" style={{ marginTop: 4 }}>
                       {chosen.values.map((x) => (
                         <span key={x.value} className="fx-rv-val">
-                          <code>{x.value}</code> {t("pages.review2.onSource", { count: x.boxes.length })} ·{" "}
-                          {x.in_result ? <span style={{ color: "var(--ok)" }}>{t("pages.review2.inResult")}</span> : <span style={{ color: "var(--bad)" }}>{t("pages.review2.notInResult")}</span>}
+                          <code>{x.value}</code> {t("pages.review2.onSource", { count: x.source_count ?? x.boxes.length })} ·{" "}
+                          {x.in_result ? <span style={{ color: "var(--ok)" }}>{t("pages.review2.inResultN", { count: x.result_count ?? 1 })}</span>
+                            : (x.result_count ?? 0) > 0 ? <span style={{ color: "var(--bad)" }}>{t("pages.review2.fewerInResult", { count: x.result_count })}</span>
+                            : <span style={{ color: "var(--bad)" }}>{t("pages.review2.notInResult")}</span>}
                         </span>
                       ))}
                     </div>

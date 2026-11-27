@@ -127,7 +127,8 @@ def page(room_id: str, rel: str, n: int) -> dict:
     text = _distilled(room_id, row["out_dir"])
     pages = row["pages"] or 0
     mine = page_text(text, n)
-    mine_nums = set(_NUM.findall(mine))
+    from collections import Counter
+    mine_nums = Counter(_NUM.findall(mine))
     pdf = source_copy(room, row) if rel.lower().endswith(".pdf") else None
     src_text, doc, pg = "", None, None
     if pdf:
@@ -144,8 +145,13 @@ def page(room_id: str, rel: str, n: int) -> dict:
                 continue
             vals = []
             for v in _values(f):
-                in_result = (v in mine_nums) if _NUM.fullmatch(v) else (v in mine)
-                vals.append({"value": v, "in_result": in_result, "boxes": _boxes(pg, v) if pg is not None else []})
+                # the check compares how often each number is printed on the page with how often it is in the result:
+                # "missing: 2" can mean the 2 is there, but fewer times than on the source (one of them was lost)
+                n_res = mine_nums.get(v, 0) if _NUM.fullmatch(v) else mine.count(v)
+                boxes = _boxes(pg, v, limit=40) if pg is not None else []
+                n_src = len(boxes) if pg is not None else None
+                vals.append({"value": v, "in_result": n_res > 0 and (n_src is None or n_res >= n_src), "result_count": n_res,
+                             "source_count": n_src, "boxes": boxes})
             items.append({"i": i, "kind": f.get("kind"), "detail": f.get("detail"), "known": i in known, "values": vals})
     finally:
         if doc is not None:
