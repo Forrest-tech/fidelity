@@ -31,7 +31,7 @@ class DropboxSource:
         return D.snapshot(self.dbx, self.link)
 
     def download(self, rel, entry, local_path):
-        D.download(self.dbx, self.link, rel, local_path)
+        D.download(self.dbx, self.link, rel, local_path, entry.get("size"))
 
     def local_matches(self, local_path, entry) -> bool:
         return os.path.exists(local_path) and R.dropbox_content_hash(local_path) == entry["content_hash"]

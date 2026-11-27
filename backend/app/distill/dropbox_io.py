@@ -200,18 +200,45 @@ def compare_snapshots(before, after):
     return diffs
 
 
-def download(dbx, url, rel, local_path):
-    if is_path(url):
-        md, resp = dbx.files_download(url.rstrip("/") + rel)
-    else:
-        md, resp = dbx.sharing_get_shared_link_file(url=url, path=rel)
+def download(dbx, url, rel, local_path, expect_size: int | None = None):
+    """Download one file to local_path, carrying on from what an earlier attempt left in <local_path>.part.
+
+    2026-11-27, the owner: a dropped connection started a 146 MB file again from 0. The partial file is kept; the
+    next attempt (a retry in the same run, or the next run) asks Dropbox only for the bytes still missing (an HTTP
+    Range request). Whether the joined file is this very version is checked afterwards against Dropbox's content
+    hash by the caller; a wrong one is downloaded again in full (see restart below)."""
     os.makedirs(os.path.dirname(local_path), exist_ok=True)
     tmp = local_path + ".part"
-    with open(tmp, "wb") as f:
-        for chunk in resp.iter_content(1 << 20):
-            f.write(chunk)
+    have = os.path.getsize(tmp) if os.path.exists(tmp) else 0
+    if expect_size is not None and have >= expect_size:
+        have = 0                                              # as large as the file or larger: not a usable start
+    client = dbx.clone(headers={"Range": f"bytes={have}-"}) if have else dbx
+    if is_path(url):
+        md, resp = client.files_download(url.rstrip("/") + rel)
+    else:
+        md, resp = client.sharing_get_shared_link_file(url=url, path=rel)
+    resumed = have > 0 and getattr(resp, "status_code", 200) == 206
+    if have and not resumed:
+        print(f"  the server sent the whole file again (no resume)  [{rel}]", flush=True)
+    elif resumed:
+        print(f"  carrying on the download from {have / 1e6:.1f} MB  [{rel}]", flush=True)
+    try:
+        with open(tmp, "ab" if resumed else "wb") as f:
+            for chunk in resp.iter_content(1 << 20):
+                f.write(chunk)
+    finally:
+        resp.close()
     os.replace(tmp, local_path)
     return md
+
+
+def restart(local_path):
+    """Forget a downloaded (or partial) copy that turned out wrong, so the next attempt starts from 0."""
+    for p in (local_path, local_path + ".part"):
+        try:
+            os.remove(p)
+        except OSError:
+            pass
 
 
 # ------------------------------------------------------------------ writing
