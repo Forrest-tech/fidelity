@@ -8,7 +8,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-PW = "e2e-password-123"
+# The password comes from the run (playwright.config.ts or e2e_serve.py make a random one): none is kept in the code.
+PW = os.environ.get("E2E_PASSWORD") or sys.exit("E2E_PASSWORD is not set (playwright.config.ts or scripts/e2e_serve.py set it)")
 
 # fresh throw-away database every run
 os.makedirs(".e2e", exist_ok=True)

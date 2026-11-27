@@ -3,7 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
-const PW = "e2e-password-123";
+const PW = process.env.E2E_PASSWORD!; // made per run in playwright.config.ts, never written in the code
 // "I'm not a robot": tick the box and wait for the green tick, as a person does
 async function tick(page: Page) {
   const box = page.getByRole("checkbox", { name: /^(I'm not a robot|我不是机器人)$/ });

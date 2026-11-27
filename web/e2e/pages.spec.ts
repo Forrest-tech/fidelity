@@ -3,7 +3,7 @@ import type { Page } from "@playwright/test";
 
 // Real-user checks for the problems found in the page audit (docs/testing/FINDINGS.md). Each test fails
 // without its fix.
-const PW = "e2e-password-123";
+const PW = process.env.E2E_PASSWORD!; // made per run in playwright.config.ts, never written in the code
 const ACCOUNT = /^(Account menu|账号菜单)$/;
 
 async function signIn(page: Page, email: string, password = PW) {
