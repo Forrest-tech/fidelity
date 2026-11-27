@@ -33,6 +33,7 @@ describe("formulas", () => {
     renderApp("/distill");
     const u = userEvent.setup({ pointerEventsCheck: 0 });
     await u.click(await screen.findByLabelText("Review AS 3500.1.pdf"));
+    await u.click(await screen.findByRole("button", { name: "Fix text…" }));        // from the compare & review page
     const img = await screen.findByAltText("Formula 1 on page 4 of the source");
     expect(img.getAttribute("src")).toBe("/api/v1/rooms/r1/formula.png?rel=%2FAS%203500.1.pdf&page=4&k=1");
     expect(screen.getByText("numbers found in the image")).toBeInTheDocument();
@@ -50,6 +51,7 @@ describe("formulas", () => {
     renderApp("/distill");
     const u = userEvent.setup({ pointerEventsCheck: 0 });
     await u.click(await screen.findByLabelText("Review AS 3500.1.pdf"));
+    await u.click(await screen.findByRole("button", { name: "Fix text…" }));        // from the compare & review page
     await u.click(await screen.findByText("Transcribe"));
     await waitFor(() => expect(JSON.parse(String(calls.find((c) => c.url.endsWith("/rooms/r1/ask"))?.init?.body))).toEqual({ rel: FILE.rel, item: 0, k: 1 }));
   });
@@ -57,7 +59,9 @@ describe("formulas", () => {
   it("a viewer sees an approved formula but cannot change it", async () => {
     fileApi(FORMULA(null, "x = 2"), "viewer");
     renderApp("/distill");
-    await userEvent.setup({ pointerEventsCheck: 0 }).click(await screen.findByLabelText("Review AS 3500.1.pdf"));
+    const v = userEvent.setup({ pointerEventsCheck: 0 });
+    await v.click(await screen.findByLabelText("Review AS 3500.1.pdf"));
+    await v.click(await screen.findByRole("button", { name: "Text and fixes…" }));
     expect(await screen.findByText("x = 2")).toBeInTheDocument();
     expect(screen.queryByText("Approve")).not.toBeInTheDocument();
   });

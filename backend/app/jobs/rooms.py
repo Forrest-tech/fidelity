@@ -19,6 +19,7 @@ File state seen by people (derived, never stored, so changing a room's threshold
 """
 from __future__ import annotations
 
+import datetime as _dt
 import json
 import os
 import re
@@ -202,6 +203,66 @@ def update_room(room_id: str, fields: dict) -> dict:
     return get_room(room_id)
 
 
+def source_label(loc: dict | None) -> str:
+    """A short name for an input: the folder's name ("gas regulation"), else the end of its link."""
+    if not loc:
+        return ""
+    if loc.get("path"):
+        return loc["path"].rstrip("/").rsplit("/", 1)[-1] or loc["path"]
+    from urllib.parse import unquote, urlparse
+    link = loc.get("link") or ""
+    u = urlparse(link)
+    parts = [unquote(x) for x in u.path.split("/") if x]
+    if u.netloc.endswith("dropbox.com") and len(parts) > 4 and parts[:2] == ["scl", "fo"]:
+        return parts[-1]                                   # a sub-folder of a shared folder: its own name
+    if link.startswith("/"):
+        return link.rstrip("/").rsplit("/", 1)[-1] or link
+    return ""
+
+
+def has_results(room_id: str) -> int:
+    con = db.trust_rw()
+    try:
+        return con.execute("SELECT COUNT(*) FROM room_file WHERE room_id=? AND outcome IS NOT NULL", (room_id,)).fetchone()[0]
+    finally:
+        con.close()
+
+
+def switch_source(room_id: str, source, user: str) -> dict:
+    """A new input for a room that already has results (2026-11-26, the owner: the old link's files stayed in the
+    room, shown as published, beside the new link's files, which misleads). The room's results so far stay together
+    as an archived room of their own, named after their input, with their times, accuracies and published state; the
+    room itself (same name, place, output, mode and threshold) starts empty on the new input. Nothing is deleted and
+    nothing in the output folder changes. Without results it is an ordinary change of input."""
+    room = get_room(room_id)
+    if active_job(room_id):
+        raise RoomError(409, "stop the current run before changing the input or output")
+    new = with_path(clean_location(source if isinstance(source, str) else (source or {}).get("link", ""), "source")) if source else None
+    if not new:
+        raise RoomError(422, "give the new input folder or link")
+    if (new.get("link") or "") == ((room.get("source") or {}).get("link") or ""):
+        return {"room": get_room(room_id), "archived": None}
+    if not has_results(room_id):
+        return {"room": update_room(room_id, {"source": source}), "archived": None}
+    _check_overlap({"source": new["link"]}, room)
+    nid = uuid.uuid4().hex[:10]
+    now = db.now()
+    label = source_label(room.get("source")) or _dt.datetime.fromtimestamp(now).strftime("%Y-%m-%d")
+    con = db.trust_rw()
+    try:
+        con.execute("INSERT INTO room(id,name,position,source,dest,mode,threshold,number_guard,priority,points,archived,"
+                    "created_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,0,?,?,?)",
+                    (nid, room["name"], room["position"], json.dumps(new, ensure_ascii=False),
+                     json.dumps(room["dest"], ensure_ascii=False) if room.get("dest") else None, room["mode"],
+                     room["threshold"], 1 if room["number_guard"] else 0, room["priority"], 1, user, now, now))
+        con.execute("UPDATE room SET name=?, archived=1, archived_at=?, archived_by=?, updated_at=? WHERE id=?",
+                    (f"{room['name']} · {label}"[:80], now, user, now, room_id))
+        con.commit()
+    finally:
+        con.close()
+    return {"room": get_room(nid), "archived": get_room(room_id)}
+
+
 def ensure_paths(room: dict) -> dict:
     """Rooms saved before S-4 (or while Dropbox was out of reach) get their paths now, before a run uses them."""
     new = {k: with_path(room[k]) for k in ("source", "dest") if room.get(k)}
@@ -276,9 +337,23 @@ def derive_state(row, room: dict) -> str:
         return "unprocessable"
     if row["confirmed"]:
         return "published"
-    # a number fixed by a correction rule and picked for checking counts as a number difference until checked
-    nd = (row["number_diffs"] or 0) + (_get(row, "rule_checks") or 0)
-    return SC.decide(row["accuracy"], nd, room["threshold"], room["number_guard"])
+    return SC.decide(row["accuracy"], open_numbers(row), room["threshold"], room["number_guard"])
+
+
+def open_numbers(row) -> int:
+    """Number differences still waiting for a person. A place someone has looked at and confirmed ("the source says
+    so" / known) no longer holds the file back: before 2026-11-26 the guard counted every difference for ever, so a
+    file at 99.4% stayed "below" whatever the threshold and whatever the reviewer did. A number fixed by a correction
+    rule and picked for checking counts until it is checked."""
+    nd = row["number_diffs"] or 0
+    try:
+        known = set(json.loads(_get(row, "known") or "[]"))
+        if known and nd:
+            found = json.loads(row["findings"]) if row["findings"] else []
+            nd = max(0, nd - sum(1 for i, f in enumerate(found) if i in known and f.get("kind") == "numbers"))
+    except (TypeError, ValueError):
+        pass
+    return nd + (_get(row, "rule_checks") or 0)
 
 
 def _get(row, key):
@@ -414,7 +489,7 @@ def counts(room: dict, rows=None) -> dict:
 def _file_out(r, room) -> dict:
     return {"rel": r["rel"], "name": r["rel"].rsplit("/", 1)[-1], "kind": r["kind"], "size": r["size"],
             "state": derive_state(r, room), "accuracy": r["accuracy"], "diffs": r["diffs"] or 0,
-            "number_diffs": r["number_diffs"] or 0, "reason": r["reason"], "detail": r["detail"], "pages": r["pages"],
+            "number_diffs": r["number_diffs"] or 0, "numbers_open": open_numbers(r), "reason": r["reason"], "detail": r["detail"], "pages": r["pages"],
             "parts": json.loads(r["parts"]) if r["parts"] else None,
             "corrected": sum(i.get("count", 0) for i in json.loads(r["corrections"])) if r["corrections"] else 0,
             "checks": r["rule_checks"] or 0, "covered_by": _get(r, "covered_by"), "edition": _edition_out(_get(r, "edition"))}
@@ -488,7 +563,7 @@ def queue_view() -> dict:
         con.close()
     cap = capacity.points()
     used = sum((r["points"] or 0) for r in running)
-    return {"capacity": cap, "used": used,
+    return {"capacity": cap, "used": used, "machine": capacity.machine(),
             "running": [{"job": r["id"], "room": r["room_id"], "name": names.get(r["room_id"], ""), "points": r["points"] or 0,
                          "progress": r["progress"], "message": r["message"]} for r in running],
             "queued": [{"job": r["id"], "room": r["room_id"], "name": names.get(r["room_id"], ""), "position": i + 1,
@@ -598,8 +673,18 @@ def summary(room: dict) -> dict:
             pass
     rows = _files(room["id"])
     accs = [r["accuracy"] for r in rows if r["outcome"] == "result" and r["accuracy"] is not None]
-    return {**room, "counts": counts(room, rows), "job": job,
-            "accuracy_avg": round(sum(accs) / len(accs), 1) if accs else None}
+    out = {**room, "counts": counts(room, rows), "job": job, "source_label": source_label(room.get("source")),
+           "accuracy_avg": round(sum(accs) / len(accs), 1) if accs else None}
+    if room.get("archived"):                                  # the archive card: when it was distilled, and for how long
+        con = db.trust_rw()
+        try:
+            r = con.execute("SELECT COUNT(*), MIN(created_at), MAX(updated_at), SUM(CASE WHEN updated_at > created_at THEN updated_at - created_at ELSE 0 END) "
+                            "FROM job WHERE room_id=? AND kind='dropbox_sync' AND status IN ('done','error')",
+                            (room["id"],)).fetchone()
+        finally:
+            con.close()
+        out["runs"] = {"count": r[0] or 0, "first": r[1], "last": r[2], "seconds": round(r[3] or 0)}
+    return out
 
 
 # ------------------------------------------------------------------ events -> rows
@@ -609,6 +694,8 @@ _UPSERT_FILE = ("INSERT INTO room_file(room_id, rel, kind, size, activity, outco
                 "ON CONFLICT(room_id, rel) DO UPDATE SET kind=excluded.kind, size=COALESCE(excluded.size, room_file.size), "
                 "activity=excluded.activity, outcome=excluded.outcome, reason=excluded.reason, detail=excluded.detail, "
                 "accuracy=excluded.accuracy, parts=excluded.parts, diffs=excluded.diffs, number_diffs=excluded.number_diffs, "
+                "known=CASE WHEN excluded.findings = room_file.findings OR (excluded.findings IS NULL AND room_file.findings IS NULL) "
+                "THEN room_file.known ELSE NULL END, "
                 "findings=excluded.findings, pages=excluded.pages, run_id=excluded.run_id, "
                 "out_dir=excluded.out_dir, content_hash=excluded.content_hash, single_file=excluded.single_file, "
                 "n_files=excluded.n_files, verdict=excluded.verdict, confirmed=0, confirmed_by=NULL, confirmed_at=NULL, "
@@ -810,7 +897,7 @@ def restamp(room_id: str) -> dict:
     for r in _files(room_id):
         if not r["confirmed"] or not r["out_dir"]:
             continue
-        nd = (r["number_diffs"] or 0) + (_get(r, "rule_checks") or 0)
+        nd = open_numbers(r)
         at = _dt.datetime.fromtimestamp(r["confirmed_at"]).astimezone().isoformat(timespec="seconds") if r["confirmed_at"] else None
         items.append({"rel": r["rel"], "out_dir": r["out_dir"], "content_hash": r["content_hash"], "accuracy": r["accuracy"],
                       "forced": SC.decide(r["accuracy"], nd, room["threshold"], room["number_guard"]) == "below",

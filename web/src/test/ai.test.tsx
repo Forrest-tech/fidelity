@@ -115,8 +115,10 @@ describe("uncertain places", () => {
     renderApp("/distill");
     const u = userEvent.setup({ pointerEventsCheck: 0 });
     await u.click(await screen.findByRole("button", { name: "Review scan.pdf" }));
+    // "Review" opens the compare & review page; the fix drawer is one click on
+    await u.click(await screen.findByRole("button", { name: "Fix text…" }));
     const side = await screen.findByRole("complementary", { name: "The chosen place" });
-    expect(screen.getByText("Figures on the page but not in the result: 20")).toBeInTheDocument();
+    expect(screen.getAllByText("Figures on the page but not in the result: 20").length).toBeGreaterThan(0);
     // the field is filled once the place's review has loaded: wait for it (checking at once failed on a busy runner)
     await waitFor(() => expect(within(side).getByLabelText("Correct text")).toHaveValue("fitted"));
     await u.click(within(side).getByRole("button", { name: "fittcd" }));
@@ -129,6 +131,8 @@ describe("uncertain places", () => {
     renderApp("/distill");
     const u = userEvent.setup({ pointerEventsCheck: 0 });
     await u.click(await screen.findByRole("button", { name: "Review scan.pdf" }));
+    // "Review" opens the compare & review page; the fix drawer is one click on
+    await u.click(await screen.findByRole("button", { name: "Fix text…" }));
     expect(await screen.findByText(/a real word here/)).toBeInTheDocument();
     await u.click(screen.getByRole("row", { name: "numbers 3" }));                     // the numbers place
     await u.click(await screen.findByRole("button", { name: "Explain" }));
@@ -147,6 +151,8 @@ describe("uncertain places", () => {
     const calls = fileApi(null, 2);
     renderApp("/distill");
     await userEvent.setup({ pointerEventsCheck: 0 }).click(await screen.findByRole("button", { name: "Review scan.pdf" }));
+    // "Review" opens the compare & review page; the fix drawer is one click on
+    await userEvent.setup({ pointerEventsCheck: 0 }).click(await screen.findByRole("button", { name: "Fix text…" }));
     await waitFor(() => expect(calls.some((c) => c.url.endsWith("/rooms/r1/ask-default"))).toBe(true));
   });
 });
