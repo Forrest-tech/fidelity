@@ -19,6 +19,8 @@ export interface FileRow {
   accuracy: number | null;
   diffs: number;
   number_diffs: number;
+  /** number differences nobody has confirmed yet: with the guard on these hold the file below whatever the threshold */
+  numbers_open?: number;
   reason: string | null;
   detail: string | null;
   pages: number | null;
@@ -196,9 +198,11 @@ export async function loadFiles(room: string, state: string, q: string): Promise
 const LEGEND: FileState[] = ["ok", "published", "below", "processing", "publishing", "unprocessable", "skipped", "pending"];
 
 export function RoomFiles({
-  roomId, live, counts, filter, onFilter, focusFile, onCompare, onFix, onRetry, canEdit = false, progress,
+  roomId, live, counts, filter, onFilter, focusFile, onCompare, onFix, onReview, onRetry, canEdit = false, progress, threshold, numberGuard,
 }: {
   roomId: string;
+  threshold?: number;
+  numberGuard?: boolean;
   live: boolean;
   /** the room's run as it goes: which files are in which step, which wait */
   progress?: RunLive;
@@ -208,6 +212,8 @@ export function RoomFiles({
   focusFile?: string | null;
   onCompare?: (rel: string) => void;
   onFix?: (rel: string) => void;
+  /** a file below the threshold: "Review" opens the page-by-page compare & review (falls back to onFix) */
+  onReview?: (rel: string) => void;
   onRetry?: () => void;
   canEdit?: boolean;
 }) {
@@ -383,7 +389,7 @@ export function RoomFiles({
     return (
       <span style={{ whiteSpace: "nowrap" }}>
         {onFix && (
-          <button className="fx-a" aria-label={t(f.state === "below" ? "pages.distill.reviewFile" : "pages.distill.fixFile", { name })} onClick={() => onFix(f.rel)}>
+          <button className="fx-a" aria-label={t(f.state === "below" ? "pages.distill.reviewFile" : "pages.distill.fixFile", { name })} onClick={() => (f.state === "below" && onReview ? onReview(f.rel) : onFix(f.rel))}>
             {f.state === "below" ? t("pages.distill.review") : t("pages.distill.view")}
           </button>
         )}
@@ -554,6 +560,11 @@ export function RoomFiles({
                     : f.state === "skipped" && f.reason === "duplicate" ? t("pages.distill.dupOf", { name: base((f.detail || "").replace(/^same content as /, "")) })
                     : f.state === "unprocessable" && f.reason ? t(`pages.distill.reason.${f.reason}`, { defaultValue: f.reason })
                     : f.state === "below" && f.checks ? t("pages.distill.ruleChecks", { count: f.checks })
+                    // why a file is below, in words: the threshold alone, or number differences the threshold cannot release
+                    : f.state === "below" && numberGuard && (f.numbers_open ?? 0) > 0 && threshold != null && f.accuracy != null && f.accuracy >= threshold
+                      ? t("pages.distill.numbersHold", { count: f.numbers_open })
+                    : f.state === "below" && threshold != null && f.accuracy != null && f.accuracy < threshold
+                      ? t("pages.distill.underThreshold", { thr: threshold })
                     : f.state === "below" && f.diffs ? t("pages.distill.diffs", { count: f.diffs }) : undefined;
                   const autoFixed = !f.checks && !!f.corrected ? t("pages.distill.autoFixed", { count: f.corrected }) : "";
                   const tip = [

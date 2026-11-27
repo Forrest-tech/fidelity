@@ -115,6 +115,8 @@ describe("a file below the threshold with no flagged place", () => {
     renderApp("/distill");
     const u = userEvent.setup({ pointerEventsCheck: 0 });
     await u.click(await screen.findByRole("button", { name: "Review AS 3500.1-2003.pdf" }));
+    // "Review" opens the compare & review page; the fix drawer is one click on
+    await u.click(await screen.findByRole("button", { name: "Fix text…" }));
     expect(await screen.findByText(/Accuracy 98.4% is below the accept threshold of 99%/)).toBeInTheDocument();
     expect(screen.queryByText("Nothing in this file needs a look.")).not.toBeInTheDocument();
     await u.click(screen.getByRole("button", { name: "It is right: accept this file" }));

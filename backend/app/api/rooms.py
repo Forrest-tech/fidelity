@@ -17,9 +17,10 @@ router = APIRouter()
 
 
 def _guard(fn, *a, **kw):
+    from ..jobs.page_review import PageError
     try:
         return fn(*a, **kw)
-    except R.RoomError as e:
+    except (R.RoomError, PageError) as e:
         raise HTTPException(e.status, e.message)
 
 
@@ -85,6 +86,43 @@ def room(room_id: str):
 def patch(room_id: str, body: RoomPatch):
     sent = body.model_dump(exclude_unset=True)
     return R.summary(_guard(R.update_room, room_id, sent))
+
+
+class SourceIn(BaseModel):
+    source: str
+
+
+@router.post("/rooms/{room_id}/source")
+def switch_source(room_id: str, body: SourceIn, user=Depends(current_user)):
+    """A new input. When the room has results they become an archived room of their own (see rooms.switch_source)."""
+    out = _guard(R.switch_source, room_id, body.source, getattr(user, "email", "") or "")
+    return {"room": R.summary(out["room"]), "archived": R.summary(out["archived"]) if out["archived"] else None}
+
+
+@router.get("/rooms/{room_id}/source-check")
+def source_check(room_id: str):
+    """What changing the input would archive (the page asks before it does)."""
+    r = _guard(R.get_room, room_id)
+    s = R.summary(r)
+    return {"results": R.has_results(room_id), "counts": s["counts"], "accuracy_avg": s["accuracy_avg"],
+            "source_label": s["source_label"], "running": bool(R.active_job(room_id))}
+
+
+@router.get("/rooms/{room_id}/pages/{n}")
+def compare_page(room_id: str, n: int, rel: str):
+    """One page of one file: the distilled text of that page and the places the check found on it, with where the
+    numbers they name are printed on the source page (see jobs/page_review.py)."""
+    from ..jobs import page_review as PR
+    return _guard(PR.page, room_id, rel, n)
+
+
+@router.get("/rooms/{room_id}/pages/{n}/image")
+def compare_page_image(room_id: str, n: int, rel: str, dpi: int = 110):
+    """The source page as a picture (the original, as a reader sees it)."""
+    from fastapi.responses import Response
+    from ..jobs import page_review as PR
+    return Response(content=_guard(PR.image, room_id, rel, n, dpi), media_type="image/png",
+                    headers={"Cache-Control": "private, max-age=3600"})
 
 
 @router.delete("/rooms/{room_id}")

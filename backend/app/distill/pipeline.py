@@ -212,6 +212,11 @@ class Readers:
             self.processes = False
         else:
             import multiprocessing as mp
+            # each reader's OCR gets its share of the processors, so several readers do not fight over the same ones
+            if not os.environ.get("FIDELITY_OCR_THREADS"):
+                from ..jobs import capacity
+                # (an OCR file takes 2 capacity points, so at most workers // 2 of them are read at once)
+                os.environ["FIDELITY_OCR_THREADS"] = str(max(1, capacity.cpu_count() // max(1, self.workers // 2)))
             ctx = mp.get_context("spawn")
             self.q = ctx.Queue()
             kw = dict(max_workers=self.workers, mp_context=ctx, initializer=_init_worker, initargs=(self.q,))

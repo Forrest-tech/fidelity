@@ -9,11 +9,13 @@ import { useAuth } from "../auth/AuthProvider";
 import { useTheme } from "./ThemeProvider";
 import type { Theme } from "./ThemeProvider";
 
-/** The main navigation: overview, distill, results. (The old per-file review tool at /review is no longer listed:
- * rooms compare and fix each file; 2026-11-25.) */
+/** The main navigation: overview, distill, compare & review, results. (2026-11-26, the owner: the compare page was
+ * taken out of the menu on 2026-11-25 — "I wanted it improved, not removed". /review is now the page-by-page
+ * comparison of a room's file with its source; the old per-folder tool stays at /review/legacy.) */
 const NAV = [
   { to: "/", key: "overview", end: true },
   { to: "/distill", key: "distill" },
+  { to: "/review", key: "review" },
   { to: "/documents", key: "results" },
 ] as const;
 
@@ -168,6 +170,7 @@ function Palette({ open, onClose }: { open: boolean; onClose: () => void }) {
   const all: Cmd[] = [
     { id: "p-overview", label: t("nav.overview"), hint: t("shell.page"), run: go("/") },
     { id: "p-distill", label: t("nav.distill"), hint: t("shell.page"), run: go("/distill") },
+    { id: "p-review", label: t("nav.review"), hint: t("shell.page"), run: go("/review") },
     { id: "p-results", label: t("nav.results"), hint: t("shell.page"), run: go("/documents") },
     { id: "p-corr", label: t("nav.corrections"), hint: t("shell.page"), run: go("/settings/corrections") },
     { id: "p-jobs", label: t("nav.jobs"), hint: t("shell.page"), run: go("/jobs") },

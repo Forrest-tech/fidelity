@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Dropdown, Modal } from "antd";
 import { api, json } from "../net/client";
 import { useAuth } from "../auth/AuthProvider";
@@ -58,10 +58,14 @@ export interface Room {
   counts: Counts;
   job: Job | null;
   accuracy_avg?: number | null;
+  source_label?: string;
+  runs?: { count: number; first: number | null; last: number | null; seconds: number };
 }
+interface SourceCheck { results: number; counts: Counts; accuracy_avg: number | null; source_label: string; running: boolean }
 interface QueueView {
   capacity: number;
   used: number;
+  machine?: { cpus: number; memory_gb: number; free_gb: number; arch: string; emulated: boolean; points: number };
   running: { job: string; room: string; name: string; points: number }[];
   queued: { job: string; room: string; name: string; position: number; points: number; priority: number }[];
 }
@@ -155,9 +159,11 @@ function QueueCard({ q, canEdit, rooms }: { q: QueueView; canEdit: boolean; room
           ))}
           <span className="fx-muted">{full ? t("pages.distill.full") : t("pages.distill.free", { n: q.capacity - q.used })}</span>
         </span>
+        {q.machine && <span className="fx-tiny fx-muted" title={t("pages.distill.machineWhy")}>{t("pages.distill.machine", { cpus: q.machine.cpus, mem: q.machine.memory_gb })}</span>}
         <span className="fx-sp" />
         <button className="fx-a" onClick={() => setOpen(true)}>{t("pages.distill.manageQueue")}</button>
       </div>
+      {q.machine?.emulated && <div className="fx-warnnote" role="alert" style={{ marginTop: 8 }}>{t("pages.distill.emulated")}</div>}
       <Modal open={open} onCancel={() => setOpen(false)} footer={null} title={t("pages.distill.queue")} width={420}>
         <div className="fx-stack" style={{ gap: 10 }}>
           {!q.running.length && !q.queued.length && <div className="fx-muted">{t("pages.distill.queueEmpty")}</div>}
@@ -430,11 +436,38 @@ function RoomBody({ room, canEdit, focusFile, focusState }: { room: Room; canEdi
   const refresh = () => {
     for (const k of ["rooms", "queue", "room-files", "accept-preview", "notifications"]) void qc.invalidateQueries({ queryKey: [k] });
   };
-  const save = useMutation({ mutationFn: (f: Record<string, unknown>) => api(`/rooms/${room.id}`, { ...json(f), method: "PATCH" }), onSuccess: refresh });
+  const [switching, setSwitching] = useState<SourceCheck | null>(null);
+  const nav = useNavigate();
+  // Saving the folders. A new input on a room that already has results first asks: those results move to
+  // "Archived" as a record of their own (input, times, accuracy), and the room starts clean on the new input.
+  const saveFolders = async (f: { source: string; dest: string | null }, confirmed = false): Promise<"asked" | void> => {
+    const srcChanged = f.source.trim() !== loc(room.source).trim() && !!room.source;
+    if (srcChanged) {
+      if (!confirmed) {
+        const chk = await api<SourceCheck>(`/rooms/${room.id}/source-check`);
+        if (chk.results > 0) {
+          setSwitching(chk);
+          return "asked";
+        }
+      }
+      const out = await api<{ room: Room }>(`/rooms/${room.id}/source`, json({ source: f.source }));
+      if (f.dest !== (loc(room.dest) || null)) await api(`/rooms/${out.room?.id ?? room.id}`, { ...json({ dest: f.dest }), method: "PATCH" });
+      return;
+    }
+    await api(`/rooms/${room.id}`, { ...json(f), method: "PATCH" });
+  };
+  const save = useMutation({
+    mutationFn: (f: Record<string, unknown>) =>
+      "source" in f ? saveFolders(f as { source: string; dest: string | null }, !!f.confirmed) : api(`/rooms/${room.id}`, { ...json(f), method: "PATCH" }),
+    onSuccess: (r) => { if (r !== "asked") { setSwitching(null); refresh(); } },
+  });
   const run = useMutation({ mutationFn: () => api(`/rooms/${room.id}/run`, json({})), onSuccess: refresh });
   // edited folders that are not saved yet: leaving the page asks first
   useUnsaved(`room-${room.id}`, canEdit && (source !== loc(room.source) || dest !== loc(room.dest))
-    ? () => save.mutateAsync({ source, dest: dest || null }) : null);
+    ? () => save.mutateAsync({ source, dest: dest || null }).then((r) => {
+      // a new input on a room with results waits for its own confirmation (the dialog is open now): stay on the page
+      if (r === "asked") throw new Error(t("pages.distill.switch.confirmFirst"));
+    }) : null);
   const cancel = useMutation({ mutationFn: () => api(`/rooms/${room.id}/cancel`, { method: "POST" }), onSuccess: refresh });
   const isPath = (v: string) => v.trim().startsWith("/");
   const overlap = isPath(source) && isPath(dest) && (isUnder(dest, source) || isUnder(source, dest));
@@ -468,6 +501,23 @@ function RoomBody({ room, canEdit, focusFile, focusState }: { room: Room; canEdi
         )}
       </div>
       {overlap && <div className="fx-errnote" role="alert">{t("pages.distill.overlap")}</div>}
+      <Modal open={!!switching} title={t("pages.distill.switch.title")} onCancel={() => setSwitching(null)} width={520}
+        okText={t("pages.distill.switch.ok")} cancelText={t("pages.distill.switch.cancel")} confirmLoading={save.isPending}
+        onOk={() => save.mutate({ source, dest: dest || null, confirmed: true })}>
+        {switching && (
+          <div className="fx-switch">
+            <p>{t("pages.distill.switch.body", { from: switching.source_label || shortLoc(room.source), to: source })}</p>
+            <ul>
+              <li>{t("pages.distill.switch.files", { n: switching.results })}
+                {switching.accuracy_avg != null ? ` · ${t("pages.distill.switch.avg", { pct: switching.accuracy_avg })}` : ""}
+                {switching.counts.published ? ` · ${t("pages.distill.switch.published", { n: switching.counts.published })}` : ""}</li>
+              <li>{t("pages.distill.switch.where", { name: `${room.name} · ${switching.source_label || "…"}` })}</li>
+              <li>{t("pages.distill.switch.clean")}</li>
+              <li>{t("pages.distill.switch.output")}</li>
+            </ul>
+          </div>
+        )}
+      </Modal>
       {err && <div className="fx-errnote" role="alert">{err.message}</div>}
       {j?.status === "interrupted" && <div className="fx-warnnote">{t("pages.distill.interruptedNote")}</div>}
       {j?.status === "error" && j.message && <div className="fx-errnote">{j.message}</div>}
@@ -479,8 +529,8 @@ function RoomBody({ room, canEdit, focusFile, focusState }: { room: Room; canEdi
         </div>
       )}
       <RoomFiles roomId={room.id} live={active || room.counts.publishing > 0} counts={room.counts} filter={filter} onFilter={setFilter}
-        progress={live}
-        focusFile={focusFile} onCompare={room.dest ? setComparing : undefined} onFix={setFixing} canEdit={canEdit}
+        progress={live} threshold={room.threshold} numberGuard={room.number_guard}
+        focusFile={focusFile} onCompare={room.dest ? setComparing : undefined} onFix={setFixing} onReview={(rel) => nav(`/review?room=${room.id}&rel=${encodeURIComponent(rel)}`)} canEdit={canEdit}
         onRetry={canEdit && !active ? () => run.mutate() : undefined} />
       <AcceptPanel room={room} canEdit={canEdit} onReview={() => setFilter("ok")} />
       <CompareDrawer roomId={room.id} rel={comparing} onClose={() => setComparing(null)} />
@@ -724,6 +774,7 @@ function RoomCard({ room, open, onToggle, canEdit, focusFile, focusState }: {
 }
 
 // ------------------------------------------------------------------ archived rooms (screen 1c)
+const dur = (sec: number) => (sec >= 3600 ? `${Math.floor(sec / 3600)}h ${Math.round((sec % 3600) / 60)}m` : `${Math.max(1, Math.round(sec / 60))}m`);
 function Archived({ rooms, canEdit }: { rooms: Room[]; canEdit: boolean }) {
   const { t } = useTranslation();
   const qc = useQueryClient();
@@ -748,13 +799,17 @@ function Archived({ rooms, canEdit }: { rooms: Room[]; canEdit: boolean }) {
       ) : (
         <div className="fx-tbox">
           <table className="fx-t">
-            <thead><tr><th>{t("pages.distill.colRoom")}</th><th>{t("pages.distill.colContent")}</th><th>{t("pages.distill.colAccuracyShort")}</th><th>{t("pages.distill.colPublished")}</th><th>{t("pages.distill.colArchived")}</th><th><span className="sr-only">{t("pages.distill.colActions")}</span></th></tr></thead>
+            <thead><tr><th>{t("pages.distill.colRoom")}</th><th>{t("pages.distill.colInput")}</th><th>{t("pages.distill.colContent")}</th><th>{t("pages.distill.colAccuracyShort")}</th><th>{t("pages.distill.colWhen")}</th><th>{t("pages.distill.colPublished")}</th><th>{t("pages.distill.colArchived")}</th><th><span className="sr-only">{t("pages.distill.colActions")}</span></th></tr></thead>
             <tbody>
               {list.map((r) => (
                 <tr key={r.id} className={openId === r.id ? "sel" : undefined}>
                   <td><b>{r.name}</b></td>
-                  <td className="fx-num">{t("pages.distill.fileCount", { count: r.counts.total })}</td>
+                  <td className="fx-muted" title={r.source?.link}>{r.source ? `${prov(r.source)} ${r.source_label || shortLoc(r.source)}` : "—"}</td>
+                  <td className="fx-num">{t("pages.distill.fileCount", { count: r.counts.total })}
+                    {r.counts.published ? <span className="fx-muted fx-tiny"> · {t("pages.distill.switch.published", { n: r.counts.published })}</span> : null}</td>
                   <td className="fx-num"><b>{r.accuracy_avg != null ? `${r.accuracy_avg}%` : "—"}</b></td>
+                  <td className="fx-muted fx-tiny">{r.runs?.first ? `${new Date(r.runs.first * 1000).toLocaleDateString()}${r.runs.last && new Date(r.runs.last * 1000).toDateString() !== new Date(r.runs.first * 1000).toDateString() ? ` – ${new Date(r.runs.last * 1000).toLocaleDateString()}` : ""}` : "—"}
+                    {r.runs?.seconds ? ` · ${t("pages.distill.ranFor", { time: dur(r.runs.seconds) })}` : ""}</td>
                   <td className="fx-muted">{r.dest ? `${prov(r.dest)} ${shortLoc(r.dest)}` : t("pages.distill.keepLocal")}</td>
                   <td className="fx-muted fx-tiny">{r.archived_at ? new Date(r.archived_at * 1000).toLocaleDateString() : ""}{r.archived_by ? ` · ${r.archived_by}` : ""}</td>
                   <td style={{ whiteSpace: "nowrap" }}>

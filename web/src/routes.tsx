@@ -16,6 +16,7 @@ import { OverviewPage } from "./pages/OverviewPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SourcesPage } from "./pages/SourcesPage";
 import { UsersPage } from "./pages/UsersPage";
+import { ReviewPage } from "./pages/ReviewPage";
 import { LangProvider } from "./i18n";
 // The review screen is large: load it only when opened.
 const ReviewLegacy = lazy(() => import("./pages/ReviewLegacy"));
@@ -65,8 +66,9 @@ export function AppRoutes() {
         <Route path="sources" element={<SourcesPage />} />
         <Route path="jobs" element={<JobsPage />} />
         <Route path="documents" element={<DocumentsPage />} />
+        <Route path="review" element={<ReviewPage />} />
         <Route
-          path="review"
+          path="review/legacy"
           element={
             <LangProvider>
               {/* legacy element styles (buttons, inputs) only apply inside this wrapper */}

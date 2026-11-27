@@ -146,7 +146,7 @@ test.describe("pages have content or a clear state", () => {
 test.describe("review screen", () => {
   test("opens inside the shell, follows the shell language, no page-level horizontal scroll", async ({ page }) => {
     await login(page, "reviewer");
-    await page.goto("/review");
+    await page.goto("/review/legacy");
     await expect(page.locator(".legacy-review .header")).toBeVisible({ timeout: 15_000 });
     await expect(page.locator(".legacy-review .langsw")).toHaveCount(0); // one language switch, in the shell
     await setLanguage(page, "中文");
@@ -157,7 +157,7 @@ test.describe("review screen", () => {
 
   test("follows the dark theme and stays accessible in it", async ({ page }) => {
     await login(page, "reviewer");
-    await page.goto("/review");
+    await page.goto("/review/legacy");
     await expect(page.locator(".legacy-review .header")).toBeVisible({ timeout: 15_000 });
     await page.getByRole("button", { name: "Switch to dark mode" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
