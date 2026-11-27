@@ -3,7 +3,7 @@ import type { Page } from "@playwright/test";
 
 // Sign-in as people do it: the real page, the real bot check solving in the browser, the real redirect
 // through a (local) company identity provider. See docs/testing/TEST_CASES.md, section LOGIN.
-const PW = "e2e-password-123";
+const PW = process.env.E2E_PASSWORD!; // made per run in playwright.config.ts, never written in the code
 const OIDC = "http://127.0.0.1:8767";
 const ACCOUNT = /^(Account menu|账号菜单)$/;
 

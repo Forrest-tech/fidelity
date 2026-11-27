@@ -1,4 +1,11 @@
+import { randomBytes } from "node:crypto";
 import { defineConfig, devices } from "@playwright/test";
+
+// No password or secret is written in the code (2026-11-27: a secret scanner flagged the test accounts' fixed
+// password beside their e-mail addresses). Each run makes its own; set in the environment here, the workers and the
+// seeded server inherit the same values. E2E_PASSWORD / E2E_SECRET may be given to reuse known ones.
+process.env.E2E_PASSWORD ||= randomBytes(12).toString("base64url");
+process.env.E2E_SECRET ||= randomBytes(32).toString("hex");
 
 // Runs the real backend (throw-away SQLite database, seeded users) serving the built web app.
 // Build first: npm run build. PYTHON can point at the project's virtual environment.
@@ -34,7 +41,8 @@ export default defineConfig({
       env: {
         FIDELITY_DB_URL: DB,
         FIDELITY_WEB_DIST: process.env.FIDELITY_WEB_DIST ?? "",
-        FIDELITY_SECRET: "e2e-secret-e2e-secret-e2e-secret-1234",
+        FIDELITY_SECRET: process.env.E2E_SECRET!,
+        E2E_PASSWORD: process.env.E2E_PASSWORD!,
         QA_SERVER_PORT: String(PORT),
         PYTHONUTF8: "1",
         // the real bot check, as people get it, made cheap so the suite stays fast
