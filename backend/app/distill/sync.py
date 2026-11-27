@@ -282,7 +282,13 @@ def _fetch(src, rel, f, lp, live):
     finally:
         stop()
     if not src.verify_local(lp, f):
-        raise SystemExit(f"local copy of {rel} does not match the source file's checksum")
+        # a download carried on from a partial copy of another version (the file changed between the two): once
+        # more from 0 before giving up
+        D.restart(lp)
+        print(f"  the downloaded copy does not match; downloading it again in full  [{rel.rsplit('/', 1)[-1]}]", flush=True)
+        _retry(lambda: src.download(rel, f, lp), "download")
+        if not src.verify_local(lp, f):
+            raise SystemExit(f"local copy of {rel} does not match the source file's checksum")
 
 
 def _cost(lp) -> int:
