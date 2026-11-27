@@ -88,7 +88,9 @@ def test_scan_route_publishes_only_when_every_page_is_accepted(tmp_path):
     body = open(os.path.join(out, good["out_dir"]), encoding="utf-8").read()
     assert "flags: ocr -->" in body and "audit_status: auto_verified" in body
 
-    bad = distill_scan(pdf, "Scan 2020.pdf", str(out), "/s", str(cache), log=lambda *_: None,
+    cache2 = tmp_path / "cache2"                      # other engine readings: not the pages kept from the run above
+    cache2.mkdir()
+    bad = distill_scan(pdf, "Scan 2020.pdf", str(out), "/s", str(cache2), log=lambda *_: None,
                        engines=[Fake("a", TXT), Fake("b", TXT.replace("Table 4", "Table 9"))])
     assert bad["verdict"] == "REVIEW" and bad["out_dir"].startswith("_pending")
     assert bad["report"]["review_pages"] == [1, 2]
@@ -193,3 +195,49 @@ def test_dollar_misread_in_clause_ids_only():
 def test_typographic_variants_are_not_disagreements():
     agree, diffs = O.agreement('the “vertical” face -- and ’s', 'the "vertical" face — and \'s')
     assert agree == 1.0 and diffs == []
+
+
+class Counting(Fake):
+    """An engine that counts the pages it reads and can stop the run after a number of them (a dropped run)."""
+
+    def __init__(self, name, text, stop_after=None):
+        super().__init__(name, text)
+        self.reads, self.stop_after = 0, stop_after
+
+    def read(self, img):
+        if self.stop_after is not None and self.reads >= self.stop_after:
+            raise KeyboardInterrupt("the run stopped")
+        self.reads += 1
+        return super().read(img)
+
+
+def test_a_stopped_scan_carries_on_from_the_pages_already_read(tmp_path):
+    """2026-11-27, the owner: running again after a stop began the 330-page scan at page 1 again."""
+    pdf = scanned_pdf(str(tmp_path / "Scan 2020.pdf"), pages=5)
+    out, cache = tmp_path / "out", tmp_path / "cache"
+    out.mkdir(), cache.mkdir()
+    a, b = Counting("a", TXT, stop_after=3), Counting("b", TXT)
+    import pytest
+    with pytest.raises(KeyboardInterrupt):
+        distill_scan(pdf, "Scan 2020.pdf", str(out), "/s", str(cache), log=lambda *_: None, engines=[a, b])
+    assert a.reads == 3
+    logs = []
+    a2, b2 = Counting("a", TXT), Counting("b", TXT)
+    r = distill_scan(pdf, "Scan 2020.pdf", str(out), "/s", str(cache), log=logs.append, engines=[a2, b2])
+    assert a2.reads == 2                                  # only pages 4 and 5
+    assert b2.reads <= 2                                  # b read up to 4 pages before the stop (it runs alongside)
+    assert r["verdict"] == "PASS" and r["pages"] == 5
+    assert any("3 page(s) already read in an earlier run" in m for m in logs)
+    a3, b3 = Counting("a", TXT), Counting("b", TXT)       # everything kept: nothing is read again
+    assert distill_scan(pdf, "Scan 2020.pdf", str(out), "/s", str(cache), log=lambda *_: None, engines=[a3, b3])["verdict"] == "PASS"
+    assert (a3.reads, b3.reads) == (0, 0)
+
+
+def test_a_cut_off_line_of_kept_pages_is_read_again(tmp_path):
+    from app.distill.scan import PageStore
+    st = PageStore(str(tmp_path), "h")
+    st.put(1, "a::1400:300", "one", 0.9)
+    with open(st.path, "a", encoding="utf-8") as f:
+        f.write('{"page": 2, "engine": "a::1400:300", "te')        # the run stopped while writing
+    again = PageStore(str(tmp_path), "h")
+    assert again.get(1) == {"a::1400:300": ["one", 0.9]} and again.get(2) == {}

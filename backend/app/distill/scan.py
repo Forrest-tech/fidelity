@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import threading
 import time
 
 from . import ocr as O
@@ -33,17 +34,52 @@ def page_count(path) -> int:
 
 
 def _images(path):
-    """Yield (page number, PIL image) for a scanned PDF or an image file (multi-page TIFF too)."""
+    """Yield (page number, function that makes the page's image) for a scanned PDF or an image file (multi-page
+    TIFF too). The image is made only when called, so a page read before is not rendered again."""
     from PIL import Image, ImageSequence
     if path.lower().endswith(".pdf"):
         import pymupdf
-        n = pymupdf.open(path).page_count
+        with pymupdf.open(path) as d:
+            n = d.page_count
         for i in range(n):
-            yield i + 1, O.render_page(path, i)
+            yield i + 1, (lambda i=i: O.render_page(path, i))
     else:
         with Image.open(path) as im:
             for i, frame in enumerate(ImageSequence.Iterator(im), 1):
-                yield i, frame.convert("L").copy()
+                f = frame.convert("L").copy()
+                yield i, (lambda f=f: f)
+
+
+class PageStore:
+    """The raw readings of every page already OCR'd, kept on disk as they are made: one JSON line per page and
+    engine in <cache>/ocr-pages/<content hash>.jsonl. A run that stops (network, a restart, the Mac sleeping, a
+    cancel) and is started again reads only the pages still missing; before 2026-11-27 it began again at page 1
+    (the owner's 330-page scan had reached page 192, about two and a half hours lost)."""
+
+    def __init__(self, cache_dir, content_hash: str):
+        self.path = os.path.join(cache_dir, "ocr-pages", content_hash + ".jsonl") if cache_dir else None
+        self.pages: dict = {}
+        self._lock = threading.Lock()
+        if self.path and os.path.exists(self.path):
+            with open(self.path, encoding="utf-8") as f:
+                for line in f:
+                    try:
+                        d = json.loads(line)
+                        self.pages.setdefault(int(d["page"]), {})[d["engine"]] = [d["text"], float(d["conf"])]
+                    except (ValueError, KeyError, TypeError):
+                        continue                          # a line cut off when the run stopped: that page is read again
+
+    def get(self, page: int) -> dict:
+        return self.pages.get(page, {})
+
+    def put(self, page: int, key: str, text: str, conf: float):
+        if not self.path:
+            return
+        with self._lock:
+            os.makedirs(os.path.dirname(self.path), exist_ok=True)
+            with open(self.path, "a", encoding="utf-8") as f:
+                f.write(json.dumps({"page": page, "engine": key, "text": text, "conf": conf}, ensure_ascii=False) + "\n")
+            self.pages.setdefault(page, {})[key] = [text, conf]
 
 
 def distill_scan(path, rel_path, out_root, source_prefix, cache_dir, log=print, engines=None, max_pages=400,
@@ -57,11 +93,18 @@ def distill_scan(path, rel_path, out_root, source_prefix, cache_dir, log=print, 
     pages = []
     total = page_count(path)
     log(f"  scanned document: OCR of {min(total, max_pages) if total else '?'} page(s) with {len(engines)} engine(s)")
+    store = PageStore(cache_dir, h)
+    keys = [O.engine_key(e) for e in engines]
+    done = sum(1 for p in store.pages.values() if all(k in p for k in keys))
+    if done:
+        log(f"  {done} page(s) already read in an earlier run: carrying on from there")
     for n, img in _images(path):
         if n > max_pages:
             break
-        log(f"  OCR page {n}/{min(total, max_pages) if total else '?'}")
-        pages.append(O.ocr_image(img, n, engines))
+        have = store.get(n)
+        if not all(k in have for k in keys):
+            log(f"  OCR page {n}/{min(total, max_pages) if total else '?'}")
+        pages.append(O.ocr_image(img, n, engines, cached=have, on_read=lambda k, t, c, n=n: store.put(n, k, t, c)))
     review = [p for p in pages if p.status != "ok"]
     instr = [{"page": p.page, "text": s} for p in pages for s in scan_instructions(p.text)]
     rep = {
