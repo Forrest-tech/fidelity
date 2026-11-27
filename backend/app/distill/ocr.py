@@ -92,7 +92,13 @@ class RapidOCREngine:
             en = en_rec_model()
             # The 0/180 degree line classifier flips long upright lines and turns them into garbage
             # (measured: one line per page lost). Upside-down scans still go to review: Tesseract disagrees.
-            kw = {"use_angle_cls": False}
+            # rec_batch_num=1: lines are recognised one by one. In batches every line is padded to the widest line of
+            # its batch, and a standard's page mixes full-width lines with short ones: measured 2026-11-26 on a dense
+            # page, recognition took 26.9 s in batches of 6 and 14.6 s one by one, with identical text.
+            kw = {"use_angle_cls": False, "rec_batch_num": 1}
+            threads = int(os.environ.get("FIDELITY_OCR_THREADS") or 0)   # set when several files are read at once
+            if threads > 0:
+                kw["intra_op_num_threads"] = threads
             RapidOCREngine._eng = RapidOCR(rec_model_path=en, **kw) if en else RapidOCR(**kw)
             RapidOCREngine.model = "en" if en else "ch"
         res, _ = RapidOCREngine._eng(np.asarray(img.convert("RGB")))
@@ -289,12 +295,24 @@ def ocr_image(img, page: int = 1, engines=None) -> PageOCR:
         from PIL import Image
         k = MAX_SIDE / max(img.size)
         img = img.resize((int(img.width * k), int(img.height * k)), Image.LANCZOS)
-    for e in engines:
+    def _read(e):
         try:
-            text, conf = e.read(img)
+            return e.read(img), None
         except Exception as x:          # an engine crash sends the page to review, never stops the run
-            failures.append(f"{e.name} failed: {str(x)[:120]}")
+            return None, f"{e.name} failed: {str(x)[:120]}"
+    # The engines read the same page at the same time: Tesseract runs as its own program, so it costs no time
+    # beside RapidOCR (about 4 s a page saved). The order of `readings` stays the engines' order.
+    if len(engines) > 1:
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(len(engines), thread_name_prefix="ocr-engine") as ex:
+            got = list(ex.map(_read, engines))
+    else:
+        got = [_read(e) for e in engines]
+    for e, (res, fail) in zip(engines, got):
+        if fail:
+            failures.append(fail)
             continue
+        text, conf = res
         fixed, log = correct_text(text)
         readings[e.name] = {"text": text, "text_corrected": fixed, "conf": round(conf, 4), "corrections": log}
     if not readings:

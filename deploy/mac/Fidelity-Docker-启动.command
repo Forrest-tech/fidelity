@@ -71,10 +71,19 @@ fi
 # ---- 5. build and start
 say "构建并启动容器（第一次约 5–15 分钟，之后很快）… / Building and starting"
 docker compose config -q || fail "Docker Compose 读不懂 docker-compose.yml（版本 $(docker compose version --short 2>/dev/null)）。请更新 Docker Desktop 后再运行。"
-if ! docker compose up -d --build; then
-  say "按本机芯片构建失败，改用 x86 模式重试（较慢）… / Retrying as linux/amd64"
-  DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose up -d --build || fail "构建失败。请把上面的输出发给维护者。"
-fi
+# Always build for this Mac's own chip. An image built as linux/amd64 runs under emulation on an Apple-silicon Mac and
+# reads scanned pages several times slower (found 2026-11-26: about 52 s a page). If an older run left such an image,
+# it is rebuilt here.
+case "$(uname -m)" in arm64|aarch64) NATIVE=linux/arm64 ;; *) NATIVE=linux/amd64 ;; esac
+export DOCKER_DEFAULT_PLATFORM="$NATIVE"
+docker compose up -d --build || fail "构建失败。请把上面的输出发给维护者。"
+ARCH="$(docker compose exec -T fidelity uname -m 2>/dev/null | tr -d '\r')"
+case "$NATIVE:$ARCH" in
+  linux/arm64:x86_64)
+    say "容器在模拟 x86 方式下运行（会很慢），按本机芯片重新构建… / Rebuilding for this Mac's chip"
+    docker compose build --no-cache && docker compose up -d --force-recreate || fail "重新构建失败。请把上面的输出发给维护者。" ;;
+esac
+echo "  容器架构 / container architecture: ${ARCH:-?}（本机 / this Mac: $(uname -m)）"
 
 # ---- 6. wait until it answers, then open the browser
 say "等待服务就绪… / Waiting for the app"

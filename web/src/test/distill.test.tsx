@@ -224,8 +224,9 @@ describe("distill page", () => {
     const dlg = await screen.findByRole("dialog");
     await u.click(within(dlg).getByRole("button", { name: "Save" }));
     await waitFor(() => {
-      const p = calls.find((x) => x.url.endsWith("/rooms/r1") && x.init?.method === "PATCH");
-      expect(JSON.parse(String(p?.init?.body))).toMatchObject({ source: "/as 3500/2018" });
+      // a new input goes through /source (it archives earlier results when there are any; here there are none)
+      const p = calls.find((x) => x.url.endsWith("/rooms/r1/source") && x.init?.method === "POST");
+      expect(JSON.parse(String(p?.init?.body))).toEqual({ source: "/as 3500/2018" });
     });
     expect(await screen.findByRole("heading", { level: 1, name: "Results" })).toBeInTheDocument();
   });
@@ -426,9 +427,27 @@ describe("distill page", () => {
     await u.type(input, "/as 3500/2018");
     await u.click(await screen.findByRole("button", { name: "Save" }));
     await waitFor(() => {
-      const patch = calls.find((c) => c.init?.method === "PATCH");
-      expect(JSON.parse(String(patch?.init?.body))).toEqual({ source: "/as 3500/2018", dest: "/Transfer_Md" });
+      const post = calls.find((c) => c.url.endsWith("/rooms/r1/source"));
+      expect(JSON.parse(String(post?.init?.body))).toEqual({ source: "/as 3500/2018" });
     });
+    expect(calls.some((c) => c.init?.method === "PATCH")).toBe(false);          // the output did not change
+  });
+
+  it("asks before a new input moves the old input's results to Archived", async () => {
+    const calls = api("reviewer", [room()], (url) =>
+      url.includes("/source-check") ? { body: { results: 3, counts: counts({ total: 3, published: 2 }), accuracy_avg: 98.6, source_label: "as 3500", running: false } } : undefined);
+    renderApp("/distill");
+    const u = userEvent.setup({ pointerEventsCheck: 0 });
+    const input = await screen.findByLabelText(/^Input/);
+    await u.clear(input);
+    await u.type(input, "/AS 5601");
+    await u.click(await screen.findByRole("button", { name: "Save" }));
+    const dlg = await screen.findByRole("dialog", { name: "Change the input" });
+    expect(within(dlg).getByText(/the results of 3 files · average accuracy 98.6% · 2 published/)).toBeInTheDocument();
+    expect(within(dlg).getByText(/move together to “Archived” as “AS 3500 · as 3500”/)).toBeInTheDocument();
+    expect(calls.some((c) => c.url.endsWith("/rooms/r1/source"))).toBe(false);   // nothing changes before the yes
+    await u.click(screen.getByRole("button", { name: /Archive and change/ }));
+    await waitFor(() => expect(JSON.parse(String(calls.find((c) => c.url.endsWith("/rooms/r1/source"))?.init?.body))).toEqual({ source: "/AS 5601" }));
   });
 
   it("an interrupted run says so and offers to continue", async () => {
