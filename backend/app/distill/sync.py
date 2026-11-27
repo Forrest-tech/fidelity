@@ -266,13 +266,21 @@ def _err(e) -> str:
 
 def _fetch(src, rel, f, lp, live):
     """Download one file (unless the local copy is already this content) and check it. Runs on a download thread."""
-    if not src.local_matches(lp, f):
-        print(f"  download ({f['size'] / 1e6:.1f} MB)  [{rel.rsplit('/', 1)[-1]}]", flush=True)
-        stop = P.watch_download(live, rel, lp, f.get("size") or 0)
-        try:
-            _retry(lambda: src.download(rel, f, lp), "download")
-        finally:
-            stop()
+    # A copy downloaded by an earlier run is used again when it is this very content (checked once, by its hash):
+    # it shows as downloaded at once, not as "0 MB" while its hash is worked out (2026-11-27, the owner thought the
+    # file was being downloaded again).
+    if os.path.exists(lp):
+        live.file(rel, bytes=f.get("size") or 0)
+        if src.local_matches(lp, f):
+            print(f"  using the copy downloaded earlier  [{rel.rsplit('/', 1)[-1]}]", flush=True)
+            return
+        live.file(rel, bytes=0)
+    print(f"  download ({f['size'] / 1e6:.1f} MB)  [{rel.rsplit('/', 1)[-1]}]", flush=True)
+    stop = P.watch_download(live, rel, lp, f.get("size") or 0)
+    try:
+        _retry(lambda: src.download(rel, f, lp), "download")
+    finally:
+        stop()
     if not src.verify_local(lp, f):
         raise SystemExit(f"local copy of {rel} does not match the source file's checksum")
 

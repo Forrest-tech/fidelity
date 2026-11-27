@@ -287,22 +287,42 @@ def decide(page: int, readings: dict, corrected: str, corrections: list) -> Page
     return r
 
 
-def ocr_image(img, page: int = 1, engines=None) -> PageOCR:
+def engine_key(e) -> str:
+    """What an engine's reading of a page depends on (engine, model, image size fed to it)."""
+    return f"{e.name}:{getattr(e, 'model', None) or ''}:{MAX_SIDE}:{RENDER_DPI}"
+
+
+def ocr_image(img, page: int = 1, engines=None, cached: dict | None = None, on_read=None) -> PageOCR:
+    """OCR one page with every engine, then correct and vote. `img` is the page image, or a function that makes it
+    (called only when some engine has to read the page). `cached` holds earlier raw readings {engine_key: [text,
+    conf]} of this very page, and `on_read(key, text, conf)` is told each new one: a run stopped part-way through a
+    long scan carries on from the pages it already read instead of starting again (2026-11-27, the owner)."""
     from .correct import correct_text
     engines = engines if engines is not None else available_engines()
+    cached = cached or {}
     readings, failures = {}, []
-    if img is not None and max(img.size) > MAX_SIDE:
+    todo = [e for e in engines if engine_key(e) not in cached]
+    if todo and callable(img):
+        img = img()
+    if todo and img is not None and max(img.size) > MAX_SIDE:
         from PIL import Image
         k = MAX_SIDE / max(img.size)
         img = img.resize((int(img.width * k), int(img.height * k)), Image.LANCZOS)
+
     def _read(e):
+        if engine_key(e) in cached:
+            text, conf = cached[engine_key(e)]
+            return (text, float(conf)), None
         try:
-            return e.read(img), None
+            res = e.read(img)
         except Exception as x:          # an engine crash sends the page to review, never stops the run
             return None, f"{e.name} failed: {str(x)[:120]}"
+        if on_read is not None:
+            on_read(engine_key(e), res[0], res[1])
+        return res, None
     # The engines read the same page at the same time: Tesseract runs as its own program, so it costs no time
     # beside RapidOCR (about 4 s a page saved). The order of `readings` stays the engines' order.
-    if len(engines) > 1:
+    if len(todo) > 1:
         from concurrent.futures import ThreadPoolExecutor
         with ThreadPoolExecutor(len(engines), thread_name_prefix="ocr-engine") as ex:
             got = list(ex.map(_read, engines))
