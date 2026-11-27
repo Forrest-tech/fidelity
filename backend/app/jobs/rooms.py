@@ -678,7 +678,7 @@ def summary(room: dict) -> dict:
     if room.get("archived"):                                  # the archive card: when it was distilled, and for how long
         con = db.trust_rw()
         try:
-            r = con.execute("SELECT COUNT(*), MIN(created_at), MAX(updated_at), SUM(MAX(0, updated_at - created_at)) "
+            r = con.execute("SELECT COUNT(*), MIN(created_at), MAX(updated_at), SUM(CASE WHEN updated_at > created_at THEN updated_at - created_at ELSE 0 END) "
                             "FROM job WHERE room_id=? AND kind='dropbox_sync' AND status IN ('done','error')",
                             (room["id"],)).fetchone()
         finally:
@@ -694,7 +694,8 @@ _UPSERT_FILE = ("INSERT INTO room_file(room_id, rel, kind, size, activity, outco
                 "ON CONFLICT(room_id, rel) DO UPDATE SET kind=excluded.kind, size=COALESCE(excluded.size, room_file.size), "
                 "activity=excluded.activity, outcome=excluded.outcome, reason=excluded.reason, detail=excluded.detail, "
                 "accuracy=excluded.accuracy, parts=excluded.parts, diffs=excluded.diffs, number_diffs=excluded.number_diffs, "
-                "known=CASE WHEN excluded.findings IS room_file.findings THEN room_file.known ELSE NULL END, "
+                "known=CASE WHEN excluded.findings = room_file.findings OR (excluded.findings IS NULL AND room_file.findings IS NULL) "
+                "THEN room_file.known ELSE NULL END, "
                 "findings=excluded.findings, pages=excluded.pages, run_id=excluded.run_id, "
                 "out_dir=excluded.out_dir, content_hash=excluded.content_hash, single_file=excluded.single_file, "
                 "n_files=excluded.n_files, verdict=excluded.verdict, confirmed=0, confirmed_by=NULL, confirmed_at=NULL, "

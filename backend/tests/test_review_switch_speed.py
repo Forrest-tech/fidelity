@@ -137,8 +137,7 @@ def test_the_input_cannot_change_during_a_run():
 
 
 def test_a_shared_sub_folder_link_is_named_after_its_folder():
-    link = ("https://www.dropbox.com/scl/fo/dupzzyjrmxqrc9e7g2h4z/AA7YUQUEZ7f9ArfOc2OC7fo/gas%20regulation"
-            "?rlkey=64lsf2nvd54gym0ds64ivypw4")
+    link = "https://www.dropbox.com/scl/fo/abc123/AAexample/gas%20regulation?rlkey=example&dl=0"
     assert R.source_label({"link": link}) == "gas regulation"
     assert R.source_label({"link": "/a/b/AS 5601", "path": "/a/b/AS 5601"}) == "AS 5601"
 

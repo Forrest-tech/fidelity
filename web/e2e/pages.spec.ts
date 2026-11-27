@@ -76,14 +76,14 @@ test.describe("users: an administrator manages people", () => {
 test.describe("review: what a viewer sees", () => {
   test("F-02 a viewer gets no controls the server would refuse; a reviewer does", async ({ page, browser }) => {
     await signIn(page, "viewer@example.com");
-    await page.goto("/review");
+    await page.goto("/review/legacy");
     await expect(page.locator(".legacy-review .header")).toBeVisible({ timeout: 15_000 });
     for (const name of ["Batch score", "Re-run all", "Upload", "Manage"]) await expect(page.getByRole("button", { name, exact: true })).toHaveCount(0);
-    await expect(page.getByRole("heading", { level: 1, name: "Review" })).toBeAttached();
+    await expect(page.getByRole("heading", { level: 1, name: "Compare & review" })).toBeAttached();
     const ctx = await browser.newContext();
     const rev = await ctx.newPage();
     await signIn(rev, "reviewer@example.com");
-    await rev.goto("/review");
+    await rev.goto("/review/legacy");
     await expect(rev.getByRole("button", { name: "Batch score" })).toBeVisible({ timeout: 15_000 });
     await ctx.close();
   });
@@ -91,7 +91,7 @@ test.describe("review: what a viewer sees", () => {
   test("F-03 the threshold value is not covered by the Mark passing button", async ({ page }, info) => {
     test.skip(info.project.name === "phone", "the file list is a drawer on phones");
     await signIn(page, "reviewer@example.com");
-    await page.goto("/review");
+    await page.goto("/review/legacy");
     const value = page.locator(".tree-foot b");
     await expect(value).toBeVisible({ timeout: 15_000 });
     const a = (await value.boundingBox())!;
